@@ -664,6 +664,9 @@ GALLERY = [
      "A procedural city. One seed decides the whole town.",
      "Procedūriškai sugeneruotas miestas. Vienas skaičius nulemia visą "
      "miestą."),
+    ("text.png", "21_text_and_loading.py",
+     "Models loaded back from files: a word, an alphabet, a reloaded torus.",
+     "Iš failų įkelti modeliai: žodis, abėcėlė, iš naujo įkeltas toras."),
     ("example4.png", "20_classic_1_2.py",
      "A Christmas tree made only of parametric surfaces (from add.py 1.2).",
      "Eglutė vien iš parametrinių paviršių (iš add.py 1.2)."),
