@@ -1,7 +1,7 @@
 
 
 # ============================================================================
-# 15. Repairing a model
+# 18. Repairing a model
 # ============================================================================
 # Models built by stacking shapes tend to collect three kinds of rubbish:
 # vertices that sit on top of each other, faces that are repeated, and walls
@@ -355,7 +355,7 @@ def clean(M=None, tol=1e-7, weld=True, degenerate=True, duplicates=True,
 
 
 # ============================================================================
-# 16. Looking at a model
+# 19. Looking at a model
 # ============================================================================
 
 def stats(M=None):
@@ -395,7 +395,7 @@ def stats(M=None):
         "non_manifold_edges": odd_edges,
         "duplicate_faces": duplicate_faces,
         "back_to_back_faces": back_to_back,
-        "closed": open_edges == 0 and odd_edges == 0,
+        "closed": open_edges == 0,
     }
 
 
@@ -421,12 +421,12 @@ def check(M=None, min_faces=10000, min_colors=3, quiet=False):
         print("   surface area        %.3f" % s["area"])
         if s["closed"]:
             why = "yes"
-        elif s["open_edges"]:
-            why = "no, %d edges have nothing on the other side" % s["open_edges"]
         else:
-            why = "no, %d edges are shared by more than two faces" \
-                % s["non_manifold_edges"]
+            why = "no, %d edges have nothing on the other side" % s["open_edges"]
         print("%s closed surface      %s" % (mark(s["closed"]), why))
+        if s["non_manifold_edges"]:
+            print("   touching edges      %d   (parts meet along an edge;"
+                  " normal for voxel models)" % s["non_manifold_edges"])
         if s["duplicate_faces"]:
             print("!! repeated faces      %d   -- try add.clean()"
                   % s["duplicate_faces"])

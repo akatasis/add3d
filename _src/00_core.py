@@ -2,7 +2,7 @@
 add.py -- build 3D models with nothing but Python code.
 ==============================================================================
 
-Version 2.0  |  Martynas Sabaliauskas (VU MIF DMSTI)  |  MIT licence
+Version 2.1  |  Martynas Sabaliauskas (VU MIF DMSTI)  |  MIT licence
 
 A tiny, dependency-free 3D modelling kernel for teaching.  The whole library
 uses only ``math`` and ``random`` from the standard library: no NumPy, no
@@ -29,6 +29,12 @@ Three layers of API
 3. **Finish** -- ``clean()`` repairs the model, ``check()`` reports on it,
    ``save()`` writes ``.off`` or ``.obj`` (+ ``.mtl``).
 
+Only ``import add``
+-------------------
+``math`` and ``random`` are re-exported, so ``add.sin(t)``, ``add.pi``,
+``add.randint(1, 6)`` and ``add.seed(7)`` all work and a model file needs no
+other import.  (``import math`` still works too, of course.)
+
 Compatibility
 -------------
 Code written for add.py 1.2 keeps working unchanged: the old names
@@ -44,9 +50,15 @@ outside the model.
 """
 
 import math
-import random
+import random as _random
 
-__version__ = "2.0"
+# Everything in ``math`` and ``random`` is available straight from this
+# module, so a model needs nothing but ``import add``:  add.sin, add.pi,
+# add.sqrt, add.randint, add.uniform, add.choice, add.seed ...
+from math import *          # noqa: F401,F403
+from random import *        # noqa: F401,F403
+
+__version__ = "2.1"
 __all__ = []  # filled in at the bottom of the file
 
 #: Numerical tolerance used by welding, boolean operations and plane tests.
@@ -112,11 +124,21 @@ def _perp(n):
 
 
 def _frame(direction):
-    """Return three unit vectors (u, v, w) with w along ``direction``."""
+    """Return three unit vectors (u, v, w) with w along ``direction``.
+
+    ``u`` is chosen as the first world axis (X, then Y, then Z) that is not
+    parallel to ``w``, so a profile drawn in ``(u, v)`` keeps its natural
+    orientation: for a shape along Z, ``u = X`` and ``v = Y``; for one
+    standing up along Y, ``u = X`` and ``v = -Z``.
+    """
     w = _unit(direction)
     if _norm(w) < EPS:
         w = (0.0, 0.0, 1.0)
-    u = _perp(w)
+    for cand in ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)):
+        d = _dot(w, cand)
+        if abs(d) < 0.9:
+            u = _unit((cand[0] - w[0] * d, cand[1] - w[1] * d, cand[2] - w[2] * d))
+            break
     v = _cross(w, u)
     return u, v, w
 
@@ -197,7 +219,7 @@ def gradient(t, a, b):
 
 def random_color(seed=None):
     """A random colour.  Pass ``seed`` for a repeatable one."""
-    r = random if seed is None else random.Random(seed)
+    r = _random if seed is None else _random.Random(seed)
     return (r.randint(0, 255), r.randint(0, 255), r.randint(0, 255))
 
 

@@ -1,7 +1,7 @@
 
 
 # ============================================================================
-# 18. Saving and loading
+# 21. Saving and loading
 # ============================================================================
 
 def save(path, M=None, clear_scene=None):
@@ -330,11 +330,13 @@ def load_font(folder, characters=None, suffix=".off"):
     return out
 
 
-def text(characters, font, at=(0, 0, 0), size=1.0, spacing=1.0, color=None,
-         plane=((1, 0, 0), (0, 1, 0))):
-    """Lay a string of already-loaded glyphs out in a row and merge them.
+def typeset(characters, font, at=(0, 0, 0), size=1.0, spacing=1.0, color=None,
+            plane=((1, 0, 0), (0, 1, 0))):
+    """Lay a string of already-loaded glyph *meshes* out in a row and merge them.
 
-    ``font`` is the dictionary returned by :func:`load_font`.
+    ``font`` is the dictionary returned by :func:`load_font` -- letters that
+    were modelled as .off files, like the course's letter set.  (For a
+    quick label drawn from add.py's own built-in font see :func:`text`.)
     """
     u, v = plane
     out = Mesh()

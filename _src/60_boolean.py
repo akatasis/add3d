@@ -1,7 +1,7 @@
 
 
 # ============================================================================
-# 17. Boolean operations: union, intersection, difference
+# 20. Boolean operations: union, intersection, difference
 # ============================================================================
 # Two solids can be added together, cut out of one another, or intersected.
 # The idea used here needs no library and fits on one screen:
@@ -644,5 +644,15 @@ def _loops(edges):
 
 
 def inside(M, p):
-    """Is point ``p`` inside the (closed) mesh?  Ray casting: odd = inside."""
-    return _Solid(M).contains((p[0], p[1], p[2]))
+    """Is point ``p`` inside the (closed) mesh?  Ray casting: odd = inside.
+
+    ``p`` may also be a *list* of points, which returns a list of answers
+    and is far faster than asking one point at a time, because the mesh is
+    indexed only once::
+
+        hits = add.inside(ring, add.random_points(400, lo, hi, seed=3))
+    """
+    solid = _Solid(M)
+    if len(p) and isinstance(p[0], (list, tuple)):
+        return [solid.contains((q[0], q[1], q[2])) for q in p]
+    return solid.contains((p[0], p[1], p[2]))

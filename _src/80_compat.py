@@ -1,7 +1,7 @@
 
 
 # ============================================================================
-# 19. add.py 1.2 names
+# 23. add.py 1.2 names
 # ============================================================================
 # Everything below exists so that models written for earlier versions of the
 # course keep running unchanged.  New code should prefer the names on the
@@ -55,7 +55,7 @@ reflect = mirror
 
 
 # ============================================================================
-# 20. A one-line demonstration
+# 24. A one-line demonstration
 # ============================================================================
 
 def demo(path="demo.off"):
@@ -112,10 +112,14 @@ if __name__ == "__main__":
 #  Public names
 # ============================================================================
 
+# The names that came in from ``math`` and ``random`` stay usable as
+# ``add.sin`` and friends but are not part of add.py's own vocabulary.
+_REEXPORTED = set(dir(math)) | set(dir(_random)) | {"math"}
+
 __all__ = sorted(name for name, value in list(globals().items())
                  if not name.startswith("_")
-                 and name not in ("math", "random")
+                 and name not in _REEXPORTED
                  and (callable(value) or name in ("vertices", "faces",
-                                                  "COLORS", "EPS",
+                                                  "COLORS", "PALETTE", "EPS",
                                                   "DEFAULT_COLOR",
                                                   "BOOL_EPS")))

@@ -1,7 +1,7 @@
 
 
 # ============================================================================
-#  9. Parametric surfaces
+# 11. Parametric surfaces
 # ============================================================================
 
 def parametric(S, min_u, max_u, grid_u, min_v, max_v, grid_v, RGB=None,
@@ -31,8 +31,11 @@ def parametric(S, min_u, max_u, grid_u, min_v, max_v, grid_v, RGB=None,
         of every face pointing the other way.
     ``flip``
         Turn the surface inside out.
+    ``color`` as a function
+        Pass ``color=lambda u, v: ...`` and every cell is painted by its own
+        parameters -- stripes, checkerboards and rainbows in one line.
     """
-    color = rgb(RGB if RGB is not None else color)
+    color = RGB if RGB is not None else color
     nu = grid_u if wrap_u else grid_u + 1
     nv = grid_v if wrap_v else grid_v + 1
     P = []
@@ -44,6 +47,14 @@ def parametric(S, min_u, max_u, grid_u, min_v, max_v, grid_v, RGB=None,
             p = S(u, v)
             row.append((p[0], p[1], p[2]))
         P.append(row)
+    if callable(color):
+        fn = color
+
+        def color(i, j):
+            return fn(min_u + (max_u - min_u) * (i + 0.5) / float(grid_u),
+                      min_v + (max_v - min_v) * (j + 0.5) / float(grid_v))
+    else:
+        color = rgb(color)
     M = Mesh()
     _add_grid(M, P, color, wrap_u=wrap_u, wrap_v=wrap_v, flip=flip)
     if thickness:
@@ -148,7 +159,7 @@ def _boundary_edges(M):
 
 
 # ============================================================================
-# 10. Curves, sweeps and lofts -- "copy, turn, stretch a cross-section"
+# 12. Curves, sweeps and lofts -- "copy, turn, stretch a cross-section"
 # ============================================================================
 
 def _rmf(points, closed=False):
@@ -236,6 +247,11 @@ def sweep(profile, path, t0=0.0, t1=1.0, steps=100, color=None, closed=False,
                   scale=lambda t: 1 - 0.7 * t, twist=3 * math.pi)
 
     Set ``closed=True`` when the path returns to its start (a ring).
+
+    ``color`` may be a function ``color(t, j)`` of the path parameter and
+    the index of the profile edge (``0`` is the edge from the first profile
+    point to the second), so every side of a swept square can have its own
+    colour, or the colour can change along the path.
     """
     n = steps if closed else steps + 1
     points = []
@@ -245,11 +261,19 @@ def sweep(profile, path, t0=0.0, t1=1.0, steps=100, color=None, closed=False,
         points.append((p[0], p[1], p[2]))
     tangents, normals = _rmf(points, closed)
     P = _sweep_profile(points, tangents, normals, profile, scale, twist)
+    if callable(color):
+        fn = color
+
+        def color(i, j):
+            return fn(t0 + (t1 - t0) * (i + 0.5) / float(steps), j)
+        cap_a, cap_b = fn(t0, -1), fn(t1, -1)
+    else:
+        color = cap_a = cap_b = rgb(color)
     M = Mesh()
-    _add_grid(M, P, rgb(color), wrap_u=closed, wrap_v=True, flip=True)
+    _add_grid(M, P, color, wrap_u=closed, wrap_v=True, flip=True)
     if caps and not closed:
-        M.add_polygon(P[0][::-1], color)
-        M.add_polygon(P[-1], color)
+        M.add_polygon(P[0][::-1], cap_a)
+        M.add_polygon(P[-1], cap_b)
         _weld(M, 1e-9)
         _make_outward(M, 0)
     _emit(M)
@@ -261,8 +285,23 @@ def curve(P, min_t, max_t, grid_t, k=16, r=0.1, RGB=None, isConnected=False,
 
     ``r`` may be a function ``r(t)`` for a tube that swells and narrows.
     ``isConnected=True`` closes the tube into a loop without a seam.
+    The colour may be a function ``color(t, a)`` of the curve parameter and
+    the angle around the tube (radians), for example a candy-cane spiral::
+
+        add.curve(spiral, 0, 6 * add.pi, 300, 16, 0.2,
+                  color=lambda t, a: "red" if (t + a) % 1.0 < 0.5 else "white")
     """
-    color = rgb(RGB if RGB is not None else color)
+    color = RGB if RGB is not None else color
+    if callable(color):
+        fn = color
+
+        def color(i, j):
+            t = min_t + (max_t - min_t) * (i + 0.5) / float(grid_t)
+            return fn(t, 2.0 * math.pi * (j + 0.5) / float(k))
+        cap_a = lambda j: fn(min_t, 2.0 * math.pi * (j + 0.5) / float(k))  # noqa
+        cap_b = lambda j: fn(max_t, 2.0 * math.pi * (j + 0.5) / float(k))  # noqa
+    else:
+        color = cap_a = cap_b = rgb(color)
     n = grid_t if isConnected else grid_t + 1
     ts, points = [], []
     for i in range(n):
@@ -270,28 +309,8 @@ def curve(P, min_t, max_t, grid_t, k=16, r=0.1, RGB=None, isConnected=False,
         ts.append(t)
         p = P(t)
         points.append((p[0], p[1], p[2]))
-    tangents, normals = _rmf(points, isConnected)
-    circle_profile = [(math.cos(2 * math.pi * j / k), math.sin(2 * math.pi * j / k))
-                      for j in range(k)]
-    grid_points = []
-    for i in range(len(points)):
-        radius = r(ts[i]) if callable(r) else r
-        u = normals[i]
-        v = _cross(tangents[i], u)
-        c = points[i]
-        row = []
-        for (cx, cy) in circle_profile:
-            x, y = cx * radius, cy * radius
-            row.append((c[0] + u[0] * x + v[0] * y,
-                        c[1] + u[1] * x + v[1] * y,
-                        c[2] + u[2] * x + v[2] * y))
-        grid_points.append(row)
-    M = Mesh()
-    _add_grid(M, grid_points, color, wrap_u=isConnected, wrap_v=True, flip=True)
-    if not isConnected:
-        _fan(M, grid_points[0], points[0], color, flip=True)
-        _fan(M, grid_points[-1], points[-1], color)
-    _emit(M)
+    radii = [r(t) if callable(r) else r for t in ts]
+    _emit(_tube_along(points, radii, k, color, isConnected, cap_a, cap_b))
 
 
 def extrude(profile, direction=(0, 1, 0), color=None, steps=1, twist=0.0,

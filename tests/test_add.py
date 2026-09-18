@@ -700,6 +700,214 @@ def test_demo_runs():
 
 
 # --------------------------------------------------------------------------
+#  2.1: only "import add", colour functions, parts, placing, text
+# --------------------------------------------------------------------------
+
+def test_math_and_random_are_reexported():
+    assert abs(add.sin(add.pi / 2) - 1.0) < 1e-12
+    assert add.sqrt(16) == 4
+    add.seed(3)
+    a = add.randint(1, 1000)
+    add.seed(3)
+    assert add.randint(1, 1000) == a
+    assert "sin" not in add.__all__          # not part of add.py's own vocabulary
+    assert "sphere" in add.__all__
+
+
+def test_color_functions_on_surfaces():
+    add.clear()
+    add.parametric(lambda u, v: [u, 0, v], 0, 4, 4, 0, 4, 4,
+                   color=lambda u, v: "red" if (int(u) + int(v)) % 2 else "white")
+    M = add.layer()
+    assert add.stats(M)["colors"] == 2
+    add.revolve(lambda t: [1, t], [0, 0, 0], [0, 1, 0], 0, 2, 4, 8,
+                color=lambda t, a: add.hsv(a / (2 * add.pi)))
+    M = add.layer()
+    assert closed(M) and add.stats(M)["colors"] >= 8
+    add.sweep([[-1, -1], [1, -1], [1, 1], [-1, 1]], lambda t: [0, t, 0], 0, 3, 3,
+              color=lambda t, j: ["red", "green", "blue", "gold", "white"][j])
+    M = add.layer()
+    assert closed(M) and add.stats(M)["colors"] == 5
+    add.curve(lambda t: [t, 0, 0], 0, 1, 4, 8, 0.1,
+              color=lambda t, a: "red" if a < add.pi else "blue")
+    M = add.layer()
+    assert closed(M) and add.stats(M)["colors"] == 2
+    add.grid([0, 0, 0], [4, 4], 4, 4, color=lambda x, z: "red" if x < 0 else "blue")
+    assert add.stats(add.layer())["colors"] == 2
+    add.clear()
+
+
+def test_revolve_wedge_is_watertight():
+    add.clear()
+    add.revolve(lambda t: [1.0, t], [0, 0, 0], [0, 1, 0], 0, 2, 4, 8, "red",
+                angle=add.pi / 2)
+    M = add.layer()
+    assert closed(M), add.stats(M)
+    check_volume(M, add.pi / 4 * 2, 0.06)        # a quarter of a cylinder
+
+
+def test_numbers_and_profiles():
+    assert add.lerp(1, 3, 0.5) == 2
+    assert add.lerp([0, 0, 0], [2, 4, 6], 0.5) == [1, 2, 3]
+    assert add.clamp(7, 0, 1) == 1 and add.clamp(-1, 0, 1) == 0
+    assert abs(add.remap(5, 0, 10, -1, 1)) < 1e-12
+    assert add.distance([0, 0, 0], [3, 4, 0]) == 5
+    assert add.midpoint([0, 0], [2, 2]) == [1, 1]
+    assert add.direction([0, 0, 0], [0, 5, 0]) == [0, 1, 0]
+    p = add.rotate_point([1, 0, 0], [0, 1, 0], add.pi / 2)
+    assert abs(p[0]) < 1e-9 and abs(p[2] + 1) < 1e-9
+    assert add.shade("white", 0.5) == (127, 127, 127)
+    assert len(add.chaikin([[0, 0], [1, 0], [1, 1]], 1)) == 6
+    assert len(add.profile_circle(1, 12)) == 12
+    assert len(add.profile_star(5, 1, 0.5)) == 10
+    assert len(add.profile_rect(2, 1)) == 4
+    assert len(add.profile_rect(2, 1, 0.2, 3)) == 16
+    assert len(add.profile_gear(8, 1)) == 32
+    assert len(add.points_on_circle([0, 0, 0], 1, 6)) == 6
+    assert len(add.points_on_helix([0, 0, 0], 1, 1, 2, 9)) == 9
+    assert len(add.points_on_spiral([0, 0, 0], 0, 1, 2, 9)) == 9
+    assert len(add.points_on_line([0, 0, 0], [1, 0, 0], 5)) == 5
+    assert len(add.points_on_curve(lambda t: [t, 0, 0], 0, 1, 5)) == 5
+
+
+def test_parts_are_watertight():
+    parts = {
+        "beam": lambda: add.beam([0, 0, 0], [4, 3, 1], 0.3, 0.5, "brown"),
+        "rounded_box": lambda: add.rounded_box([0, 0, 0], [2, 1, 3], 0.3, 6, "red"),
+        "hemisphere": lambda: add.hemisphere([0, 0, 0], 1, 8, "sky"),
+        "arch": lambda: add.arch([-2, 0, 0], [2, 0, 0], 2, [0.6, 0.3], "grey"),
+        "arch_round": lambda: add.arch([-2, 0, 0], [2, 0, 0], 1, 0.2, "grey", 16, 8),
+        "stairs": lambda: add.stairs([0, 0, 0], 5, 2, 0.25, 0.4, "grey", [1, 0, 1]),
+        "gear": lambda: add.gear([0, 0, 0], 12, 1, 0.3, "gold"),
+        "gear_hole": lambda: add.gear([0, 0, 0], 12, 1, 0.3, "gold", hole=0.3),
+        "wheel": lambda: add.wheel([0, 0, 0], 1, 0.4),
+        "wheel_spokes": lambda: add.wheel([0, 0, 0], 1, 0.3, spokes=6),
+        "roof": lambda: add.roof([0, 2, 0], [4, 6], 1.5, "red", 0.3),
+        "column": lambda: add.column([0, 0, 0], 4, 0.3, "white", 12),
+        "bricks": lambda: add.bricks([0, 0, 0], 4, 1.5, seed=1),
+        "tree": lambda: add.tree([0, 0, 0], 3, seed=1),
+        "pine": lambda: add.tree([0, 0, 0], 3, kind="pine"),
+        "palm": lambda: add.tree([0, 0, 0], 3, kind="palm", seed=2),
+        "pixels": lambda: add.pixels([".r.", "rrr", ".r."], 0.5),
+        "heightmap": lambda: add.heightmap([[1, 2, 3], [2, 3, 1]], 0.5),
+        "polyline": lambda: add.polyline([[0, 0, 0], [1, 0, 0], [1, 1, 0]], 0.1, 8, "red", smooth=1),
+        "polyline_closed": lambda: add.polyline([[0, 0, 0], [1, 0, 0], [1, 1, 0]], 0.1, 8, "red", closed=True),
+        "text": lambda: add.text("AB", [0, 0, 0], 1, color="navy", k=6),
+    }
+    for name, draw in parts.items():
+        add.clear()
+        draw()
+        M = add.layer()
+        assert M.polygons > 0, name
+        assert closed(M), (name, add.stats(M))
+        assert add.volume(M) > 0, name
+    add.clear()
+
+
+def test_beam_dimensions():
+    add.clear()
+    add.beam([0, 0, 0], [5, 0, 0], 0.5, 1.0, "brown")
+    M = add.layer()
+    check_volume(M, 5 * 0.5 * 1.0)
+    lo, hi = add.bbox(M)
+    assert abs(hi[1] - lo[1] - 1.0) < 1e-9 and abs(hi[2] - lo[2] - 0.5) < 1e-9
+    add.beam([0, 0, 0], [0, 4, 0], 0.5, "brown")              # straight up
+    M = add.layer()
+    check_volume(M, 4 * 0.25)
+
+
+def test_stairs_volume():
+    add.clear()
+    add.stairs([0, 0, 0], 4, 2, 0.5, 1.0, "grey")
+    M = add.layer()
+    check_volume(M, (1 + 2 + 3 + 4) * 0.5 * 1.0 * 2)
+    assert add.stats(M)["open_edges"] == 0
+
+
+def test_pixels_and_heightmap_counts():
+    add.clear()
+    add.pixels(["#.", ".#"], 1.0)
+    M = add.layer()
+    assert M.polygons == 12                  # two cubes touching at an edge
+    add.pixels(["rg", "by"], 1.0)
+    assert add.stats(add.layer())["colors"] == 4
+    add.heightmap([[2, 0], [0, 1]], 1.0, color=lambda i, j, k: "sky" if j == 0 else "white")
+    M = add.layer()
+    check_volume(M, 3.0)
+    assert add.stats(M)["colors"] == 2
+
+
+def test_wireframe_and_flow():
+    add.clear()
+    add.box([0, 0, 0], 1, "red")
+    B = add.layer()
+    add.wireframe(B, 0.05, 6)
+    M = add.layer()
+    assert M.polygons == 12 * (6 + 2 * 6) + 8 * 24
+    pts = add.flow(lambda p: [0, 1, 0], [0, 0, 0], 0.1, 10)
+    assert len(pts) == 11 and abs(pts[-1][1] - 1.0) < 1e-9
+    add.trace(lambda p: [1, 0, 0], [0, 0, 0], 0.1, 10, 0.1, 6, "red")
+    M = add.layer()
+    assert closed(M)
+    add.clear()
+
+
+def test_aim_ground_align():
+    add.clear()
+    add.cone([0, 0, 0], [0, 2, 0], 0.5, 12, "red")
+    C = add.layer()
+    A = add.aim(C, [1, 0, 0])
+    lo, hi = add.bbox(A)
+    assert abs(hi[0] - 2.0) < 1e-9 and abs(hi[1] - 0.5) < 1e-6
+    assert add.bbox(add.aim(C, [0, 1, 0]))[1][1] == 2.0           # already aimed
+    D = add.aim(C, [0, -1, 0])                                     # exact opposite
+    assert abs(add.bbox(D)[0][1] + 2.0) < 1e-9
+    G = add.ground(C, 5)
+    assert abs(add.bbox(G)[0][1] - 5) < 1e-9
+    E = add.align(C, [1, 2, 3], [1, 1, 1])
+    assert [round(x, 9) for x in add.bbox(E)[1]] == [1, 2, 3]
+    F = add.align(C, [0, 0, 0])
+    lo, hi = add.bbox(F)
+    assert abs(lo[1]) < 1e-9 and abs(lo[0] + hi[0]) < 1e-9
+
+
+def test_scatter_and_along():
+    add.clear()
+    add.box([0, 0.5, 0], 1, "red")
+    B = add.layer()
+    pts = add.random_points(10, [-5, 0, -5], [5, 0, 5], seed=4,
+                            height=lambda x, z: 2.0)
+    assert len(pts) == 10 and all(p[1] == 2.0 for p in pts)
+    assert pts == add.random_points(10, [-5, 0, -5], [5, 0, 5], seed=4,
+                                    height=lambda x, z: 2.0)
+    S = add.scatter(B, pts, seed=1, scale=(0.5, 1.5))
+    assert S.polygons == 60
+    A = add.along(B, lambda t: [t, 0, 0], 5, 0, 8)
+    assert A.polygons == 30
+    A = add.along(B, [[0, 0, 0], [1, 0, 0], [2, 0, 0]], 3, axis=None, scale=2)
+    assert A.polygons == 18 and abs(add.bbox(A)[1][1] - 2.0) < 1e-9
+    A = add.along(B, lambda t: [add.cos(t), 0, add.sin(t)], 6, 0, 2 * add.pi,
+                  closed=True)
+    assert A.polygons == 36
+
+
+def test_text():
+    add.clear()
+    w = add.text("ABC", [0, 0, 0], 1.0, color="navy", k=6)
+    M = add.layer()
+    assert M.polygons > 100 and w > 2.0
+    assert abs(add.text_width("ABC") - w) < 1e-9
+    assert add.text_width("I") < add.text_width("W")
+    add.text("ąčęėįšųūž 0-9!?", [0, 0, 0], 1.0, color="navy", k=6)
+    assert add.layer().polygons > 0
+    add.text("two\nlines", [0, 0, 0], 1.0, align="center", u=[1, 0, 0], v=[0, 0, -1])
+    lo, hi = add.bbox(add.layer())
+    assert hi[1] - lo[1] < 0.5 and lo[2] < 0 < hi[2]
+    assert add.write is add.text and add.label is add.text
+    add.clear()
+
+
+# --------------------------------------------------------------------------
 
 if __name__ == "__main__":
     passed = failed = 0

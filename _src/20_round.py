@@ -1,7 +1,7 @@
 
 
 # ============================================================================
-#  7. Round solids
+#  8. Round solids
 # ============================================================================
 
 def _revolve_grid(A, direction, profile, k, angle=2.0 * math.pi, phase=0.0):
@@ -44,8 +44,15 @@ def revolve(profile, A=(0, 0, 0), B=(0, 1, 0), t0=0.0, t1=1.0, steps=40,
     shell, which is what the old ``spin3D`` produced::
 
         def vase(t):
-            return [1 + 0.4 * math.sin(3 * t), t]
+            return [1 + 0.4 * add.sin(3 * t), t]
         add.revolve(vase, [0, 0, 0], [0, 1, 0], 0, 4, 60, 40, "teal")
+
+    ``color`` may also be a function ``color(t, a)`` of the profile
+    parameter and the angle around the axis (in radians), evaluated at the
+    middle of every cell -- stripes, spirals and gradients in one line::
+
+        add.revolve(vase, [0, 0, 0], [0, 1, 0], 0, 4, 60, 40,
+                    color=lambda t, a: add.hsv(t / 4.0))
     """
     pts = []
     for i in range(steps + 1):
@@ -54,7 +61,18 @@ def revolve(profile, A=(0, 0, 0), B=(0, 1, 0), t0=0.0, t1=1.0, steps=40,
         pts.append((g[0], g[1]))
     direction = _sub(B, A)
     P, closed = _revolve_grid(A, direction, pts, k, angle)
-    color = rgb(color)
+    if callable(color):
+        fn = color
+
+        def color(i, j):                      # cell (i, j) -> (t, angle)
+            t = t0 + (t1 - t0) * (i + 0.5) / float(steps)
+            return fn(t, angle * (j + 0.5) / float(k))
+        lid_a = lambda j: fn(t0, angle * (j + 0.5) / float(k))   # noqa: E731
+        lid_b = lambda j: fn(t1, angle * (j + 0.5) / float(k))   # noqa: E731
+        side_a, side_b = fn((t0 + t1) / 2.0, 0.0), fn((t0 + t1) / 2.0, angle)
+    else:
+        color = rgb(color)
+        lid_a = lid_b = side_a = side_b = color
     M = Mesh()
     _add_grid(M, P, color, wrap_v=closed, flip=True)
     if caps:
@@ -62,16 +80,17 @@ def revolve(profile, A=(0, 0, 0), B=(0, 1, 0), t0=0.0, t1=1.0, steps=40,
         first = _add3(A, _scale(w, pts[0][1]))
         last = _add3(A, _scale(w, pts[-1][1]))
         if pts[0][0] > EPS:                       # flat lid at the start
-            _fan(M, P[0], first, color, flip=True)
+            _fan(M, P[0], first, lid_a, flip=True, closed=closed)
         if pts[-1][0] > EPS:                      # flat lid at the end
-            _fan(M, P[-1], last, color)
+            _fan(M, P[-1], last, lid_b, closed=closed)
         if not closed:                            # the two sides of the wedge
-            M.add_polygon([row[0] for row in P] + [last, first], color)
-            M.add_polygon([row[-1] for row in P] + [last, first], color)
+            M.add_polygon([row[0] for row in P] + [last, first], side_a)
+            M.add_polygon([row[-1] for row in P] + [last, first], side_b)
         _weld(M, 1e-9)
         _drop_degenerate(M)
         if not closed:
             M = fix_normals(M)
+        _make_outward(M, 0)          # whichever way the profile was drawn
     _emit(M)
 
 
@@ -168,7 +187,6 @@ def _tube_body(A, B, r1, r2, k, color, cap_a, cap_b):
     if _norm(d) < EPS:
         return Mesh()
     u, v, w = _frame(d)
-    length = _norm(d)
     M = Mesh()
     color = rgb(color)
     ring_a = _ring(A, u, v, r1, k)
@@ -283,29 +301,8 @@ def helix(center, r, pitch, turns, k=200, thickness=0.1, sides=12, color=None,
 
 
 # ============================================================================
-#  8. Coordinate axes
+#  9. Coordinate axes
 # ============================================================================
-
-# Each capital letter is a few line segments in a unit square, so the axis
-# labels cost five lines of code instead of a page of baked-in coordinates.
-_GLYPHS = {
-    "X": [((0, 0), (1, 1)), ((0, 1), (1, 0))],
-    "Y": [((0, 1), (0.5, 0.5)), ((1, 1), (0.5, 0.5)), ((0.5, 0.5), (0.5, 0))],
-    "Z": [((0, 1), (1, 1)), ((1, 1), (0, 0)), ((0, 0), (1, 0))],
-}
-
-
-def glyph(letter, origin, u, v, size=1.0, thickness=0.04, color=None):
-    """Draw one of the letters X, Y, Z as thin bars in the ``u``/``v`` plane."""
-    for (p, q) in _GLYPHS[letter.upper()]:
-        a = (origin[0] + (u[0] * p[0] + v[0] * p[1]) * size,
-             origin[1] + (u[1] * p[0] + v[1] * p[1]) * size,
-             origin[2] + (u[2] * p[0] + v[2] * p[1]) * size)
-        b = (origin[0] + (u[0] * q[0] + v[0] * q[1]) * size,
-             origin[1] + (u[1] * q[0] + v[1] * q[1]) * size,
-             origin[2] + (u[2] * q[0] + v[2] * q[1]) * size)
-        cylinder(a, b, thickness, 6, color)
-
 
 def axes(C=(0, 0, 0), length=4.0, width=0.03):
     """Draw the coordinate axes: X red, Y green, Z blue, each labelled."""

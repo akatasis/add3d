@@ -2,7 +2,7 @@
 add.py -- build 3D models with nothing but Python code.
 ==============================================================================
 
-Version 2.0  |  Martynas Sabaliauskas (VU MIF DMSTI)  |  MIT licence
+Version 2.1  |  Martynas Sabaliauskas (VU MIF DMSTI)  |  MIT licence
 
 A tiny, dependency-free 3D modelling kernel for teaching.  The whole library
 uses only ``math`` and ``random`` from the standard library: no NumPy, no
@@ -29,6 +29,12 @@ Three layers of API
 3. **Finish** -- ``clean()`` repairs the model, ``check()`` reports on it,
    ``save()`` writes ``.off`` or ``.obj`` (+ ``.mtl``).
 
+Only ``import add``
+-------------------
+``math`` and ``random`` are re-exported, so ``add.sin(t)``, ``add.pi``,
+``add.randint(1, 6)`` and ``add.seed(7)`` all work and a model file needs no
+other import.  (``import math`` still works too, of course.)
+
 Compatibility
 -------------
 Code written for add.py 1.2 keeps working unchanged: the old names
@@ -44,9 +50,15 @@ outside the model.
 """
 
 import math
-import random
+import random as _random
 
-__version__ = "2.0"
+# Everything in ``math`` and ``random`` is available straight from this
+# module, so a model needs nothing but ``import add``:  add.sin, add.pi,
+# add.sqrt, add.randint, add.uniform, add.choice, add.seed ...
+from math import *          # noqa: F401,F403
+from random import *        # noqa: F401,F403
+
+__version__ = "2.1"
 __all__ = []  # filled in at the bottom of the file
 
 #: Numerical tolerance used by welding, boolean operations and plane tests.
@@ -112,11 +124,21 @@ def _perp(n):
 
 
 def _frame(direction):
-    """Return three unit vectors (u, v, w) with w along ``direction``."""
+    """Return three unit vectors (u, v, w) with w along ``direction``.
+
+    ``u`` is chosen as the first world axis (X, then Y, then Z) that is not
+    parallel to ``w``, so a profile drawn in ``(u, v)`` keeps its natural
+    orientation: for a shape along Z, ``u = X`` and ``v = Y``; for one
+    standing up along Y, ``u = X`` and ``v = -Z``.
+    """
     w = _unit(direction)
     if _norm(w) < EPS:
         w = (0.0, 0.0, 1.0)
-    u = _perp(w)
+    for cand in ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)):
+        d = _dot(w, cand)
+        if abs(d) < 0.9:
+            u = _unit((cand[0] - w[0] * d, cand[1] - w[1] * d, cand[2] - w[2] * d))
+            break
     v = _cross(w, u)
     return u, v, w
 
@@ -197,7 +219,7 @@ def gradient(t, a, b):
 
 def random_color(seed=None):
     """A random colour.  Pass ``seed`` for a repeatable one."""
-    r = random if seed is None else random.Random(seed)
+    r = _random if seed is None else _random.Random(seed)
     return (r.randint(0, 255), r.randint(0, 255), r.randint(0, 255))
 
 
@@ -508,15 +530,18 @@ def _add_grid(M, P, color, wrap_u=False, wrap_v=False, flip=False):
 
     ``wrap_u`` / ``wrap_v`` close the patch into a tube or a torus.
     ``flip`` reverses the winding (makes the patch face the other way).
-    This one helper is behind ``parametric``, ``revolve``, ``sweep``,
-    ``loft``, ``sphere``, ``torus`` and ``tube``.
+    ``color`` is one colour, or a function ``paint(i, j)`` giving the colour
+    of cell ``(i, j)``.  This one helper is behind ``parametric``,
+    ``revolve``, ``sweep``, ``loft``, ``sphere``, ``torus`` and ``tube``.
     """
     nu, nv = len(P), len(P[0])
     base = len(M.V)
     for row in P:
         for p in row:
             M.add_vertex(p)
-    color = rgb(color)
+    paint = color if callable(color) else None
+    if paint is None:
+        color = rgb(color)
     steps_u = nu if wrap_u else nu - 1
     steps_v = nv if wrap_v else nv - 1
     for i in range(steps_u):
@@ -528,7 +553,7 @@ def _add_grid(M, P, color, wrap_u=False, wrap_v=False, flip=False):
             c = base + i2 * nv + j2
             d = base + i * nv + j2
             quad = [a, b, c, d] if not flip else [d, c, b, a]
-            M.add_face(quad, color)
+            M.add_face(quad, rgb(paint(i, j)) if paint else color)
 
 
 def _ring(center, u, v, r, k, phase=0.0):
@@ -546,17 +571,24 @@ def _ring(center, u, v, r, k, phase=0.0):
     return pts
 
 
-def _fan(M, points, apex, color, flip=False):
-    """Close a ring of points with a triangle fan meeting at ``apex``."""
+def _fan(M, points, apex, color, flip=False, closed=True):
+    """Close a ring of points with a triangle fan meeting at ``apex``.
+
+    With ``closed=False`` the points form an open arc (a wedge lid) and no
+    triangle is drawn between the last point and the first.
+    """
     base = len(M.V)
     for p in points:
         M.add_vertex(p)
     tip = M.add_vertex(apex)
     n = len(points)
-    for i in range(n):
+    paint = color if callable(color) else None
+    if paint is None:
+        color = rgb(color)
+    for i in range(n if closed else n - 1):
         j = (i + 1) % n
         tri = [base + i, base + j, tip] if not flip else [base + j, base + i, tip]
-        M.add_face(tri, color)
+        M.add_face(tri, rgb(paint(i)) if paint else color)
 
 
 def _signed_volume(M, first_face=0):
@@ -591,8 +623,9 @@ def _grid_solid(origin, sx, sy, sz, filled, color):
     ``sx``/``sy``/``sz`` are lists of cell sizes along each axis and
     ``filled(i, j, k)`` says whether cell ``(i, j, k)`` is material.  Only the
     faces between material and air are emitted, so the result is watertight
-    and has no hidden geometry.  :func:`frame` and :func:`voxels` are both
-    three-line wrappers around this.
+    and has no hidden geometry.  ``color`` may be a function ``(i, j, k)``.
+    :func:`frame`, :func:`voxels`, :func:`pixels` and :func:`heightmap` are
+    all thin wrappers around this.
     """
     nx, ny, nz = len(sx), len(sy), len(sz)
     # Coordinates of every grid line.
@@ -620,12 +653,16 @@ def _grid_solid(origin, sx, sy, sz, filled, color):
             return bool(filled(i, j, k))
         return False
 
-    color = rgb(color)
+    paint = color if callable(color) else None
+    if paint is None:
+        color = rgb(color)
     for i in range(nx):
         for j in range(ny):
             for k in range(nz):
                 if not solid(i, j, k):
                     continue
+                if paint is not None:
+                    color = rgb(paint(i, j, k))
                 if not solid(i - 1, j, k):          # -X wall
                     M.add_face([point(i, j, k), point(i, j, k + 1),
                                 point(i, j + 1, k + 1), point(i, j + 1, k)], color)
@@ -710,29 +747,43 @@ def ring(center, normal, r_outer, r_inner, k=32, color=None):
     _scene.extend(M)
 
 
-def grid(center, size, nx=10, nz=10, color=None, height=None):
+def grid(center, size, nx=10, nz=10, color=None, height=None, thickness=0.0):
     """A flat (or, with ``height(x, z)``, a hilly) rectangular patch in XZ.
 
     ``size`` is ``[width_x, depth_z]``.  ``height`` is an optional function
-    returning the Y coordinate::
+    returning the Y coordinate, and ``color`` may be a function ``(x, z)`` so
+    that a landscape can be painted by position or by height::
 
-        add.grid([0, 0, 0], [10, 10], 40, 40, "green",
-                 height=lambda x, z: math.sin(x) * math.cos(z))
+        add.grid([0, 0, 0], [10, 10], 40, 40,
+                 color=lambda x, z: "sky" if hills(x, z) < 0 else "green",
+                 height=hills)
+
+    ``thickness`` turns the sheet into a solid slab (see :func:`solidify`).
     """
     w, d = size[0], size[1]
     P = []
+    xs, zs = [], []
     for i in range(nx + 1):
         row = []
         x = center[0] - w / 2.0 + w * i / nx
+        xs.append(x)
         for j in range(nz + 1):
             z = center[2] - d / 2.0 + d * j / nz
+            if i == 0:
+                zs.append(z)
             y = center[1]
             if height is not None:
                 y = center[1] + height(x, z)
             row.append((x, y, z))
         P.append(row)
+    paint = color
+    if callable(color):
+        def paint(i, j):
+            return color((xs[i] + xs[i + 1]) / 2.0, (zs[j] + zs[j + 1]) / 2.0)
     M = Mesh()
-    _add_grid(M, P, rgb(color), flip=True)
+    _add_grid(M, P, paint, flip=True)
+    if thickness:
+        M = solidify(M, thickness)
     _scene.extend(M)
 
 
@@ -948,7 +999,233 @@ def _hull_faces(V, sides):
 
 
 # ============================================================================
-#  7. Round solids
+#  7. Numbers, points and 2D profiles
+# ============================================================================
+# Small helpers that models need all the time: blend two values, keep a
+# number in range, measure a distance, turn a point, cut the corners of a
+# path, and ready-made cross-sections for ``extrude`` / ``sweep`` / ``prism``.
+
+def lerp(a, b, t):
+    """Blend from ``a`` (``t = 0``) to ``b`` (``t = 1``).
+
+    Works for numbers and for points: ``lerp([0, 0, 0], [4, 2, 0], 0.5)``
+    is ``[2, 1, 0]``.
+    """
+    if isinstance(a, (int, float)):
+        return a + (b - a) * t
+    return [a[i] + (b[i] - a[i]) * t for i in range(len(a))]
+
+
+def clamp(x, lo=0.0, hi=1.0):
+    """``x`` limited to the range ``lo .. hi``."""
+    return lo if x < lo else (hi if x > hi else x)
+
+
+def remap(x, a0, a1, b0, b1):
+    """Map ``x`` from the range ``a0..a1`` onto the range ``b0..b1``.
+
+    ``remap(t, 0, 10, -1, 1)`` turns a time 0..10 into -1..1.
+    """
+    if abs(a1 - a0) < EPS:
+        return b0
+    return b0 + (b1 - b0) * (x - a0) / float(a1 - a0)
+
+
+def distance(a, b):
+    """Distance between two points (2D or 3D)."""
+    return math.sqrt(sum((a[i] - b[i]) ** 2 for i in range(len(a))))
+
+
+def midpoint(a, b):
+    """The point half way between ``a`` and ``b``."""
+    return [(a[i] + b[i]) / 2.0 for i in range(len(a))]
+
+
+def direction(a, b):
+    """The unit vector pointing from ``a`` to ``b``."""
+    d = [b[i] - a[i] for i in range(len(a))]
+    n = math.sqrt(sum(c * c for c in d))
+    return d if n < EPS else [c / n for c in d]
+
+
+def rotate_point(p, axis, angle, P=(0, 0, 0)):
+    """Turn a single point around an axis through ``P`` (Rodrigues).
+
+    The same rotation :func:`rotate` applies to a whole mesh -- use it to
+    aim a turret, place a hand on a clock or compute where a part will end
+    up before building it::
+
+        tip = add.rotate_point([3, 0, 0], [0, 1, 0], angle, pivot)
+    """
+    k = _unit(axis)
+    cs, sn = math.cos(angle), math.sin(angle)
+    v = _sub(p, P)
+    kv = _cross(k, v)
+    d = _dot(k, v) * (1.0 - cs)
+    return [P[0] + v[0] * cs + kv[0] * sn + k[0] * d,
+            P[1] + v[1] * cs + kv[1] * sn + k[1] * d,
+            P[2] + v[2] * cs + kv[2] * sn + k[2] * d]
+
+
+def shade(color, factor):
+    """A darker (``factor < 1``) or lighter (``factor > 1``) version of a colour.
+
+    ``shade("red", 0.5)`` is dark red; ``shade("red", 1.5)`` is pink-ish.
+    """
+    r, g, b = rgb(color)
+    if factor <= 1.0:
+        return (int(r * factor), int(g * factor), int(b * factor))
+    t = min(1.0, factor - 1.0)
+    return (int(r + (255 - r) * t), int(g + (255 - g) * t), int(b + (255 - b) * t))
+
+
+def chaikin(points, rounds=2, closed=False):
+    """Round the corners of a polyline by cutting them (Chaikin's algorithm).
+
+    Every round replaces each corner by two points at 1/4 and 3/4 of its
+    edges, so a square becomes an octagon, then a 16-gon, and quickly a
+    circle.  Works for 2D and 3D points.  Use it to smooth a hand-drawn
+    path before :func:`polyline` or :func:`sweep`.
+    """
+    pts = [list(p) for p in points]
+    for _ in range(rounds):
+        n = len(pts)
+        out = []
+        pairs = range(n) if closed else range(n - 1)
+        for i in pairs:
+            a, b = pts[i], pts[(i + 1) % n]
+            out.append([a[j] * 0.75 + b[j] * 0.25 for j in range(len(a))])
+            out.append([a[j] * 0.25 + b[j] * 0.75 for j in range(len(a))])
+        if not closed:
+            out = [pts[0]] + out + [pts[-1]]
+        pts = out
+    return pts
+
+
+# -- 2D cross-sections -------------------------------------------------------
+# All profiles are lists of [x, y] points listed counter-clockwise, ready for
+# ``extrude``, ``sweep``, ``prism`` and ``loft``.
+
+def profile_circle(r, k=32, phase=0.0):
+    """``k`` points on a circle of radius ``r``."""
+    return [[r * math.cos(phase + 2 * math.pi * i / k),
+             r * math.sin(phase + 2 * math.pi * i / k)] for i in range(k)]
+
+
+def profile_ellipse(a, b, k=32):
+    """``k`` points on an ellipse with half-axes ``a`` and ``b``."""
+    return [[a * math.cos(2 * math.pi * i / k), b * math.sin(2 * math.pi * i / k)]
+            for i in range(k)]
+
+
+def profile_polygon(n, r, phase=None):
+    """A regular ``n``-gon with circumradius ``r`` (a flat side at the bottom)."""
+    if phase is None:
+        phase = -math.pi / 2.0 + math.pi / n
+    return profile_circle(r, n, phase)
+
+
+def profile_star(n, r_outer, r_inner, phase=None):
+    """A star with ``n`` points, alternating between the two radii."""
+    if phase is None:
+        phase = math.pi / 2.0
+    pts = []
+    for i in range(2 * n):
+        r = r_outer if i % 2 == 0 else r_inner
+        a = phase + math.pi * i / n
+        pts.append([r * math.cos(a), r * math.sin(a)])
+    return pts
+
+
+def profile_rect(w, h, r=0.0, k=4):
+    """A ``w`` by ``h`` rectangle, with corners rounded by ``r`` if given."""
+    x, y = w / 2.0, h / 2.0
+    if r <= EPS:
+        return [[-x, -y], [x, -y], [x, y], [-x, y]]
+    r = min(r, x, y)
+    pts = []
+    corners = [(x - r, y - r, 0.0), (-x + r, y - r, math.pi / 2),
+               (-x + r, -y + r, math.pi), (x - r, -y + r, 3 * math.pi / 2)]
+    for cx, cy, a0 in corners:
+        for i in range(k + 1):
+            a = a0 + (math.pi / 2) * i / k
+            pts.append([cx + r * math.cos(a), cy + r * math.sin(a)])
+    return pts
+
+
+def profile_gear(teeth, r, depth=None, k=2):
+    """The outline of a gear: ``teeth`` teeth of height ``depth`` on radius ``r``.
+
+    The result is a closed profile; ``add.prism(profile, thickness)`` makes
+    the wheel and :func:`gear` does that for you.
+    """
+    if depth is None:
+        depth = r * 0.2
+    pts = []
+    n = 4 * teeth
+    for i in range(n):
+        phase = i % 4
+        a = 2 * math.pi * i / n
+        if phase in (1, 2):
+            rr = r + depth / 2.0
+        else:
+            rr = r - depth / 2.0
+        pts.append([rr * math.cos(a), rr * math.sin(a)])
+    return pts
+
+
+# -- points to put things on ------------------------------------------------
+
+def points_on_line(a, b, n):
+    """``n`` points evenly spaced from ``a`` to ``b`` (both included)."""
+    if n <= 1:
+        return [list(a)]
+    return [lerp(a, b, i / float(n - 1)) for i in range(n)]
+
+
+def points_on_circle(center, r, n, axis=(0, 1, 0), phase=0.0):
+    """``n`` points spread evenly on a circle in the plane normal to ``axis``."""
+    u, v, w = _frame(axis)
+    return [list(p) for p in _ring(center, u, v, r, n, phase)]
+
+
+def points_on_helix(center, r, pitch, turns, n, axis=(0, 1, 0)):
+    """``n`` points along a helix of ``turns`` turns climbing ``pitch`` per turn."""
+    u, v, w = _frame(axis)
+    out = []
+    for i in range(n):
+        t = turns * i / float(max(1, n - 1))
+        a = 2 * math.pi * t
+        out.append([center[j] + (u[j] * math.cos(a) + v[j] * math.sin(a)) * r
+                    + w[j] * pitch * t for j in range(3)])
+    return out
+
+
+def points_on_spiral(center, r0, r1, turns, n, axis=(0, 1, 0), rise=0.0):
+    """``n`` points along a flat spiral whose radius grows from ``r0`` to ``r1``.
+
+    ``rise`` lifts the spiral along ``axis`` as it goes -- a vortex of beads
+    or a spiral staircase in one call.
+    """
+    u, v, w = _frame(axis)
+    out = []
+    for i in range(n):
+        t = i / float(max(1, n - 1))
+        a = 2 * math.pi * turns * t
+        r = r0 + (r1 - r0) * t
+        out.append([center[j] + (u[j] * math.cos(a) + v[j] * math.sin(a)) * r
+                    + w[j] * rise * t for j in range(3)])
+    return out
+
+
+def points_on_curve(path, t0, t1, n, closed=False):
+    """``n`` points ``path(t)`` for ``t`` evenly spread over ``t0 .. t1``."""
+    steps = n if closed else max(1, n - 1)
+    return [list(path(t0 + (t1 - t0) * i / float(steps))) for i in range(n)]
+
+
+# ============================================================================
+#  8. Round solids
 # ============================================================================
 
 def _revolve_grid(A, direction, profile, k, angle=2.0 * math.pi, phase=0.0):
@@ -991,8 +1268,15 @@ def revolve(profile, A=(0, 0, 0), B=(0, 1, 0), t0=0.0, t1=1.0, steps=40,
     shell, which is what the old ``spin3D`` produced::
 
         def vase(t):
-            return [1 + 0.4 * math.sin(3 * t), t]
+            return [1 + 0.4 * add.sin(3 * t), t]
         add.revolve(vase, [0, 0, 0], [0, 1, 0], 0, 4, 60, 40, "teal")
+
+    ``color`` may also be a function ``color(t, a)`` of the profile
+    parameter and the angle around the axis (in radians), evaluated at the
+    middle of every cell -- stripes, spirals and gradients in one line::
+
+        add.revolve(vase, [0, 0, 0], [0, 1, 0], 0, 4, 60, 40,
+                    color=lambda t, a: add.hsv(t / 4.0))
     """
     pts = []
     for i in range(steps + 1):
@@ -1001,7 +1285,18 @@ def revolve(profile, A=(0, 0, 0), B=(0, 1, 0), t0=0.0, t1=1.0, steps=40,
         pts.append((g[0], g[1]))
     direction = _sub(B, A)
     P, closed = _revolve_grid(A, direction, pts, k, angle)
-    color = rgb(color)
+    if callable(color):
+        fn = color
+
+        def color(i, j):                      # cell (i, j) -> (t, angle)
+            t = t0 + (t1 - t0) * (i + 0.5) / float(steps)
+            return fn(t, angle * (j + 0.5) / float(k))
+        lid_a = lambda j: fn(t0, angle * (j + 0.5) / float(k))   # noqa: E731
+        lid_b = lambda j: fn(t1, angle * (j + 0.5) / float(k))   # noqa: E731
+        side_a, side_b = fn((t0 + t1) / 2.0, 0.0), fn((t0 + t1) / 2.0, angle)
+    else:
+        color = rgb(color)
+        lid_a = lid_b = side_a = side_b = color
     M = Mesh()
     _add_grid(M, P, color, wrap_v=closed, flip=True)
     if caps:
@@ -1009,16 +1304,17 @@ def revolve(profile, A=(0, 0, 0), B=(0, 1, 0), t0=0.0, t1=1.0, steps=40,
         first = _add3(A, _scale(w, pts[0][1]))
         last = _add3(A, _scale(w, pts[-1][1]))
         if pts[0][0] > EPS:                       # flat lid at the start
-            _fan(M, P[0], first, color, flip=True)
+            _fan(M, P[0], first, lid_a, flip=True, closed=closed)
         if pts[-1][0] > EPS:                      # flat lid at the end
-            _fan(M, P[-1], last, color)
+            _fan(M, P[-1], last, lid_b, closed=closed)
         if not closed:                            # the two sides of the wedge
-            M.add_polygon([row[0] for row in P] + [last, first], color)
-            M.add_polygon([row[-1] for row in P] + [last, first], color)
+            M.add_polygon([row[0] for row in P] + [last, first], side_a)
+            M.add_polygon([row[-1] for row in P] + [last, first], side_b)
         _weld(M, 1e-9)
         _drop_degenerate(M)
         if not closed:
             M = fix_normals(M)
+        _make_outward(M, 0)          # whichever way the profile was drawn
     _emit(M)
 
 
@@ -1115,7 +1411,6 @@ def _tube_body(A, B, r1, r2, k, color, cap_a, cap_b):
     if _norm(d) < EPS:
         return Mesh()
     u, v, w = _frame(d)
-    length = _norm(d)
     M = Mesh()
     color = rgb(color)
     ring_a = _ring(A, u, v, r1, k)
@@ -1230,29 +1525,8 @@ def helix(center, r, pitch, turns, k=200, thickness=0.1, sides=12, color=None,
 
 
 # ============================================================================
-#  8. Coordinate axes
+#  9. Coordinate axes
 # ============================================================================
-
-# Each capital letter is a few line segments in a unit square, so the axis
-# labels cost five lines of code instead of a page of baked-in coordinates.
-_GLYPHS = {
-    "X": [((0, 0), (1, 1)), ((0, 1), (1, 0))],
-    "Y": [((0, 1), (0.5, 0.5)), ((1, 1), (0.5, 0.5)), ((0.5, 0.5), (0.5, 0))],
-    "Z": [((0, 1), (1, 1)), ((1, 1), (0, 0)), ((0, 0), (1, 0))],
-}
-
-
-def glyph(letter, origin, u, v, size=1.0, thickness=0.04, color=None):
-    """Draw one of the letters X, Y, Z as thin bars in the ``u``/``v`` plane."""
-    for (p, q) in _GLYPHS[letter.upper()]:
-        a = (origin[0] + (u[0] * p[0] + v[0] * p[1]) * size,
-             origin[1] + (u[1] * p[0] + v[1] * p[1]) * size,
-             origin[2] + (u[2] * p[0] + v[2] * p[1]) * size)
-        b = (origin[0] + (u[0] * q[0] + v[0] * q[1]) * size,
-             origin[1] + (u[1] * q[0] + v[1] * q[1]) * size,
-             origin[2] + (u[2] * q[0] + v[2] * q[1]) * size)
-        cylinder(a, b, thickness, 6, color)
-
 
 def axes(C=(0, 0, 0), length=4.0, width=0.03):
     """Draw the coordinate axes: X red, Y green, Z blue, each labelled."""
@@ -1274,7 +1548,519 @@ def axes(C=(0, 0, 0), length=4.0, width=0.03):
 
 
 # ============================================================================
-#  9. Parametric surfaces
+# 10. Parts that models keep needing
+# ============================================================================
+# Each of these could be written from the primitives above in a dozen lines;
+# they are here because almost every student model contains a beam between
+# two points, a wheel, a roof, a staircase, a wall of bricks or
+# a tree, and the dozen lines are always the same.
+
+def _local_mesh(M, origin, w, up, side):
+    """Map a mesh built in local ``x, y, z`` coordinates into the world:
+    ``x`` runs along ``w``, ``y`` along ``up`` and ``z`` along ``side``."""
+    return _mapped(M, lambda p: (origin[0] + w[0] * p[0] + up[0] * p[1] + side[0] * p[2],
+                                 origin[1] + w[1] * p[0] + up[1] * p[1] + side[1] * p[2],
+                                 origin[2] + w[2] * p[0] + up[2] * p[1] + side[2] * p[2]))
+
+
+def _ground_frame(direction, up=(0, 1, 0)):
+    """Unit vectors ``(w, up, side)`` for something standing on the ground and
+    running along ``direction``.  ``side`` is to the right of ``w``."""
+    w = _unit(direction)
+    up = _unit(up)
+    side = _cross(w, up)
+    if _norm(side) < EPS:                     # direction was straight up
+        side = _perp(w)
+        up = _cross(side, w)
+    side = _unit(side)
+    return w, up, side
+
+
+def beam(A, B, width, height=None, color=None, up=(0, 1, 0)):
+    """A rectangular bar from point ``A`` to point ``B``.
+
+    The cross-section is ``width`` (sideways) by ``height`` (along ``up``,
+    the roughly vertical direction); ``height`` defaults to ``width``.  This
+    is the building block for bridges, cranes, frames and gun barrels: give
+    it two points and it takes care of the orientation::
+
+        add.beam([0, 0, 0], [4, 3, 1], 0.3, 0.5, "brown")
+    """
+    if height is not None and not isinstance(height, (int, float)):
+        color, height = height, None          # beam(A, B, 0.3, "brown")
+    if height is None:
+        height = width
+    w, v, u = _ground_frame(_sub(B, A), up)   # along, up, sideways
+    hw, hh = width / 2.0, height / 2.0
+    corners = []
+    for end in (A, B):
+        for sv in (-1, 1):
+            for su in (-1, 1):
+                corners.append((end[0] + u[0] * su * hw + v[0] * sv * hh,
+                                end[1] + u[1] * su * hw + v[1] * sv * hh,
+                                end[2] + u[2] * su * hw + v[2] * sv * hh))
+    # corner index = 4 * (end) + 2 * (v side) + (u side)
+    F = [[0, 1, 3, 2], [4, 6, 7, 5], [0, 4, 5, 1], [2, 3, 7, 6],
+         [0, 2, 6, 4], [1, 5, 7, 3]]
+    M = Mesh()
+    for p in corners:
+        M.add_vertex(p)
+    for f in F:
+        M.add_face(f, color)
+    _make_outward(M, 0)
+    _scene.extend(M)
+
+
+def rounded_box(center, sizes, r, k=8, color=None):
+    """A box with all edges and corners rounded off by radius ``r``.
+
+    ``sizes`` are the full edge lengths (a number means a cube).  Built by
+    pushing the six patches of a quad sphere apart -- no boolean needed.
+    """
+    if not isinstance(sizes, (list, tuple)):
+        sizes = [sizes, sizes, sizes]
+    r = min(r, sizes[0] / 2.0, sizes[1] / 2.0, sizes[2] / 2.0)
+    inner = [sizes[a] / 2.0 - r for a in range(3)]
+    sides = [((1, 0, 0), (0, 1, 0), (0, 0, 1)),
+             ((-1, 0, 0), (0, 0, 1), (0, 1, 0)),
+             ((0, 1, 0), (0, 0, 1), (1, 0, 0)),
+             ((0, -1, 0), (1, 0, 0), (0, 0, 1)),
+             ((0, 0, 1), (1, 0, 0), (0, 1, 0)),
+             ((0, 0, -1), (0, 1, 0), (1, 0, 0))]
+    warp = [math.tan(math.pi / 4.0 * (2.0 * i / k - 1.0)) for i in range(k + 1)]
+    M = Mesh()
+    color = rgb(color)
+    for n, u, v in sides:
+        P = []
+        for a in warp:
+            row = []
+            for b in warp:
+                p = _unit((n[0] + u[0] * a + v[0] * b,
+                           n[1] + u[1] * a + v[1] * b,
+                           n[2] + u[2] * a + v[2] * b))
+                q = []
+                for axis in range(3):
+                    sign = 0.0 if abs(p[axis]) < 1e-12 else (1.0 if p[axis] > 0 else -1.0)
+                    q.append(center[axis] + sign * inner[axis] + p[axis] * r)
+                row.append(tuple(q))
+            P.append(row)
+        _add_grid(M, P, color)
+    _weld(M, 1e-9)
+    _drop_degenerate(M)
+    _scene.extend(M)
+
+
+def hemisphere(center, r, k=16, color=None, axis=(0, 1, 0)):
+    """Half a ball with its flat side down: a dome, a bowl, a helmet.
+
+    ``axis`` is the direction the round side points in.
+    """
+    revolve(lambda t: [r * math.sin(t), r * math.cos(t)], center,
+            _add3(center, axis), 0.0, math.pi / 2.0, k, 4 * k, color)
+
+
+def arch(A, B, height, thickness, color=None, steps=32, k=12, up=(0, 1, 0)):
+    """A curved arch standing on the ground at points ``A`` and ``B``.
+
+    The arch rises ``height`` above the line ``A -> B`` (a semicircle when
+    ``height`` is half the span, an ellipse otherwise).  ``thickness`` is
+    the radius of a round bar, or ``[width, depth]`` for a rectangular one
+    with ``width`` across the arch and ``depth`` in the plane of the arch.
+    """
+    mid = midpoint(A, B)
+    half = _sub(A, mid)
+    lift = _scale(_unit(up), height)
+    N = _unit(_cross(half, lift))             # normal of the arch's plane
+    if isinstance(thickness, (list, tuple)):
+        profile = profile_rect(thickness[0], thickness[1])
+    else:
+        profile = profile_circle(thickness, k)
+    sections = []
+    for i in range(steps + 1):
+        t = math.pi * i / float(steps)
+        c = _add3(mid, _add3(_scale(half, math.cos(t)), _scale(lift, math.sin(t))))
+        T = _unit(_add3(_scale(half, -math.sin(t)), _scale(lift, math.cos(t))))
+        R = _cross(T, N)                      # points outward from the arch
+        sections.append([(c[0] + N[0] * a + R[0] * b,
+                          c[1] + N[1] * a + R[1] * b,
+                          c[2] + N[2] * a + R[2] * b) for a, b in profile])
+    loft(sections, color)
+
+
+def stairs(origin, n, width, rise, run, color=None, direction=(1, 0, 0)):
+    """A solid flight of ``n`` steps starting at ``origin`` (the foot).
+
+    Each step is ``rise`` high and ``run`` deep; the flight climbs along
+    ``direction`` and is ``width`` wide, centred on the origin.
+    """
+    w, up, side = _ground_frame(direction)
+    M = _grid_solid((0.0, 0.0, -width / 2.0), [run] * n, [rise] * n, [width],
+                    lambda i, j, k: j <= i, color)
+    _scene.extend(_local_mesh(M, origin, w, up, side))
+
+
+def _hollow_prism(outer, inner, height, color, center=(0, 0, 0), axis=(0, 1, 0)):
+    """A prism with a hole: ``outer`` and ``inner`` are 2D rings with the
+    same number of points.  Used by :func:`gear`."""
+    u, v, w = _frame(axis)
+    half = _scale(w, height / 2.0)
+
+    def lift(profile, sign):
+        out = []
+        for p in profile:
+            q = (center[0] + u[0] * p[0] + v[0] * p[1],
+                 center[1] + u[1] * p[0] + v[1] * p[1],
+                 center[2] + u[2] * p[0] + v[2] * p[1])
+            out.append(_add3(q, _scale(half, sign)))
+        return out
+    ob, ot, ib, it = lift(outer, -1), lift(outer, 1), lift(inner, -1), lift(inner, 1)
+    M = Mesh()
+    color = rgb(color)
+    _add_grid(M, [ob, ot], color, wrap_v=True, flip=True)     # outside wall
+    _add_grid(M, [ib, it], color, wrap_v=True)                # inside wall
+    _add_grid(M, [it, ot], color, wrap_v=True, flip=True)     # top ring
+    _add_grid(M, [ib, ob], color, wrap_v=True)                # bottom ring
+    _weld(M, 1e-9)
+    _make_outward(M, 0)
+    return M
+
+
+def gear(center, teeth, r, thickness, color=None, depth=None, hole=0.0,
+         axis=(0, 1, 0)):
+    """A cog wheel with ``teeth`` teeth, lying in the plane normal to ``axis``.
+
+    ``r`` is the mean radius, ``depth`` the tooth height (default ``0.2 r``)
+    and ``hole`` the radius of the axle hole (0 for a solid disc).  Two gears
+    mesh when their mean radii add up to the distance between their centres
+    and the tooth *pitch* ``2 * pi * r / teeth`` is the same.
+    """
+    outer = profile_gear(teeth, r, depth)
+    if hole > EPS:
+        inner = profile_circle(hole, len(outer))
+        _scene.extend(_hollow_prism(outer, inner, thickness, color, center, axis))
+    else:
+        prism(outer, thickness, color, center, axis)
+
+
+def wheel(center, r, width, color="black", axis=(0, 0, 1), k=32, spokes=0,
+          hub_color="silver"):
+    """A wheel whose axle points along ``axis``.
+
+    With ``spokes=0`` it is a solid disc with a small hub; with spokes it
+    becomes a tyre (a torus), a hub and ``spokes`` thin bars between them.
+    """
+    w = _unit(axis)
+    a = _add3(center, _scale(w, -width / 2.0))
+    b = _add3(center, _scale(w, width / 2.0))
+    if spokes <= 0:
+        cylinder(a, b, r, k, color)
+        cylinder(_add3(a, _scale(w, -width * 0.15)), _add3(b, _scale(w, width * 0.15)),
+                 r * 0.3, max(8, k // 2), hub_color)
+        return
+    tyre = width / 2.0
+    torus(center, r - tyre, tyre, k, max(8, k // 2), color, axis)
+    hub = max(r * 0.2, tyre)
+    cylinder(a, b, hub, max(8, k // 2), hub_color)
+    u, v, _ = _frame(w)
+    for i in range(spokes):
+        ang = 2 * math.pi * i / spokes
+        tip = (center[0] + (u[0] * math.cos(ang) + v[0] * math.sin(ang)) * (r - tyre),
+               center[1] + (u[1] * math.cos(ang) + v[1] * math.sin(ang)) * (r - tyre),
+               center[2] + (u[2] * math.cos(ang) + v[2] * math.sin(ang)) * (r - tyre))
+        cylinder(center, tip, tyre * 0.3, 8, hub_color)
+
+
+def roof(center, size, height, color=None, overhang=0.0):
+    """A gabled (triangular) roof over a ``size = [width_x, depth_z]`` floor.
+
+    ``center`` is the middle of the eaves line (the roof's lowest edge sits at
+    ``center[1]``), the ridge runs along Z, and ``overhang`` makes the roof
+    stick out beyond the walls on every side.
+    """
+    w = size[0] / 2.0 + overhang
+    profile = [[-w, 0.0], [w, 0.0], [0.0, float(height)]]
+    prism(profile, size[1] + 2 * overhang, color, center, (0, 0, 1))
+
+
+def column(base, height, r, color=None, k=24, plinth=True):
+    """A classical column standing on point ``base`` (the bottom centre).
+
+    A square plinth, a slightly tapering shaft and a square capital.
+    ``plinth=False`` leaves just the shaft.
+    """
+    x, y, z = base[0], base[1], base[2]
+    slab = 0.3 * r
+    if plinth:
+        cuboid([x, y + slab / 2.0, z], [2.6 * r, slab, 2.6 * r], color)
+        cuboid([x, y + height - slab / 2.0, z], [2.6 * r, slab, 2.6 * r], color)
+        frustum([x, y + slab, z], [x, y + height - slab, z], r, 0.85 * r, k, color)
+    else:
+        frustum([x, y, z], [x, y + height, z], r, 0.85 * r, k, color)
+
+
+def bricks(origin, length, height, brick=(1.0, 0.5, 0.5), color="brown",
+           direction=(1, 0, 0), gap=0.05, seed=None):
+    """A wall of staggered bricks starting at ``origin`` (its bottom-left end).
+
+    ``brick`` is ``[length, height, depth]`` of one brick; every second row
+    is shifted by half a brick.  ``color`` may be a function ``color(i, j)``
+    of the brick's column and row, and with ``seed`` each brick gets a small
+    random variation of the colour instead.
+    """
+    bl, bh, bd = brick[0], brick[1], brick[2]
+    rows = int(height / bh + 0.5)
+    rnd = _random.Random(seed) if seed is not None else None
+    push()
+    for j in range(rows):
+        shift = 0.0 if j % 2 == 0 else bl / 2.0
+        x = -shift
+        i = 0
+        while x < length - EPS:
+            x0, x1 = max(0.0, x), min(length, x + bl - gap)
+            if x1 - x0 > EPS:
+                if callable(color):
+                    c = color(i, j)
+                elif rnd is not None:
+                    c = shade(color, rnd.uniform(0.8, 1.15))
+                else:
+                    c = color
+                cuboid([(x0 + x1) / 2.0, j * bh + (bh - gap) / 2.0, 0.0],
+                       [x1 - x0, bh - gap, bd], c)
+            x += bl
+            i += 1
+    M = pop()
+    w, up, side = _ground_frame(direction)
+    _scene.extend(_local_mesh(M, origin, w, up, side))
+
+
+def tree(at, height, trunk="brown", leaves="green", kind="round", k=10, seed=None):
+    """A simple tree standing on point ``at``.
+
+    ``kind`` is ``"round"`` (a trunk and a bunch of spheres), ``"pine"``
+    (stacked cones) or ``"palm"`` (a curved trunk with leaf blades).  Give a
+    ``seed`` to get a slightly different tree for every call with the same
+    seed -- a forest is ``[add.tree(p, 3, seed=i) for i, p in enumerate(pts)]``.
+    """
+    rnd = _random.Random(seed if seed is not None else 0)
+    var = (lambda a, b: rnd.uniform(a, b)) if seed is not None else (lambda a, b: (a + b) / 2.0)
+    x, y, z = at[0], at[1], at[2]
+    h = float(height)
+    if kind == "pine":
+        cylinder([x, y, z], [x, y + 0.3 * h, z], 0.05 * h, 8, trunk)
+        tiers = 3
+        for i in range(tiers):
+            base_y = y + 0.2 * h + 0.22 * h * i
+            rr = 0.32 * h * (1.0 - 0.22 * i) * var(0.9, 1.1)
+            cone([x, base_y, z], [x, base_y + 0.36 * h, z], rr, k + 4, leaves)
+        return
+    if kind == "palm":
+        lean = var(0.1, 0.25) * h
+        pts = [[x + lean * (t ** 2), y + h * t, z] for t in
+               [i / 8.0 for i in range(9)]]
+        polyline(pts, lambda t: 0.06 * h * (1.0 - 0.5 * t), 8, trunk)
+        top = pts[-1]
+        n = 7
+        for i in range(n):
+            a = 2 * math.pi * i / n + var(-0.2, 0.2)
+            dx, dz = math.cos(a), math.sin(a)
+            blade = [[top[0] + dx * 0.45 * h * t, top[1] + 0.15 * h * math.sin(math.pi * t) - 0.25 * h * t * t,
+                      top[2] + dz * 0.45 * h * t] for t in [j / 5.0 for j in range(6)]]
+            polyline(blade, lambda t: 0.035 * h * (1.0 - t) + 0.005 * h, 6, leaves)
+        return
+    cylinder([x, y, z], [x, y + 0.45 * h, z], 0.06 * h, 8, trunk)
+    balls = [(0.0, 0.62, 0.0, 0.33), (0.2, 0.5, 0.05, 0.22), (-0.18, 0.52, -0.1, 0.2),
+             (0.02, 0.5, 0.2, 0.2), (-0.05, 0.55, -0.22, 0.2)]
+    for dx, dy, dz, rr in balls:
+        s = var(0.85, 1.15)
+        sphere([x + dx * h * s, y + dy * h, z + dz * h * s], rr * h * var(0.9, 1.1),
+               max(3, k // 3), leaves)
+
+
+#: Default palette for :func:`pixels`: one letter per colour.
+PALETTE = {"#": "black", "k": "grey", "w": "white", "r": "red", "g": "green",
+           "b": "blue", "y": "yellow", "o": "orange", "p": "pink", "c": "cyan",
+           "m": "magenta", "n": "brown", "s": "sky", "l": "lime", "t": "teal",
+           "v": "purple", "d": "gold", "i": "silver", "a": "navy"}
+
+
+def pixels(rows, size=1.0, origin=(0, 0, 0), colors=None, depth=1, color=None):
+    """Pixel art in 3D: a list of strings becomes a block of coloured cubes.
+
+    Every character is one cell; a space or a dot is empty.  ``colors`` maps
+    characters to colours (default :data:`PALETTE`, where ``r`` is red,
+    ``g`` green, ``#`` black ...).  The first string is the top row, the
+    picture stands in the XY plane and is ``depth`` cells thick::
+
+        add.pixels([".r.r.",
+                    "rrrrr",
+                    ".rrr.",
+                    "..r.."], 0.5)                     # a heart
+    """
+    palette = PALETTE if colors is None else colors
+    rows = [r for r in rows]
+    ny = len(rows)
+    nx = max(len(r) for r in rows)
+
+    def char(i, j):
+        row = rows[ny - 1 - j]
+        return row[i] if i < len(row) else " "
+
+    def filled(i, j, k):
+        return char(i, j) not in " ."
+
+    def paint(i, j, k):
+        c = char(i, j)
+        if c in palette:
+            return palette[c]
+        return color if color is not None else DEFAULT_COLOR
+
+    _scene.extend(_grid_solid(origin, [size] * nx, [size] * ny, [size] * depth,
+                              filled, paint))
+
+
+def heightmap(heights, cell=1.0, origin=(0, 0, 0), color=None):
+    """Columns of cubes: ``heights[i][j]`` cells stacked at column ``(i, j)``.
+
+    ``i`` runs along X and ``j`` along Z from ``origin``.  ``color`` may be
+    a function ``color(i, j, k)`` of the *cell* -- ``i`` along X, ``j`` up,
+    ``k`` along Z -- so layers can be painted by height (``j``).  Build the
+    list with a comprehension::
+
+        H = [[int(3 + 2 * add.sin(i / 3.0) * add.cos(j / 3.0))
+              for j in range(30)] for i in range(30)]
+        add.heightmap(H, 0.5, color=lambda i, j, k: "sky" if j < 2 else "green")
+    """
+    nx = len(heights)
+    nz = len(heights[0])
+    top = max(max(int(round(h)) for h in row) for row in heights)
+    if top <= 0:
+        return
+
+    def filled(i, j, k):
+        return j < int(round(heights[i][k]))
+
+    _scene.extend(_grid_solid(origin, [cell] * nx, [cell] * top, [cell] * nz,
+                              filled, color))
+
+
+# -- tubes through points --------------------------------------------------
+
+def _tube_along(points, radii, k, color, closed, cap_a=None, cap_b=None):
+    """The engine behind :func:`curve` and :func:`polyline`: a round tube
+    through a list of 3D points with a radius per point."""
+    tangents, normals = _rmf(points, closed)
+    ring = [(math.cos(2 * math.pi * j / k), math.sin(2 * math.pi * j / k))
+            for j in range(k)]
+    P = []
+    for i in range(len(points)):
+        u = normals[i]
+        v = _cross(tangents[i], u)
+        c = points[i]
+        rad = radii[i]
+        row = []
+        for (cx, cy) in ring:
+            x, y = cx * rad, cy * rad
+            row.append((c[0] + u[0] * x + v[0] * y,
+                        c[1] + u[1] * x + v[1] * y,
+                        c[2] + u[2] * x + v[2] * y))
+        P.append(row)
+    M = Mesh()
+    _add_grid(M, P, color, wrap_u=closed, wrap_v=True, flip=True)
+    if not closed:
+        _fan(M, P[0], points[0], color if cap_a is None else cap_a, flip=True)
+        _fan(M, P[-1], points[-1], color if cap_b is None else cap_b)
+    return M
+
+
+def polyline(points, r=0.1, k=12, color=None, closed=False, smooth=0):
+    """A round tube through a list of points -- wires, pipes, rails, branches.
+
+    ``r`` is one radius or a function ``r(t)`` of the fraction ``t`` along
+    the line; ``smooth`` rounds the corners with :func:`chaikin` first.
+    ``color`` may be a function ``color(t, a)`` like in :func:`curve`.
+    """
+    pts = [tuple(float(c) for c in p) for p in points]
+    if smooth:
+        pts = [tuple(p) for p in chaikin(pts, smooth, closed)]
+    n = len(pts)
+    if n < 2:
+        return
+    ts = [i / float(n if closed else n - 1) for i in range(n)]
+    radii = [r(t) if callable(r) else r for t in ts]
+    cells = color
+    cap_a = cap_b = None
+    if callable(color):
+        fn = color
+
+        def cells(i, j):
+            t = (ts[i] + (ts[i + 1] if i + 1 < n else 1.0)) / 2.0
+            return fn(t, 2 * math.pi * (j + 0.5) / k)
+        cap_a = lambda j: fn(0.0, 2 * math.pi * (j + 0.5) / k)     # noqa: E731
+        cap_b = lambda j: fn(1.0, 2 * math.pi * (j + 0.5) / k)     # noqa: E731
+    _emit(_tube_along(pts, radii, k, cells, closed, cap_a, cap_b))
+
+
+def wireframe(M, r=0.03, k=6, color=None, nodes=True):
+    """Draw every edge of a mesh as a thin bar, with a ball at every corner.
+
+    The result is drawn into the scene (the mesh itself is left alone).
+    Without ``color`` each bar takes the colour of a face it belongs to.
+    Keep the mesh small: a 10 000-face model has some 15 000 edges.
+    """
+    M = as_mesh(M)
+    edges = {}
+    for f, c in zip(M.F, M.C):
+        for i in range(len(f)):
+            a, b = f[i], f[(i + 1) % len(f)]
+            key = (a, b) if a < b else (b, a)
+            if key not in edges:
+                edges[key] = c
+    for (a, b), c in edges.items():
+        cylinder(M.V[a], M.V[b], r, k, color if color is not None else c)
+    if nodes:
+        used = set()
+        for a, b in edges:
+            used.add(a)
+            used.add(b)
+        for i in used:
+            sphere(M.V[i], r, 2, color if color is not None else M.C[0])
+
+
+def flow(field, p0, dt=0.01, steps=1000):
+    """Follow a vector field: the list of points a particle visits.
+
+    ``field(p)`` returns the velocity ``[vx, vy, vz]`` at point ``p``; the
+    path is integrated with the classical Runge-Kutta method, so it stays
+    accurate even for chaotic systems like the Lorenz attractor::
+
+        def lorenz(p):
+            x, y, z = p
+            return [10 * (y - x), x * (28 - z) - y, x * y - 8.0 / 3 * z]
+        pts = add.flow(lorenz, [1, 1, 1], 0.01, 4000)
+    """
+    p = [float(c) for c in p0]
+    out = [list(p)]
+    for _ in range(steps):
+        k1 = field(p)
+        k2 = field([p[i] + 0.5 * dt * k1[i] for i in range(3)])
+        k3 = field([p[i] + 0.5 * dt * k2[i] for i in range(3)])
+        k4 = field([p[i] + dt * k3[i] for i in range(3)])
+        p = [p[i] + dt / 6.0 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i])
+             for i in range(3)]
+        out.append(list(p))
+    return out
+
+
+def trace(field, p0, dt=0.01, steps=1000, r=0.1, k=12, color=None, every=1):
+    """Draw the path of :func:`flow` as a tube (``every`` keeps each n-th point)."""
+    pts = flow(field, p0, dt, steps)
+    if every > 1:
+        pts = pts[::every]
+    polyline(pts, r, k, color)
+
+
+# ============================================================================
+# 11. Parametric surfaces
 # ============================================================================
 
 def parametric(S, min_u, max_u, grid_u, min_v, max_v, grid_v, RGB=None,
@@ -1304,8 +2090,11 @@ def parametric(S, min_u, max_u, grid_u, min_v, max_v, grid_v, RGB=None,
         of every face pointing the other way.
     ``flip``
         Turn the surface inside out.
+    ``color`` as a function
+        Pass ``color=lambda u, v: ...`` and every cell is painted by its own
+        parameters -- stripes, checkerboards and rainbows in one line.
     """
-    color = rgb(RGB if RGB is not None else color)
+    color = RGB if RGB is not None else color
     nu = grid_u if wrap_u else grid_u + 1
     nv = grid_v if wrap_v else grid_v + 1
     P = []
@@ -1317,6 +2106,14 @@ def parametric(S, min_u, max_u, grid_u, min_v, max_v, grid_v, RGB=None,
             p = S(u, v)
             row.append((p[0], p[1], p[2]))
         P.append(row)
+    if callable(color):
+        fn = color
+
+        def color(i, j):
+            return fn(min_u + (max_u - min_u) * (i + 0.5) / float(grid_u),
+                      min_v + (max_v - min_v) * (j + 0.5) / float(grid_v))
+    else:
+        color = rgb(color)
     M = Mesh()
     _add_grid(M, P, color, wrap_u=wrap_u, wrap_v=wrap_v, flip=flip)
     if thickness:
@@ -1421,7 +2218,7 @@ def _boundary_edges(M):
 
 
 # ============================================================================
-# 10. Curves, sweeps and lofts -- "copy, turn, stretch a cross-section"
+# 12. Curves, sweeps and lofts -- "copy, turn, stretch a cross-section"
 # ============================================================================
 
 def _rmf(points, closed=False):
@@ -1509,6 +2306,11 @@ def sweep(profile, path, t0=0.0, t1=1.0, steps=100, color=None, closed=False,
                   scale=lambda t: 1 - 0.7 * t, twist=3 * math.pi)
 
     Set ``closed=True`` when the path returns to its start (a ring).
+
+    ``color`` may be a function ``color(t, j)`` of the path parameter and
+    the index of the profile edge (``0`` is the edge from the first profile
+    point to the second), so every side of a swept square can have its own
+    colour, or the colour can change along the path.
     """
     n = steps if closed else steps + 1
     points = []
@@ -1518,11 +2320,19 @@ def sweep(profile, path, t0=0.0, t1=1.0, steps=100, color=None, closed=False,
         points.append((p[0], p[1], p[2]))
     tangents, normals = _rmf(points, closed)
     P = _sweep_profile(points, tangents, normals, profile, scale, twist)
+    if callable(color):
+        fn = color
+
+        def color(i, j):
+            return fn(t0 + (t1 - t0) * (i + 0.5) / float(steps), j)
+        cap_a, cap_b = fn(t0, -1), fn(t1, -1)
+    else:
+        color = cap_a = cap_b = rgb(color)
     M = Mesh()
-    _add_grid(M, P, rgb(color), wrap_u=closed, wrap_v=True, flip=True)
+    _add_grid(M, P, color, wrap_u=closed, wrap_v=True, flip=True)
     if caps and not closed:
-        M.add_polygon(P[0][::-1], color)
-        M.add_polygon(P[-1], color)
+        M.add_polygon(P[0][::-1], cap_a)
+        M.add_polygon(P[-1], cap_b)
         _weld(M, 1e-9)
         _make_outward(M, 0)
     _emit(M)
@@ -1534,8 +2344,23 @@ def curve(P, min_t, max_t, grid_t, k=16, r=0.1, RGB=None, isConnected=False,
 
     ``r`` may be a function ``r(t)`` for a tube that swells and narrows.
     ``isConnected=True`` closes the tube into a loop without a seam.
+    The colour may be a function ``color(t, a)`` of the curve parameter and
+    the angle around the tube (radians), for example a candy-cane spiral::
+
+        add.curve(spiral, 0, 6 * add.pi, 300, 16, 0.2,
+                  color=lambda t, a: "red" if (t + a) % 1.0 < 0.5 else "white")
     """
-    color = rgb(RGB if RGB is not None else color)
+    color = RGB if RGB is not None else color
+    if callable(color):
+        fn = color
+
+        def color(i, j):
+            t = min_t + (max_t - min_t) * (i + 0.5) / float(grid_t)
+            return fn(t, 2.0 * math.pi * (j + 0.5) / float(k))
+        cap_a = lambda j: fn(min_t, 2.0 * math.pi * (j + 0.5) / float(k))  # noqa
+        cap_b = lambda j: fn(max_t, 2.0 * math.pi * (j + 0.5) / float(k))  # noqa
+    else:
+        color = cap_a = cap_b = rgb(color)
     n = grid_t if isConnected else grid_t + 1
     ts, points = [], []
     for i in range(n):
@@ -1543,28 +2368,8 @@ def curve(P, min_t, max_t, grid_t, k=16, r=0.1, RGB=None, isConnected=False,
         ts.append(t)
         p = P(t)
         points.append((p[0], p[1], p[2]))
-    tangents, normals = _rmf(points, isConnected)
-    circle_profile = [(math.cos(2 * math.pi * j / k), math.sin(2 * math.pi * j / k))
-                      for j in range(k)]
-    grid_points = []
-    for i in range(len(points)):
-        radius = r(ts[i]) if callable(r) else r
-        u = normals[i]
-        v = _cross(tangents[i], u)
-        c = points[i]
-        row = []
-        for (cx, cy) in circle_profile:
-            x, y = cx * radius, cy * radius
-            row.append((c[0] + u[0] * x + v[0] * y,
-                        c[1] + u[1] * x + v[1] * y,
-                        c[2] + u[2] * x + v[2] * y))
-        grid_points.append(row)
-    M = Mesh()
-    _add_grid(M, grid_points, color, wrap_u=isConnected, wrap_v=True, flip=True)
-    if not isConnected:
-        _fan(M, grid_points[0], points[0], color, flip=True)
-        _fan(M, grid_points[-1], points[-1], color)
-    _emit(M)
+    radii = [r(t) if callable(r) else r for t in ts]
+    _emit(_tube_along(points, radii, k, color, isConnected, cap_a, cap_b))
 
 
 def extrude(profile, direction=(0, 1, 0), color=None, steps=1, twist=0.0,
@@ -1637,7 +2442,7 @@ def circle(A, B, r, k=24, RGB=None, color=None):
 
 
 # ============================================================================
-# 11. Measuring a mesh
+# 13. Measuring a mesh
 # ============================================================================
 
 def bbox(M=None):
@@ -1691,7 +2496,7 @@ def volume(M=None):
 
 
 # ============================================================================
-# 12. Moving, turning and reshaping a mesh
+# 14. Moving, turning and reshaping a mesh
 # ============================================================================
 # Every function here takes a mesh and returns a NEW mesh; the original is
 # left alone.  That is what makes chains like
@@ -1894,14 +2699,14 @@ def bend(M, angle, axis=1, around=0, P=(0, 0, 0)):
 
 def jitter(M, amount=0.05, seed=None):
     """Nudge every vertex a little at random -- an easy hand-made look."""
-    r = random if seed is None else random.Random(seed)
+    r = _random if seed is None else _random.Random(seed)
     return _mapped(M, lambda p: (p[0] + r.uniform(-amount, amount),
                                  p[1] + r.uniform(-amount, amount),
                                  p[2] + r.uniform(-amount, amount)))
 
 
 # ============================================================================
-# 13. Colour
+# 15. Colour
 # ============================================================================
 
 def color(M, RGB):
@@ -1944,7 +2749,7 @@ def color_gradient(M, a, b, axis=1):
 
 def color_random(M, seed=None):
     """Give every face its own random colour."""
-    r = random if seed is None else random.Random(seed)
+    r = _random if seed is None else _random.Random(seed)
     M = as_mesh(M)
     out = M.copy()
     out.C = [(r.randint(0, 255), r.randint(0, 255), r.randint(0, 255))
@@ -1953,7 +2758,7 @@ def color_random(M, seed=None):
 
 
 # ============================================================================
-# 14. Copies and patterns
+# 16. Copies and patterns
 # ============================================================================
 
 def repeat(M, n, step):
@@ -2004,7 +2809,140 @@ def array_mirror(M, point=(0, 0, 0), normal=(1, 0, 0)):
 
 
 # ============================================================================
-# 15. Repairing a model
+# 17. Placing parts: aim, scatter, line up
+# ============================================================================
+# The functions in the previous section make copies on a regular pattern.
+# These put a part *somewhere in particular*: pointing along a direction,
+# on the ground, at random spots on a landscape, or strung along a curve.
+
+def aim(M, direction, axis=(0, 1, 0), P=(0, 0, 0)):
+    """Turn a mesh so that its ``axis`` points along ``direction``.
+
+    The rotation is the smallest one that does the job, about point ``P``.
+    A cannon built pointing up (``axis=[0, 1, 0]``) is aimed at a target
+    with ``add.aim(cannon, add.direction(pivot, target), P=pivot)``.
+    """
+    a, b = _unit(axis), _unit(direction)
+    c = _cross(a, b)
+    s, d = _norm(c), _dot(a, b)
+    if s < 1e-12:
+        if d > 0:
+            return copy(M)
+        return rotate(M, _perp(a), math.pi, P)
+    return rotate(M, c, math.atan2(s, d), P)
+
+
+def ground(M, y=0.0):
+    """Move a mesh straight down (or up) so that its lowest point is at ``y``."""
+    lo, hi = bbox(M)
+    return move(M, [0.0, y - lo[1], 0.0])
+
+
+def align(M, at=(0, 0, 0), anchor=(0, -1, 0)):
+    """Move a mesh so that a chosen point of its bounding box lands on ``at``.
+
+    ``anchor`` picks that point per axis: ``-1`` the minimum, ``0`` the
+    middle, ``1`` the maximum.  The default ``(0, -1, 0)`` is "bottom
+    centre", so ``add.align(house, [5, 0, 5])`` stands the house on the
+    ground at (5, 5); ``anchor=(-1, -1, -1)`` puts its corner there.
+    """
+    lo, hi = bbox(M)
+    shift = []
+    for a in range(3):
+        if anchor[a] < 0:
+            p = lo[a]
+        elif anchor[a] > 0:
+            p = hi[a]
+        else:
+            p = (lo[a] + hi[a]) / 2.0
+        shift.append(at[a] - p)
+    return move(M, shift)
+
+
+def random_points(n, lo, hi, seed=None, height=None):
+    """``n`` random points in the box ``lo .. hi`` (each a 3-vector).
+
+    With ``height(x, z)`` the Y coordinate is taken from that function
+    instead, so the points lie *on* a landscape made with ``grid(...,
+    height=...)``.  ``seed`` makes the result repeatable.
+    """
+    rnd = _random.Random(seed) if seed is not None else _random
+    out = []
+    for _ in range(n):
+        x = rnd.uniform(lo[0], hi[0])
+        z = rnd.uniform(lo[2], hi[2])
+        y = height(x, z) if height is not None else rnd.uniform(lo[1], hi[1])
+        out.append([x, y, z])
+    return out
+
+
+def scatter(M, points, seed=None, spin=True, scale=(1.0, 1.0), axis=(0, 1, 0)):
+    """Copies of a mesh at every point, each turned and sized at random.
+
+    The mesh should be built around the origin (its origin is what lands on
+    the point).  ``spin`` turns each copy by a random angle about ``axis``;
+    ``scale`` is the range of random size factors.  A forest::
+
+        add.tree([0, 0, 0], 3)
+        one = add.layer()
+        spots = add.random_points(40, [-20, 0, -20], [20, 0, 20], seed=1, height=hills)
+        add.mesh(add.scatter(one, spots, seed=1, scale=(0.7, 1.3)))
+    """
+    rnd = _random.Random(seed) if seed is not None else _random
+    base = as_mesh(M)
+    out = Mesh()
+    for p in points:
+        X = base
+        s = rnd.uniform(scale[0], scale[1])
+        if abs(s - 1.0) > EPS:
+            X = zoom(X, s, (0, 0, 0))
+        if spin:
+            X = rotate(X, axis, rnd.uniform(0, 2 * math.pi))
+        out.extend(move(X, p))
+    return out
+
+
+def along(M, path, n, t0=0.0, t1=1.0, axis=(0, 1, 0), closed=False, scale=None):
+    """``n`` copies of a mesh strung along a curve, each turned to follow it.
+
+    ``path`` is a function ``path(t)`` or a list of points.  The mesh's
+    ``axis`` is aimed along the curve's direction at every copy (pass
+    ``axis=None`` to keep the copies upright); ``scale`` is a number or a
+    function ``scale(t)``.  Beads on a string, wagons on a track, stones on
+    an arch::
+
+        add.along(wagon, track, 12, 0, 1, axis=[1, 0, 0])
+    """
+    base = as_mesh(M)
+    if callable(path):
+        steps = n if closed else max(1, n - 1)
+        ts = [t0 + (t1 - t0) * i / float(steps) for i in range(n)]
+        pts = [tuple(path(t)) for t in ts]
+        h = (t1 - t0) * 1e-4
+        dirs = [_sub(path(t + h), path(t - h)) for t in ts]
+    else:
+        pts = [tuple(p) for p in path]
+        n = len(pts)
+        ts = [i / float(n if closed else max(1, n - 1)) for i in range(n)]
+        dirs = []
+        for i in range(n):
+            a = pts[i - 1] if (i > 0 or closed) else pts[i]
+            b = pts[(i + 1) % n] if (i < n - 1 or closed) else pts[i]
+            dirs.append(_sub(b, a))
+    out = Mesh()
+    for p, t, d in zip(pts, ts, dirs):
+        X = base
+        if scale is not None:
+            s = scale(t) if callable(scale) else scale
+            X = zoom(X, s, (0, 0, 0))
+        if axis is not None and _norm(d) > EPS:
+            X = aim(X, d, axis)
+        out.extend(move(X, p))
+    return out
+
+
+# ============================================================================
+# 18. Repairing a model
 # ============================================================================
 # Models built by stacking shapes tend to collect three kinds of rubbish:
 # vertices that sit on top of each other, faces that are repeated, and walls
@@ -2358,7 +3296,7 @@ def clean(M=None, tol=1e-7, weld=True, degenerate=True, duplicates=True,
 
 
 # ============================================================================
-# 16. Looking at a model
+# 19. Looking at a model
 # ============================================================================
 
 def stats(M=None):
@@ -2398,7 +3336,7 @@ def stats(M=None):
         "non_manifold_edges": odd_edges,
         "duplicate_faces": duplicate_faces,
         "back_to_back_faces": back_to_back,
-        "closed": open_edges == 0 and odd_edges == 0,
+        "closed": open_edges == 0,
     }
 
 
@@ -2424,12 +3362,12 @@ def check(M=None, min_faces=10000, min_colors=3, quiet=False):
         print("   surface area        %.3f" % s["area"])
         if s["closed"]:
             why = "yes"
-        elif s["open_edges"]:
-            why = "no, %d edges have nothing on the other side" % s["open_edges"]
         else:
-            why = "no, %d edges are shared by more than two faces" \
-                % s["non_manifold_edges"]
+            why = "no, %d edges have nothing on the other side" % s["open_edges"]
         print("%s closed surface      %s" % (mark(s["closed"]), why))
+        if s["non_manifold_edges"]:
+            print("   touching edges      %d   (parts meet along an edge;"
+                  " normal for voxel models)" % s["non_manifold_edges"])
         if s["duplicate_faces"]:
             print("!! repeated faces      %d   -- try add.clean()"
                   % s["duplicate_faces"])
@@ -2443,7 +3381,7 @@ def check(M=None, min_faces=10000, min_colors=3, quiet=False):
 
 
 # ============================================================================
-# 17. Boolean operations: union, intersection, difference
+# 20. Boolean operations: union, intersection, difference
 # ============================================================================
 # Two solids can be added together, cut out of one another, or intersected.
 # The idea used here needs no library and fits on one screen:
@@ -3086,12 +4024,22 @@ def _loops(edges):
 
 
 def inside(M, p):
-    """Is point ``p`` inside the (closed) mesh?  Ray casting: odd = inside."""
-    return _Solid(M).contains((p[0], p[1], p[2]))
+    """Is point ``p`` inside the (closed) mesh?  Ray casting: odd = inside.
+
+    ``p`` may also be a *list* of points, which returns a list of answers
+    and is far faster than asking one point at a time, because the mesh is
+    indexed only once::
+
+        hits = add.inside(ring, add.random_points(400, lo, hi, seed=3))
+    """
+    solid = _Solid(M)
+    if len(p) and isinstance(p[0], (list, tuple)):
+        return [solid.contains((q[0], q[1], q[2])) for q in p]
+    return solid.contains((p[0], p[1], p[2]))
 
 
 # ============================================================================
-# 18. Saving and loading
+# 21. Saving and loading
 # ============================================================================
 
 def save(path, M=None, clear_scene=None):
@@ -3420,11 +4368,13 @@ def load_font(folder, characters=None, suffix=".off"):
     return out
 
 
-def text(characters, font, at=(0, 0, 0), size=1.0, spacing=1.0, color=None,
-         plane=((1, 0, 0), (0, 1, 0))):
-    """Lay a string of already-loaded glyphs out in a row and merge them.
+def typeset(characters, font, at=(0, 0, 0), size=1.0, spacing=1.0, color=None,
+            plane=((1, 0, 0), (0, 1, 0))):
+    """Lay a string of already-loaded glyph *meshes* out in a row and merge them.
 
-    ``font`` is the dictionary returned by :func:`load_font`.
+    ``font`` is the dictionary returned by :func:`load_font` -- letters that
+    were modelled as .off files, like the course's letter set.  (For a
+    quick label drawn from add.py's own built-in font see :func:`text`.)
     """
     u, v = plane
     out = Mesh()
@@ -3448,7 +4398,200 @@ def text(characters, font, at=(0, 0, 0), size=1.0, spacing=1.0, color=None,
 
 
 # ============================================================================
-# 19. add.py 1.2 names
+# 22. Letters and labels
+# ============================================================================
+# A small stroke font: every character is a few polylines on a grid that is
+# 4 units wide and 6 units tall (Y up).  ``text`` draws them as round bars,
+# so a model can carry its own title, a scale or a name plate.
+
+_FONT = {
+    "A": (4, [[(0, 0), (0, 4), (2, 6), (4, 4), (4, 0)], [(0, 2), (4, 2)]]),
+    "B": (4, [[(0, 0), (0, 6), (3, 6), (4, 5), (4, 4), (3, 3), (0, 3)],
+              [(3, 3), (4, 2), (4, 1), (3, 0), (0, 0)]]),
+    "C": (4, [[(4, 5), (3, 6), (1, 6), (0, 5), (0, 1), (1, 0), (3, 0), (4, 1)]]),
+    "D": (4, [[(0, 0), (0, 6), (3, 6), (4, 5), (4, 1), (3, 0), (0, 0)]]),
+    "E": (4, [[(4, 6), (0, 6), (0, 0), (4, 0)], [(0, 3), (3, 3)]]),
+    "F": (4, [[(4, 6), (0, 6), (0, 0)], [(0, 3), (3, 3)]]),
+    "G": (4, [[(4, 5), (3, 6), (1, 6), (0, 5), (0, 1), (1, 0), (3, 0), (4, 1),
+               (4, 3), (2, 3)]]),
+    "H": (4, [[(0, 0), (0, 6)], [(4, 0), (4, 6)], [(0, 3), (4, 3)]]),
+    "I": (2, [[(0, 6), (2, 6)], [(1, 6), (1, 0)], [(0, 0), (2, 0)]]),
+    "J": (4, [[(4, 6), (4, 1), (3, 0), (1, 0), (0, 1)]]),
+    "K": (4, [[(0, 0), (0, 6)], [(4, 6), (0, 2)], [(1.3, 3), (4, 0)]]),
+    "L": (4, [[(0, 6), (0, 0), (4, 0)]]),
+    "M": (4, [[(0, 0), (0, 6), (2, 3), (4, 6), (4, 0)]]),
+    "N": (4, [[(0, 0), (0, 6), (4, 0), (4, 6)]]),
+    "O": (4, [[(1, 0), (0, 1), (0, 5), (1, 6), (3, 6), (4, 5), (4, 1), (3, 0), (1, 0)]]),
+    "P": (4, [[(0, 0), (0, 6), (3, 6), (4, 5), (4, 4), (3, 3), (0, 3)]]),
+    "Q": (4, [[(1, 0), (0, 1), (0, 5), (1, 6), (3, 6), (4, 5), (4, 1), (3, 0), (1, 0)],
+              [(2.5, 1.5), (4.3, -0.3)]]),
+    "R": (4, [[(0, 0), (0, 6), (3, 6), (4, 5), (4, 4), (3, 3), (0, 3)], [(2, 3), (4, 0)]]),
+    "S": (4, [[(4, 5), (3, 6), (1, 6), (0, 5), (0, 4), (1, 3), (3, 3), (4, 2),
+               (4, 1), (3, 0), (1, 0), (0, 1)]]),
+    "T": (4, [[(0, 6), (4, 6)], [(2, 6), (2, 0)]]),
+    "U": (4, [[(0, 6), (0, 1), (1, 0), (3, 0), (4, 1), (4, 6)]]),
+    "V": (4, [[(0, 6), (2, 0), (4, 6)]]),
+    "W": (4, [[(0, 6), (1, 0), (2, 4), (3, 0), (4, 6)]]),
+    "X": (4, [[(0, 0), (4, 6)], [(0, 6), (4, 0)]]),
+    "Y": (4, [[(0, 6), (2, 3), (4, 6)], [(2, 3), (2, 0)]]),
+    "Z": (4, [[(0, 6), (4, 6), (0, 0), (4, 0)]]),
+    "0": (4, [[(1, 0), (0, 1), (0, 5), (1, 6), (3, 6), (4, 5), (4, 1), (3, 0), (1, 0)],
+              [(0.6, 1), (3.4, 5)]]),
+    "1": (4, [[(0.5, 4.5), (2, 6), (2, 0)], [(0.5, 0), (3.5, 0)]]),
+    "2": (4, [[(0, 5), (1, 6), (3, 6), (4, 5), (4, 4), (0, 0), (4, 0)]]),
+    "3": (4, [[(0, 6), (4, 6), (2, 3.5), (3, 3.5), (4, 2.5), (4, 1), (3, 0), (1, 0), (0, 1)]]),
+    "4": (4, [[(3, 0), (3, 6), (0, 2), (4, 2)]]),
+    "5": (4, [[(4, 6), (0, 6), (0, 3), (3, 3), (4, 2), (4, 1), (3, 0), (1, 0), (0, 1)]]),
+    "6": (4, [[(4, 5), (3, 6), (1, 6), (0, 5), (0, 1), (1, 0), (3, 0), (4, 1), (4, 2),
+               (3, 3), (0, 3)]]),
+    "7": (4, [[(0, 6), (4, 6), (1.5, 0)]]),
+    "8": (4, [[(1, 3), (0, 4), (0, 5), (1, 6), (3, 6), (4, 5), (4, 4), (3, 3), (1, 3),
+               (0, 2), (0, 1), (1, 0), (3, 0), (4, 1), (4, 2), (3, 3)]]),
+    "9": (4, [[(4, 3), (1, 3), (0, 4), (0, 5), (1, 6), (3, 6), (4, 5), (4, 1), (3, 0),
+               (1, 0), (0, 1)]]),
+    " ": (2, []),
+    ".": (1, [[(0.5, 0), (0.5, 0.3)]]),
+    ",": (1, [[(0.6, 0.5), (0.3, -0.8)]]),
+    ":": (1, [[(0.5, 1), (0.5, 1.3)], [(0.5, 4), (0.5, 4.3)]]),
+    ";": (1, [[(0.6, 1), (0.3, -0.5)], [(0.5, 4), (0.5, 4.3)]]),
+    "!": (1, [[(0.5, 6), (0.5, 2)], [(0.5, 0), (0.5, 0.3)]]),
+    "?": (4, [[(0, 5), (1, 6), (3, 6), (4, 5), (4, 4), (2, 2.5), (2, 1.8)], [(2, 0), (2, 0.3)]]),
+    "-": (4, [[(0.5, 3), (3.5, 3)]]),
+    "+": (4, [[(0.5, 3), (3.5, 3)], [(2, 1.5), (2, 4.5)]]),
+    "=": (4, [[(0.5, 2), (3.5, 2)], [(0.5, 4), (3.5, 4)]]),
+    "*": (4, [[(0.5, 1.5), (3.5, 4.5)], [(0.5, 4.5), (3.5, 1.5)], [(2, 1), (2, 5)]]),
+    "/": (4, [[(0, 0), (4, 6)]]),
+    "\\": (4, [[(0, 6), (4, 0)]]),
+    "(": (2, [[(1.5, 6.5), (0.4, 5), (0.4, 1), (1.5, -0.5)]]),
+    ")": (2, [[(0.5, 6.5), (1.6, 5), (1.6, 1), (0.5, -0.5)]]),
+    "[": (2, [[(1.6, 6.5), (0.4, 6.5), (0.4, -0.5), (1.6, -0.5)]]),
+    "]": (2, [[(0.4, 6.5), (1.6, 6.5), (1.6, -0.5), (0.4, -0.5)]]),
+    "'": (1, [[(0.5, 6), (0.5, 4.5)]]),
+    '"': (2, [[(0.4, 6), (0.4, 4.5)], [(1.6, 6), (1.6, 4.5)]]),
+    "_": (4, [[(0, -0.5), (4, -0.5)]]),
+    "%": (4, [[(0, 0), (4, 6)], [(0, 4.5), (0, 6), (1.5, 6), (1.5, 4.5), (0, 4.5)],
+              [(2.5, 0), (2.5, 1.5), (4, 1.5), (4, 0), (2.5, 0)]]),
+    "#": (4, [[(1, 0), (1.5, 6)], [(2.5, 0), (3, 6)], [(0, 2), (4, 2)], [(0, 4), (4, 4)]]),
+    "<": (4, [[(4, 6), (0, 3), (4, 0)]]),
+    ">": (4, [[(0, 6), (4, 3), (0, 0)]]),
+    "^": (4, [[(0.5, 4), (2, 6), (3.5, 4)]]),
+    "&": (4, [[(4, 0), (1, 3.5), (1, 5), (2, 6), (3, 5), (3, 4), (0, 1.5), (1, 0), (2, 0), (4, 2.5)]]),
+    "@": (4, [[(3, 2), (3, 4), (1.5, 4), (1.5, 2), (3.3, 2), (4, 3), (4, 5), (3, 6), (1, 6),
+               (0, 5), (0, 1), (1, 0), (3.5, 0)]]),
+    "$": (4, [[(4, 5), (3, 6), (1, 6), (0, 5), (0, 4), (1, 3), (3, 3), (4, 2), (4, 1),
+               (3, 0), (1, 0), (0, 1)], [(2, -0.5), (2, 6.5)]]),
+    "|": (1, [[(0.5, -0.5), (0.5, 6.5)]]),
+}
+
+#: Accents for the Lithuanian letters, drawn on top of the base letter.
+_ACCENTS = {
+    "caron": [[(1, 8), (2, 7), (3, 8)]],                     # Č Š Ž
+    "dot": [[(2, 7.3), (2, 7.6)]],                           # Ė
+    "macron": [[(1, 7.5), (3, 7.5)]],                        # Ū
+    "ogonek": [[(4, 0), (3.6, -0.8), (4.5, -1.1)]],           # Ą Ę Į Ų
+}
+
+#: Lithuanian and some other accented letters: (base letter, accent).
+_LETTERS = {
+    "Ą": ("A", "ogonek"), "Č": ("C", "caron"), "Ę": ("E", "ogonek"),
+    "Ė": ("E", "dot"), "Į": ("I", "ogonek"), "Š": ("S", "caron"),
+    "Ų": ("U", "ogonek"), "Ū": ("U", "macron"), "Ž": ("Z", "caron"),
+    "Ä": ("A", "dot"), "Ö": ("O", "dot"), "Ü": ("U", "dot"),
+    "Ā": ("A", "macron"), "Ē": ("E", "macron"), "Ī": ("I", "macron"),
+    "Ō": ("O", "macron"), "Ň": ("N", "caron"), "Ř": ("R", "caron"),
+    "Ě": ("E", "caron"), "Ď": ("D", "caron"), "Ť": ("T", "caron"),
+}
+
+
+def _strokes(ch):
+    """``(advance width, [polyline, ...])`` for one character."""
+    ch = ch.upper()
+    if ch in _FONT:
+        return _FONT[ch]
+    if ch in _LETTERS:
+        base, accent = _LETTERS[ch]
+        width, lines = _FONT[base]
+        extra = _ACCENTS[accent]
+        if accent == "ogonek" and width < 4:      # hook under a narrow letter
+            extra = [[(x - (4 - width), y) for x, y in line] for line in extra]
+        return width, lines + extra
+    return 4, [[(0, 0), (4, 0), (4, 6), (0, 6), (0, 0)]]   # unknown: a box
+
+
+def text_width(string, size=1.0, spacing=1.0):
+    """The width a line of :func:`text` will take up, in model units."""
+    unit = size / 6.0
+    total = 0.0
+    for ch in string:
+        w, _ = _strokes(ch)
+        total += (w + 1.5 * spacing) * unit
+    return max(0.0, total - 1.5 * spacing * unit)
+
+
+def text(string, at=(0, 0, 0), size=1.0, thickness=None, color=None,
+         u=(1, 0, 0), v=(0, 1, 0), align="left", spacing=1.0, k=8):
+    """Write a label into the scene as round bars.
+
+    ``size`` is the height of a capital letter, ``at`` the bottom-left
+    corner of the text (or bottom-centre / bottom-right with ``align``).
+    ``u`` is the writing direction and ``v`` the up direction, so a label
+    can lie flat on the ground with ``u=[1, 0, 0], v=[0, 0, -1]`` or stand
+    on a wall.  Letters, digits, punctuation and the Lithuanian letters
+    ĄČĘĖĮŠŲŪŽ are available; lower-case letters are drawn as capitals.
+    ``\\n`` starts a new line.  Returns the width of the widest line::
+
+        add.text("LABAS 2026", [0, 0, 0], 1.0, color="navy")
+    """
+    if isinstance(at, dict):
+        raise TypeError("text(string, font, ...) with loaded letters is now "
+                        "typeset(string, font, ...)")
+    unit = size / 6.0
+    r = thickness if thickness is not None else 0.45 * unit
+    u, v = _unit(u), _unit(v)
+    lines = string.split("\n")
+    widest = 0.0
+    for row, line in enumerate(lines):
+        width = text_width(line, size, spacing)
+        widest = max(widest, width)
+        if align == "center":
+            start = -width / 2.0
+        elif align == "right":
+            start = -width
+        else:
+            start = 0.0
+        y_off = -row * 1.6 * size
+        x = start
+        for ch in line:
+            w, strokes = _strokes(ch)
+            for line_pts in strokes:
+                pts = []
+                for (gx, gy) in line_pts:
+                    px, py = x + gx * unit, y_off + gy * unit
+                    pts.append((at[0] + u[0] * px + v[0] * py,
+                                at[1] + u[1] * px + v[1] * py,
+                                at[2] + u[2] * px + v[2] * py))
+                for i in range(len(pts) - 1):
+                    if distance(pts[i], pts[i + 1]) > EPS:
+                        cylinder(pts[i], pts[i + 1], r, k, color)
+                for p in pts:
+                    sphere(p, r, 2, color)
+            x += (w + 1.5 * spacing) * unit
+    return widest
+
+
+#: ``add.write`` and ``add.label`` are other names for :func:`text`.
+write = text
+label = text
+
+
+def glyph(letter, origin, u, v, size=1.0, thickness=0.04, color=None):
+    """Draw one character as thin bars in the ``u``/``v`` plane
+    (used by :func:`axes`; :func:`text` is the general version)."""
+    text(letter, origin, size, thickness, color, u, v)
+
+
+# ============================================================================
+# 23. add.py 1.2 names
 # ============================================================================
 # Everything below exists so that models written for earlier versions of the
 # course keep running unchanged.  New code should prefer the names on the
@@ -3502,7 +4645,7 @@ reflect = mirror
 
 
 # ============================================================================
-# 20. A one-line demonstration
+# 24. A one-line demonstration
 # ============================================================================
 
 def demo(path="demo.off"):
@@ -3559,10 +4702,14 @@ if __name__ == "__main__":
 #  Public names
 # ============================================================================
 
+# The names that came in from ``math`` and ``random`` stay usable as
+# ``add.sin`` and friends but are not part of add.py's own vocabulary.
+_REEXPORTED = set(dir(math)) | set(dir(_random)) | {"math"}
+
 __all__ = sorted(name for name, value in list(globals().items())
                  if not name.startswith("_")
-                 and name not in ("math", "random")
+                 and name not in _REEXPORTED
                  and (callable(value) or name in ("vertices", "faces",
-                                                  "COLORS", "EPS",
+                                                  "COLORS", "PALETTE", "EPS",
                                                   "DEFAULT_COLOR",
                                                   "BOOL_EPS")))

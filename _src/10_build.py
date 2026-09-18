@@ -9,15 +9,18 @@ def _add_grid(M, P, color, wrap_u=False, wrap_v=False, flip=False):
 
     ``wrap_u`` / ``wrap_v`` close the patch into a tube or a torus.
     ``flip`` reverses the winding (makes the patch face the other way).
-    This one helper is behind ``parametric``, ``revolve``, ``sweep``,
-    ``loft``, ``sphere``, ``torus`` and ``tube``.
+    ``color`` is one colour, or a function ``paint(i, j)`` giving the colour
+    of cell ``(i, j)``.  This one helper is behind ``parametric``,
+    ``revolve``, ``sweep``, ``loft``, ``sphere``, ``torus`` and ``tube``.
     """
     nu, nv = len(P), len(P[0])
     base = len(M.V)
     for row in P:
         for p in row:
             M.add_vertex(p)
-    color = rgb(color)
+    paint = color if callable(color) else None
+    if paint is None:
+        color = rgb(color)
     steps_u = nu if wrap_u else nu - 1
     steps_v = nv if wrap_v else nv - 1
     for i in range(steps_u):
@@ -29,7 +32,7 @@ def _add_grid(M, P, color, wrap_u=False, wrap_v=False, flip=False):
             c = base + i2 * nv + j2
             d = base + i * nv + j2
             quad = [a, b, c, d] if not flip else [d, c, b, a]
-            M.add_face(quad, color)
+            M.add_face(quad, rgb(paint(i, j)) if paint else color)
 
 
 def _ring(center, u, v, r, k, phase=0.0):
@@ -47,17 +50,24 @@ def _ring(center, u, v, r, k, phase=0.0):
     return pts
 
 
-def _fan(M, points, apex, color, flip=False):
-    """Close a ring of points with a triangle fan meeting at ``apex``."""
+def _fan(M, points, apex, color, flip=False, closed=True):
+    """Close a ring of points with a triangle fan meeting at ``apex``.
+
+    With ``closed=False`` the points form an open arc (a wedge lid) and no
+    triangle is drawn between the last point and the first.
+    """
     base = len(M.V)
     for p in points:
         M.add_vertex(p)
     tip = M.add_vertex(apex)
     n = len(points)
-    for i in range(n):
+    paint = color if callable(color) else None
+    if paint is None:
+        color = rgb(color)
+    for i in range(n if closed else n - 1):
         j = (i + 1) % n
         tri = [base + i, base + j, tip] if not flip else [base + j, base + i, tip]
-        M.add_face(tri, color)
+        M.add_face(tri, rgb(paint(i)) if paint else color)
 
 
 def _signed_volume(M, first_face=0):
@@ -92,8 +102,9 @@ def _grid_solid(origin, sx, sy, sz, filled, color):
     ``sx``/``sy``/``sz`` are lists of cell sizes along each axis and
     ``filled(i, j, k)`` says whether cell ``(i, j, k)`` is material.  Only the
     faces between material and air are emitted, so the result is watertight
-    and has no hidden geometry.  :func:`frame` and :func:`voxels` are both
-    three-line wrappers around this.
+    and has no hidden geometry.  ``color`` may be a function ``(i, j, k)``.
+    :func:`frame`, :func:`voxels`, :func:`pixels` and :func:`heightmap` are
+    all thin wrappers around this.
     """
     nx, ny, nz = len(sx), len(sy), len(sz)
     # Coordinates of every grid line.
@@ -121,12 +132,16 @@ def _grid_solid(origin, sx, sy, sz, filled, color):
             return bool(filled(i, j, k))
         return False
 
-    color = rgb(color)
+    paint = color if callable(color) else None
+    if paint is None:
+        color = rgb(color)
     for i in range(nx):
         for j in range(ny):
             for k in range(nz):
                 if not solid(i, j, k):
                     continue
+                if paint is not None:
+                    color = rgb(paint(i, j, k))
                 if not solid(i - 1, j, k):          # -X wall
                     M.add_face([point(i, j, k), point(i, j, k + 1),
                                 point(i, j + 1, k + 1), point(i, j + 1, k)], color)
@@ -211,29 +226,43 @@ def ring(center, normal, r_outer, r_inner, k=32, color=None):
     _scene.extend(M)
 
 
-def grid(center, size, nx=10, nz=10, color=None, height=None):
+def grid(center, size, nx=10, nz=10, color=None, height=None, thickness=0.0):
     """A flat (or, with ``height(x, z)``, a hilly) rectangular patch in XZ.
 
     ``size`` is ``[width_x, depth_z]``.  ``height`` is an optional function
-    returning the Y coordinate::
+    returning the Y coordinate, and ``color`` may be a function ``(x, z)`` so
+    that a landscape can be painted by position or by height::
 
-        add.grid([0, 0, 0], [10, 10], 40, 40, "green",
-                 height=lambda x, z: math.sin(x) * math.cos(z))
+        add.grid([0, 0, 0], [10, 10], 40, 40,
+                 color=lambda x, z: "sky" if hills(x, z) < 0 else "green",
+                 height=hills)
+
+    ``thickness`` turns the sheet into a solid slab (see :func:`solidify`).
     """
     w, d = size[0], size[1]
     P = []
+    xs, zs = [], []
     for i in range(nx + 1):
         row = []
         x = center[0] - w / 2.0 + w * i / nx
+        xs.append(x)
         for j in range(nz + 1):
             z = center[2] - d / 2.0 + d * j / nz
+            if i == 0:
+                zs.append(z)
             y = center[1]
             if height is not None:
                 y = center[1] + height(x, z)
             row.append((x, y, z))
         P.append(row)
+    paint = color
+    if callable(color):
+        def paint(i, j):
+            return color((xs[i] + xs[i + 1]) / 2.0, (zs[j] + zs[j + 1]) / 2.0)
     M = Mesh()
-    _add_grid(M, P, rgb(color), flip=True)
+    _add_grid(M, P, paint, flip=True)
+    if thickness:
+        M = solidify(M, thickness)
     _scene.extend(M)
 
 

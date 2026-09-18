@@ -1,7 +1,7 @@
 
 
 # ============================================================================
-# 11. Measuring a mesh
+# 13. Measuring a mesh
 # ============================================================================
 
 def bbox(M=None):
@@ -55,7 +55,7 @@ def volume(M=None):
 
 
 # ============================================================================
-# 12. Moving, turning and reshaping a mesh
+# 14. Moving, turning and reshaping a mesh
 # ============================================================================
 # Every function here takes a mesh and returns a NEW mesh; the original is
 # left alone.  That is what makes chains like
@@ -258,14 +258,14 @@ def bend(M, angle, axis=1, around=0, P=(0, 0, 0)):
 
 def jitter(M, amount=0.05, seed=None):
     """Nudge every vertex a little at random -- an easy hand-made look."""
-    r = random if seed is None else random.Random(seed)
+    r = _random if seed is None else _random.Random(seed)
     return _mapped(M, lambda p: (p[0] + r.uniform(-amount, amount),
                                  p[1] + r.uniform(-amount, amount),
                                  p[2] + r.uniform(-amount, amount)))
 
 
 # ============================================================================
-# 13. Colour
+# 15. Colour
 # ============================================================================
 
 def color(M, RGB):
@@ -308,7 +308,7 @@ def color_gradient(M, a, b, axis=1):
 
 def color_random(M, seed=None):
     """Give every face its own random colour."""
-    r = random if seed is None else random.Random(seed)
+    r = _random if seed is None else _random.Random(seed)
     M = as_mesh(M)
     out = M.copy()
     out.C = [(r.randint(0, 255), r.randint(0, 255), r.randint(0, 255))
@@ -317,7 +317,7 @@ def color_random(M, seed=None):
 
 
 # ============================================================================
-# 14. Copies and patterns
+# 16. Copies and patterns
 # ============================================================================
 
 def repeat(M, n, step):
