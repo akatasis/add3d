@@ -10,11 +10,9 @@ path and let it rotate and change size as it goes.
 ``twist`` is the total turn in radians; ``scale`` may be a number or a
 function of the position ``t`` along the path (0 at the start, 1 at the end).
 """
-import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import add
-import math
 
-TAU = 2 * math.pi
+TAU = 2 * add.pi
 CELL = 3.6
 shown = []
 
@@ -26,7 +24,7 @@ def polygon_profile(sides, r=1.0, inner=None):
     for i in range(n):
         a = TAU * i / n
         rad = r if (inner is None or i % 2 == 0) else inner
-        pts.append([math.cos(a) * rad, math.sin(a) * rad])
+        pts.append([add.cos(a) * rad, add.sin(a) * rad])
     return pts
 
 
@@ -43,58 +41,58 @@ TRIANGLE = polygon_profile(3, 0.8)
 show("straight bar", lambda c: add.extrude(SQUARE, [0, 3, 0], c), "red")
 
 show("twisted bar", lambda c: add.extrude(SQUARE, [0, 3, 0], c, steps=60,
-                                          twist=math.pi), "orange")
+                                          twist=add.pi), "orange")
 
 show("tapered bar", lambda c: add.extrude(SQUARE, [0, 3, 0], c, steps=40,
                                           scale=lambda t: 1 - 0.8 * t), "gold")
 
 show("twisted star column",
-     lambda c: add.extrude(STAR, [0, 3.4, 0], c, steps=90, twist=1.6 * math.pi,
+     lambda c: add.extrude(STAR, [0, 3.4, 0], c, steps=90, twist=1.6 * add.pi,
                            scale=lambda t: 1 - 0.45 * t), "lime")
 
 show("bulging column",
      lambda c: add.extrude(polygon_profile(16, 0.7), [0, 3.4, 0], c, steps=80,
-                           scale=lambda t: 1 + 0.5 * math.sin(math.pi * t)),
+                           scale=lambda t: 1 + 0.5 * add.sin(add.pi * t)),
      "teal")
 
 # --- sweeping along a curved path -----------------------------------------
 show("square through a helix",
-     lambda c: add.sweep(SQUARE, lambda t: [math.cos(t), t / 4.0, math.sin(t)],
+     lambda c: add.sweep(SQUARE, lambda t: [add.cos(t), t / 4.0, add.sin(t)],
                          0, 4 * TAU, 260, c, scale=0.28), "sky")
 
 show("triangle round a ring",
-     lambda c: add.sweep(TRIANGLE, lambda t: [2 * math.cos(t), 0,
-                                              2 * math.sin(t)],
+     lambda c: add.sweep(TRIANGLE, lambda t: [2 * add.cos(t), 0,
+                                              2 * add.sin(t)],
                          0, TAU, 160, c, closed=True, scale=0.5,
                          twist=lambda t: 2 * TAU * t), "purple")
 
 show("ribbon knot",
      lambda c: add.sweep([[-0.5, -0.06], [0.5, -0.06], [0.5, 0.06],
                           [-0.5, 0.06]],
-                         lambda t: [math.sin(t) + 2 * math.sin(2 * t),
-                                    -math.sin(3 * t),
-                                    math.cos(t) - 2 * math.cos(2 * t)],
+                         lambda t: [add.sin(t) + 2 * add.sin(2 * t),
+                                    -add.sin(3 * t),
+                                    add.cos(t) - 2 * add.cos(2 * t)],
                          0, TAU, 300, c, closed=True,
                          twist=lambda t: 3 * TAU * t), "magenta")
 
 show("horn from a growing circle",
      lambda c: add.sweep(polygon_profile(24, 1.0),
-                         lambda t: [1.6 * math.cos(t) * math.exp(0.12 * t),
+                         lambda t: [1.6 * add.cos(t) * add.exp(0.12 * t),
                                     0.5 * t,
-                                    1.6 * math.sin(t) * math.exp(0.12 * t)],
-                         0, 3.2 * math.pi, 200, c,
+                                    1.6 * add.sin(t) * add.exp(0.12 * t)],
+                         0, 3.2 * add.pi, 200, c,
                          scale=lambda t: 0.12 + 1.2 * t * t), "brown")
 
 # --- a screw thread, built by sweeping a triangle along a helix ------------
 show("screw thread",
      lambda c: add.sweep([[0, -0.22], [0.42, 0], [0, 0.22]],
-                         lambda t: [math.cos(t), t / 9.0, math.sin(t)],
+                         lambda t: [add.cos(t), t / 9.0, add.sin(t)],
                          0, 7 * TAU, 700, c), "silver")
 
 # --- an arch: a square swept along half a circle, then mirrored -----------
 def arch(c):
-    add.sweep(SQUARE, lambda t: [2.4 * math.cos(t), 2.4 * math.sin(t), 0],
-              0, math.pi, 90, c, scale=0.5)
+    add.sweep(SQUARE, lambda t: [2.4 * add.cos(t), 2.4 * add.sin(t), 0],
+              0, add.pi, 90, c, scale=0.5)
     legs = add.layer()
     add.mesh(legs)
     add.mesh(add.move(legs, [0, -1.6, 0]))
@@ -106,9 +104,9 @@ show("arch", arch, "navy")
 show("leaf blade",
      lambda c: add.sweep(polygon_profile(12, 1.0),
                          lambda t: [0, t, 0], 0, 4, 90, c,
-                         scale=lambda t: 0.9 * math.sin(math.pi * t) ** 0.7
+                         scale=lambda t: 0.9 * add.sin(add.pi * t) ** 0.7
                          + 0.02,
-                         twist=0.4 * math.pi), "pink")
+                         twist=0.4 * add.pi), "pink")
 
 columns = 4
 for i, (name, M) in enumerate(shown):

@@ -19,10 +19,8 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: add.py is in sync with _src/
-        run: |
-          python build.py
-          git diff --exit-code add.py
+      - name: add.py and examples/add.py are in sync with _src/
+        run: python build.py --check
 
       - name: unit tests
         run: python tests/test_add.py
@@ -40,6 +38,9 @@ jobs:
 
       - name: every example runs
         run: python examples/build_all.py --models
+
+      - name: every public function is used by at least one example
+        run: python tools/coverage.py --strict
 
       - name: documentation is in sync with the docstrings
         run: |

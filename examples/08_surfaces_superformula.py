@@ -10,17 +10,15 @@ Wrap two of those radial functions around each other and you get a surface.
 Changing one number changes the creature -- which is exactly the kind of
 "one parameter controls the shape" the assignment asks for.
 """
-import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import add
-import math
 
-TAU = 2 * math.pi
+TAU = 2 * add.pi
 
 
 def super_r(t, m, n1, n2, n3, a=1.0, b=1.0):
     """The superformula radius at angle ``t``."""
-    p = abs(math.cos(m * t / 4.0) / a) ** n2
-    q = abs(math.sin(m * t / 4.0) / b) ** n3
+    p = abs(add.cos(m * t / 4.0) / a) ** n2
+    q = abs(add.sin(m * t / 4.0) / b) ** n3
     s = p + q
     if s < 1e-12:
         return 0.0
@@ -32,9 +30,9 @@ def supershape(p1, p2):
     def S(u, v):                       # u around the equator, v pole to pole
         r1 = super_r(u, *p1)
         r2 = super_r(v, *p2)
-        return [r1 * math.cos(u) * r2 * math.cos(v),
-                r2 * math.sin(v),
-                r1 * math.sin(u) * r2 * math.cos(v)]
+        return [r1 * add.cos(u) * r2 * add.cos(v),
+                r2 * add.sin(v),
+                r1 * add.sin(u) * r2 * add.cos(v)]
     return S
 
 
@@ -58,8 +56,8 @@ CELL = 3.0
 columns = 4
 shown = []
 for i, (name, p1, p2) in enumerate(SHAPES):
-    add.parametric(supershape(p1, p2), -math.pi, math.pi, 120,
-                   -math.pi / 2, math.pi / 2, 90,
+    add.parametric(supershape(p1, p2), -add.pi, add.pi, 120,
+                   -add.pi / 2, add.pi / 2, 90,
                    add.hsv(i / float(len(SHAPES)), 0.55, 0.95),
                    wrap_u=True)
     # layer() must be taken before anything else is drawn, or the next shape

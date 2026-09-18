@@ -17,7 +17,7 @@ OUT = os.path.join(HERE, "out")
 IMAGES = os.path.join(ROOT, "docs", "images")
 sys.path.insert(0, ROOT)
 
-#: camera angles that show each model off best: name -> (turn, tilt, zoom)
+#: camera angles that show each model off best: name -> (turn, tilt, zoom[, background])
 VIEWS = {
     "first_model": (30, 20, 1.0),
     "primitives": (22, 38, 1.15),
@@ -36,6 +36,18 @@ VIEWS = {
     "chess_set": (18, 24, 1.1),
     "city": (35, 24, 1.1),
     "text": (30, 32, 1.05),
+    "lighthouse": (30, 24, 1.9),
+    "locomotive": (35, 18, 1.7),
+    "windmill": (25, 18, 1.8),
+    "temple": (15, 12, 2.6),
+    "vector_fields": (20, 35, 1.6),
+    "robot": (25, 15, 2.2),
+    "voxel_island": (25, 30, 1.5),
+    "bridge": (35, 22, 1.7),
+    "solar_system": (20, 35, 1.6, (20, 20, 40)),
+    "workbench": (20, 40, 1.5),
+    "old_names": (25, 25, 1.6),
+    "cross_sections": (15, 25, 2.3),
     "example1": (30, 22, 1.0), "example2": (30, 22, 1.0),
     "example3": (30, 28, 1.0), "example4": (20, 12, 1.0),
     "example5": (30, 22, 1.0), "example6": (30, 22, 1.0),
@@ -70,11 +82,14 @@ def main():
         if not model.endswith(".off"):
             continue
         stem = model[:-4]
-        turn, tilt, zoom = VIEWS.get(stem, (30, 26, 1.1))
+        view = VIEWS.get(stem, (30, 26, 1.1))
+        turn, tilt, zoom = view[:3]
+        background = view[3] if len(view) > 3 else (250, 250, 250)
         t = time.time()
         preview.render(os.path.join(OUT, model),
                        os.path.join(IMAGES, stem + ".png"),
-                       size=(880, 620), turn=turn, tilt=tilt, zoom=zoom)
+                       size=(880, 620), turn=turn, tilt=tilt, zoom=zoom,
+                       background=background)
         print("%-34s -> docs/images/%s.png  %5.1fs" % (model, stem,
                                                        time.time() - t))
     return 0

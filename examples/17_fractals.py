@@ -4,9 +4,7 @@
 Recursion is where "a 3D model written as a program" really earns its keep.
 None of these could sensibly be drawn by hand, and each is a dozen lines.
 """
-import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import add
-import math
 
 CELL = 7.0
 shown = []
@@ -68,8 +66,7 @@ show("Sierpinski tetrahedron", add.color_by(
 # --------------------------------------------------------------------------
 #  A recursive tree -- a trunk that splits into smaller trunks
 # --------------------------------------------------------------------------
-import random
-random.seed(11)
+add.seed(11)
 
 
 def branch(start, direction, length, radius, depth):
@@ -80,11 +77,11 @@ def branch(start, direction, length, radius, depth):
         add.sphere(end, radius * 3.2, 6, "lime")
         return
     for _ in range(3):
-        d = [direction[i] + random.uniform(-0.65, 0.65) for i in range(3)]
+        d = [direction[i] + add.uniform(-0.65, 0.65) for i in range(3)]
         d[1] += 0.45
-        n = math.sqrt(sum(a * a for a in d))
+        n = add.sqrt(sum(a * a for a in d))
         d = [a / n for a in d]
-        branch(end, d, length * random.uniform(0.6, 0.8), radius * 0.68,
+        branch(end, d, length * add.uniform(0.6, 0.8), radius * 0.68,
                depth - 1)
 
 
@@ -107,15 +104,15 @@ def koch(points, level):
         p1 = [a[0] + d[0], a[1] + d[1]]
         p2 = [a[0] + 2 * d[0], a[1] + 2 * d[1]]
         # the tip of the little triangle: rotate d by -60 degrees
-        cs, sn = math.cos(-math.pi / 3), math.sin(-math.pi / 3)
+        cs, sn = add.cos(-add.pi / 3), add.sin(-add.pi / 3)
         tip = [p1[0] + d[0] * cs - d[1] * sn, p1[1] + d[0] * sn + d[1] * cs]
         out += [a, p1, tip, p2]
     return koch(out, level - 1)
 
 
-triangle = [[math.cos(a), math.sin(a)]
-            for a in (math.pi / 2, math.pi / 2 + 2 * math.pi / 3,
-                      math.pi / 2 + 4 * math.pi / 3)]
+triangle = [[add.cos(a), add.sin(a)]
+            for a in (add.pi / 2, add.pi / 2 + 2 * add.pi / 3,
+                      add.pi / 2 + 4 * add.pi / 3)]
 add.extrude(koch(triangle, 4), [0, 0.45, 0], "sky")
 show("Koch snowflake prism", add.layer())
 

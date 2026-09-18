@@ -5,14 +5,11 @@ One parameter, ``SEED``, decides the whole town; another, ``BLOCKS``, decides
 how big it is.  That is what the assignment means by "the shape must depend
 on a parameter": change one number, get a different model.
 """
-import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import add
-import math
-import random
 
 SEED = 2026
 BLOCKS = 7                      # the city is BLOCKS x BLOCKS street blocks
-rng = random.Random(SEED)
+rng = add.Random(SEED)
 
 WINDOW = [255, 235, 150]
 ROAD = [60, 60, 66]

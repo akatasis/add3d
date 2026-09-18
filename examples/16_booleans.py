@@ -10,9 +10,7 @@ These need *closed* solids -- ``add.check()`` will tell you whether yours is
 closed.  The freshly exposed surface keeps the colour of the tool that cut
 it, so a hole is easy to see; pass ``color=`` to difference to override that.
 """
-import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import add
-import math
 
 CELL = 4.2
 shown = []

@@ -5,9 +5,7 @@ Everything in one place: a lathe for the pieces, layers to make each piece
 once and stamp it out, a boolean to carve the rook's battlements, a grid for
 the board, and a single ``save`` at the end.
 """
-import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import add
-import math
 
 LIGHT = [235, 225, 200]
 DARK = [70, 45, 35]
@@ -27,45 +25,45 @@ def turned(profile, height, col, steps=90):
 #  the six pieces, each a radius-versus-height curve
 # --------------------------------------------------------------------------
 def pawn_profile(t):
-    return [0.52 * math.exp(-4.0 * t) + 0.13
-            + 0.20 * math.exp(-40 * (t - 0.62) ** 2)
-            + 0.23 * math.exp(-60 * (t - 1.05) ** 2), t]
+    return [0.52 * add.exp(-4.0 * t) + 0.13
+            + 0.20 * add.exp(-40 * (t - 0.62) ** 2)
+            + 0.23 * add.exp(-60 * (t - 1.05) ** 2), t]
 
 
 def bishop_profile(t):
-    return [0.55 * math.exp(-4.5 * t) + 0.11
-            + 0.18 * math.exp(-50 * (t - 0.65) ** 2)
-            + 0.30 * math.exp(-11 * (t - 1.45) ** 2)
-            + 0.10 * math.exp(-160 * (t - 1.95) ** 2), t]
+    return [0.55 * add.exp(-4.5 * t) + 0.11
+            + 0.18 * add.exp(-50 * (t - 0.65) ** 2)
+            + 0.30 * add.exp(-11 * (t - 1.45) ** 2)
+            + 0.10 * add.exp(-160 * (t - 1.95) ** 2), t]
 
 
 def queen_profile(t):
-    return [0.62 * math.exp(-4.2 * t) + 0.12
-            + 0.20 * math.exp(-45 * (t - 0.70) ** 2)
-            + 0.34 * math.exp(-13 * (t - 1.60) ** 2)
-            + 0.16 * math.exp(-90 * (t - 2.25) ** 2), t]
+    return [0.62 * add.exp(-4.2 * t) + 0.12
+            + 0.20 * add.exp(-45 * (t - 0.70) ** 2)
+            + 0.34 * add.exp(-13 * (t - 1.60) ** 2)
+            + 0.16 * add.exp(-90 * (t - 2.25) ** 2), t]
 
 
 def king_profile(t):
-    return [0.64 * math.exp(-4.0 * t) + 0.12
-            + 0.20 * math.exp(-45 * (t - 0.72) ** 2)
-            + 0.33 * math.exp(-12 * (t - 1.70) ** 2)
-            + 0.18 * math.exp(-80 * (t - 2.40) ** 2), t]
+    return [0.64 * add.exp(-4.0 * t) + 0.12
+            + 0.20 * add.exp(-45 * (t - 0.72) ** 2)
+            + 0.33 * add.exp(-12 * (t - 1.70) ** 2)
+            + 0.18 * add.exp(-80 * (t - 2.40) ** 2), t]
 
 
 def rook_profile(t):
     if t < 0.28:
         return [0.62 - 0.72 * t, t]
     if t < 1.15:
-        return [0.42 - 0.10 * math.sin(math.pi * (t - 0.28) / 0.9), t]
+        return [0.42 - 0.10 * add.sin(add.pi * (t - 0.28) / 0.9), t]
     if t < 1.30:
         return [0.42 + (t - 1.15) * 1.6, t]
     return [0.55, t]
 
 
 def knight_profile(t):
-    return [0.60 * math.exp(-4.0 * t) + 0.16
-            + 0.18 * math.exp(-50 * (t - 0.60) ** 2), t]
+    return [0.60 * add.exp(-4.0 * t) + 0.16
+            + 0.18 * add.exp(-50 * (t - 0.60) ** 2), t]
 
 
 def make_pawn(col):
@@ -90,7 +88,7 @@ def make_rook(col):
     # four battlements, cut out with a boolean
     add.cuboid([0, 1.55, 0], [1.4, 0.34, 0.26], col)
     slot = add.layer()
-    cuts = [slot, add.rotateY(slot, math.pi / 2, [0, 0, 0])]
+    cuts = [slot, add.rotateY(slot, add.pi / 2, [0, 0, 0])]
     return add.difference(body, cuts)
 
 
@@ -165,7 +163,7 @@ for colour, back_row, pawn_row in ((LIGHT, 0, 1), (DARK, 7, 6)):
     for i, maker in enumerate(ORDER):
         piece = built[maker]
         if maker is make_knight:            # knights face the other player
-            piece = add.rotateY(piece, 0 if back_row == 0 else math.pi,
+            piece = add.rotateY(piece, 0 if back_row == 0 else add.pi,
                                 [0, 0, 0])
         add.mesh(add.move(piece, [i, 0, back_row]))
 

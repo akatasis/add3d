@@ -3,9 +3,7 @@
 
 A map of the library: if you can name it, it is probably here.
 """
-import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import add
-import math
 
 STEP = 3.0
 
@@ -57,7 +55,7 @@ add.pipe([c[0], c[1] - 0.9, c[2]], [c[0], c[1] + 0.9, c[2]], 0.8, 0.5, 28,
 c = at(1, 4); add.disc(c, [c[0], c[1] + 1, c[2]], 1.0, 32, "yellow")
 c = at(2, 4); add.ring(c, [c[0], c[1] + 1, c[2]], 1.0, 0.5, 32, "yellow")
 c = at(3, 4); add.grid(c, [2.2, 2.2], 14, 14, "lime",
-                       height=lambda x, z: 0.3 * math.sin(3 * x) * math.cos(3 * z))
+                       height=lambda x, z: 0.3 * add.sin(3 * x) * add.cos(3 * z))
 c = at(4, 4); add.arrow([c[0], c[1] - 1, c[2]], [c[0], c[1] + 1, c[2]], 0.12,
                         "red")
 c = at(5, 4); add.helix(c, 0.7, 0.35, 3, 160, 0.12, 10, "gold")

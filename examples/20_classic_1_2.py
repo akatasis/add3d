@@ -5,10 +5,7 @@ They are kept here, lightly tidied and using the new function names, so
 that older course material still has something to point at.  Run the file to
 generate example1.off ... example8.off.
 """
-import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import add
-import math
-import random
 
 
 def example1():
@@ -46,20 +43,20 @@ def example3():
     a, b = 5, 1
 
     def torus1(u, v):
-        return [(a + b * math.cos(u)) * math.cos(v), b * math.sin(u),
-                (a + b * math.cos(u)) * math.sin(v)]
+        return [(a + b * add.cos(u)) * add.cos(v), b * add.sin(u),
+                (a + b * add.cos(u)) * add.sin(v)]
 
     def torus2(u, v):
-        return [(a + b * math.cos(u)) * math.cos(v),
-                -(a + b * math.cos(u)) * math.sin(v), b * math.sin(u)]
+        return [(a + b * add.cos(u)) * add.cos(v),
+                -(a + b * add.cos(u)) * add.sin(v), b * add.sin(u)]
 
     def torus3(u, v):
-        return [b * math.sin(u), -(a + b * math.cos(u)) * math.cos(v),
-                (a + b * math.cos(u)) * math.sin(v)]
+        return [b * add.sin(u), -(a + b * add.cos(u)) * add.cos(v),
+                (a + b * add.cos(u)) * add.sin(v)]
 
     for f, col in ((torus1, [0, 255, 0]), (torus2, [255, 0, 0]),
                    (torus3, [0, 0, 255])):
-        add.parametric(f, 0, 2 * math.pi, 50, 0, 2 * math.pi, 200, col,
+        add.parametric(f, 0, 2 * add.pi, 50, 0, 2 * add.pi, 200, col,
                        wrap_u=True, wrap_v=True)
     add.save("example3.off")
 
@@ -69,32 +66,32 @@ def example4():
     a, b, c, h, r, s = 36, 0.85, 1, 15, 0.15, 0.5
 
     def branches(u, v):
-        return [math.sqrt(u) * math.cos(u) * v, h - h / a * u,
-                math.sqrt(u) * math.sin(u) * v]
+        return [add.sqrt(u) * add.cos(u) * v, h - h / a * u,
+                add.sqrt(u) * add.sin(u) * v]
 
     def top(u, v):
-        w = 1.5 * math.sqrt(3)
-        return [c * math.sqrt(1 - u * u) * (1 - u) / w * math.cos(v),
+        w = 1.5 * add.sqrt(3)
+        return [c * add.sqrt(1 - u * u) * (1 - u) / w * add.cos(v),
                 h + c * u + c,
-                c * math.sqrt(1 - u * u) * (1 - u) / w * math.sin(v)]
+                c * add.sqrt(1 - u * u) * (1 - u) / w * add.sin(v)]
 
     def trunk(u, v):
-        return [s * math.cos(u) * math.sqrt(v / h), h - v,
-                s * math.sin(u) * math.sqrt(v / h)]
+        return [s * add.cos(u) * add.sqrt(v / h), h - v,
+                s * add.sin(u) * add.sqrt(v / h)]
 
     def base(u, v):
-        return [u * math.cos(v), 0, u * math.sin(v)]
+        return [u * add.cos(v), 0, u * add.sin(v)]
 
     def bauble(u, v):
-        return [r * math.cos(u) * math.sin(v), r * math.cos(v) + h,
-                r * math.sin(u) * math.sin(v)]
+        return [r * add.cos(u) * add.sin(v), r * add.cos(v) + h,
+                r * add.sin(u) * add.sin(v)]
 
-    add.parametric(branches, 0, a * b, 500, 0.98 * s / math.sqrt(a), 1, 15,
+    add.parametric(branches, 0, a * b, 500, 0.98 * s / add.sqrt(a), 1, 15,
                    [0, 255, 0])
-    add.parametric(top, -1, 1, 50, 0, 2 * math.pi, 40, [255, 0, 0])
-    add.parametric(trunk, 0, 2 * math.pi, 20, 0, h, 100, [139, 69, 19])
-    add.parametric(base, 0, s, 1, 0, 2 * math.pi, 20, [139, 69, 19])
-    add.parametric(bauble, 0, 2 * math.pi, 30, 0, math.pi, 30, [255, 255, 255])
+    add.parametric(top, -1, 1, 50, 0, 2 * add.pi, 40, [255, 0, 0])
+    add.parametric(trunk, 0, 2 * add.pi, 20, 0, h, 100, [139, 69, 19])
+    add.parametric(base, 0, s, 1, 0, 2 * add.pi, 20, [139, 69, 19])
+    add.parametric(bauble, 0, 2 * add.pi, 30, 0, add.pi, 30, [255, 255, 255])
     add.save("example4.off")
 
 
@@ -104,8 +101,8 @@ def example5():
     for i in range(m):
         for j in range(m - i):
             for k in range(m - i - j):
-                add.sphere([i * math.sqrt(3) / 2 + (k - 1) * math.sqrt(3) / 6,
-                            k * math.sqrt(2 / 3),
+                add.sphere([i * add.sqrt(3) / 2 + (k - 1) * add.sqrt(3) / 6,
+                            k * add.sqrt(2 / 3),
                             j + 0.5 * (i - 1) + (k - 1) / 2],
                            0.5, 10, add.random_color())
     add.save("example5.off")

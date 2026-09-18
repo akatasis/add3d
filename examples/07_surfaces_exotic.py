@@ -6,11 +6,9 @@ down.  Several of them are *non-orientable*: they have only one side, so the
 idea of "outside" stops making sense.  Give them a thickness and they become
 ordinary two-sided solids again -- which is also the honest way to see them.
 """
-import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import add
-import math
 
-TAU = 2 * math.pi
+TAU = 2 * add.pi
 CELL = 3.4
 shown = []
 
@@ -24,9 +22,9 @@ def show(name, build, col, size=2.4):
 #  Möbius strip -- one edge, one side
 # --------------------------------------------------------------------------
 def mobius(u, v):
-    return [(1 + v / 2 * math.cos(u / 2)) * math.cos(u),
-            v / 2 * math.sin(u / 2),
-            (1 + v / 2 * math.cos(u / 2)) * math.sin(u)]
+    return [(1 + v / 2 * add.cos(u / 2)) * add.cos(u),
+            v / 2 * add.sin(u / 2),
+            (1 + v / 2 * add.cos(u / 2)) * add.sin(u)]
 
 
 show("Mobius strip", lambda c: add.parametric(mobius, 0, TAU, 160, -1, 1, 10,
@@ -42,10 +40,10 @@ show("Mobius solid", lambda c: add.parametric(mobius, 0, TAU, 160, -1, 1, 10,
 # --------------------------------------------------------------------------
 def klein8(u, v):
     r = 2.0
-    cu, su = math.cos(u / 2), math.sin(u / 2)
-    sv, s2v = math.sin(v), math.sin(2 * v)
+    cu, su = add.cos(u / 2), add.sin(u / 2)
+    sv, s2v = add.sin(v), add.sin(2 * v)
     f = r + cu * sv - su * s2v
-    return [f * math.cos(u), su * sv + cu * s2v, f * math.sin(u)]
+    return [f * add.cos(u), su * sv + cu * s2v, f * add.sin(u)]
 
 
 show("Klein bottle (fig-8)",
@@ -57,13 +55,13 @@ show("Klein bottle (fig-8)",
 #  Klein bottle, the classic bottle shape
 # --------------------------------------------------------------------------
 def klein_bottle(u, v):
-    cu, su = math.cos(u), math.sin(u)
-    cv, sv = math.cos(v), math.sin(v)
-    if u < math.pi:
+    cu, su = add.cos(u), add.sin(u)
+    cv, sv = add.cos(v), add.sin(v)
+    if u < add.pi:
         x = 3 * cu * (1 + su) + (2 * (1 - cu / 2)) * cu * cv
         z = -8 * su - 2 * (1 - cu / 2) * su * cv
     else:
-        x = 3 * cu * (1 + su) + (2 * (1 - cu / 2)) * math.cos(v + math.pi)
+        x = 3 * cu * (1 + su) + (2 * (1 - cu / 2)) * add.cos(v + add.pi)
         z = -8 * su
     y = -2 * (1 - cu / 2) * sv
     return [x, y, z]
@@ -78,29 +76,29 @@ show("Klein bottle", lambda c: add.parametric(klein_bottle, 0, TAU, 120, 0,
 #  Boy's surface -- the projective plane immersed in space
 # --------------------------------------------------------------------------
 def boy(u, v):
-    cu, su = math.cos(u), math.sin(u)
-    cv, sv = math.cos(v), math.sin(v)
-    d = 2 - math.sqrt(2) * math.sin(3 * u) * math.sin(2 * v)
-    return [math.sqrt(2) * cv * cv * math.cos(2 * u) / d + cv * cv * math.cos(2 * u) * 0,
+    cu, su = add.cos(u), add.sin(u)
+    cv, sv = add.cos(v), add.sin(v)
+    d = 2 - add.sqrt(2) * add.sin(3 * u) * add.sin(2 * v)
+    return [add.sqrt(2) * cv * cv * add.cos(2 * u) / d + cv * cv * add.cos(2 * u) * 0,
             3 * cv * cv / d - 1.5,
-            math.sqrt(2) * cv * cv * math.sin(2 * u) / d]
+            add.sqrt(2) * cv * cv * add.sin(2 * u) / d]
 
 
 def boy_full(u, v):
     """A fuller Boy's surface: the Bryant-Kusner style parametrisation."""
-    cu, su = math.cos(u), math.sin(u)
-    cv, sv = math.cos(v), math.sin(v)
-    d = 2 - math.sqrt(2) * math.sin(3 * u) * math.sin(2 * v)
-    x = (math.sqrt(2) * cv * cv * math.cos(2 * u)
-         + cu * math.sin(2 * v)) / d
-    y = (math.sqrt(2) * cv * cv * math.sin(2 * u)
-         - su * math.sin(2 * v)) / d
+    cu, su = add.cos(u), add.sin(u)
+    cv, sv = add.cos(v), add.sin(v)
+    d = 2 - add.sqrt(2) * add.sin(3 * u) * add.sin(2 * v)
+    x = (add.sqrt(2) * cv * cv * add.cos(2 * u)
+         + cu * add.sin(2 * v)) / d
+    y = (add.sqrt(2) * cv * cv * add.sin(2 * u)
+         - su * add.sin(2 * v)) / d
     z = 3 * cv * cv / d
     return [x, z - 1.2, y]
 
 
-show("Boy's surface", lambda c: add.parametric(boy_full, 0, math.pi, 100,
-                                               -math.pi / 2, math.pi / 2, 100,
+show("Boy's surface", lambda c: add.parametric(boy_full, 0, add.pi, 100,
+                                               -add.pi / 2, add.pi / 2, 100,
                                                c, wrap_u=True,
                                                double_sided=True), "teal")
 
@@ -109,25 +107,25 @@ show("Boy's surface", lambda c: add.parametric(boy_full, 0, math.pi, 100,
 #  Roman (Steiner) surface and the cross-cap
 # --------------------------------------------------------------------------
 def roman(u, v):
-    su, cu = math.sin(u), math.cos(u)
-    sv, cv = math.sin(v), math.cos(v)
-    return [su * su * math.sin(2 * v) / 2,
+    su, cu = add.sin(u), add.cos(u)
+    sv, cv = add.sin(v), add.cos(v)
+    return [su * su * add.sin(2 * v) / 2,
             su * cu * sv,
             su * cu * cv]
 
 
-show("Roman surface", lambda c: add.parametric(roman, 0, math.pi, 90, 0,
+show("Roman surface", lambda c: add.parametric(roman, 0, add.pi, 90, 0,
                                                TAU, 90, c, wrap_v=True,
                                                double_sided=True), "purple")
 
 
 def cross_cap(u, v):
-    su, cu = math.sin(u), math.cos(u)
-    sv, cv = math.sin(v), math.cos(v)
-    return [su * math.sin(2 * v) / 2, su * su * cv, su * cu * (1 + cv) / 1.0]
+    su, cu = add.sin(u), add.cos(u)
+    sv, cv = add.sin(v), add.cos(v)
+    return [su * add.sin(2 * v) / 2, su * su * cv, su * cu * (1 + cv) / 1.0]
 
 
-show("cross-cap", lambda c: add.parametric(cross_cap, 0, math.pi, 90, 0, TAU,
+show("cross-cap", lambda c: add.parametric(cross_cap, 0, add.pi, 90, 0, TAU,
                                            90, c, wrap_v=True,
                                            double_sided=True), "magenta")
 
@@ -147,7 +145,7 @@ show("Enneper surface", lambda c: add.parametric(enneper, -2, 2, 60, -2, 2,
 
 def scherk(u, v):
     """Scherk's surface: cos(y) = cos(x) e^z, drawn as a height field."""
-    return [u, math.log(abs(math.cos(v) / math.cos(u))), v]
+    return [u, add.log(abs(add.cos(v) / add.cos(u))), v]
 
 
 show("Scherk surface", lambda c: add.parametric(
@@ -158,13 +156,13 @@ show("Scherk surface", lambda c: add.parametric(
 #  Trefoil knot ribbon -- a band that follows a knot
 # --------------------------------------------------------------------------
 def trefoil_path(t):
-    return [math.sin(t) + 2 * math.sin(2 * t),
-            -math.sin(3 * t),
-            -math.cos(t) + 2 * math.cos(2 * t)]
+    return [add.sin(t) + 2 * add.sin(2 * t),
+            -add.sin(3 * t),
+            -add.cos(t) + 2 * add.cos(2 * t)]
 
 
 show("trefoil ribbon", lambda c: add.ribbon(trefoil_path, 0, TAU, 220, 0.8, c,
-                                            closed=True, twist=3 * math.pi,
+                                            closed=True, twist=3 * add.pi,
                                             thickness=0.06), "navy")
 
 

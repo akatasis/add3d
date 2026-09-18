@@ -14,9 +14,7 @@ Three copies of the same saddle:
     right   ``thickness=0.1``       -- a real solid: watertight, printable,
                                        correct from every angle
 """
-import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import add
-import math
 
 
 def saddle(u, v):

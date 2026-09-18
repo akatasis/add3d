@@ -4,7 +4,6 @@
 Three shapes, three colours, one file.  Run it and open first_model.off in
 MeshLab, or render it with:  python3 tools/preview.py first_model.off
 """
-import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import add
 
 # Draw into the scene.  Every call adds faces; nothing is removed.

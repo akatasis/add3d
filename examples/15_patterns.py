@@ -12,11 +12,9 @@ Modelling by repetition: build one piece, then let the library stamp it out.
 ``repeat`` is the general one: you hand it a function that says where copy
 number ``i`` goes, and it does the rest.
 """
-import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import add
-import math
 
-TAU = 2 * math.pi
+TAU = 2 * add.pi
 CELL = 5.0
 shown = []
 
@@ -53,32 +51,32 @@ show("shrinking tower",
 show("fanned arch",
      add.repeat(unit("purple"), 24,
                 lambda M, i: add.rotate(add.move(M, [0, 3.2, 0]),
-                                        [0, 0, 1], math.pi * i / 23.0 - math.pi / 2)))
+                                        [0, 0, 1], add.pi * i / 23.0 - add.pi / 2)))
 
 show("double helix",
      add.repeat(unit("magenta"), 60,
                 lambda M, i: add.move(
                     add.rotate(M, [0, 1, 0], i * 0.28),
-                    [2.2 * math.cos(i * 0.28), i * 0.12,
-                     2.2 * math.sin(i * 0.28)])))
+                    [2.2 * add.cos(i * 0.28), i * 0.12,
+                     2.2 * add.sin(i * 0.28)])))
 
 show("torus of cubes",
      add.repeat(unit("brown"), 160,
                 lambda M, i: add.move(
                     add.rotate(M, [0, 1, 0], (i % 20) * TAU / 20),
-                    [(4 + 1.2 * math.cos(i * TAU / 8)) * math.cos(i * TAU / 20),
-                     1.2 * math.sin(i * TAU / 8),
-                     (4 + 1.2 * math.cos(i * TAU / 8)) * math.sin(i * TAU / 20)])))
+                    [(4 + 1.2 * add.cos(i * TAU / 8)) * add.cos(i * TAU / 20),
+                     1.2 * add.sin(i * TAU / 8),
+                     (4 + 1.2 * add.cos(i * TAU / 8)) * add.sin(i * TAU / 20)])))
 
 # --- copies laid out on a parametric surface ------------------------------
 def on_a_sphere(M, i):
     """The golden-angle spiral: the way sunflower seeds are packed."""
     n = 120
     y = 1 - 2.0 * i / (n - 1.0)
-    r = math.sqrt(max(0.0, 1 - y * y))
-    a = i * math.pi * (3 - math.sqrt(5))
-    p = [3.2 * r * math.cos(a), 3.2 * y, 3.2 * r * math.sin(a)]
-    turned = add.rotate(M, [1, 0, 0], math.acos(max(-1, min(1, y))))
+    r = add.sqrt(max(0.0, 1 - y * y))
+    a = i * add.pi * (3 - add.sqrt(5))
+    p = [3.2 * r * add.cos(a), 3.2 * y, 3.2 * r * add.sin(a)]
+    turned = add.rotate(M, [1, 0, 0], add.acos(max(-1, min(1, y))))
     return add.move(add.rotateY(turned, -a), p)
 
 
@@ -92,14 +90,13 @@ show("colour by height",
      add.color_by(tower, lambda p: add.hsv(p[1] / 14.0, 0.7, 1.0)))
 
 # --- scattering with random numbers ---------------------------------------
-import random
-random.seed(7)
+add.seed(7)
 show("random scatter",
      add.repeat(unit("silver"), 90,
-                lambda M, i: add.move(add.zoom(M, random.uniform(0.4, 1.3),
+                lambda M, i: add.move(add.zoom(M, add.uniform(0.4, 1.3),
                                                [0, 0, 0]),
-                                      [random.uniform(-4, 4), 0,
-                                       random.uniform(-4, 4)])))
+                                      [add.uniform(-4, 4), 0,
+                                       add.uniform(-4, 4)])))
 
 columns = 4
 for i, (name, M) in enumerate(shown):
