@@ -1,11 +1,39 @@
-# add.py is deliberately NOT a pip package.
+# add.py is one file on purpose: a student downloads it, drops it next to
+# their own script and writes `import add`.  That stays the recommended way.
 #
-# The whole point is that a student downloads one file, drops it next to
-# their own script and writes `import add`.  Installing a module called
-# `add` into a shared site-packages directory would be a poor neighbour, and
-# it would hide the thing we want people to read.
-#
-# This file therefore only configures the tools used to develop it.
+# The metadata below makes an *optional* package out of the same file, so
+# that `pip install add3d` also works (the name `add` is taken on PyPI by an
+# empty placeholder -- see PUBLISHING.md).  Installing it puts one module,
+# `add`, into site-packages; nothing else.
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "add3d"
+version = "2.1"
+description = "Build 3D models with nothing but Python code: one file, no dependencies, mesh booleans from scratch."
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [{name = "Martynas Sabaliauskas", email = "martynas.sabaliauskas@mif.vu.lt"}]
+keywords = ["3d", "geometry", "mesh", "csg", "parametric-surfaces", "education", "off", "obj"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+    "Topic :: Education",
+]
+
+[project.urls]
+Homepage = "https://github.com/martynas-sabaliauskas/add3d"
+Documentation = "https://martynas-sabaliauskas.github.io/add3d/"
+
+[tool.setuptools]
+py-modules = ["add"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -14,7 +42,7 @@ python_files = ["test_*.py"]
 [tool.ruff]
 line-length = 80
 target-version = "py38"
-exclude = ["tests/legacy", "examples/out"]
+exclude = ["tests/legacy", "examples/out", "examples/add.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "B", "UP"]
@@ -24,6 +52,5 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"examples/*.py" = ["E402"]   # examples put add.py on the path before importing
 "tools/*.py" = ["E402"]
 "tests/*.py" = ["E402"]

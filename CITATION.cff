@@ -8,9 +8,11 @@ authors:
     affiliation: "Vilnius University, Faculty of Mathematics and Informatics,
       Institute of Data Science and Digital Technologies"
     email: martynas.sabaliauskas@mif.vu.lt
-version: "2.0"
+version: "2.1"
 date-released: "2026-09-18"
 license: MIT
+repository-code: "https://github.com/martynas-sabaliauskas/add3d"
+url: "https://martynas-sabaliauskas.github.io/add3d/"
 keywords:
   - 3D modelling
   - computational geometry

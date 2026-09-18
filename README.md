@@ -5,8 +5,8 @@
 One file. Only `math` and `random`. No modelling program, no mesh library,
 nothing to install.
 
-[Documentation](https://martynas-sabaliauskas.github.io/add.py/) &middot;
-[Gallery](https://martynas-sabaliauskas.github.io/add.py/#gallery) &middot;
+[Documentation](https://martynas-sabaliauskas.github.io/add3d/) &middot;
+[Gallery](https://martynas-sabaliauskas.github.io/add3d/#gallery) &middot;
 [Lietuviškai](README.lt.md)
 
 ```python
@@ -21,10 +21,10 @@ add.save("first_model.off")      # or .obj (+ .mtl), .ply, .stl
 ```
 
 <p align="center">
+  <img src="docs/images/lighthouse.png" width="49%" alt="A lighthouse island">
+  <img src="docs/images/locomotive.png" width="49%" alt="A steam locomotive">
   <img src="docs/images/chess_set.png" width="49%" alt="A chess set">
-  <img src="docs/images/city.png" width="49%" alt="A procedural city">
-  <img src="docs/images/supershapes.png" width="49%" alt="Twelve supershapes">
-  <img src="docs/images/booleans.png" width="49%" alt="Boolean operations">
+  <img src="docs/images/robot.png" width="49%" alt="A robot">
 </p>
 
 Nobody drew any of these. Each is one short program in
@@ -52,24 +52,30 @@ is not.
 ## Install
 
 There is nothing to install. Download [`add.py`](add.py), put it next to
-your script, and `import add`. It needs Python 3 and nothing else.
+your script, and `import add`. It needs Python 3 and nothing else -- not
+even `import math`: `math` and `random` are re-exported, so `add.sin`,
+`add.pi`, `add.randint` and `add.seed` are all there.
 
 ```bash
-curl -O https://raw.githubusercontent.com/martynas-sabaliauskas/add.py/main/add.py
+curl -O https://raw.githubusercontent.com/martynas-sabaliauskas/add3d/main/add.py
 ```
 
 Or clone the repository to get the examples, the tests and the documentation
-too.
+too. (The module is `add.py`; the repository and the package are called
+`add3d`, because the name `add` on PyPI is held by an empty placeholder
+registered by someone else -- see [PUBLISHING.md](PUBLISHING.md).)
 
 ## What you get
 
 | | |
 |---|---|
-| **Shapes** | box, cuboid, frame, pyramid, prism, the five Platonic solids, sphere, ellipsoid, torus, capsule, cylinder, tube, cone, frustum, pipe, disc, ring, grid, arrow, helix, voxels |
-| **Surfaces** | `parametric(S, ...)` for any `S(u, v)`, with seam wrapping, real thickness and two-sided sheets |
-| **Sweeps** | `revolve` (a lathe), `sweep` along a 3D path with scaling and twisting, `extrude`, `loft`, `curve` (a tube along a curve), `ribbon` |
-| **Transforms** | move, rotate about any axis, scale, stretch, mirror, place, fit, twist, bend, taper, jitter, and `deform` with any function you like |
-| **Patterns** | `repeat`, and linear / grid / radial / mirror arrays |
+| **Shapes** | box, cuboid, rounded_box, frame, pyramid, prism, the five Platonic solids, sphere, hemisphere, ellipsoid, torus, capsule, cylinder, tube, cone, frustum, pipe, disc, ring, grid, arrow, helix, voxels |
+| **Parts** | beam (a bar between two points), arch, stairs, gear, wheel, roof, column, bricks, tree, pixels (pixel art), heightmap (block terrain), wireframe, text (a built-in stroke font with Lithuanian letters) |
+| **Surfaces** | `parametric(S, ...)` for any `S(u, v)`, with seam wrapping, real thickness, two-sided sheets and a *colour function* of `(u, v)` |
+| **Sweeps** | `revolve` (a lathe), `sweep` along a 3D path with scaling and twisting, `extrude`, `loft`, `curve` / `polyline` (tubes), `ribbon`, `trace` (the path of a vector field) |
+| **Profiles** | ready-made cross-sections: circle, ellipse, polygon, star, rounded rectangle, gear; `chaikin` corner rounding |
+| **Transforms** | move, rotate about any axis, scale, stretch, mirror, place, fit, aim, ground, align, twist, bend, taper, jitter, and `deform` with any function you like |
+| **Patterns** | `repeat`, linear / grid / radial / mirror arrays, `scatter` on random points, `along` a curve |
 | **Booleans** | `union`, `intersect`, `difference`, `symmetric_difference`, plus the cheaper `cut` with a plane |
 | **Repair** | `clean` (weld, dedupe, remove buried walls), `heal`, `fix_normals`, `triangulate` |
 | **Colour** | named colours, hex, HSV, gradients, and `color_by` for a colour that depends on position |
@@ -77,7 +83,7 @@ too.
 | **Checking** | `stats()` and `check()` — polygon count, colours, watertightness, volume |
 | **Looking** | `tools/preview.py`, a software renderer that also has no dependencies |
 
-130 public functions, all documented, in one 3500-line file you can read.
+178 public names, all documented, in one 4700-line file you can read.
 
 ## Boolean operations, from scratch
 
@@ -111,7 +117,24 @@ test suite checks exactly that. New code can use the clearer names:
 `cube2` → `frame`, `cylinder2` → `tube`, `cylinder3` → `cup`,
 `cone2` → `cone_open`, `spin3D` → `revolve`, `off` → `save`.
 
-See the [upgrade notes](https://martynas-sabaliauskas.github.io/add.py/#upgrade).
+See the [upgrade notes](https://martynas-sabaliauskas.github.io/add3d/#upgrade).
+
+## Complete models
+
+The later examples are whole scenes of the kind the course asks for, each
+about a hundred lines and each using a different corner of the library:
+a [lighthouse island](examples/22_lighthouse.py), a
+[steam locomotive](examples/23_locomotive.py) whose rods follow the wheel
+angle, a [windmill](examples/24_windmill.py), a
+[round temple](examples/25_temple.py), [strange attractors and vector
+fields](examples/26_vector_fields.py), a [robot](examples/27_robot.py)
+reaching for a ball, a [voxel island](examples/28_voxel_island.py), [two
+bridges](examples/29_bridge.py), a [solar system](examples/30_solar_system.py)
+with banded planets, a [workbench](examples/31_workbench.py) of measuring
+and repair tools, a [still life](examples/32_old_names.py) in the 1.2
+vocabulary and a [gallery of cross-sections](examples/33_cross_sections.py).
+`python3 tools/coverage.py` lists which example uses which function; every
+public function is used by at least one.
 
 ## Repository layout
 
@@ -119,13 +142,15 @@ See the [upgrade notes](https://martynas-sabaliauskas.github.io/add.py/#upgrade)
 add.py               the library — this is the only file you need
 _src/                the sections add.py is assembled from
 build.py             concatenates _src/*.py into add.py
-examples/            17 commented example programs
+examples/            30 commented example programs (18 studies, 12 complete models)
+  add.py             a copy of the library, so the examples run as they are
   build_all.py       runs them all and renders the pictures
 tools/
   preview.py         dependency-free software renderer
   make_docs.py       builds docs/index.html from the docstrings
+  coverage.py        which example uses which function
 tests/
-  test_add.py        68 unit tests
+  test_add.py        80 unit tests
   test_legacy.py     runs the add.py 1.2 models and checks the face counts
   legacy/            those models, unedited
 docs/                the documentation site (English and Lithuanian)
@@ -135,13 +160,13 @@ slides/              lecture slides
 ```
 
 If you edit the library, edit the files in `_src/` and run `python3
-build.py`; `add.py` is generated. It ships in the repository so that a
-student only ever needs one file.
+build.py`; `add.py` (and its copy in `examples/`) is generated. It ships in
+the repository so that a student only ever needs one file.
 
 ## Running the tests
 
 ```bash
-python3 tests/test_add.py        # 68 unit tests
+python3 tests/test_add.py        # 80 unit tests
 python3 tests/test_legacy.py     # the add.py 1.2 models
 python3 examples/build_all.py    # every example, plus pictures
 ```
@@ -156,6 +181,11 @@ is closed.
 and upload it to [Sketchfab](https://sketchfab.com) for a model anyone can
 turn around in a browser. For 3D printing, `save("model.stl")` after
 `clean(..., normals=True)`.
+
+## Publishing
+
+[PUBLISHING.md](PUBLISHING.md) explains how to put the repository on GitHub,
+switch on the documentation site and, if wanted, release `add3d` on PyPI.
 
 ## Licence
 

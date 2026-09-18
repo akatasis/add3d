@@ -28,6 +28,9 @@ OUTPUT = os.path.join(ROOT, "docs", "index.html")
 
 SECTION_RE = re.compile(r"^#\s+(\d+)\.\s+(.+?)\s*$")
 
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+import coverage                                              # noqa: E402
+
 
 # ---------------------------------------------------------------------------
 #  reading add.py
@@ -318,6 +321,7 @@ main{max-width:1140px;margin:0 auto;padding:0 16px 96px}
 .badge{font-size:12.5px;font-family:var(--mono);border:1px solid var(--line);
   border-radius:20px;padding:3px 11px;color:var(--muted);background:var(--card)}
 section{padding-top:40px}
+.used{font-size:.86em;color:#6b6b6b;margin-top:10px}
 h2{font-size:clamp(23px,3.6vw,30px);margin:8px 0 12px;letter-spacing:-.01em}
 h3{font-size:19px;margin:28px 0 8px}
 h4{font-size:16px;margin:20px 0 6px;color:var(--muted)}
@@ -389,8 +393,7 @@ JS = """
   var root=document.documentElement;
   var stored=null;
   try{stored=localStorage.getItem('addpy-lang');}catch(e){}
-  var nav=(navigator.language||'').toLowerCase();
-  root.dataset.lang=stored||(nav.indexOf('lt')===0?'lt':'en');
+  root.dataset.lang=(stored==='lt')?'lt':'en';   // English unless LT was chosen
   function sync(){
     document.querySelectorAll('.toggle button').forEach(function(b){
       b.setAttribute('aria-pressed', b.dataset.lang===root.dataset.lang);
@@ -544,12 +547,22 @@ def _reference_section(api):
            '<input type="search" id="api-search" placeholder="%s" '
            'aria-label="%s"></div>'
            % (content.UI["search"]["en"], content.UI["search"]["en"])]
+    used = coverage.usage()
     for title, entries in api:
         out.append('<div class="api-group"><h3>%s</h3>' % html.escape(title))
         for e in entries:
             summary_en = (e["doc"].split("\n")[0] if e["doc"] else "")
             summary_lt = content.SHORT.get(e["name"], summary_en)
             body = docstring_html(e["doc"])
+            scripts = used.get(e["name"], [])
+            if scripts:
+                links = ", ".join(
+                    '<a href="%s/blob/main/examples/%s">%s</a>' % (content.REPO_URL, name, name[:-3])
+                    for name in scripts[:6])
+                if len(scripts) > 6:
+                    links += ", &hellip;"
+                body += ('<p class="used"><span class="only-en">Used in: </span>'
+                         '<span class="only-lt">Naudojama: </span>%s</p>' % links)
             search_key = (e["name"] + " " + summary_en + " "
                           + summary_lt).lower()
             head = ('<span class="nm">%s</span>'

@@ -10,7 +10,12 @@ descriptions come from the source and are in English; ``SHORT`` below gives
 each function a one-line Lithuanian description for the Lithuanian view.
 """
 
-VERSION = "2.0"
+VERSION = "2.1"
+
+#: Where the project lives.  The module is ``add.py``; the repository and the
+#: distribution are called ``add3d`` because plain "add" is taken on PyPI.
+REPO_URL = "https://github.com/martynas-sabaliauskas/add3d"
+DOCS_URL = "https://martynas-sabaliauskas.github.io/add3d/"
 
 UI = {
     "title": {"en": "add.py", "lt": "add.py"},
@@ -76,6 +81,22 @@ decides the format (`.off`, `.obj`, `.ply` or `.stl`).
 
 !first_model.png|The three shapes above.
 
+## Only `import add`
+
+`math` and `random` are re-exported by the module, so a model file needs no
+other import: `add.sin(t)`, `add.pi`, `add.sqrt(2)`, `add.randint(1, 6)`,
+`add.uniform(-1, 1)`, `add.seed(7)` and `add.Random(seed)` all work. (Plain
+`import math` still works too, if you prefer it.)
+
+```
+import add
+
+for i in range(12):
+    a = 2 * add.pi * i / 12
+    add.sphere([3 * add.cos(a), 0, 3 * add.sin(a)], 0.4, 8, add.hsv(i / 12))
+add.save("ring.off")
+```
+
 ## Looking at what you made
 
 Open the file in [MeshLab](https://www.meshlab.net/), or render it without
@@ -116,6 +137,22 @@ paviršius uždaras. `save()` išsaugo failą, o formatą nulemia plėtinys
 (`.off`, `.obj`, `.ply` arba `.stl`).
 
 !first_model.png|Trys aukščiau sukurtos figūros.
+
+## Užtenka `import add`
+
+`math` ir `random` eksportuojami iš paties modulio, todėl modelio failui
+nereikia jokio kito importo: veikia `add.sin(t)`, `add.pi`, `add.sqrt(2)`,
+`add.randint(1, 6)`, `add.uniform(-1, 1)`, `add.seed(7)` ir `add.Random(seed)`.
+(Įprastas `import math`, žinoma, irgi tebeveikia.)
+
+```
+import add
+
+for i in range(12):
+    a = 2 * add.pi * i / 12
+    add.sphere([3 * add.cos(a), 0, 3 * add.sin(a)], 0.4, 8, add.hsv(i / 12))
+add.save("ziedas.off")
+```
 
 ## Kaip pažiūrėti, kas gavosi
 
@@ -362,7 +399,7 @@ Spin a profile: `revolve(profile, A, B, t0, t1, steps, k, colour)` where
 
 ```
 def vase(t):
-    return [1 + 0.4 * math.sin(3 * t), t]
+    return [1 + 0.4 * add.sin(3 * t), t]
 
 add.revolve(vase, [0, 0, 0], [0, 1, 0], 0, 4, 60, 40, "teal")
 ```
@@ -375,7 +412,7 @@ add.revolve(vase, [0, 0, 0], [0, 1, 0], 0, 4, 60, 40, "teal")
 M = add.twist(M, 0.5)                   # a corkscrew
 M = add.taper(M, -0.2)                  # thinner as it rises
 M = add.bend(M, 0.3)                    # into an arc
-M = add.deform(M, lambda p: [p[0], p[1] + math.sin(p[0]), p[2]])
+M = add.deform(M, lambda p: [p[0], p[1] + add.sin(p[0]), p[2]])
 ```
 
 `deform` takes any function you like, so it can do anything the others cannot.
@@ -387,6 +424,109 @@ M = add.color_by(M, lambda p: add.hsv(p[1] / 10.0))
 ```
 
 `color_by` calls your function with the centre of each face.
+
+## I want to paint a surface with a function
+
+Every surface maker accepts a *colour function* instead of a colour. It is
+called once per cell with the surface's own two parameters, so stripes,
+chequerboards, gradients and maps cost one `lambda`:
+
+```
+add.parametric(f, 0, 1, 40, 0, 1, 40, color=lambda u, v: add.hsv(u))
+add.revolve(vase, A, B, 0, 4, 60, 40, color=lambda t, a: "red" if int(t) % 2 else "white")
+add.sweep(square, path, 0, 1, 60, color=lambda t, j: ["red", "green", "blue", "gold"][j])
+add.curve(spiral, 0, 20, 300, 12, 0.2, color=lambda t, a: add.hsv(t / 20))
+add.grid([0, 0, 0], [10, 10], 40, 40, color=lambda x, z: "sky" if hills(x, z) < 0 else "green", height=hills)
+```
+
+`revolve` passes the profile parameter and the angle, `sweep` the path
+parameter and the index of the profile edge, `curve` and `polyline` the
+parameter and the angle around the tube. For a mesh you already have,
+`color_by(M, fn)` paints by the position of each face.
+
+!solar_system.png|Planets are lathes with colour functions: bands, a red spot, continents.
+
+## I am building a machine, or a figure
+
+Build every part around the origin, between `push()` and `pop()`, then
+place it. `beam(A, B, w, h)` gives you a bar between two points;
+`aim(M, direction)` turns a part so its axis points somewhere;
+`rotate_point` tells you where a point on a wheel ends up:
+
+```
+def wheel(r):
+    add.push()
+    add.wheel([0, 0, 0], r, 0.2, "black", axis=[0, 0, 1], spokes=10)
+    return add.pop()
+
+pin = add.rotate_point([x + 0.5, y, z], [0, 0, 1], ANGLE, [x, y, z])   # on the wheel
+add.beam(pin, piston, 0.08, 0.12, "silver")                              # the rod follows
+arm = add.aim(arm, add.direction(shoulder, hand))                        # point the arm
+add.mesh(add.move(arm, shoulder))
+```
+
+`array_mirror` gives you the other side of a symmetric machine for free.
+
+!locomotive.png|Wheels, rods and cranks that fit for any angle of the wheels.
+
+## I want a landscape with things on it
+
+A `grid` with a height function is the ground; `random_points` with the
+same function returns spots that lie *on* it; `scatter` puts copies of a
+part there, each turned and sized at random; `along` strings copies along
+a path. `tree`, `bricks`, `roof`, `arch`, `stairs`, `column` are the parts
+that most models turn out to need.
+
+```
+add.grid([0, 0, 0], [40, 40], 80, 80, paint, hills, thickness=0.3)
+spots = add.random_points(30, [-15, 0, -15], [15, 0, 15], seed=1, height=hills)
+add.push(); add.tree([0, 0, 0], 3, seed=1); one = add.pop()
+add.mesh(add.scatter(one, spots, seed=1, scale=(0.7, 1.4)))
+```
+
+!lighthouse.png|Island, tower, house, palms, rocks and a boat -- one script.
+
+## I want to write on the model
+
+`text(string, at, size, color=...)` draws a label from a built-in stroke
+font: letters, digits, punctuation and the Lithuanian letters ĄČĘĖĮŠŲŪŽ.
+`u` and `v` set the writing and up directions, so a label can stand on a
+wall or lie flat on the ground:
+
+```
+add.text("MALŪNAS 2026", [0, 0, 0], 1.0, color="navy")                  # upright
+add.text("SALA", [0, 0.01, 0], 1.0, color="white", u=[1, 0, 0], v=[0, 0, -1])   # on the floor
+```
+
+## I want a block world, or pixel art
+
+`pixels` turns strings into a wall of coloured cubes; `heightmap` turns a
+table of integers into columns of cubes and builds only the visible faces:
+
+```
+add.pixels([".r.r.", "rrrrr", ".rrr.", "..r.."], 0.5)                         # a heart
+H = [[int(3 + 2 * add.sin(i / 3) * add.cos(j / 3)) for j in range(30)] for i in range(30)]
+add.heightmap(H, 0.5, color=lambda i, j, k: "sky" if j < 2 else "green")
+```
+
+!voxel_island.png|A height table, a colour function, a flag from strings.
+
+## I want a curve from an equation of motion
+
+`flow(field, p0, dt, steps)` integrates a vector field (Runge-Kutta) and
+returns the points; `trace` draws them as a tube; `polyline` draws any
+list of points as a tube, with `smooth=` rounding the corners:
+
+```
+def lorenz(p):
+    x, y, z = p
+    return [10 * (y - x), x * (28 - z) - y, x * y - 8 / 3 * z]
+
+add.trace(lorenz, [1, 1, 1], 0.006, 6000, r=0.3, color=lambda t, a: add.hsv(t))
+add.wireframe(add.polyhedron("icosahedron"), 0.03)          # every edge as a bar
+```
+
+!vector_fields.png|Lorenz, Rössler, an arrow field, beads on a helix.
 """),
 "lt": ("""# Receptai
 
@@ -455,7 +595,7 @@ Sukite profilį: `revolve(profilis, A, B, t0, t1, steps, k, spalva)`, kur
 
 ```
 def vaza(t):
-    return [1 + 0.4 * math.sin(3 * t), t]
+    return [1 + 0.4 * add.sin(3 * t), t]
 
 add.revolve(vaza, [0, 0, 0], [0, 1, 0], 0, 4, 60, 40, "teal")
 ```
@@ -468,7 +608,7 @@ add.revolve(vaza, [0, 0, 0], [0, 1, 0], 0, 4, 60, 40, "teal")
 M = add.twist(M, 0.5)                   # kaip kamščiatraukis
 M = add.taper(M, -0.2)                  # kylant plonėja
 M = add.bend(M, 0.3)                    # į lanką
-M = add.deform(M, lambda p: [p[0], p[1] + math.sin(p[0]), p[2]])
+M = add.deform(M, lambda p: [p[0], p[1] + add.sin(p[0]), p[2]])
 ```
 
 `deform` priima bet kokią jūsų funkciją, todėl padaro tai, ko kiti negali.
@@ -480,19 +620,122 @@ M = add.color_by(M, lambda p: add.hsv(p[1] / 10.0))
 ```
 
 `color_by` iškviečia jūsų funkciją su kiekvienos sienos centru.
+
+## Noriu nuspalvinti paviršių funkcija
+
+Kiekviena paviršių kurianti funkcija vietoj spalvos priima *spalvos funkciją*.
+Ji kviečiama kiekvienai langelio (sienos) porai paviršiaus parametrų, todėl
+juostos, šachmatų lenta, gradientai ir žemėlapiai kainuoja vieną `lambda`:
+
+```
+add.parametric(f, 0, 1, 40, 0, 1, 40, color=lambda u, v: add.hsv(u))
+add.revolve(vaza, A, B, 0, 4, 60, 40, color=lambda t, a: "red" if int(t) % 2 else "white")
+add.sweep(kvadratas, kelias, 0, 1, 60, color=lambda t, j: ["red", "green", "blue", "gold"][j])
+add.curve(spirale, 0, 20, 300, 12, 0.2, color=lambda t, a: add.hsv(t / 20))
+add.grid([0, 0, 0], [10, 10], 40, 40, color=lambda x, z: "sky" if kalvos(x, z) < 0 else "green", height=kalvos)
+```
+
+`revolve` perduoda profilio parametrą ir kampą, `sweep` -- kelio parametrą ir
+profilio briaunos numerį, `curve` bei `polyline` -- parametrą ir kampą aplink
+vamzdį. Jau turimą modelį nuspalvina `color_by(M, fn)` pagal kiekvienos
+sienos padėtį.
+
+!solar_system.png|Planetos -- sukiniai su spalvų funkcijomis: juostos, raudonoji dėmė, žemynai.
+
+## Kuriu mechanizmą arba figūrą
+
+Kiekvieną detalę kurkite aplink koordinačių pradžią tarp `push()` ir `pop()`,
+o tada padėkite į vietą. `beam(A, B, w, h)` duoda siją tarp dviejų taškų,
+`aim(M, kryptis)` pasuka detalę taip, kad jos ašis rodytų reikiama kryptimi,
+`rotate_point` pasako, kur atsidurs taškas ant pasukto rato:
+
+```
+def ratas(r):
+    add.push()
+    add.wheel([0, 0, 0], r, 0.2, "black", axis=[0, 0, 1], spokes=10)
+    return add.pop()
+
+kaistis = add.rotate_point([x + 0.5, y, z], [0, 0, 1], KAMPAS, [x, y, z])   # ant rato
+add.beam(kaistis, stumoklis, 0.08, 0.12, "silver")                          # trauklė seka
+ranka = add.aim(ranka, add.direction(petys, plastaka))                      # nukreipti ranką
+add.mesh(add.move(ranka, petys))
+```
+
+`array_mirror` nemokamai duoda kitą simetriško mechanizmo pusę.
+
+!locomotive.png|Ratai, trauklės ir alkūnės, kurios tinka esant bet kokiam ratų kampui.
+
+## Noriu kraštovaizdžio su daiktais ant jo
+
+`grid` su aukščio funkcija -- tai žemė; `random_points` su ta pačia funkcija
+grąžina taškus, gulinčius *ant* jos; `scatter` ten padeda detalės kopijas,
+kiekvieną atsitiktinai pasuktą ir padidintą; `along` išdėsto kopijas išilgai
+kelio. `tree`, `bricks`, `roof`, `arch`, `stairs`, `column` -- detalės, kurių
+prireikia daugumai modelių.
+
+```
+add.grid([0, 0, 0], [40, 40], 80, 80, spalva, kalvos, thickness=0.3)
+vietos = add.random_points(30, [-15, 0, -15], [15, 0, 15], seed=1, height=kalvos)
+add.push(); add.tree([0, 0, 0], 3, seed=1); vienas = add.pop()
+add.mesh(add.scatter(vienas, vietos, seed=1, scale=(0.7, 1.4)))
+```
+
+!lighthouse.png|Sala, bokštas, namas, palmės, akmenys ir valtis -- viena programa.
+
+## Noriu užrašo ant modelio
+
+`text(tekstas, kur, dydis, color=...)` nubraižo užrašą įmontuotu šriftu:
+raidės, skaitmenys, skyryba ir lietuviškos raidės ĄČĘĖĮŠŲŪŽ. `u` ir `v`
+nurodo rašymo ir aukštyn kryptis, todėl užrašas gali stovėti ant sienos arba
+gulėti ant žemės:
+
+```
+add.text("MALŪNAS 2026", [0, 0, 0], 1.0, color="navy")                  # stačias
+add.text("SALA", [0, 0.01, 0], 1.0, color="white", u=[1, 0, 0], v=[0, 0, -1])   # ant grindų
+```
+
+## Noriu kubelių pasaulio arba pikselinio piešinio
+
+`pixels` paverčia eilutes spalvotų kubelių siena; `heightmap` sveikųjų
+skaičių lentelę paverčia kubelių stulpeliais ir sukuria tik matomas sienas:
+
+```
+add.pixels([".r.r.", "rrrrr", ".rrr.", "..r.."], 0.5)                         # širdelė
+H = [[int(3 + 2 * add.sin(i / 3) * add.cos(j / 3)) for j in range(30)] for i in range(30)]
+add.heightmap(H, 0.5, color=lambda i, j, k: "sky" if j < 2 else "green")
+```
+
+!voxel_island.png|Aukščių lentelė, spalvos funkcija, vėliava iš eilučių.
+
+## Noriu kreivės iš judėjimo lygties
+
+`flow(laukas, p0, dt, žingsniai)` integruoja vektorinį lauką (Rungės ir Kutos
+metodu) ir grąžina taškus; `trace` juos nubraižo kaip vamzdį; `polyline`
+nubraižo bet kokį taškų sąrašą kaip vamzdį, o `smooth=` suapvalina kampus:
+
+```
+def lorenz(p):
+    x, y, z = p
+    return [10 * (y - x), x * (28 - z) - y, x * y - 8 / 3 * z]
+
+add.trace(lorenz, [1, 1, 1], 0.006, 6000, r=0.3, color=lambda t, a: add.hsv(t))
+add.wireframe(add.polyhedron("icosahedron"), 0.03)          # kiekviena briauna -- strypelis
+```
+
+!vector_fields.png|Lorencas, Rösleris, rodyklių laukas, karoliukai ant spiralės.
 """),
 }),
 
 ("upgrade", {
 "en": ("""# Coming from add.py 1.2
 
-**Everything still works.** Models written for 1.2 run on 2.0 unchanged and
+**Everything still works.** Models written for 1.2 run on 2.1 unchanged and
 produce the same faces; twelve of them are in `tests/legacy/` and the test
 suite checks exactly that on every commit.
 
 The old names are all still there. New code can use the clearer ones:
 
-| add.py 1.2 | add.py 2.0 | what it is |
+| add.py 1.2 | add.py 2.1 | what it is |
 |---|---|---|
 | `cube(c, e, RGB)` | `box` | a cube |
 | `rectangle3D(c, e, RGB)` | `cuboid` | a rectangular block |
@@ -507,7 +750,26 @@ The old names are all still there. New code can use the clearer ones:
 
 `add.vertices` and `add.faces` still look and behave like the old lists of
 strings, and `layer()` still returns something you can index as `M[0]` and
-`M[1]`.
+`M[1]`. `example1()` ... `example8()` live in `examples/20_classic_1_2.py`,
+and `examples/32_old_names.py` is a whole model written in the 1.2
+vocabulary.
+
+## What is new in 2.1
+
+* **Only `import add`**: `math` and `random` are re-exported.
+* **Colour functions** on `parametric`, `revolve`, `sweep`, `curve`,
+  `polyline` and `grid`.
+* **Parts**: `beam`, `rounded_box`, `hemisphere`, `arch`, `stairs`, `gear`,
+  `wheel`, `roof`, `column`, `bricks`, `tree`, `pixels`, `heightmap`,
+  `polyline`, `wireframe`, `flow`, `trace`.
+* **Placing**: `aim`, `ground`, `align`, `random_points`, `scatter`, `along`.
+* **Profiles and helpers**: `profile_circle/ellipse/polygon/star/rect/gear`,
+  `chaikin`, `points_on_line/circle/helix/spiral/curve`, `lerp`, `clamp`,
+  `remap`, `distance`, `midpoint`, `direction`, `rotate_point`, `shade`.
+* **Labels**: `text` with a built-in font (Lithuanian letters included);
+  the 2.0 function that laid out *loaded* letter meshes is now `typeset`.
+* `inside(M, points)` accepts a list of points; `check()` reports
+  "touching edges" separately from open edges.
 
 ## Two things that did change
 
@@ -519,13 +781,13 @@ meshes, so a model that calls `axes()` has a slightly different face count.
 """),
 "lt": ("""# Pereinant nuo add.py 1.2
 
-**Viskas veikia kaip veikę.** 1.2 versijai rašyti modeliai 2.0 versijoje
+**Viskas veikia kaip veikę.** 1.2 versijai rašyti modeliai 2.1 versijoje
 paleidžiami nepakeisti ir duoda tas pačias sienas; dvylika jų guli
 `tests/legacy/` aplanke, ir testai tikrina būtent tai.
 
 Seni vardai niekur nedingo. Naujame kode verta rinktis aiškesnius:
 
-| add.py 1.2 | add.py 2.0 | kas tai |
+| add.py 1.2 | add.py 2.1 | kas tai |
 |---|---|---|
 | `cube(c, e, RGB)` | `box` | kubas |
 | `rectangle3D(c, e, RGB)` | `cuboid` | stačiakampis gretasienis |
@@ -540,6 +802,26 @@ Seni vardai niekur nedingo. Naujame kode verta rinktis aiškesnius:
 
 `add.vertices` ir `add.faces` tebeatrodo ir tebeveikia kaip seni eilučių
 sąrašai, o `layer()` grąžina tai, ką galima indeksuoti `M[0]` ir `M[1]`.
+`example1()` ... `example8()` gyvena `examples/20_classic_1_2.py`, o
+`examples/32_old_names.py` -- ištisas modelis, parašytas 1.2 žodynu.
+
+## Kas naujo 2.1 versijoje
+
+* **Užtenka `import add`**: `math` ir `random` eksportuojami iš modulio.
+* **Spalvų funkcijos** funkcijoms `parametric`, `revolve`, `sweep`, `curve`,
+  `polyline` ir `grid`.
+* **Detalės**: `beam`, `rounded_box`, `hemisphere`, `arch`, `stairs`, `gear`,
+  `wheel`, `roof`, `column`, `bricks`, `tree`, `pixels`, `heightmap`,
+  `polyline`, `wireframe`, `flow`, `trace`.
+* **Išdėstymas**: `aim`, `ground`, `align`, `random_points`, `scatter`,
+  `along`.
+* **Profiliai ir pagalbininkai**: `profile_circle/ellipse/polygon/star/rect/gear`,
+  `chaikin`, `points_on_line/circle/helix/spiral/curve`, `lerp`, `clamp`,
+  `remap`, `distance`, `midpoint`, `direction`, `rotate_point`, `shade`.
+* **Užrašai**: `text` su įmontuotu šriftu (yra lietuviškos raidės); 2.0
+  funkcija, dėliojusi *įkeltas* raidžių figūras, dabar vadinasi `typeset`.
+* `inside(M, taškai)` priima taškų sąrašą; `check()` „touching edges“
+  praneša atskirai nuo atvirų briaunų.
 
 ## Du dalykai, kurie pasikeitė
 
@@ -579,6 +861,19 @@ of model this library is for, and it keeps the file format simple.
 
 **Can I use it in my own project?** Yes, MIT licence. Attribution is welcome
 but not required.
+
+**What does "touching edges" in the report mean?** Two parts meet along an
+edge only (think of a chequerboard of cubes). The surface is still
+watertight -- there are no open edges -- but that edge is shared by four
+faces. It is normal for `pixels`, `heightmap` and `voxels` models and does
+no harm.
+
+**Why is the file called `add.py` but the project `add3d`?** The module has
+been `add.py` in the course since the beginning, and a file on your disk can
+be called whatever you like. On PyPI, however, the name `add` is registered to
+someone else (an empty placeholder with no releases), so the
+repository and the installable package are called `add3d`. `pip install
+add3d` and `import add` go together.
 """),
 "lt": ("""# Klausimai
 
@@ -607,6 +902,17 @@ pakanka, o failo formatas lieka paprastas.
 
 **Ar galiu naudoti savo projekte?** Taip, MIT licencija. Nuoroda į autorių
 maloni, bet neprivaloma.
+
+**Ką ataskaitoje reiškia "touching edges"?** Dvi dalys liečiasi tik briauna
+(įsivaizduokite kubelių šachmatų lentą). Paviršius vis tiek sandarus --
+atvirų briaunų nėra -- tik tą briauną dalijasi keturios sienos. Modeliams iš
+`pixels`, `heightmap` ir `voxels` tai įprasta ir nekenkia.
+
+**Kodėl failas vadinasi `add.py`, o projektas -- `add3d`?** Kurse modulis nuo
+pat pradžių buvo `add.py`, o failą savo diske galima vadinti kaip norite.
+Tačiau PyPI kataloge vardą `add` prieš daugelį metų užregistravo kitas
+žmogus (tuščias, be jokių versijų), todėl saugykla ir diegiamas paketas
+vadinasi `add3d`. `pip install add3d` ir `import add` eina kartu.
 """),
 }),
 ]
@@ -667,6 +973,65 @@ GALLERY = [
     ("text.png", "21_text_and_loading.py",
      "Models loaded back from files: a word, an alphabet, a reloaded torus.",
      "Iš failų įkelti modeliai: žodis, abėcėlė, iš naujo įkeltas toras."),
+    ("lighthouse.png", "22_lighthouse.py",
+     "A lighthouse island: height field, striped lathe, bricks, palms, a "
+     "lofted boat.",
+     "Švyturio sala: aukščių laukas, dryžuotas sukinys, plytos, palmės, "
+     "valtis iš pjūvių."),
+    ("locomotive.png", "23_locomotive.py",
+     "A steam locomotive: spoked wheels, rods that follow the crank angle, "
+     "smoke along a curve.",
+     "Garvežys: ratai su stipinais, trauklės, sekančios alkūnės kampą, "
+     "dūmai išilgai kreivės."),
+    ("windmill.png", "24_windmill.py",
+     "A windmill on a hill: an extruded octagon, four sails from one, a "
+     "fence along a ring.",
+     "Malūnas ant kalvos: ištemptas aštuonkampis, keturi sparnai iš vieno, "
+     "tvora išilgai žiedo."),
+    ("temple.png", "25_temple.py",
+     "A round temple: columns on a circle, a pipe entablature, a dome, a "
+     "chequered floor from a colour function.",
+     "Apvali šventykla: kolonos ant apskritimo, antablementas, kupolas, "
+     "languotos grindys iš spalvos funkcijos."),
+    ("vector_fields.png", "26_vector_fields.py",
+     "Lorenz and Rössler attractors, an arrow field, beads on a helix, "
+     "cubes on a spiral.",
+     "Lorenco ir Röslerio atraktoriai, rodyklių laukas, karoliukai ant "
+     "spiralės, kubeliai ant sraigto."),
+    ("robot.png", "27_robot.py",
+     "A robot reaching for a ball: limbs aimed at points, a pixel face, a "
+     "sheared shadow.",
+     "Robotas siekia kamuolio: galūnės, nukreiptos į taškus, pikselinis "
+     "veidas, šešėlis iš šlyties."),
+    ("voxel_island.png", "28_voxel_island.py",
+     "A block-world island from a height table, painted by layer, with a "
+     "flag from strings.",
+     "Kubelių sala iš aukščių lentelės, nuspalvinta sluoksniais, su vėliava "
+     "iš eilučių."),
+    ("bridge.png", "29_bridge.py",
+     "A suspension bridge and a stone bridge: beams, cables, hangers, "
+     "arches, cars along the road.",
+     "Kabantis ir akmeninis tiltai: sijos, lynai, pakabos, arkos, "
+     "automobiliai išilgai kelio."),
+    ("solar_system.png", "30_solar_system.py",
+     "Planets painted by colour functions, orbits, moons, an asteroid belt, "
+     "a comet.",
+     "Planetos, nuspalvintos spalvų funkcijomis, orbitos, mėnuliai, "
+     "asteroidų žiedas, kometa."),
+    ("workbench.png", "31_workbench.py",
+     "The workbench: a broken mesh repaired, a union healed, points tested "
+     "with inside(), every file format.",
+     "Dirbtuvės: sutaisytas sugadintas modelis, sujungti kūnai, taškai, "
+     "patikrinti su inside(), visi failų formatai."),
+    ("old_names.png", "32_old_names.py",
+     "A still life written entirely in the add.py 1.2 vocabulary.",
+     "Natiurmortas, parašytas vien add.py 1.2 žodynu."),
+    ("cross_sections.png", "33_cross_sections.py",
+     "Cross-sections on the move: star, gear, ellipse, circle, rounded "
+     "rectangle, polygon -- extruded, swept, lofted, bent.",
+     "Skerspjūviai kelyje: žvaigždė, krumpliaratis, elipsė, apskritimas, "
+     "suapvalintas stačiakampis, daugiakampis -- ištempti, nušluoti, "
+     "sulenkti."),
     ("example4.png", "20_classic_1_2.py",
      "A Christmas tree made only of parametric surfaces (from add.py 1.2).",
      "Eglutė vien iš parametrinių paviršių (iš add.py 1.2)."),
@@ -816,7 +1181,59 @@ SHORT = {
 "obj": "Įrašo OBJ failą ir kartu MTL spalvų failą.",
 "load": "Nuskaito modelį iš .off, .obj arba .ply failo.",
 "load_font": "Nuskaito visą raidžių ar skaitmenų aplanką į žodyną.",
-"text": "Išdėsto įkeltų raidžių eilutę ir sujungia į vieną modelį.",
+"typeset": "Išdėsto įkeltų raidžių (Mesh) eilutę ir sujungia į vieną modelį.",
+# -- 2.1: numbers, profiles and points
+"lerp": "Tarpinė reikšmė tarp a ir b (t nuo 0 iki 1); veikia ir taškams.",
+"clamp": "Apriboja skaičių intervalu lo..hi.",
+"remap": "Perveda x iš intervalo a0..a1 į intervalą b0..b1.",
+"distance": "Atstumas tarp dviejų taškų.",
+"midpoint": "Atkarpos vidurio taškas.",
+"direction": "Vienetinis vektorius nuo a link b.",
+"rotate_point": "Pasuka vieną tašką apie ašį per tašką P.",
+"shade": "Tamsesnis (factor < 1) arba šviesesnis (> 1) spalvos atspalvis.",
+"chaikin": "Suapvalina laužtės kampus (Chaikin algoritmas).",
+"profile_circle": "k taškų ant apskritimo -- profilis extrude/sweep/prism funkcijoms.",
+"profile_ellipse": "Elipsės profilis.",
+"profile_polygon": "Taisyklingo n-kampio profilis.",
+"profile_star": "Žvaigždės profilis su n spinduliais.",
+"profile_rect": "Stačiakampio profilis, galima suapvalinti kampus.",
+"profile_gear": "Krumpliaračio kontūras.",
+"points_on_line": "n taškų, tolygiai išdėstytų atkarpoje.",
+"points_on_circle": "n taškų ant apskritimo erdvėje.",
+"points_on_helix": "n taškų ant spiralinės linijos (sraigto).",
+"points_on_spiral": "n taškų ant plokščios spiralės, kurios spindulys auga.",
+"points_on_curve": "n taškų ant kreivės path(t).",
+# -- 2.1: parts
+"beam": "Stačiakampė sija nuo taško A iki taško B.",
+"rounded_box": "Dėžė suapvalintomis briaunomis ir kampais.",
+"hemisphere": "Pusrutulis (kupolas, dubuo).",
+"arch": "Arka, stovinti ant taškų A ir B, apvalaus arba stačiakampio pjūvio.",
+"stairs": "Laiptai iš n pakopų.",
+"gear": "Krumpliaratis su nurodytu dantų skaičiumi (galima su skyle ašiai).",
+"wheel": "Ratas: diskas su stebule arba padanga su stipinais.",
+"roof": "Dvišlaitis stogas virš stačiakampio pagrindo.",
+"column": "Kolona su pjedestalu ir kapiteliu.",
+"bricks": "Plytų siena su perslinktomis eilėmis.",
+"tree": "Medis: apvalus, eglė arba palmė; seed duoda skirtingus medžius.",
+"pixels": "Pikselinis piešinys iš eilučių tekstas -> spalvoti kubeliai.",
+"heightmap": "Kubelių stulpeliai pagal aukščių lentelę.",
+"polyline": "Apvalus vamzdis per taškų sąrašą.",
+"wireframe": "Visos modelio briaunos kaip ploni strypeliai su rutuliukais kampuose.",
+"flow": "Vektorinio lauko trajektorija (Runge-Kutta) -- taškų sąrašas.",
+"trace": "Nubraižo vektorinio lauko trajektoriją kaip vamzdį.",
+"PALETTE": "Numatytoji pixels() spalvų lentelė: viena raidė -- viena spalva.",
+# -- 2.1: placing
+"aim": "Pasuka modelį taip, kad jo ašis rodytų nurodyta kryptimi.",
+"ground": "Nuleidžia modelį taip, kad jo apačia būtų aukštyje y.",
+"align": "Perkelia modelį taip, kad pasirinktas gabarito taškas atsidurtų nurodytoje vietoje.",
+"random_points": "n atsitiktinių taškų dėžėje (arba ant reljefo, jei duota height).",
+"scatter": "Modelio kopijos nurodytuose taškuose, atsitiktinai pasuktos ir padidintos.",
+"along": "n modelio kopijų išilgai kreivės, pasuktų pagal jos kryptį.",
+# -- 2.1: labels
+"text": "Užrašas iš įmontuoto šrifto (raidės, skaitmenys, lietuviškos raidės).",
+"write": "Tas pats, kas text().",
+"label": "Tas pats, kas text().",
+"text_width": "Kokio pločio bus text() užrašas.",
 # -- misc
 "demo": "Sukuria nedidelį modelį, išbandantį beveik visą biblioteką.",
 "EPS": "Skaitinė paklaida, naudojama klijuojant ir lyginant.",
