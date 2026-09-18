@@ -1,0 +1,47 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: add.py is in sync with _src/
+        run: |
+          python build.py
+          git diff --exit-code add.py
+
+      - name: unit tests
+        run: python tests/test_add.py
+
+      - name: add.py 1.2 models still build
+        run: python tests/test_legacy.py
+
+  examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: every example runs
+        run: python examples/build_all.py --models
+
+      - name: documentation is in sync with the docstrings
+        run: |
+          python tools/make_docs.py
+          git diff --exit-code docs/index.html
