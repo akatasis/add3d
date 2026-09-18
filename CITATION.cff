@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+title: "add.py: building 3D models with nothing but code"
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - family-names: Sabaliauskas
+    given-names: Martynas
+    affiliation: "Vilnius University, Faculty of Mathematics and Informatics,
+      Institute of Data Science and Digital Technologies"
+    email: martynas.sabaliauskas@mif.vu.lt
+version: "2.0"
+date-released: "2026-09-18"
+license: MIT
+keywords:
+  - 3D modelling
+  - computational geometry
+  - constructive solid geometry
+  - computer science education
+  - parametric surfaces
+  - Python
+abstract: >-
+  add.py is a single-file, dependency-free Python module for building 3D
+  models from program code alone. It provides primitives, parametric
+  surfaces, sweeps and lathes, mesh boolean operations implemented from
+  scratch, mesh repair and validation, and export to OFF, OBJ, PLY and STL.
+  It is used in an undergraduate course in which students must create a 3D
+  model without using any modelling software or mesh library.

@@ -1,0 +1,29 @@
+# add.py is deliberately NOT a pip package.
+#
+# The whole point is that a student downloads one file, drops it next to
+# their own script and writes `import add`.  Installing a module called
+# `add` into a shared site-packages directory would be a poor neighbour, and
+# it would hide the thing we want people to read.
+#
+# This file therefore only configures the tools used to develop it.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+line-length = 80
+target-version = "py38"
+exclude = ["tests/legacy", "examples/out"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP"]
+ignore = [
+    "E741",   # `l` is a perfectly good index name in geometry code
+    "UP031",  # %-formatting is used throughout, on purpose: it works everywhere
+]
+
+[tool.ruff.lint.per-file-ignores]
+"examples/*.py" = ["E402"]   # examples put add.py on the path before importing
+"tools/*.py" = ["E402"]
+"tests/*.py" = ["E402"]
