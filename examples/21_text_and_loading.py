@@ -63,6 +63,7 @@ add.save("ring_for_reloading.off")
 add.pop()
 
 reloaded = add.load("ring_for_reloading.off")
+os.remove("ring_for_reloading.off")           # it was only a demonstration
 print("reloaded %d faces" % reloaded.polygons)
 add.mesh(add.move(add.rotateX(reloaded, math.pi / 2), [1.1, 3.2, 0]))
 
