@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>add.py 2.0 &mdash; 3D models from code</title>
+<meta name="description" content="add.py: build 3D models with nothing but Python code. No libraries, no modelling program.">
+<style>
+:root{
+  --bg:#ffffff; --fg:#1b1d21; --muted:#5d6470; --line:#e2e5ea;
+  --accent:#8a4b1e; --accent-soft:#f6efe8; --code-bg:#f6f7f9;
+  --card:#fbfbfc; --shadow:0 1px 2px rgba(0,0,0,.05);
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+}
+:root:not([data-theme="light"]){
+  @media (prefers-color-scheme: dark){
+    --bg:#15171a; --fg:#e7e9ec; --muted:#9aa2ae; --line:#292d33;
+    --accent:#e0a271; --accent-soft:#25201b; --code-bg:#1d2025;
+    --card:#191c20; --shadow:0 1px 2px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171a; --fg:#e7e9ec; --muted:#9aa2ae; --line:#292d33;
+  --accent:#e0a271; --accent-soft:#25201b; --code-bg:#1d2025;
+  --card:#191c20; --shadow:0 1px 2px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+  font-size:16px;line-height:1.65;-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar{max-width:1140px;margin:0 auto;padding:10px 16px;display:flex;
+  align-items:center;gap:14px;flex-wrap:wrap}
+.brand{font-family:var(--mono);font-weight:600;font-size:17px;color:var(--fg);
+  text-decoration:none;white-space:nowrap}
+.brand span{color:var(--accent)}
+nav{display:flex;gap:2px;flex-wrap:wrap;flex:1;min-width:0}
+nav a{color:var(--muted);text-decoration:none;font-size:14px;padding:5px 9px;
+  border-radius:6px;white-space:nowrap}
+nav a:hover{background:var(--accent-soft);color:var(--accent)}
+.toggle{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.toggle button{font:inherit;font-size:13px;padding:4px 11px;border:0;cursor:pointer;
+  background:transparent;color:var(--muted)}
+.toggle button[aria-pressed="true"]{background:var(--accent);color:#fff}
+main{max-width:1140px;margin:0 auto;padding:0 16px 96px}
+.hero{padding:48px 0 24px;border-bottom:1px solid var(--line)}
+.hero h1{font-size:clamp(30px,6vw,46px);margin:0 0 6px;letter-spacing:-.02em}
+.hero h1 span{color:var(--accent);font-family:var(--mono)}
+.hero p.lead{font-size:clamp(17px,2.4vw,21px);color:var(--muted);margin:0 0 20px;
+  max-width:62ch}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.badge{font-size:12.5px;font-family:var(--mono);border:1px solid var(--line);
+  border-radius:20px;padding:3px 11px;color:var(--muted);background:var(--card)}
+section{padding-top:40px}
+h2{font-size:clamp(23px,3.6vw,30px);margin:8px 0 12px;letter-spacing:-.01em}
+h3{font-size:19px;margin:28px 0 8px}
+h4{font-size:16px;margin:20px 0 6px;color:var(--muted)}
+p{margin:0 0 14px;max-width:74ch}
+a{color:var(--accent)}
+code{font-family:var(--mono);font-size:.885em;background:var(--code-bg);
+  padding:1.5px 5px;border-radius:4px;border:1px solid var(--line)}
+pre.code{position:relative;background:var(--code-bg);border:1px solid var(--line);
+  border-radius:9px;padding:14px 16px;overflow:auto;margin:0 0 16px;font-size:13.5px}
+pre.code code{background:none;border:0;padding:0;font-size:inherit;line-height:1.6}
+pre.code .copy{position:absolute;top:7px;right:7px;border:1px solid var(--line);
+  background:var(--bg);color:var(--muted);border-radius:6px;cursor:pointer;
+  font-size:11px;padding:3px 7px;opacity:0;transition:opacity .15s}
+pre.code:hover .copy{opacity:1}
+figure{margin:20px 0;border:1px solid var(--line);border-radius:11px;
+  overflow:hidden;background:var(--card)}
+figure img{display:block;width:100%;height:auto}
+section > div > figure img{max-height:470px;object-fit:contain;
+  background:#fafafa}
+figcaption{font-size:13.5px;color:var(--muted);padding:9px 14px;
+  border-top:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;margin:0 0 18px;font-size:14.5px;
+  display:block;overflow-x:auto}
+th,td{text-align:left;padding:7px 12px;border-bottom:1px solid var(--line);
+  vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase;
+  letter-spacing:.04em}
+.gallery{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(310px,1fr))}
+.gallery figure{margin:0}
+.gallery figcaption b{display:block;color:var(--fg);font-family:var(--mono);
+  font-size:12.5px;font-weight:600;margin-bottom:3px}
+.tools{display:flex;gap:10px;align-items:center;margin:16px 0 22px;flex-wrap:wrap}
+input[type=search]{flex:1;min-width:210px;font:inherit;font-size:14.5px;
+  padding:8px 13px;border:1px solid var(--line);border-radius:8px;
+  background:var(--bg);color:var(--fg)}
+.api-group{margin-bottom:30px}
+.api-group>h3{border-bottom:1px solid var(--line);padding-bottom:6px}
+.fn{border:1px solid var(--line);border-radius:10px;margin:0 0 9px;
+  background:var(--card);box-shadow:var(--shadow);overflow:hidden}
+.fn>summary,.fn .head{cursor:pointer;padding:9px 14px;list-style:none;display:flex;
+  gap:10px;align-items:baseline;flex-wrap:wrap}
+.fn.flat .head{cursor:default;padding-left:33px}
+.fn>summary::-webkit-details-marker{display:none}
+.fn>summary::before{content:"\25B8";color:var(--muted);font-size:11px;
+  transition:transform .15s;display:inline-block}
+.fn[open]>summary::before{transform:rotate(90deg)}
+.fn .nm{font-family:var(--mono);font-weight:600;color:var(--accent)}
+.fn .sig{font-family:var(--mono);font-size:13px;color:var(--muted);
+  word-break:break-word}
+.fn .sum{font-size:14px;color:var(--muted);flex-basis:100%;margin-left:19px}
+.fn .body{padding:2px 14px 12px 33px;border-top:1px solid var(--line)}
+.fn .body p{font-size:14.5px}
+.fn .body pre.code{font-size:13px}
+footer{border-top:1px solid var(--line);margin-top:56px;padding:26px 0;
+  color:var(--muted);font-size:13.5px}
+[data-lang="en"] .only-lt{display:none}
+[data-lang="lt"] .only-en{display:none}
+.note{background:var(--accent-soft);border-left:3px solid var(--accent);
+  padding:11px 15px;border-radius:0 8px 8px 0;margin:0 0 18px;font-size:14.5px}
+@media (max-width:640px){
+  .bar{gap:9px}
+  nav{order:3;flex-basis:100%}
+  .hero{padding:30px 0 18px}
+}
+</style>
+</head><body>
+<header><div class="bar">
+<a class="brand" href="#top">add<span>.py</span></a>
+<nav>
+<a href="#start"><span class="only-en">Start here</span><span class="only-lt">Nuo ko pradėti</span></a>
+<a href="#concepts"><span class="only-en">How it works</span><span class="only-lt">Kaip tai veikia</span></a>
+<a href="#gallery"><span class="only-en">Gallery</span><span class="only-lt">Galerija</span></a>
+<a href="#cookbook"><span class="only-en">Recipes</span><span class="only-lt">Receptai</span></a>
+<a href="#reference"><span class="only-en">Reference</span><span class="only-lt">Funkcijos</span></a>
+<a href="#upgrade"><span class="only-en">From 1.2</span><span class="only-lt">Iš 1.2 versijos</span></a>
+<a href="#faq"><span class="only-en">Questions</span><span class="only-lt">Klausimai</span></a>
+</nav>
+<div class="toggle"><button data-lang="en">EN</button><button data-lang="lt">LT</button></div>
+</div></header>
+<main id="top">
+<div class="hero">
+<h1>add<span>.py</span></h1>
+<p class="lead"><span class="only-en">Build 3D models with nothing but Python code.</span><span class="only-lt">3D modeliai, sukurti vien tik programiniu kodu.</span></p>
+<p class="lead" style="font-size:16px"><span class="only-en">One file. Only <code>math</code> and <code>random</code>. No modelling program, no mesh library, no install.</span><span class="only-lt">Vienas failas. Tik <code>math</code> ir <code>random</code>. Jokios modeliavimo programos, jokios geometrijos bibliotekos, nieko diegti nereikia.</span></p>
+<div class="badges">
+<span class="badge">v2.0</span>
+<span class="badge">MIT</span>
+<span class="badge">Python 3</span>
+<span class="badge">130 functions</span>
+<span class="badge">0 dependencies</span>
+</div></div>
+<section id="start">
+<div class="only-en"><h2>Start here</h2>
+<p><code>add.py</code> is one file. Download it, put it next to your own script, and <code>import add</code>. There is nothing to install and nothing to configure: the library uses only <code>math</code> and <code>random</code> from the Python standard library.</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>import add
+
+add.box([0, 0, 0], 2, &quot;red&quot;)
+add.sphere([3, 0, 0], 1, 20, &quot;blue&quot;)
+add.cylinder([0, 2, 0], [3, 2, 0], 0.3, 24, &quot;gold&quot;)
+
+add.check()
+add.save(&quot;first_model.off&quot;)</code></pre>
+<p><code>check()</code> prints a short report &mdash; how many polygons, how many colours, whether the surface is closed. <code>save()</code> writes the file; the extension decides the format (<code>.off</code>, <code>.obj</code>, <code>.ply</code> or <code>.stl</code>).</p>
+<figure><img loading="lazy" src="images/first_model.png" alt="The three shapes above."><figcaption>The three shapes above.</figcaption></figure>
+<h3>Looking at what you made</h3>
+<p>Open the file in <a href="https://www.meshlab.net/">MeshLab</a>, or render it without installing anything at all:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>python3 tools/preview.py first_model.off</code></pre>
+<p><code>tools/preview.py</code> is a small software renderer that ships with the library and also uses only the standard library. It writes a PNG.</p>
+<h3>Sharing it</h3>
+<p>Save as <code>.obj</code> and you get an <code>.obj</code> and a <code>.mtl</code> file. Put both in one zip and upload them to <a href="https://sketchfab.com">Sketchfab</a> to get a model anyone can turn around in a browser.</p></div>
+<div class="only-lt"><h2>Nuo ko pradėti</h2>
+<p><code>add.py</code> yra vienas failas. Atsisiųskite jį, padėkite šalia savo programos ir parašykite <code>import add</code>. Nieko diegti nereikia: modulis naudoja tik <code>math</code> ir <code>random</code> iš standartinės Python bibliotekos.</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>import add
+
+add.box([0, 0, 0], 2, &quot;red&quot;)
+add.sphere([3, 0, 0], 1, 20, &quot;blue&quot;)
+add.cylinder([0, 2, 0], [3, 2, 0], 0.3, 24, &quot;gold&quot;)
+
+add.check()
+add.save(&quot;pirmas_modelis.off&quot;)</code></pre>
+<p><code>check()</code> išspausdina trumpą ataskaitą: kiek daugiakampių, kiek spalvų, ar paviršius uždaras. <code>save()</code> išsaugo failą, o formatą nulemia plėtinys (<code>.off</code>, <code>.obj</code>, <code>.ply</code> arba <code>.stl</code>).</p>
+<figure><img loading="lazy" src="images/first_model.png" alt="Trys aukščiau sukurtos figūros."><figcaption>Trys aukščiau sukurtos figūros.</figcaption></figure>
+<h3>Kaip pažiūrėti, kas gavosi</h3>
+<p>Atidarykite failą <a href="https://www.meshlab.net/">MeshLab</a> programa arba atvaizduokite nieko nediegdami:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>python3 tools/preview.py pirmas_modelis.off</code></pre>
+<p><code>tools/preview.py</code> yra nedidelis programinis atvaizdavimo įrankis, einantis kartu su biblioteka. Jis irgi naudoja tik standartinę biblioteką ir sukuria PNG paveikslėlį.</p>
+<h3>Kaip pasidalinti</h3>
+<p>Išsaugokite <code>.obj</code> formatu &mdash; gausite <code>.obj</code> ir <code>.mtl</code> failus. Abu sudėkite į vieną archyvą ir įkelkite į <a href="https://sketchfab.com">Sketchfab</a>: modelį galės pasukioti bet kas naršyklėje.</p></div>
+</section>
+<section id="concepts">
+<div class="only-en"><h2>How it works</h2>
+<h3>A model is two lists</h3>
+<p>A 3D model is a list of points and a list of which points to join into a face. That is all an OFF file contains:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>OFF
+8 6 0
+-1 -1 -1
+-1 -1 1
+...
+4 0 4 5 1 255 0 0</code></pre>
+<p>The first line says "this is an OFF file". The second gives the number of vertices, faces and edges. Then come the vertex coordinates, then the faces: <code>4 0 4 5 1</code> means "a quadrilateral joining vertices 0, 4, 5 and 1", and the three numbers after it are its colour.</p>
+<p>Every drawing function in this library does the same thing: it works out some points and adds some faces.</p>
+<h3>Inside and outside</h3>
+<p>A face has a side. Looking at the model from <em>outside</em>, the corners of a face must run counter-clockwise. Get it backwards and the face is inside out &mdash; renderers draw it black or not at all.</p>
+<p>You rarely have to think about this, because the library orients its own shapes; but it matters when you write <code>add.polygon(...)</code> by hand, and it is why a thin parametric surface has a good side and a bad side. See <a href="#cookbook">recipes</a> for the cure.</p>
+<h3>The scene, and layers</h3>
+<p>Drawing functions add to the <strong>current scene</strong>. <code>layer()</code> takes the scene away and hands it to you as a mesh, leaving the scene empty:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>add.box([0, 0, 0], 1, &quot;red&quot;)
+brick = add.layer()             # the scene is now empty again</code></pre>
+<p>A mesh in your hands can be moved, turned, scaled, coloured and combined &mdash; and then put back with <code>mesh()</code>:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>for i in range(10):
+    add.mesh(add.move(brick, [i * 1.2, 0, 0]))</code></pre>
+<p>That is the whole idea: <strong>build once, place many times</strong>.</p>
+<p>Transformations never change the mesh you give them; they return a new one. So you can chain them and keep the original:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>tilted = add.rotateY(add.zoom(brick, 0.5), 0.4)</code></pre>
+<h3>One trap, and the tool for it</h3>
+<p><code>layer()</code> takes away <em>everything</em> drawn so far &mdash; including things you drew earlier for another purpose. Inside a function that builds a part, start with <code>push()</code> and finish with <code>pop()</code>:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>def wheel(r):
+    add.push()                  # the rest of the scene is put aside
+    add.cylinder([0, 0, -0.2], [0, 0, 0.2], r, 32, &quot;black&quot;)
+    add.torus([0, 0, 0], r, 0.1, 40, 16, &quot;grey&quot;)
+    return add.pop()            # and comes back</code></pre></div>
+<div class="only-lt"><h2>Kaip tai veikia</h2>
+<h3>Modelis &mdash; tai du sąrašai</h3>
+<p>3D modelis yra taškų sąrašas ir sąrašas, kurie taškai jungiami į sieną. Būtent tai ir yra OFF failas:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>OFF
+8 6 0
+-1 -1 -1
+-1 -1 1
+...
+4 0 4 5 1 255 0 0</code></pre>
+<p>Pirma eilutė sako, kad tai OFF failas. Antroje &mdash; viršūnių, sienų ir briaunų skaičius. Toliau eina viršūnių koordinatės, paskui sienos: <code>4 0 4 5 1</code> reiškia „keturkampis, jungiantis viršūnes 0, 4, 5 ir 1", o trys skaičiai po to &mdash; jo spalva.</p>
+<p>Visos šios bibliotekos braižymo funkcijos daro tą patį: apskaičiuoja taškus ir prideda sienas.</p>
+<h3>Vidinė ir išorinė siena</h3>
+<p>Siena turi pusę. Žiūrint į modelį <em>iš išorės</em>, sienos viršūnės turi būti išdėstytos prieš laikrodžio rodyklę. Jei atvirkščiai &mdash; siena bus išversta, ir atvaizdavimo programos ją nupieš juodą arba visai nerodys.</p>
+<p>Apie tai retai tenka galvoti, nes biblioteka savo figūras orientuoja pati. Bet tai svarbu, kai <code>add.polygon(...)</code> rašote patys, ir būtent dėl to plonas parametrinis paviršius turi gerąją ir blogąją pusę. Vaistus rasite <a href="#cookbook">receptuose</a>.</p>
+<h3>Scena ir sluoksniai</h3>
+<p>Braižymo funkcijos prideda figūras į <strong>dabartinę sceną</strong>. <code>layer()</code> sceną paima ir grąžina ją kaip modelį, o scena lieka tuščia:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>add.box([0, 0, 0], 1, &quot;red&quot;)
+plyta = add.layer()             # scena vėl tuščia</code></pre>
+<p>Rankose turimą modelį galima stumdyti, sukti, keisti mastelį, perdažyti ir jungti, o paskui grąžinti į sceną su <code>mesh()</code>:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>for i in range(10):
+    add.mesh(add.move(plyta, [i * 1.2, 0, 0]))</code></pre>
+<p>Tai ir yra visa esmė: <strong>sukurk vieną kartą, padėk daug kartų</strong>.</p>
+<p>Transformacijos niekada nekeičia joms perduoto modelio &mdash; jos grąžina naują. Todėl jas galima jungti į grandinę ir originalas išlieka:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>pakreipta = add.rotateY(add.zoom(plyta, 0.5), 0.4)</code></pre>
+<h3>Viena spąstų vieta ir įrankis jai</h3>
+<p><code>layer()</code> paima <em>viską</em>, kas nupiešta iki tol &mdash; taip pat ir tai, ką piešėte anksčiau visai kitam tikslui. Funkcijoje, kuri kuria atskirą detalę, pradėkite nuo <code>push()</code> ir baikite <code>pop()</code>:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>def ratas(r):
+    add.push()                  # likusi scena padedama į šalį
+    add.cylinder([0, 0, -0.2], [0, 0, 0.2], r, 32, &quot;black&quot;)
+    add.torus([0, 0, 0], r, 0.1, 40, 16, &quot;grey&quot;)
+    return add.pop()            # ir sugrįžta</code></pre></div>
+</section>
+<section id="gallery">
+<h2><span class="only-en">Gallery</span><span class="only-lt">Galerija</span></h2>
+<p><span class="only-en">Every picture below was made by one script in <code>examples/</code>, and every script is meant to be read.</span><span class="only-lt">Kiekvienas paveikslėlis sukurtas viena programa iš <code>examples/</code> aplanko, ir kiekviena jų skirta skaityti.</span></p>
+<div class="gallery">
+<figure><img loading="lazy" src="images/primitives.png" alt="Every ready-made shape in the library."><figcaption><b>02_primitives.py</b><span class="only-en">Every ready-made shape in the library.</span><span class="only-lt">Visos bibliotekoje esančios paruoštos figūros.</span></figcaption></figure>
+<figure><img loading="lazy" src="images/surfaces_classic.png" alt="Classic parametric surfaces: sphere, torus, helicoid, catenoid, pseudosphere."><figcaption><b>06_surfaces_classic.py</b><span class="only-en">Classic parametric surfaces: sphere, torus, helicoid, catenoid, pseudosphere.</span><span class="only-lt">Klasikiniai parametriniai paviršiai: sfera, toras, helikoidas, katenoidas, pseudosfera.</span></figcaption></figure>
+<figure><img loading="lazy" src="images/surfaces_exotic.png" alt="One-sided and self-intersecting surfaces: Mobius, Klein, Boy, Roman."><figcaption><b>07_surfaces_exotic.py</b><span class="only-en">One-sided and self-intersecting surfaces: Mobius, Klein, Boy, Roman.</span><span class="only-lt">Vienpusiai ir save kertantys paviršiai: Miobijaus, Kleino, Boy, Romos.</span></figcaption></figure>
+<figure><img loading="lazy" src="images/supershapes.png" alt="Twelve shapes from a single equation -- Gielis&#x27;s superformula."><figcaption><b>08_surfaces_superformula.py</b><span class="only-en">Twelve shapes from a single equation -- Gielis&#x27;s superformula.</span><span class="only-lt">Dvylika formų iš vienos lygties -- Gielio superformulė.</span></figcaption></figure>
+<figure><img loading="lazy" src="images/surfaces_nature.png" alt="Shells, fruit, horns and waves, all written down as formulas."><figcaption><b>09_surfaces_nature.py</b><span class="only-en">Shells, fruit, horns and waves, all written down as formulas.</span><span class="only-lt">Kriauklės, vaisiai, ragai ir bangos -- viskas užrašyta formulėmis.</span></figcaption></figure>
+<figure><img loading="lazy" src="images/height_fields.png" alt="Graphs of two-variable functions, y = f(x, z)."><figcaption><b>10_height_fields.py</b><span class="only-en">Graphs of two-variable functions, y = f(x, z).</span><span class="only-lt">Dviejų kintamųjų funkcijų grafikai, y = f(x, z).</span></figcaption></figure>
+<figure><img loading="lazy" src="images/curves.png" alt="Parametric curves drawn as round tubes: knots, spirals, Lissajous."><figcaption><b>12_curves.py</b><span class="only-en">Parametric curves drawn as round tubes: knots, spirals, Lissajous.</span><span class="only-lt">Parametrinės kreivės kaip apvalūs vamzdeliai: mazgai, spiralės, Lissajous kreivės.</span></figcaption></figure>
+<figure><img loading="lazy" src="images/sweeps.png" alt="A cross-section copied, turned and stretched along a path."><figcaption><b>13_sweep_and_twist.py</b><span class="only-en">A cross-section copied, turned and stretched along a path.</span><span class="only-lt">Skerspjūvis, kopijuojamas, sukamas ir tempiamas išilgai kelio.</span></figcaption></figure>
+<figure><img loading="lazy" src="images/lathe.png" alt="The lathe: a vase, a wine glass, chess pieces, a doughnut."><figcaption><b>14_lathe_gallery.py</b><span class="only-en">The lathe: a vase, a wine glass, chess pieces, a doughnut.</span><span class="only-lt">Sukinys: vaza, taurė, šachmatų figūros, spurga.</span></figcaption></figure>
+<figure><img loading="lazy" src="images/patterns.png" alt="One piece, many copies: rows, rings, spirals, sunflower packing."><figcaption><b>15_patterns.py</b><span class="only-en">One piece, many copies: rows, rings, spirals, sunflower packing.</span><span class="only-lt">Viena detalė, daug kopijų: eilės, žiedai, spiralės, saulėgrąžos išdėstymas.</span></figcaption></figure>
+<figure><img loading="lazy" src="images/booleans.png" alt="Union, intersection and difference: holes, a gear, a pipe elbow."><figcaption><b>16_booleans.py</b><span class="only-en">Union, intersection and difference: holes, a gear, a pipe elbow.</span><span class="only-lt">Sąjunga, sankirta ir skirtumas: skylės, krumpliaratis, vamzdžio alkūnė.</span></figcaption></figure>
+<figure><img loading="lazy" src="images/fractals.png" alt="A Menger sponge, a Sierpinski tetrahedron, a tree, a Koch prism."><figcaption><b>17_fractals.py</b><span class="only-en">A Menger sponge, a Sierpinski tetrahedron, a tree, a Koch prism.</span><span class="only-lt">Mengerio kempinė, Sierpinskio tetraedras, medis, Kocho prizmė.</span></figcaption></figure>
+<figure><img loading="lazy" src="images/chess_set.png" alt="A complete chess set: lathe, layers, booleans, a board."><figcaption><b>18_chess_set.py</b><span class="only-en">A complete chess set: lathe, layers, booleans, a board.</span><span class="only-lt">Pilnas šachmatų komplektas: sukinys, sluoksniai, loginės operacijos, lenta.</span></figcaption></figure>
+<figure><img loading="lazy" src="images/city.png" alt="A procedural city. One seed decides the whole town."><figcaption><b>19_city.py</b><span class="only-en">A procedural city. One seed decides the whole town.</span><span class="only-lt">Procedūriškai sugeneruotas miestas. Vienas skaičius nulemia visą miestą.</span></figcaption></figure>
+<figure><img loading="lazy" src="images/example4.png" alt="A Christmas tree made only of parametric surfaces (from add.py 1.2)."><figcaption><b>20_classic_1_2.py</b><span class="only-en">A Christmas tree made only of parametric surfaces (from add.py 1.2).</span><span class="only-lt">Eglutė vien iš parametrinių paviršių (iš add.py 1.2).</span></figcaption></figure>
+<figure><img loading="lazy" src="images/example7.png" alt="A ball-and-stick buckyball (from add.py 1.2)."><figcaption><b>20_classic_1_2.py</b><span class="only-en">A ball-and-stick buckyball (from add.py 1.2).</span><span class="only-lt">Fulerenas iš rutuliukų ir strypelių (iš add.py 1.2).</span></figcaption></figure>
+</div></section>
+<section id="cookbook">
+<div class="only-en"><h2>Recipes</h2>
+<h3>My surface is black from one side</h3>
+<p>A parametric surface is a sheet with no thickness, so it has a front and a back. Two fixes, both one keyword:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>add.parametric(f, 0, 1, 40, 0, 1, 40, &quot;red&quot;, double_sided=True)   # cheap
+add.parametric(f, 0, 1, 40, 0, 1, 40, &quot;red&quot;, thickness=0.1)       # a solid</code></pre>
+<p><code>double_sided</code> adds a reversed copy of every face. <code>thickness</code> makes a real solid with a wall &mdash; watertight, printable, correct from every angle.</p>
+<figure><img loading="lazy" src="images/two_sided.png" alt="The same saddle: plain sheet, double sided, and solid."><figcaption>The same saddle: plain sheet, double sided, and solid.</figcaption></figure>
+<h3>I need a hole</h3>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>add.cuboid([0, 0, 0], [4, 1, 4], &quot;brown&quot;)
+plate = add.layer()
+add.cylinder([0, -1, 0], [0, 1, 0], 0.6, 32, &quot;black&quot;)
+drill = add.layer()
+add.mesh(add.difference(plate, drill))</code></pre>
+<p>Booleans want closed solids on both sides. <code>add.check()</code> will tell you whether yours is closed. The cut surface takes the colour of the tool that cut it; pass <code>color=</code> to <code>difference</code> to override that.</p>
+<h3>I need 10000 polygons</h3>
+<p>You almost certainly already have them &mdash; a <code>sphere(c, r, 30, ...)</code> alone is 5400. If not, the honest ways are more detail (<code>grid_u</code>, <code>grid_v</code>, <code>k</code>) or more repetition. <code>add.check()</code> counts them for you.</p>
+<h3>I want the shape to depend on a parameter</h3>
+<p>Put the number at the top of the file and use it everywhere:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>PETALS = 7
+for i in range(PETALS):
+    ...</code></pre>
+<p>Then changing one number changes the whole model, which is exactly what the assignment asks for.</p>
+<h3>My model has stray faces inside it</h3>
+<p>That happens when two solids touch: each keeps its own wall, buried where nobody can see it. <code>clean()</code> finds and removes them, along with repeated vertices and zero-area faces:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>model = add.clean(add.layer())
+add.mesh(model)</code></pre>
+<h3>I want a vase / chess piece / bottle</h3>
+<p>Spin a profile: <code>revolve(profile, A, B, t0, t1, steps, k, colour)</code> where <code>profile(t)</code> returns <code>[radius, height]</code>.</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>def vase(t):
+    return [1 + 0.4 * math.sin(3 * t), t]
+
+add.revolve(vase, [0, 0, 0], [0, 1, 0], 0, 4, 60, 40, &quot;teal&quot;)</code></pre>
+<figure><img loading="lazy" src="images/lathe.png" alt="Twelve shapes, each a single profile function."><figcaption>Twelve shapes, each a single profile function.</figcaption></figure>
+<h3>I want to bend or twist something</h3>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>M = add.twist(M, 0.5)                   # a corkscrew
+M = add.taper(M, -0.2)                  # thinner as it rises
+M = add.bend(M, 0.3)                    # into an arc
+M = add.deform(M, lambda p: [p[0], p[1] + math.sin(p[0]), p[2]])</code></pre>
+<p><code>deform</code> takes any function you like, so it can do anything the others cannot.</p>
+<h3>I want a rainbow</h3>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>M = add.color_by(M, lambda p: add.hsv(p[1] / 10.0))</code></pre>
+<p><code>color_by</code> calls your function with the centre of each face.</p></div>
+<div class="only-lt"><h2>Receptai</h2>
+<h3>Mano paviršius iš vienos pusės juodas</h3>
+<p>Parametrinis paviršius yra lakštas be storio, todėl turi priekį ir nugarą. Du sprendimai, abu &mdash; vienas raktažodis:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>add.parametric(f, 0, 1, 40, 0, 1, 40, &quot;red&quot;, double_sided=True)   # pigiai
+add.parametric(f, 0, 1, 40, 0, 1, 40, &quot;red&quot;, thickness=0.1)       # tikras kūnas</code></pre>
+<p><code>double_sided</code> prideda apverstą kiekvienos sienos kopiją. <code>thickness</code> sukuria tikrą kūną su sienele: uždarą, spausdinamą, teisingą iš visų pusių.</p>
+<figure><img loading="lazy" src="images/two_sided.png" alt="Tas pats balnas: paprastas lakštas, dvipusis ir tūrinis."><figcaption>Tas pats balnas: paprastas lakštas, dvipusis ir tūrinis.</figcaption></figure>
+<h3>Reikia skylės</h3>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>add.cuboid([0, 0, 0], [4, 1, 4], &quot;brown&quot;)
+plokste = add.layer()
+add.cylinder([0, -1, 0], [0, 1, 0], 0.6, 32, &quot;black&quot;)
+grezlas = add.layer()
+add.mesh(add.difference(plokste, grezlas))</code></pre>
+<p>Loginėms operacijoms reikia uždarų kūnų iš abiejų pusių. <code>add.check()</code> pasakys, ar jūsiškis uždaras. Naujai atsiveręs paviršius perima įrankio, kuris pjovė, spalvą; ją galima pakeisti <code>difference(..., color=...)</code>.</p>
+<h3>Reikia 10000 daugiakampių</h3>
+<p>Greičiausiai jų jau turite: vien <code>sphere(c, r, 30, ...)</code> duoda 5400. Jei ne &mdash; sąžiningi būdai yra didesnis detalumas (<code>grid_u</code>, <code>grid_v</code>, <code>k</code>) arba daugiau pasikartojimų. <code>add.check()</code> juos suskaičiuoja už jus.</p>
+<h3>Noriu, kad forma priklausytų nuo parametro</h3>
+<p>Skaičių aprašykite failo pradžioje ir naudokite jį visur:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>ZIEDLAPIU = 7
+for i in range(ZIEDLAPIU):
+    ...</code></pre>
+<p>Tada vieno skaičiaus pakeitimas pakeičia visą modelį &mdash; to ir prašo užduotis.</p>
+<h3>Modelio viduje liko nereikalingų sienų</h3>
+<p>Taip nutinka, kai du kūnai liečiasi: kiekvienas pasilieka savo sienelę, palaidotą ten, kur jos niekas nemato. <code>clean()</code> jas suranda ir pašalina kartu su besidubliuojančiomis viršūnėmis ir nulinio ploto sienomis:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>modelis = add.clean(add.layer())
+add.mesh(modelis)</code></pre>
+<h3>Noriu vazos / šachmatų figūros / butelio</h3>
+<p>Sukite profilį: <code>revolve(profilis, A, B, t0, t1, steps, k, spalva)</code>, kur <code>profilis(t)</code> grąžina <code>[spindulys, aukštis]</code>.</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>def vaza(t):
+    return [1 + 0.4 * math.sin(3 * t), t]
+
+add.revolve(vaza, [0, 0, 0], [0, 1, 0], 0, 4, 60, 40, &quot;teal&quot;)</code></pre>
+<figure><img loading="lazy" src="images/lathe.png" alt="Dvylika formų, kiekviena -- viena profilio funkcija."><figcaption>Dvylika formų, kiekviena &mdash; viena profilio funkcija.</figcaption></figure>
+<h3>Noriu ką nors sulenkti ar susukti</h3>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>M = add.twist(M, 0.5)                   # kaip kamščiatraukis
+M = add.taper(M, -0.2)                  # kylant plonėja
+M = add.bend(M, 0.3)                    # į lanką
+M = add.deform(M, lambda p: [p[0], p[1] + math.sin(p[0]), p[2]])</code></pre>
+<p><code>deform</code> priima bet kokią jūsų funkciją, todėl padaro tai, ko kiti negali.</p>
+<h3>Noriu vaivorykštės</h3>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>M = add.color_by(M, lambda p: add.hsv(p[1] / 10.0))</code></pre>
+<p><code>color_by</code> iškviečia jūsų funkciją su kiekvienos sienos centru.</p></div>
+</section>
+<section id="reference">
+<h2><span class="only-en">Reference</span><span class="only-lt">Funkcijos</span></h2>
+<p class="note only-lt">Išsamūs funkcijų aprašymai kode pateikti angliškai; čia rasite lietuviškus paaiškinimus ir tuos pačius pavyzdžius.</p>
+<div class="tools"><input type="search" id="api-search" placeholder="Filter functions..." aria-label="Filter functions..."></div>
+<div class="api-group"><h3>0. Constants</h3>
+<div class="fn flat" id="fn-EPS" data-search="eps numerical tolerance used by welding, boolean operations and plane tests. skaitinė paklaida, naudojama klijuojant ir lyginant."><div class="head"><span class="nm">EPS</span><span class="sig"></span><span class="sum only-en">Numerical tolerance used by welding, boolean operations and plane tests.</span><span class="sum only-lt">Skaitinė paklaida, naudojama klijuojant ir lyginant.</span></div></div>
+<div class="fn flat" id="fn-DEFAULT_COLOR" data-search="default_color colour used when a function is called without one. spalva, naudojama, kai jokia nenurodyta."><div class="head"><span class="nm">DEFAULT_COLOR</span><span class="sig"></span><span class="sum only-en">Colour used when a function is called without one.</span><span class="sum only-lt">Spalva, naudojama, kai jokia nenurodyta.</span></div></div>
+</div>
+<div class="api-group"><h3>1. Small helpers -- vectors and colours</h3>
+<details class="fn" id="fn-rgb" data-search="rgb normalise anything colour-like into a ``(r, g, b)`` tuple of 0..255 ints. bet ką, kas panašu į spalvą, paverčia (r, g, b) reikšme."><summary><span class="nm">rgb</span><span class="sig">(color)</span><span class="sum only-en">Normalise anything colour-like into a ``(r, g, b)`` tuple of 0..255 ints.</span><span class="sum only-lt">Bet ką, kas panašu į spalvą, paverčia (r, g, b) reikšme.</span></summary><div class="body"><p>Accepts <code>[255, 0, 0]</code>, <code>(1.0, 0.0, 0.0)</code> (floats 0..1 are scaled), <code>"#ff0000"</code>, <code>"red"</code> or <code>None</code> (-&gt; <code>DEFAULT_COLOR</code>).</p></div></details>
+<div class="fn flat" id="fn-COLORS" data-search="colors a handful of named colours, so ``add.box(c, 1, &quot;red&quot;)`` works. spalvų vardų žodynas („red“, „gold“, „sky“ ir kt.)."><div class="head"><span class="nm">COLORS</span><span class="sig"></span><span class="sum only-en">A handful of named colours, so ``add.box(c, 1, &quot;red&quot;)`` works.</span><span class="sum only-lt">Spalvų vardų žodynas („red“, „gold“, „sky“ ir kt.).</span></div></div>
+<details class="fn" id="fn-hsv" data-search="hsv colour from hue/saturation/value, all in 0..1.  hue wraps around. spalva iš atspalvio, sodrumo ir šviesumo (visi 0..1)."><summary><span class="nm">hsv</span><span class="sig">(h, s=1.0, v=1.0)</span><span class="sum only-en">Colour from hue/saturation/value, all in 0..1.  Hue wraps around.</span><span class="sum only-lt">Spalva iš atspalvio, sodrumo ir šviesumo (visi 0..1).</span></summary><div class="body"><p>Handy for rainbows:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>for i in range(n):
+    add.box([i, 0, 0], 0.9, add.hsv(i / n))</code></pre></div></details>
+<div class="fn flat" id="fn-gradient" data-search="gradient blend between colours ``a`` and ``b``; ``t`` runs 0 -&gt; 1. perėjimas tarp dviejų spalvų."><div class="head"><span class="nm">gradient</span><span class="sig">(t, a, b)</span><span class="sum only-en">Blend between colours ``a`` and ``b``; ``t`` runs 0 -&gt; 1.</span><span class="sum only-lt">Perėjimas tarp dviejų spalvų.</span></div></div>
+<div class="fn flat" id="fn-random_color" data-search="random_color a random colour.  pass ``seed`` for a repeatable one. atsitiktinė spalva."><div class="head"><span class="nm">random_color</span><span class="sig">(seed=None)</span><span class="sum only-en">A random colour.  Pass ``seed`` for a repeatable one.</span><span class="sum only-lt">Atsitiktinė spalva.</span></div></div>
+</div>
+<div class="api-group"><h3>2. Mesh -- the one data structure in this library</h3>
+<details class="fn" id="fn-Mesh" data-search="mesh a list of vertices and a list of coloured faces. modelio klasė: viršūnių sąrašas v, sienų sąrašas f ir spalvos c."><summary><span class="nm">Mesh</span><span class="sig"></span><span class="sum only-en">A list of vertices and a list of coloured faces.</span><span class="sum only-lt">Modelio klasė: viršūnių sąrašas V, sienų sąrašas F ir spalvos C.</span></summary><div class="body"><p><code>M.V</code> is a list of <code>[x, y, z]</code> points, <code>M.F</code> a list of index lists (a face may have any number of corners) and <code>M.C</code> the colour of each face.  <code>len(M.F)</code> is the polygon count.</p>
+<p>For backwards compatibility a mesh also behaves like the old <code>[vertices, faces]</code> pair of <em>string</em> lists, so <code>M[0]</code> and <code>M[1]</code> still give you exactly what add.py 1.2 produced.</p></div></details>
+<details class="fn" id="fn-as_mesh" data-search="as_mesh accept a :class:`mesh`, a ``[vertex_strings, face_strings]`` pair or priima mesh arba senąjį [viršūnės, sienos] sąrašą ir grąžina mesh."><summary><span class="nm">as_mesh</span><span class="sig">(obj)</span><span class="sum only-en">Accept a :class:`Mesh`, a ``[vertex_strings, face_strings]`` pair or</span><span class="sum only-lt">Priima Mesh arba senąjį [viršūnės, sienos] sąrašą ir grąžina Mesh.</span></summary><div class="body"><p>This is what lets ten-year-old student code and new code mix freely.</p></div></details>
+</div>
+<div class="api-group"><h3>3. The current scene (the &quot;default layer&quot;)</h3>
+<div class="fn flat" id="fn-vertices" data-search="vertices the current scene&#x27;s vertices, in the add.py 1.2 string form. dabartinės scenos viršūnės senuoju eilučių pavidalu."><div class="head"><span class="nm">vertices</span><span class="sig"></span><span class="sum only-en">The current scene&#x27;s vertices, in the add.py 1.2 string form.</span><span class="sum only-lt">Dabartinės scenos viršūnės senuoju eilučių pavidalu.</span></div></div>
+<div class="fn flat" id="fn-faces" data-search="faces the current scene&#x27;s faces, in the add.py 1.2 string form. dabartinės scenos sienos senuoju eilučių pavidalu."><div class="head"><span class="nm">faces</span><span class="sig"></span><span class="sum only-en">The current scene&#x27;s faces, in the add.py 1.2 string form.</span><span class="sum only-lt">Dabartinės scenos sienos senuoju eilučių pavidalu.</span></div></div>
+<div class="fn flat" id="fn-scene" data-search="scene the :class:`mesh` everything is currently being drawn into. grąžina dabartinę sceną (mesh objektą)."><div class="head"><span class="nm">scene</span><span class="sig">()</span><span class="sum only-en">The :class:`Mesh` everything is currently being drawn into.</span><span class="sum only-lt">Grąžina dabartinę sceną (Mesh objektą).</span></div></div>
+<div class="fn flat" id="fn-clear" data-search="clear throw away everything drawn so far. ištrina viską, kas iki šiol nupiešta."><div class="head"><span class="nm">clear</span><span class="sig">()</span><span class="sum only-en">Throw away everything drawn so far.</span><span class="sum only-lt">Ištrina viską, kas iki šiol nupiešta.</span></div></div>
+<details class="fn" id="fn-layer" data-search="layer take the scene out as a mesh and start a fresh, empty scene. paima sceną kaip modelį ir palieka sceną tuščią."><summary><span class="nm">layer</span><span class="sig">()</span><span class="sum only-en">Take the scene out as a mesh and start a fresh, empty scene.</span><span class="sum only-lt">Paima sceną kaip modelį ir palieka sceną tuščią.</span></summary><div class="body"><p>This is the workhorse of the library: draw something, <code>layer()</code> it, transform the result, then <code>mesh()</code> it back (possibly many times):</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>add.box([0, 0, 0], 1, &quot;red&quot;)
+brick = add.layer()
+for i in range(10):
+    add.mesh(add.move(brick, [i, 0, 0]))</code></pre></div></details>
+<details class="fn" id="fn-push" data-search="push put the scene aside and start a fresh, empty one. padeda sceną į šalį ir pradeda naują, tuščią."><summary><span class="nm">push</span><span class="sig">()</span><span class="sum only-en">Put the scene aside and start a fresh, empty one.</span><span class="sum only-lt">Padeda sceną į šalį ir pradeda naują, tuščią.</span></summary><div class="body"><p>Use it inside a function that builds a part, so that the part cannot accidentally scoop up everything drawn before it &mdash; the commonest surprise for anyone using <code>layer</code>:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>def wheel(r):
+    add.push()                 # nothing else can get in
+    add.cylinder(...)
+    add.torus(...)
+    return add.pop()           # and the old scene comes back</code></pre></div></details>
+<div class="fn flat" id="fn-pop" data-search="pop return what was drawn since :func:`push` and restore the old scene. grąžina tai, kas nupiešta po push(), ir atkuria ankstesnę sceną."><div class="head"><span class="nm">pop</span><span class="sig">()</span><span class="sum only-en">Return what was drawn since :func:`push` and restore the old scene.</span><span class="sum only-lt">Grąžina tai, kas nupiešta po push(), ir atkuria ankstesnę sceną.</span></div></div>
+<div class="fn flat" id="fn-mesh" data-search="mesh draw mesh ``m`` into the current scene. prideda modelį m į dabartinę sceną."><div class="head"><span class="nm">mesh</span><span class="sig">(M)</span><span class="sum only-en">Draw mesh ``M`` into the current scene.</span><span class="sum only-lt">Prideda modelį M į dabartinę sceną.</span></div></div>
+<div class="fn flat" id="fn-paste" data-search="paste ``add.paste`` is a friendlier name for :func:`mesh`. tas pats, kas mesh(m)."><div class="head"><span class="nm">paste</span><span class="sig"></span><span class="sum only-en">``add.paste`` is a friendlier name for :func:`mesh`.</span><span class="sum only-lt">Tas pats, kas mesh(M).</span></div></div>
+<details class="fn" id="fn-merge" data-search="merge combine several meshes into one (no geometry is changed). sujungia kelis modelius į vieną (geometrija nekeičiama)."><summary><span class="nm">merge</span><span class="sig">(meshes)</span><span class="sum only-en">Combine several meshes into one (no geometry is changed).</span><span class="sum only-lt">Sujungia kelis modelius į vieną (geometrija nekeičiama).</span></summary><div class="body"><p><code>merge</code> just concatenates.  For a <em>watertight</em> combination that removes the parts hidden inside, use <code>union</code> instead.</p></div></details>
+<div class="fn flat" id="fn-copy" data-search="copy an independent copy of ``m`` (or of the scene). nepriklausoma modelio kopija."><div class="head"><span class="nm">copy</span><span class="sig">(M=None)</span><span class="sum only-en">An independent copy of ``M`` (or of the scene).</span><span class="sum only-lt">Nepriklausoma modelio kopija.</span></div></div>
+</div>
+<div class="api-group"><h3>5. Flat shapes</h3>
+<details class="fn" id="fn-polygon" data-search="polygon one flat face through the given 3d points (any number of corners). viena plokščia siena iš nurodytų 3d taškų."><summary><span class="nm">polygon</span><span class="sig">(points, color=None)</span><span class="sum only-en">One flat face through the given 3D points (any number of corners).</span><span class="sum only-lt">Viena plokščia siena iš nurodytų 3D taškų.</span></summary><div class="body"><p>The corners must be listed counter-clockwise as seen from the side you want to be the outside.</p></div></details>
+<div class="fn flat" id="fn-triangle" data-search="triangle a single triangle. vienas trikampis."><div class="head"><span class="nm">triangle</span><span class="sig">(a, b, c, color=None)</span><span class="sum only-en">A single triangle.</span><span class="sum only-lt">Vienas trikampis.</span></div></div>
+<div class="fn flat" id="fn-quad" data-search="quad a single quadrilateral. vienas keturkampis."><div class="head"><span class="nm">quad</span><span class="sig">(a, b, c, d, color=None)</span><span class="sum only-en">A single quadrilateral.</span><span class="sum only-lt">Vienas keturkampis.</span></div></div>
+<details class="fn" id="fn-disc" data-search="disc a filled circle of radius ``r`` at ``center``, facing ``normal``. užpildytas skritulys, statmenas nurodytai krypčiai."><summary><span class="nm">disc</span><span class="sig">(center, normal, r, k=32, color=None)</span><span class="sum only-en">A filled circle of radius ``r`` at ``center``, facing ``normal``.</span><span class="sum only-lt">Užpildytas skritulys, statmenas nurodytai krypčiai.</span></summary><div class="body"><p><code>normal</code> may be given either as a direction or as a second point &mdash; <code>disc(A, B, ...)</code> puts the disc at <code>A</code> facing <code>B</code>, which is how the old <code>circle</code> worked.</p></div></details>
+<div class="fn flat" id="fn-ring" data-search="ring a flat annulus (a disc with a hole). plokščias žiedas (skritulys su skyle)."><div class="head"><span class="nm">ring</span><span class="sig">(center, normal, r_outer, r_inner, k=32, color=None)</span><span class="sum only-en">A flat annulus (a disc with a hole).</span><span class="sum only-lt">Plokščias žiedas (skritulys su skyle).</span></div></div>
+<details class="fn" id="fn-grid" data-search="grid a flat (or, with ``height(x, z)``, a hilly) rectangular patch in xz. plokščias arba kalvotas stačiakampis lopas xz plokštumoje."><summary><span class="nm">grid</span><span class="sig">(center, size, nx=10, nz=10, color=None, height=None)</span><span class="sum only-en">A flat (or, with ``height(x, z)``, a hilly) rectangular patch in XZ.</span><span class="sum only-lt">Plokščias arba kalvotas stačiakampis lopas XZ plokštumoje.</span></summary><div class="body"><p><code>size</code> is <code>[width_x, depth_z]</code>.  <code>height</code> is an optional function returning the Y coordinate:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>add.grid([0, 0, 0], [10, 10], 40, 40, &quot;green&quot;,
+         height=lambda x, z: math.sin(x) * math.cos(z))</code></pre></div></details>
+</div>
+<div class="api-group"><h3>6. Boxes and other flat-sided solids</h3>
+<div class="fn flat" id="fn-box" data-search="box a cube of side ``edge`` centred at ``center``. kubas su nurodyta briauna."><div class="head"><span class="nm">box</span><span class="sig">(center, edge, color=None)</span><span class="sum only-en">A cube of side ``edge`` centred at ``center``.</span><span class="sum only-lt">Kubas su nurodyta briauna.</span></div></div>
+<div class="fn flat" id="fn-cuboid" data-search="cuboid a rectangular block; ``sizes`` are the edge lengths along x, y and z. stačiakampis gretasienis; briaunų ilgiai x, y ir z kryptimis."><div class="head"><span class="nm">cuboid</span><span class="sig">(center, sizes, color=None)</span><span class="sum only-en">A rectangular block; ``sizes`` are the edge lengths along X, Y and Z.</span><span class="sum only-lt">Stačiakampis gretasienis; briaunų ilgiai X, Y ir Z kryptimis.</span></div></div>
+<details class="fn" id="fn-frame" data-search="frame the twelve edges of a cube -- a hollow cube frame. kubo briaunų karkasas -- dvylika strypelių."><summary><span class="nm">frame</span><span class="sig">(center, edge, thickness, color=None)</span><span class="sum only-en">The twelve edges of a cube -- a hollow cube frame.</span><span class="sum only-lt">Kubo briaunų karkasas -- dvylika strypelių.</span></summary><div class="body"><p><code>thickness</code> is how thick each bar is.  Built as a 3x3x3 grid of cells in which a cell is material when at least two of its three indices lie on the outside; the whole shape therefore comes out watertight.</p></div></details>
+<details class="fn" id="fn-voxels" data-search="voxels build the surface of a set of unit cells -- a minecraft-style model. kubelių aibės paviršius -- „minecraft“ stiliaus modelis."><summary><span class="nm">voxels</span><span class="sig">(cells, size=1.0, origin=(0, 0, 0), color=None)</span><span class="sum only-en">Build the surface of a set of unit cells -- a Minecraft-style model.</span><span class="sum only-lt">Kubelių aibės paviršius -- „Minecraft“ stiliaus modelis.</span></summary><div class="body"><p><code>cells</code> is any container of <code>(i, j, k)</code> integer triples:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>blocks = {(x, y, z) for x in range(5) for y in range(3)
+                    for z in range(5) if (x + y + z) % 3}
+add.voxels(blocks, 0.5, color=&quot;sky&quot;)</code></pre></div></details>
+<details class="fn" id="fn-pyramid" data-search="pyramid a square pyramid: base of side ``edge``, apex ``height`` above it. kvadratinė piramidė; neigiamas aukštis nukreipia ją žemyn."><summary><span class="nm">pyramid</span><span class="sig">(center, edge, height, color=None)</span><span class="sum only-en">A square pyramid: base of side ``edge``, apex ``height`` above it.</span><span class="sum only-lt">Kvadratinė piramidė; neigiamas aukštis nukreipia ją žemyn.</span></summary><div class="body"><p>A negative <code>height</code> points the pyramid downwards.</p></div></details>
+<details class="fn" id="fn-prism" data-search="prism a solid with a constant cross-section: a 2d ``profile`` given a depth. prizmė: 2d profilis, ištemptas per nurodytą storį."><summary><span class="nm">prism</span><span class="sig">(profile, height, color=None, center=(0, 0, 0), axis=(0, 1, 0))</span><span class="sum only-en">A solid with a constant cross-section: a 2D ``profile`` given a depth.</span><span class="sum only-lt">Prizmė: 2D profilis, ištemptas per nurodytą storį.</span></summary><div class="body"><p><code>profile</code> is a list of <code>[x, y]</code> points in the cross-section plane, listed counter-clockwise.  The result is centred on <code>center</code> and extruded along <code>axis</code>:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>add.prism([[0, 0], [1, 0], [0.5, 1]], 3, &quot;gold&quot;)   # triangular bar</code></pre></div></details>
+<details class="fn" id="fn-polyhedron" data-search="polyhedron one of the five platonic solids, inscribed in a sphere of radius ``r``. vienas iš penkių platono kūnų."><summary><span class="nm">polyhedron</span><span class="sig">(name, center=(0, 0, 0), r=1.0, color=None)</span><span class="sum only-en">One of the five Platonic solids, inscribed in a sphere of radius ``r``.</span><span class="sum only-lt">Vienas iš penkių Platono kūnų.</span></summary><div class="body"><p><code>name</code> is <code>"tetrahedron"</code>, <code>"cube"</code>, <code>"octahedron"</code>, <code>"dodecahedron"</code> or <code>"icosahedron"</code>.</p></div></details>
+</div>
+<div class="api-group"><h3>7. Round solids</h3>
+<details class="fn" id="fn-revolve" data-search="revolve spin a 2d profile around the axis ``a -&gt; b`` (a lathe). sukinys: 2d profilio sukimas apie ašį a -&gt; b."><summary><span class="nm">revolve</span><span class="sig">(profile, A=(0, 0, 0), B=(0, 1, 0), t0=0.0, t1=1.0, steps=40, k=32, color=None, angle=2.0 * math.pi, caps=True)</span><span class="sum only-en">Spin a 2D profile around the axis ``A -&gt; B`` (a lathe).</span><span class="sum only-lt">Sukinys: 2D profilio sukimas apie ašį A -&gt; B.</span></summary><div class="body"><p><code>profile(t)</code> returns <code>[radius, height]</code>, where <em>height</em> is the distance from <code>A</code> along the axis.  <code>steps</code> is the detail along the profile, <code>k</code> the detail around the axis.  Set <code>angle</code> to less than a full turn to leave a wedge cut out of the shape.</p>
+<p>With <code>caps=True</code> (the default) the ends are closed, so the lathe gives you a solid ready for a boolean operation; <code>caps=False</code> leaves the bare shell, which is what the old <code>spin3D</code> produced:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>def vase(t):
+    return [1 + 0.4 * math.sin(3 * t), t]
+add.revolve(vase, [0, 0, 0], [0, 1, 0], 0, 4, 60, 40, &quot;teal&quot;)</code></pre></div></details>
+<div class="fn flat" id="fn-spin3D" data-search="spin3d add.py 1.2 lathe: spin curve ``s(t) = [radius, height]`` around a-&gt;b. senas revolve vardas (be dangtelių)."><div class="head"><span class="nm">spin3D</span><span class="sig">(A, B, S, min_t, max_t, grid_t, k, RGB)</span><span class="sum only-en">add.py 1.2 lathe: spin curve ``S(t) = [radius, height]`` around A-&gt;B.</span><span class="sum only-lt">Senas revolve vardas (be dangtelių).</span></div></div>
+<details class="fn" id="fn-sphere" data-search="sphere a sphere built from six curved square patches (a &quot;quad sphere&quot;). sfera iš šešių kreivų kvadratinių lopų."><summary><span class="nm">sphere</span><span class="sig">(center, r, k=10, color=None)</span><span class="sum only-en">A sphere built from six curved square patches (a &quot;quad sphere&quot;).</span><span class="sum only-lt">Sfera iš šešių kreivų kvadratinių lopų.</span></summary><div class="body"><p><code>k</code> is the number of cells along the side of each patch, so the sphere has <code>6 <em> k </em> k</code> faces.  The quads stay nearly square everywhere, which is why this looks better than a globe made of latitude/longitude strips.</p></div></details>
+<div class="fn flat" id="fn-ellipsoid" data-search="ellipsoid like :func:`sphere` but with a separate radius for x, y and z. elipsoidas: atskiras spindulys x, y ir z kryptimis."><div class="head"><span class="nm">ellipsoid</span><span class="sig">(center, radii, k=10, color=None)</span><span class="sum only-en">Like :func:`sphere` but with a separate radius for X, Y and Z.</span><span class="sum only-lt">Elipsoidas: atskiras spindulys X, Y ir Z kryptimis.</span></div></div>
+<div class="fn flat" id="fn-uvsphere" data-search="uvsphere a globe-style sphere: ``nu`` meridians by ``nv`` parallels. sfera iš dienovidinių ir lygiagrečių (gaublio stiliaus)."><div class="head"><span class="nm">uvsphere</span><span class="sig">(center, r, nu=32, nv=16, color=None)</span><span class="sum only-en">A globe-style sphere: ``nu`` meridians by ``nv`` parallels.</span><span class="sum only-lt">Sfera iš dienovidinių ir lygiagrečių (gaublio stiliaus).</span></div></div>
+<div class="fn flat" id="fn-torus" data-search="torus a doughnut: tube radius ``r`` swept round a circle of radius ``r``. spurga: r spindulio vamzdis apie r spindulio apskritimą."><div class="head"><span class="nm">torus</span><span class="sig">(center, R, r, nu=48, nv=24, color=None, axis=(0, 1, 0))</span><span class="sum only-en">A doughnut: tube radius ``r`` swept round a circle of radius ``R``.</span><span class="sum only-lt">Spurga: r spindulio vamzdis apie R spindulio apskritimą.</span></div></div>
+<div class="fn flat" id="fn-cylinder" data-search="cylinder a closed cylinder from ``a`` to ``b``, radius ``r``, ``k`` sides. uždaras cilindras nuo a iki b."><div class="head"><span class="nm">cylinder</span><span class="sig">(A, B, r, k=24, color=None)</span><span class="sum only-en">A closed cylinder from ``A`` to ``B``, radius ``r``, ``k`` sides.</span><span class="sum only-lt">Uždaras cilindras nuo A iki B.</span></div></div>
+<div class="fn flat" id="fn-tube" data-search="tube a cylinder with no lids -- just the side wall (old ``cylinder2``). cilindras be dangtelių -- tik šoninė sienelė."><div class="head"><span class="nm">tube</span><span class="sig">(A, B, r, k=24, color=None)</span><span class="sum only-en">A cylinder with no lids -- just the side wall (old ``cylinder2``).</span><span class="sum only-lt">Cilindras be dangtelių -- tik šoninė sienelė.</span></div></div>
+<div class="fn flat" id="fn-cup" data-search="cup a cylinder closed at ``a`` only (old ``cylinder3``). cilindras, uždarytas tik ties a."><div class="head"><span class="nm">cup</span><span class="sig">(A, B, r, k=24, color=None)</span><span class="sum only-en">A cylinder closed at ``A`` only (old ``cylinder3``).</span><span class="sum only-lt">Cilindras, uždarytas tik ties A.</span></div></div>
+<div class="fn flat" id="fn-cone" data-search="cone a closed cone: circular base of radius ``r`` at ``a``, tip at ``b``. uždaras kūgis: pagrindas ties a, viršūnė ties b."><div class="head"><span class="nm">cone</span><span class="sig">(A, B, r, k=24, color=None)</span><span class="sum only-en">A closed cone: circular base of radius ``r`` at ``A``, tip at ``B``.</span><span class="sum only-lt">Uždaras kūgis: pagrindas ties A, viršūnė ties B.</span></div></div>
+<div class="fn flat" id="fn-cone_open" data-search="cone_open only the slanted wall of a cone (old ``cone2``). tik šoninis kūgio paviršius."><div class="head"><span class="nm">cone_open</span><span class="sig">(A, B, r, k=24, color=None)</span><span class="sum only-en">Only the slanted wall of a cone (old ``cone2``).</span><span class="sum only-lt">Tik šoninis kūgio paviršius.</span></div></div>
+<div class="fn flat" id="fn-frustum" data-search="frustum a cone with its tip cut off: radius ``r1`` at ``a``, ``r2`` at ``b``. nupjautinis kūgis: spindulys r1 ties a, r2 ties b."><div class="head"><span class="nm">frustum</span><span class="sig">(A, B, r1, r2, k=24, color=None, caps=True)</span><span class="sum only-en">A cone with its tip cut off: radius ``r1`` at ``A``, ``r2`` at ``B``.</span><span class="sum only-lt">Nupjautinis kūgis: spindulys r1 ties A, r2 ties B.</span></div></div>
+<div class="fn flat" id="fn-pipe" data-search="pipe a hollow tube -- a cylinder with a cylindrical hole down the middle. tuščiaviduris vamzdis su cilindrine skyle viduryje."><div class="head"><span class="nm">pipe</span><span class="sig">(A, B, r_outer, r_inner, k=24, color=None)</span><span class="sum only-en">A hollow tube -- a cylinder with a cylindrical hole down the middle.</span><span class="sum only-lt">Tuščiaviduris vamzdis su cilindrine skyle viduryje.</span></div></div>
+<div class="fn flat" id="fn-capsule" data-search="capsule a cylinder with a hemisphere on each end (a &quot;pill&quot;). cilindras su pusrutuliais galuose."><div class="head"><span class="nm">capsule</span><span class="sig">(A, B, r, k=24, color=None)</span><span class="sum only-en">A cylinder with a hemisphere on each end (a &quot;pill&quot;).</span><span class="sum only-lt">Cilindras su pusrutuliais galuose.</span></div></div>
+<details class="fn" id="fn-arrow" data-search="arrow a shaft from ``a`` to ``b`` with a cone head -- good for vectors. strypelis su kūgio smaigaliu -- patogu vektoriams."><summary><span class="nm">arrow</span><span class="sig">(A, B, r=0.05, color=None, k=16, head=0.25)</span><span class="sum only-en">A shaft from ``A`` to ``B`` with a cone head -- good for vectors.</span><span class="sum only-lt">Strypelis su kūgio smaigaliu -- patogu vektoriams.</span></summary><div class="body"><p><code>head</code> is the fraction of the length taken by the arrowhead.</p></div></details>
+<div class="fn flat" id="fn-helix" data-search="helix a spring / helical tube of ``turns`` turns around ``axis``. spyruoklė arba sraigtinis vamzdis apie ašį."><div class="head"><span class="nm">helix</span><span class="sig">(center, r, pitch, turns, k=200, thickness=0.1, sides=12, color=None, axis=(0, 1, 0))</span><span class="sum only-en">A spring / helical tube of ``turns`` turns around ``axis``.</span><span class="sum only-lt">Spyruoklė arba sraigtinis vamzdis apie ašį.</span></div></div>
+</div>
+<div class="api-group"><h3>8. Coordinate axes</h3>
+<div class="fn flat" id="fn-glyph" data-search="glyph draw one of the letters x, y, z as thin bars in the ``u``/``v`` plane. nubraižo raidę x, y arba z plonomis juostelėmis."><div class="head"><span class="nm">glyph</span><span class="sig">(letter, origin, u, v, size=1.0, thickness=0.04, color=None)</span><span class="sum only-en">Draw one of the letters X, Y, Z as thin bars in the ``u``/``v`` plane.</span><span class="sum only-lt">Nubraižo raidę X, Y arba Z plonomis juostelėmis.</span></div></div>
+<div class="fn flat" id="fn-axes" data-search="axes draw the coordinate axes: x red, y green, z blue, each labelled. koordinačių ašys: x raudona, y žalia, z mėlyna, su raidėmis."><div class="head"><span class="nm">axes</span><span class="sig">(C=(0, 0, 0), length=4.0, width=0.03)</span><span class="sum only-en">Draw the coordinate axes: X red, Y green, Z blue, each labelled.</span><span class="sum only-lt">Koordinačių ašys: X raudona, Y žalia, Z mėlyna, su raidėmis.</span></div></div>
+</div>
+<div class="api-group"><h3>9. Parametric surfaces</h3>
+<details class="fn" id="fn-parametric" data-search="parametric the heart of the library: draw the surface ``s(u, v) -&gt; [x, y, z]``. pagrindinė funkcija: nubraižo paviršių s(u, v) -&gt; [x, y, z]."><summary><span class="nm">parametric</span><span class="sig">(S, min_u, max_u, grid_u, min_v, max_v, grid_v, RGB=None, wrap_u=False, wrap_v=False, flip=False, thickness=0.0, double_sided=False, color=None)</span><span class="sum only-en">The heart of the library: draw the surface ``S(u, v) -&gt; [x, y, z]``.</span><span class="sum only-lt">Pagrindinė funkcija: nubraižo paviršių S(u, v) -&gt; [x, y, z].</span></summary><div class="body"><p><code>grid_u</code> and <code>grid_v</code> say how many cells to use in each direction:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>def torus(u, v):
+    return [(5 + math.cos(u)) * math.cos(v),
+            math.sin(u),
+            (5 + math.cos(u)) * math.sin(v)]
+add.parametric(torus, 0, 2 * math.pi, 40, 0, 2 * math.pi, 80, &quot;gold&quot;)</code></pre>
+<p>Extras beyond add.py 1.2:</p>
+<p><code>wrap_u</code> / <code>wrap_v</code></p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>Join the last row/column back to the first, so a closed surface has no
+seam and no duplicated vertices.</code></pre>
+<p><code>thickness</code></p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>Give the sheet a real thickness, turning it into a solid shell.  This
+is the cure for a surface that looks black from one side: a solid has
+no wrong side.</code></pre>
+<p><code>double_sided</code></p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>Cheaper alternative -- keep the sheet infinitely thin but add a copy
+of every face pointing the other way.</code></pre>
+<p><code>flip</code></p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>Turn the surface inside out.</code></pre></div></details>
+<details class="fn" id="fn-two_sided" data-search="two_sided return a copy of ``m`` in which every face also exists reversed. kopija, kurioje kiekviena siena yra ir apversta."><summary><span class="nm">two_sided</span><span class="sig">(M=None)</span><span class="sum only-en">Return a copy of ``M`` in which every face also exists reversed.</span><span class="sum only-lt">Kopija, kurioje kiekviena siena yra ir apversta.</span></summary><div class="body"><p>Use it when a thin surface disappears or turns black when seen from behind.  The polygon count doubles.</p></div></details>
+<details class="fn" id="fn-solidify" data-search="solidify give a thin surface a real thickness and return the closed solid. suteikia plonam paviršiui tikrą storį ir grąžina uždarą kūną."><summary><span class="nm">solidify</span><span class="sig">(M=None, thickness=0.1, both_ways=True)</span><span class="sum only-en">Give a thin surface a real thickness and return the closed solid.</span><span class="sum only-lt">Suteikia plonam paviršiui tikrą storį ir grąžina uždarą kūną.</span></summary><div class="body"><p>Every vertex is pushed along the average normal of the faces around it; the open border is then stitched with a wall, so the result is watertight and lit correctly from every angle.</p></div></details>
+</div>
+<div class="api-group"><h3>10. Curves, sweeps and lofts -- &quot;copy, turn, stretch a cross-section&quot;</h3>
+<details class="fn" id="fn-sweep" data-search="sweep slide a 2d cross-section along a 3d path -- the general shape maker. skerspjūvio stūmimas išilgai 3d kelio; galima sukti ir tempti."><summary><span class="nm">sweep</span><span class="sig">(profile, path, t0=0.0, t1=1.0, steps=100, color=None, closed=False, scale=None, twist=None, caps=True)</span><span class="sum only-en">Slide a 2D cross-section along a 3D path -- the general shape maker.</span><span class="sum only-lt">Skerspjūvio stūmimas išilgai 3D kelio; galima sukti ir tempti.</span></summary><div class="body"><p><code>profile</code> is a closed list of <code>[x, y]</code> points, <code>path(t)</code> returns a 3D point.  <code>scale</code> and <code>twist</code> may be numbers or functions of <code>t</code> in 0..1, which is how you get a shape that grows and turns as it goes:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>square = [[-1, -1], [1, -1], [1, 1], [-1, 1]]
+add.sweep(square, lambda t: [0, t, 0], 0, 10, 60, &quot;orange&quot;,
+          scale=lambda t: 1 - 0.7 * t, twist=3 * math.pi)</code></pre>
+<p>Set <code>closed=True</code> when the path returns to its start (a ring).</p></div></details>
+<details class="fn" id="fn-curve" data-search="curve draw a 3d parametric curve as a round tube of radius ``r``. 3d parametrinė kreivė, nubraižyta kaip apvalus vamzdis."><summary><span class="nm">curve</span><span class="sig">(P, min_t, max_t, grid_t, k=16, r=0.1, RGB=None, isConnected=False, color=None)</span><span class="sum only-en">Draw a 3D parametric curve as a round tube of radius ``r``.</span><span class="sum only-lt">3D parametrinė kreivė, nubraižyta kaip apvalus vamzdis.</span></summary><div class="body"><p><code>r</code> may be a function <code>r(t)</code> for a tube that swells and narrows. <code>isConnected=True</code> closes the tube into a loop without a seam.</p></div></details>
+<details class="fn" id="fn-extrude" data-search="extrude pull a 2d shape out into 3d, optionally turning and tapering as it goes. 2d formos ištempimas į 3d; pakeliui galima sukti ir siaurinti."><summary><span class="nm">extrude</span><span class="sig">(profile, direction=(0, 1, 0), color=None, steps=1, twist=0.0, scale=1.0, center=(0, 0, 0), caps=True)</span><span class="sum only-en">Pull a 2D shape out into 3D, optionally turning and tapering as it goes.</span><span class="sum only-lt">2D formos ištempimas į 3D; pakeliui galima sukti ir siaurinti.</span></summary><div class="body"><p>This is the "copy the cross-section, move it, rotate it, stretch it" construction in one call:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>star = [[math.cos(a) * (1 if i % 2 else 0.45),
+         math.sin(a) * (1 if i % 2 else 0.45)]
+        for i, a in enumerate(...)]
+add.extrude(star, [0, 4, 0], &quot;gold&quot;, steps=60, twist=math.pi,
+            scale=lambda t: 1 - 0.6 * t)</code></pre></div></details>
+<details class="fn" id="fn-loft" data-search="loft skin a surface over a list of cross-sections (each a ring of 3d points). paviršius, uždengiantis skerspjūvių seką."><summary><span class="nm">loft</span><span class="sig">(sections, color=None, closed=False, caps=True, flip=False)</span><span class="sum only-en">Skin a surface over a list of cross-sections (each a ring of 3D points).</span><span class="sum only-lt">Paviršius, uždengiantis skerspjūvių seką.</span></summary><div class="body"><p>Every section must have the same number of points.  This is the most direct way to build a shape from slices you have computed yourself.</p></div></details>
+<details class="fn" id="fn-ribbon" data-search="ribbon a flat band following a 3d path -- like a strip of paper. plokščia juosta, einanti 3d keliu."><summary><span class="nm">ribbon</span><span class="sig">(path, t0, t1, steps, width, color=None, closed=False, twist=None, thickness=0.0)</span><span class="sum only-en">A flat band following a 3D path -- like a strip of paper.</span><span class="sum only-lt">Plokščia juosta, einanti 3D keliu.</span></summary><div class="body"><p>With <code>thickness</code> it becomes a solid bar instead of a zero-thickness sheet, so both sides are lit.</p></div></details>
+<div class="fn flat" id="fn-circle" data-search="circle add.py 1.2 disc: a filled circle centred at ``a``, facing ``b``. senas disc vardas."><div class="head"><span class="nm">circle</span><span class="sig">(A, B, r, k=24, RGB=None, color=None)</span><span class="sum only-en">add.py 1.2 disc: a filled circle centred at ``A``, facing ``B``.</span><span class="sum only-lt">Senas disc vardas.</span></div></div>
+</div>
+<div class="api-group"><h3>11. Measuring a mesh</h3>
+<div class="fn flat" id="fn-bbox" data-search="bbox ``[[xmin, ymin, zmin], [xmax, ymax, zmax]]`` of a mesh. modelio gaubiančiojo stačiakampio kampai."><div class="head"><span class="nm">bbox</span><span class="sig">(M=None)</span><span class="sum only-en">``[[xmin, ymin, zmin], [xmax, ymax, zmax]]`` of a mesh.</span><span class="sum only-lt">Modelio gaubiančiojo stačiakampio kampai.</span></div></div>
+<div class="fn flat" id="fn-size" data-search="size the width, height and depth of a mesh. modelio plotis, aukštis ir gylis."><div class="head"><span class="nm">size</span><span class="sig">(M=None)</span><span class="sum only-en">The width, height and depth of a mesh.</span><span class="sum only-lt">Modelio plotis, aukštis ir gylis.</span></div></div>
+<div class="fn flat" id="fn-center" data-search="center the average of all vertices (what add.py 1.2 called the centre). visų viršūnių vidurkis (kaip add.py 1.2)."><div class="head"><span class="nm">center</span><span class="sig">(M=None)</span><span class="sum only-en">The average of all vertices (what add.py 1.2 called the centre).</span><span class="sum only-lt">Visų viršūnių vidurkis (kaip add.py 1.2).</span></div></div>
+<div class="fn flat" id="fn-middle" data-search="middle the centre of the bounding box -- usually what you actually want. gaubiančiojo stačiakampio centras."><div class="head"><span class="nm">middle</span><span class="sig">(M=None)</span><span class="sum only-en">The centre of the bounding box -- usually what you actually want.</span><span class="sum only-lt">Gaubiančiojo stačiakampio centras.</span></div></div>
+<div class="fn flat" id="fn-area" data-search="area total surface area. bendras paviršiaus plotas."><div class="head"><span class="nm">area</span><span class="sig">(M=None)</span><span class="sum only-en">Total surface area.</span><span class="sum only-lt">Bendras paviršiaus plotas.</span></div></div>
+<div class="fn flat" id="fn-volume" data-search="volume enclosed volume.  meaningful only for a closed (watertight) mesh. uždaro modelio tūris."><div class="head"><span class="nm">volume</span><span class="sig">(M=None)</span><span class="sum only-en">Enclosed volume.  Meaningful only for a closed (watertight) mesh.</span><span class="sum only-lt">Uždaro modelio tūris.</span></div></div>
+</div>
+<div class="api-group"><h3>12. Moving, turning and reshaping a mesh</h3>
+<div class="fn flat" id="fn-move" data-search="move shift a mesh by vector ``v``. pastumia modelį vektoriumi v."><div class="head"><span class="nm">move</span><span class="sig">(M, V)</span><span class="sum only-en">Shift a mesh by vector ``V``.</span><span class="sum only-lt">Pastumia modelį vektoriumi V.</span></div></div>
+<div class="fn flat" id="fn-place" data-search="place move a mesh so that its centre sits exactly at ``at``. pastumia modelį taip, kad jo centras atsidurtų nurodytame taške."><div class="head"><span class="nm">place</span><span class="sig">(M, at, use_bbox=True)</span><span class="sum only-en">Move a mesh so that its centre sits exactly at ``at``.</span><span class="sum only-lt">Pastumia modelį taip, kad jo centras atsidurtų nurodytame taške.</span></div></div>
+<div class="fn flat" id="fn-rotateX" data-search="rotatex turn a mesh around the x axis through point ``p``. pasuka modelį apie x ašį per tašką p."><div class="head"><span class="nm">rotateX</span><span class="sig">(M, angle, P=(0, 0, 0))</span><span class="sum only-en">Turn a mesh around the X axis through point ``P``.</span><span class="sum only-lt">Pasuka modelį apie X ašį per tašką P.</span></div></div>
+<div class="fn flat" id="fn-rotateY" data-search="rotatey turn a mesh around the y axis through point ``p``. pasuka modelį apie y ašį per tašką p."><div class="head"><span class="nm">rotateY</span><span class="sig">(M, angle, P=(0, 0, 0))</span><span class="sum only-en">Turn a mesh around the Y axis through point ``P``.</span><span class="sum only-lt">Pasuka modelį apie Y ašį per tašką P.</span></div></div>
+<div class="fn flat" id="fn-rotateZ" data-search="rotatez turn a mesh around the z axis through point ``p``. pasuka modelį apie z ašį per tašką p."><div class="head"><span class="nm">rotateZ</span><span class="sig">(M, angle, P=(0, 0, 0))</span><span class="sum only-en">Turn a mesh around the Z axis through point ``P``.</span><span class="sum only-lt">Pasuka modelį apie Z ašį per tašką P.</span></div></div>
+<details class="fn" id="fn-rotate" data-search="rotate turn a mesh by ``angle`` around any axis through ``p``. pasuka modelį apie bet kokią ašį (rodrigo formulė)."><summary><span class="nm">rotate</span><span class="sig">(M, axis, angle, P=(0, 0, 0))</span><span class="sum only-en">Turn a mesh by ``angle`` around any axis through ``P``.</span><span class="sum only-lt">Pasuka modelį apie bet kokią ašį (Rodrigo formulė).</span></summary><div class="body"><p>Uses Rodrigues' formula, so <code>axis</code> can point anywhere:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>M = add.rotate(M, [1, 1, 0], math.pi / 3, [0, 0, 0])</code></pre></div></details>
+<div class="fn flat" id="fn-zoom" data-search="zoom scale a mesh by factor ``s`` (about its own centre by default). pakeičia modelio mastelį koeficientu s."><div class="head"><span class="nm">zoom</span><span class="sig">(M, s, about=None)</span><span class="sum only-en">Scale a mesh by factor ``s`` (about its own centre by default).</span><span class="sum only-lt">Pakeičia modelio mastelį koeficientu s.</span></div></div>
+<div class="fn flat" id="fn-stretch" data-search="stretch scale by a different factor along each axis, ``s = [sx, sy, sz]``. atskiras mastelis kiekvienai ašiai, s = [sx, sy, sz]."><div class="head"><span class="nm">stretch</span><span class="sig">(M, s, about=None)</span><span class="sum only-en">Scale by a different factor along each axis, ``s = [sx, sy, sz]``.</span><span class="sum only-lt">Atskiras mastelis kiekvienai ašiai, s = [sx, sy, sz].</span></div></div>
+<div class="fn flat" id="fn-fit" data-search="fit scale a mesh so its largest dimension equals ``target``. pakeičia mastelį taip, kad didžiausias matmuo būtų lygus nurodytam."><div class="head"><span class="nm">fit</span><span class="sig">(M, target=1.0, about=None)</span><span class="sum only-en">Scale a mesh so its largest dimension equals ``target``.</span><span class="sum only-lt">Pakeičia mastelį taip, kad didžiausias matmuo būtų lygus nurodytam.</span></div></div>
+<details class="fn" id="fn-mirror" data-search="mirror reflect a mesh in the plane through ``point`` with the given normal. atspindi modelį plokštumoje ir apsuka sienų kryptį."><summary><span class="nm">mirror</span><span class="sig">(M, point=(0, 0, 0), normal=(1, 0, 0))</span><span class="sum only-en">Reflect a mesh in the plane through ``point`` with the given normal.</span><span class="sum only-lt">Atspindi modelį plokštumoje ir apsuka sienų kryptį.</span></summary><div class="body"><p>The face winding is reversed too, so the reflection is not inside out.</p></div></details>
+<div class="fn flat" id="fn-transform" data-search="transform apply a 3x3 or 4x4 matrix (given as a list of rows). pritaiko 3x3 arba 4x4 matricą."><div class="head"><span class="nm">transform</span><span class="sig">(M, matrix)</span><span class="sum only-en">Apply a 3x3 or 4x4 matrix (given as a list of rows).</span><span class="sum only-lt">Pritaiko 3x3 arba 4x4 matricą.</span></div></div>
+<details class="fn" id="fn-deform" data-search="deform bend a mesh with any function you like: ``f(p) -&gt; new point``. bet kokia funkcija f(p) -&gt; naujas taškas; galingiausia priemonė."><summary><span class="nm">deform</span><span class="sig">(M, f)</span><span class="sum only-en">Bend a mesh with any function you like: ``f(p) -&gt; new point``.</span><span class="sum only-lt">Bet kokia funkcija f(p) -&gt; naujas taškas; galingiausia priemonė.</span></summary><div class="body"><p>The single most powerful function in the library:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>wave = add.deform(M, lambda p: [p[0], p[1] + math.sin(p[0]), p[2]])</code></pre></div></details>
+<details class="fn" id="fn-twist" data-search="twist rotate a mesh progressively along ``axis`` -- a corkscrew. susuka modelį apie ašį, kaip kamščiatraukį."><summary><span class="nm">twist</span><span class="sig">(M, angle, axis=(0, 1, 0), P=(0, 0, 0))</span><span class="sum only-en">Rotate a mesh progressively along ``axis`` -- a corkscrew.</span><span class="sum only-lt">Susuka modelį apie ašį, kaip kamščiatraukį.</span></summary><div class="body"><p><code>angle</code> is the turn applied per unit of distance along the axis.</p></div></details>
+<details class="fn" id="fn-taper" data-search="taper shrink (or grow) a mesh along ``axis``; ``axis`` is 0=x, 1=y, 2=z. siaurina arba platina modelį išilgai ašies."><summary><span class="nm">taper</span><span class="sig">(M, factor, axis=1, P=(0, 0, 0))</span><span class="sum only-en">Shrink (or grow) a mesh along ``axis``; ``axis`` is 0=X, 1=Y, 2=Z.</span><span class="sum only-lt">Siaurina arba platina modelį išilgai ašies.</span></summary><div class="body"><p><code>factor</code> is the extra scale gained per unit of distance, so <code>taper(M, -0.2)</code> makes the model 20% thinner for every unit it rises.</p></div></details>
+<details class="fn" id="fn-bend" data-search="bend bend a mesh into an arc. sulenkia modelį į lanką."><summary><span class="nm">bend</span><span class="sig">(M, angle, axis=1, around=0, P=(0, 0, 0))</span><span class="sum only-en">Bend a mesh into an arc.</span><span class="sum only-lt">Sulenkia modelį į lanką.</span></summary><div class="body"><p>Distance along <code>axis</code> becomes an angle turning about <code>around</code>; <code>angle</code> is radians per unit of length.</p></div></details>
+<div class="fn flat" id="fn-jitter" data-search="jitter nudge every vertex a little at random -- an easy hand-made look. truputį atsitiktinai pastumdo kiekvieną viršūnę."><div class="head"><span class="nm">jitter</span><span class="sig">(M, amount=0.05, seed=None)</span><span class="sum only-en">Nudge every vertex a little at random -- an easy hand-made look.</span><span class="sum only-lt">Truputį atsitiktinai pastumdo kiekvieną viršūnę.</span></div></div>
+</div>
+<div class="api-group"><h3>13. Colour</h3>
+<div class="fn flat" id="fn-color" data-search="color paint the whole mesh one colour and return the painted copy. perdažo visą modelį viena spalva."><div class="head"><span class="nm">color</span><span class="sig">(M, RGB)</span><span class="sum only-en">Paint the whole mesh one colour and return the painted copy.</span><span class="sum only-lt">Perdažo visą modelį viena spalva.</span></div></div>
+<details class="fn" id="fn-color_by" data-search="color_by colour every face according to where it is: ``fn(point) -&gt; colour``. kiekvienos sienos spalva pagal jos padėtį: fn(taškas) -&gt; spalva."><summary><span class="nm">color_by</span><span class="sig">(M, fn)</span><span class="sum only-en">Colour every face according to where it is: ``fn(point) -&gt; colour``.</span><span class="sum only-lt">Kiekvienos sienos spalva pagal jos padėtį: fn(taškas) -&gt; spalva.</span></summary><div class="body"><p><code>point</code> is the centre of the face, so a rainbow by height is:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>M = add.color_by(M, lambda p: add.hsv(p[1] / 10.0))</code></pre></div></details>
+<div class="fn flat" id="fn-color_gradient" data-search="color_gradient fade the mesh from colour ``a`` to colour ``b`` along one axis. perėjimas nuo spalvos a iki b išilgai ašies."><div class="head"><span class="nm">color_gradient</span><span class="sig">(M, a, b, axis=1)</span><span class="sum only-en">Fade the mesh from colour ``a`` to colour ``b`` along one axis.</span><span class="sum only-lt">Perėjimas nuo spalvos a iki b išilgai ašies.</span></div></div>
+<div class="fn flat" id="fn-color_random" data-search="color_random give every face its own random colour. kiekvienai sienai -- sava atsitiktinė spalva."><div class="head"><span class="nm">color_random</span><span class="sig">(M, seed=None)</span><span class="sum only-en">Give every face its own random colour.</span><span class="sum only-lt">Kiekvienai sienai -- sava atsitiktinė spalva.</span></div></div>
+</div>
+<div class="api-group"><h3>14. Copies and patterns</h3>
+<details class="fn" id="fn-repeat" data-search="repeat apply a transformation ``step(mesh, i)`` again and again, and merge. bendriausias kopijavimas: transformacija, taikoma n kartų."><summary><span class="nm">repeat</span><span class="sig">(M, n, step)</span><span class="sum only-en">Apply a transformation ``step(mesh, i)`` again and again, and merge.</span><span class="sum only-lt">Bendriausias kopijavimas: transformacija, taikoma n kartų.</span></summary><div class="body"><p>The general pattern maker &mdash; every other array function below is a three-line wrapper around it:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>spiral = add.repeat(brick, 40,
+                    lambda X, i: add.move(add.rotateY(X, i * 0.3), [0, i * 0.2, 0]))</code></pre></div></details>
+<div class="fn flat" id="fn-array_linear" data-search="array_linear ``n`` copies in a row, each moved a further ``step`` along. n kopijų eilėje."><div class="head"><span class="nm">array_linear</span><span class="sig">(M, step, n)</span><span class="sum only-en">``n`` copies in a row, each moved a further ``step`` along.</span><span class="sum only-lt">n kopijų eilėje.</span></div></div>
+<div class="fn flat" id="fn-array_grid" data-search="array_grid a 2d or 3d block of copies; ``steps`` and ``counts`` have 3 entries. kopijų blokas 2d arba 3d tinkleliu."><div class="head"><span class="nm">array_grid</span><span class="sig">(M, steps, counts)</span><span class="sum only-en">A 2D or 3D block of copies; ``steps`` and ``counts`` have 3 entries.</span><span class="sum only-lt">Kopijų blokas 2D arba 3D tinkleliu.</span></div></div>
+<div class="fn flat" id="fn-array_radial" data-search="array_radial ``n`` copies arranged around an axis; ``rise`` makes it a spiral stair. n kopijų apie ašį; su rise -- sraigtiniai laiptai."><div class="head"><span class="nm">array_radial</span><span class="sig">(M, n, axis=(0, 1, 0), P=(0, 0, 0), angle=2.0 * math.pi, rise=0.0)</span><span class="sum only-en">``n`` copies arranged around an axis; ``rise`` makes it a spiral stair.</span><span class="sum only-lt">n kopijų apie ašį; su rise -- sraigtiniai laiptai.</span></div></div>
+<div class="fn flat" id="fn-array_mirror" data-search="array_mirror the mesh together with its mirror image. modelis kartu su savo veidrodiniu atvaizdu."><div class="head"><span class="nm">array_mirror</span><span class="sig">(M, point=(0, 0, 0), normal=(1, 0, 0))</span><span class="sum only-en">The mesh together with its mirror image.</span><span class="sum only-lt">Modelis kartu su savo veidrodiniu atvaizdu.</span></div></div>
+</div>
+<div class="api-group"><h3>15. Repairing a model</h3>
+<details class="fn" id="fn-heal" data-search="heal close the tiny gaps left where an edge runs past another vertex. uždaro plyšelius ten, kur briauna praeina pro svetimą viršūnę."><summary><span class="nm">heal</span><span class="sig">(M=None, tol=1e-07)</span><span class="sum only-en">Close the tiny gaps left where an edge runs past another vertex.</span><span class="sum only-lt">Uždaro plyšelius ten, kur briauna praeina pro svetimą viršūnę.</span></summary><div class="body"><p>After a boolean operation a long edge of one face often has two shorter edges of neighbouring faces lying along it, with a vertex in the middle that the long edge knows nothing about.  These "T-junctions" leave a hairline crack: the model looks fine but is not watertight, which upsets 3D printing and further boolean operations.  Adding the missing corner to the long face fixes it.</p></div></details>
+<div class="fn flat" id="fn-triangulate" data-search="triangulate return a copy in which every face is a triangle (fan triangulation). kopija, kurioje visos sienos -- trikampiai."><div class="head"><span class="nm">triangulate</span><span class="sig">(M=None)</span><span class="sum only-en">Return a copy in which every face is a triangle (fan triangulation).</span><span class="sum only-lt">Kopija, kurioje visos sienos -- trikampiai.</span></div></div>
+<details class="fn" id="fn-fix_normals" data-search="fix_normals make every face of a copy point the same way -- and, if the model is nukreipia visas sienas ta pačia kryptimi, uždarame modelyje -- į išorę."><summary><span class="nm">fix_normals</span><span class="sig">(M=None, outward=True)</span><span class="sum only-en">Make every face of a copy point the same way -- and, if the model is</span><span class="sum only-lt">Nukreipia visas sienas ta pačia kryptimi, uždarame modelyje -- į išorę.</span></summary><div class="body"><p>Faces are walked from neighbour to neighbour: two faces that share an edge must run along it in opposite directions.  Each connected piece is then flipped as a whole if its volume came out negative.</p></div></details>
+<details class="fn" id="fn-clean" data-search="clean repair a model and return the tidy copy. sutvarko modelį: suklijuoja viršūnes, pašalina dublikatus ir vidines sienas."><summary><span class="nm">clean</span><span class="sig">(M=None, tol=1e-07, weld=True, degenerate=True, duplicates=True, internal=True, unused=True, normals=False, report=False)</span><span class="sum only-en">Repair a model and return the tidy copy.</span><span class="sum only-lt">Sutvarko modelį: suklijuoja viršūnes, pašalina dublikatus ir vidines sienas.</span></summary><div class="body"><p>By default it welds coincident vertices, throws away zero-area faces, removes repeated faces and removes the walls buried where two solids touch.  Pass <code>normals=True</code> to also make every face point outward, and <code>report=True</code> to get <code>(mesh, report_dict)</code> instead of just the mesh:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>model = add.clean(add.layer())
+add.mesh(model)</code></pre></div></details>
+</div>
+<div class="api-group"><h3>16. Looking at a model</h3>
+<div class="fn flat" id="fn-stats" data-search="stats a dictionary describing the model: counts, size, area, volume, health. žodynas su modelio skaičiais: sienos, spalvos, plotas, tūris."><div class="head"><span class="nm">stats</span><span class="sig">(M=None)</span><span class="sum only-en">A dictionary describing the model: counts, size, area, volume, health.</span><span class="sum only-lt">Žodynas su modelio skaičiais: sienos, spalvos, plotas, tūris.</span></div></div>
+<details class="fn" id="fn-check" data-search="check print a health report and say whether the model meets the assignment. išspausdina modelio ataskaitą ir pasako, ar atitinka užduotį."><summary><span class="nm">check</span><span class="sig">(M=None, min_faces=10000, min_colors=3, quiet=False)</span><span class="sum only-en">Print a health report and say whether the model meets the assignment.</span><span class="sum only-lt">Išspausdina modelio ataskaitą ir pasako, ar atitinka užduotį.</span></summary><div class="body"><p>The course asks for at least 10000 polygons and at least 3 colours; this tells you where you stand and what still needs repairing:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>add.check()          # look at the current scene</code></pre></div></details>
+</div>
+<div class="api-group"><h3>17. Boolean operations: union, intersection, difference</h3>
+<div class="fn flat" id="fn-BOOL_EPS" data-search="bool_eps how far a point may be from a plane and still count as lying in it. paklaida, naudojama loginėse operacijose."><div class="head"><span class="nm">BOOL_EPS</span><span class="sig"></span><span class="sum only-en">How far a point may be from a plane and still count as lying in it.</span><span class="sum only-lt">Paklaida, naudojama loginėse operacijose.</span></div></div>
+<details class="fn" id="fn-union" data-search="union fuse solids into one, removing everything hidden inside. sujungia kūnus į vieną, pašalindama viską, kas paslėpta viduje."><summary><span class="nm">union</span><span class="sig">(*meshes)</span><span class="sum only-en">Fuse solids into one, removing everything hidden inside.</span><span class="sum only-lt">Sujungia kūnus į vieną, pašalindama viską, kas paslėpta viduje.</span></summary><div class="body"><p>Unlike <code>merge</code>, which only stacks meshes into the same file, <code>union</code> really welds them: the buried walls disappear and the result is a single watertight solid:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>add.box([0, 0, 0], 2, &quot;red&quot;)
+a = add.layer()
+add.sphere([1, 1, 1], 1.3, 16, &quot;blue&quot;)
+b = add.layer()
+add.mesh(add.union(a, b))</code></pre></div></details>
+<details class="fn" id="fn-difference" data-search="difference cut the other solids out of ``a``. iškerpa kitus kūnus iš a."><summary><span class="nm">difference</span><span class="sig">(A, *others, **options)</span><span class="sum only-en">Cut the other solids out of ``A``.</span><span class="sum only-lt">Iškerpa kitus kūnus iš A.</span></summary><div class="body"><p><code>difference</code> is how you drill, engrave and slot:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>add.cuboid([0, 0, 0], [4, 1, 4], &quot;brown&quot;)
+plate = add.layer()
+add.cylinder([0, -1, 0], [0, 1, 0], 0.6, 32, &quot;brown&quot;)
+drill = add.layer()
+add.mesh(add.difference(plate, drill))</code></pre>
+<p>The freshly exposed surface keeps the colour of the tool that cut it, which makes a hole easy to see.  Pass <code>color=</code> to paint it instead:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>add.difference(plate, drill, color=&quot;black&quot;)</code></pre></div></details>
+<div class="fn flat" id="fn-intersect" data-search="intersect keep only the space that all the solids have in common. palieka tik tai, kas bendra visiems kūnams."><div class="head"><span class="nm">intersect</span><span class="sig">(*meshes)</span><span class="sum only-en">Keep only the space that all the solids have in common.</span><span class="sum only-lt">Palieka tik tai, kas bendra visiems kūnams.</span></div></div>
+<div class="fn flat" id="fn-symmetric_difference" data-search="symmetric_difference everything that is in one solid or the other but not in both. kas yra viename ar kitame kūne, bet ne abiejuose."><div class="head"><span class="nm">symmetric_difference</span><span class="sig">(A, B)</span><span class="sum only-en">Everything that is in one solid or the other but not in both.</span><span class="sum only-lt">Kas yra viename ar kitame kūne, bet ne abiejuose.</span></div></div>
+<div class="fn flat" id="fn-add_solids" data-search="add_solids alias of :func:`union`. tas pats, kas union."><div class="head"><span class="nm">add_solids</span><span class="sig">(*meshes)</span><span class="sum only-en">Alias of :func:`union`.</span><span class="sum only-lt">Tas pats, kas union.</span></div></div>
+<div class="fn flat" id="fn-subtract" data-search="subtract alias of :func:`difference`. tas pats, kas difference."><div class="head"><span class="nm">subtract</span><span class="sig">(A, *others)</span><span class="sum only-en">Alias of :func:`difference`.</span><span class="sum only-lt">Tas pats, kas difference.</span></div></div>
+<div class="fn flat" id="fn-common" data-search="common alias of :func:`intersect`. tas pats, kas intersect."><div class="head"><span class="nm">common</span><span class="sig">(*meshes)</span><span class="sum only-en">Alias of :func:`intersect`.</span><span class="sum only-lt">Tas pats, kas intersect.</span></div></div>
+<details class="fn" id="fn-cut" data-search="cut slice a solid with an infinite plane and keep the part *behind* it. perpjauna kūną plokštuma ir palieka pusę už jos."><summary><span class="nm">cut</span><span class="sig">(M, point=(0, 0, 0), normal=(0, 1, 0), cap=True, color=None)</span><span class="sum only-en">Slice a solid with an infinite plane and keep the part *behind* it.</span><span class="sum only-lt">Perpjauna kūną plokštuma ir palieka pusę už jos.</span></summary><div class="body"><p>"Behind" means the side the normal points away from, so <code>cut(M, [0, 0, 0], [0, 1, 0])</code> keeps the bottom half and throws the top away.  Cut twice with opposite normals to keep a slab.</p>
+<p>Far cheaper than a full boolean, because a plane needs no searching.  With <code>cap=True</code> the exposed cross-section is closed with a new flat face, so the result stays watertight &mdash; perfect for cut-away drawings:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>half = add.cut(model, [0, 0, 0], [0, 0, 1])</code></pre></div></details>
+<div class="fn flat" id="fn-inside" data-search="inside is point ``p`` inside the (closed) mesh?  ray casting: odd = inside. ar taškas yra uždaro modelio viduje?"><div class="head"><span class="nm">inside</span><span class="sig">(M, p)</span><span class="sum only-en">Is point ``p`` inside the (closed) mesh?  Ray casting: odd = inside.</span><span class="sum only-lt">Ar taškas yra uždaro modelio viduje?</span></div></div>
+</div>
+<div class="api-group"><h3>18. Saving and loading</h3>
+<details class="fn" id="fn-save" data-search="save write a model to disk; the file format follows the extension. išsaugo modelį; formatą nulemia plėtinys."><summary><span class="nm">save</span><span class="sig">(path, M=None, clear_scene=None)</span><span class="sum only-en">Write a model to disk; the file format follows the extension.</span><span class="sum only-lt">Išsaugo modelį; formatą nulemia plėtinys.</span></summary><div class="body"><p><code>.off</code> (the course format), <code>.obj</code> (+ a <code>.mtl</code> colour file, which is what Sketchfab and most other tools want), <code>.ply</code> or <code>.stl</code>:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>add.save(&quot;dragon.obj&quot;)</code></pre>
+<p>Called without a mesh it saves &mdash; and then empties &mdash; the current scene, exactly like add.py 1.2's <code>off()</code>.</p></div></details>
+<div class="fn flat" id="fn-off" data-search="off write an off file (and empty the scene) -- the add.py 1.2 behaviour. įrašo off failą (ir ištuština sceną) -- kaip add.py 1.2."><div class="head"><span class="nm">off</span><span class="sig">(path, M=None)</span><span class="sum only-en">Write an OFF file (and empty the scene) -- the add.py 1.2 behaviour.</span><span class="sum only-lt">Įrašo OFF failą (ir ištuština sceną) -- kaip add.py 1.2.</span></div></div>
+<details class="fn" id="fn-obj" data-search="obj write an obj file plus the matching mtl colour file. įrašo obj failą ir kartu mtl spalvų failą."><summary><span class="nm">obj</span><span class="sig">(path, M=None, mtl=None)</span><span class="sum only-en">Write an OBJ file plus the matching MTL colour file.</span><span class="sum only-lt">Įrašo OBJ failą ir kartu MTL spalvų failą.</span></summary><div class="body"><p>OBJ is what you need for Sketchfab: upload the <code>.obj</code> and <code>.mtl</code> together (in one <code>.zip</code>/<code>.7z</code>) and the colours come along.</p></div></details>
+<details class="fn" id="fn-load" data-search="load read a model from an ``.off``, ``.obj`` or ``.ply`` file. nuskaito modelį iš .off, .obj arba .ply failo."><summary><span class="nm">load</span><span class="sig">(path, color=None)</span><span class="sum only-en">Read a model from an ``.off``, ``.obj`` or ``.ply`` file.</span><span class="sum only-lt">Nuskaito modelį iš .off, .obj arba .ply failo.</span></summary><div class="body"><p>Returns a mesh you can transform and <code>mesh()</code> into the scene:</p>
+<pre class="code"><button class="copy" title="copy">&#128203;</button><code>letter = add.load(&quot;letters/A.off&quot;)
+add.mesh(add.move(add.zoom(letter, 0.1), [0, 2, 0]))</code></pre></div></details>
+<details class="fn" id="fn-load_font" data-search="load_font load a whole folder of letter or digit models into a dictionary. nuskaito visą raidžių ar skaitmenų aplanką į žodyną."><summary><span class="nm">load_font</span><span class="sig">(folder, characters=None, suffix=&quot;.off&quot;)</span><span class="sum only-en">Load a whole folder of letter or digit models into a dictionary.</span><span class="sum only-lt">Nuskaito visą raidžių ar skaitmenų aplanką į žodyną.</span></summary><div class="body"><p><code>add.load_font("letters")</code> gives <code>{"A": mesh, "B": mesh, ...}</code> so a word can be written with a loop instead of one <code>load</code> per character.</p></div></details>
+<details class="fn" id="fn-text" data-search="text lay a string of already-loaded glyphs out in a row and merge them. išdėsto įkeltų raidžių eilutę ir sujungia į vieną modelį."><summary><span class="nm">text</span><span class="sig">(characters, font, at=(0, 0, 0), size=1.0, spacing=1.0, color=None, plane=((1, 0, 0), (0, 1, 0)))</span><span class="sum only-en">Lay a string of already-loaded glyphs out in a row and merge them.</span><span class="sum only-lt">Išdėsto įkeltų raidžių eilutę ir sujungia į vieną modelį.</span></summary><div class="body"><p><code>font</code> is the dictionary returned by <code>load_font</code>.</p></div></details>
+</div>
+<div class="api-group"><h3>19. add.py 1.2 names</h3>
+<div class="fn flat" id="fn-newface" data-search="newface add.py 1.2 name for :func:`polygon`. senas polygon vardas."><div class="head"><span class="nm">newface</span><span class="sig">(A, RGB)</span><span class="sum only-en">add.py 1.2 name for :func:`polygon`.</span><span class="sum only-lt">Senas polygon vardas.</span></div></div>
+<div class="fn flat" id="fn-cube" data-search="cube add.py 1.2 name for :func:`box`. senas box vardas."><div class="head"><span class="nm">cube</span><span class="sig">(c, e, RGB)</span><span class="sum only-en">add.py 1.2 name for :func:`box`.</span><span class="sum only-lt">Senas box vardas.</span></div></div>
+<div class="fn flat" id="fn-rectangle3D" data-search="rectangle3d add.py 1.2 name for :func:`cuboid`. senas cuboid vardas."><div class="head"><span class="nm">rectangle3D</span><span class="sig">(c, e, RGB)</span><span class="sum only-en">add.py 1.2 name for :func:`cuboid`.</span><span class="sum only-lt">Senas cuboid vardas.</span></div></div>
+<div class="fn flat" id="fn-cube2" data-search="cube2 add.py 1.2 name for :func:`frame` (a hollow cube of bars). senas frame vardas."><div class="head"><span class="nm">cube2</span><span class="sig">(c, e, b, RGB)</span><span class="sum only-en">add.py 1.2 name for :func:`frame` (a hollow cube of bars).</span><span class="sum only-lt">Senas frame vardas.</span></div></div>
+<div class="fn flat" id="fn-cylinder2" data-search="cylinder2 add.py 1.2 name for :func:`tube` (a cylinder with no lids). senas tube vardas."><div class="head"><span class="nm">cylinder2</span><span class="sig">(A, B, r, k, RGB)</span><span class="sum only-en">add.py 1.2 name for :func:`tube` (a cylinder with no lids).</span><span class="sum only-lt">Senas tube vardas.</span></div></div>
+<div class="fn flat" id="fn-cylinder3" data-search="cylinder3 add.py 1.2 name for :func:`cup` (a cylinder closed at ``a``). senas cup vardas."><div class="head"><span class="nm">cylinder3</span><span class="sig">(A, B, r, k, RGB)</span><span class="sum only-en">add.py 1.2 name for :func:`cup` (a cylinder closed at ``A``).</span><span class="sum only-lt">Senas cup vardas.</span></div></div>
+<div class="fn flat" id="fn-cone2" data-search="cone2 add.py 1.2 name for :func:`cone_open` (the slanted wall only). senas cone_open vardas."><div class="head"><span class="nm">cone2</span><span class="sig">(A, B, r, k, RGB)</span><span class="sum only-en">add.py 1.2 name for :func:`cone_open` (the slanted wall only).</span><span class="sum only-lt">Senas cone_open vardas.</span></div></div>
+<div class="fn flat" id="fn-ball" data-search="ball other spellings people reach for. tas pats, kas sphere."><div class="head"><span class="nm">ball</span><span class="sig"></span><span class="sum only-en">Other spellings people reach for.</span><span class="sum only-lt">Tas pats, kas sphere.</span></div></div>
+<div class="fn flat" id="fn-block" data-search="block  tas pats, kas cuboid."><div class="head"><span class="nm">block</span><span class="sig"></span><span class="sum only-en"></span><span class="sum only-lt">Tas pats, kas cuboid.</span></div></div>
+<div class="fn flat" id="fn-cuboid3D" data-search="cuboid3d  tas pats, kas cuboid."><div class="head"><span class="nm">cuboid3D</span><span class="sig"></span><span class="sum only-en"></span><span class="sum only-lt">Tas pats, kas cuboid.</span></div></div>
+<div class="fn flat" id="fn-lathe" data-search="lathe  tas pats, kas revolve."><div class="head"><span class="nm">lathe</span><span class="sig"></span><span class="sum only-en"></span><span class="sum only-lt">Tas pats, kas revolve.</span></div></div>
+<div class="fn flat" id="fn-solid_of_revolution" data-search="solid_of_revolution  tas pats, kas revolve."><div class="head"><span class="nm">solid_of_revolution</span><span class="sig"></span><span class="sum only-en"></span><span class="sum only-lt">Tas pats, kas revolve.</span></div></div>
+<div class="fn flat" id="fn-weld" data-search="weld  tas pats, kas clean."><div class="head"><span class="nm">weld</span><span class="sig"></span><span class="sum only-en"></span><span class="sum only-lt">Tas pats, kas clean.</span></div></div>
+<div class="fn flat" id="fn-scale" data-search="scale  tas pats, kas zoom."><div class="head"><span class="nm">scale</span><span class="sig"></span><span class="sum only-en"></span><span class="sum only-lt">Tas pats, kas zoom.</span></div></div>
+<div class="fn flat" id="fn-translate" data-search="translate  tas pats, kas move."><div class="head"><span class="nm">translate</span><span class="sig"></span><span class="sum only-en"></span><span class="sum only-lt">Tas pats, kas move.</span></div></div>
+<div class="fn flat" id="fn-reflect" data-search="reflect  tas pats, kas mirror."><div class="head"><span class="nm">reflect</span><span class="sig"></span><span class="sum only-en"></span><span class="sum only-lt">Tas pats, kas mirror.</span></div></div>
+</div>
+<div class="api-group"><h3>20. A one-line demonstration</h3>
+<details class="fn" id="fn-demo" data-search="demo build a small model that exercises most of the library. sukuria nedidelį modelį, išbandantį beveik visą biblioteką."><summary><span class="nm">demo</span><span class="sig">(path=&quot;demo.off&quot;)</span><span class="sum only-en">Build a small model that exercises most of the library.</span><span class="sum only-lt">Sukuria nedidelį modelį, išbandantį beveik visą biblioteką.</span></summary><div class="body"><p>Run <code>python add.py</code> to produce <code>demo.off</code> and see the report.</p></div></details>
+</div>
+</section>
+<section id="upgrade">
+<div class="only-en"><h2>Coming from add.py 1.2</h2>
+<p><strong>Everything still works.</strong> Models written for 1.2 run on 2.0 unchanged and produce the same faces; twelve of them are in <code>tests/legacy/</code> and the test suite checks exactly that on every commit.</p>
+<p>The old names are all still there. New code can use the clearer ones:</p>
+<table><thead><tr><th>add.py 1.2</th><th>add.py 2.0</th><th>what it is</th></tr></thead><tbody><tr><td><code>cube(c, e, RGB)</code></td><td><code>box</code></td><td>a cube</td></tr><tr><td><code>rectangle3D(c, e, RGB)</code></td><td><code>cuboid</code></td><td>a rectangular block</td></tr><tr><td><code>cube2(c, e, b, RGB)</code></td><td><code>frame</code></td><td>a hollow cube of bars</td></tr><tr><td><code>cylinder2(A, B, r, k, RGB)</code></td><td><code>tube</code></td><td>a cylinder with no lids</td></tr><tr><td><code>cylinder3(A, B, r, k, RGB)</code></td><td><code>cup</code></td><td>closed at one end</td></tr><tr><td><code>cone2(A, B, r, k, RGB)</code></td><td><code>cone_open</code></td><td>the slanted wall only</td></tr><tr><td><code>newface(A, RGB)</code></td><td><code>polygon</code></td><td>one flat face</td></tr><tr><td><code>spin3D(A, B, S, ...)</code></td><td><code>revolve</code></td><td>a lathe</td></tr><tr><td><code>off(path)</code></td><td><code>save(path)</code></td><td>any of .off, .obj, .ply, .stl</td></tr><tr><td><code>zoom(M, s)</code></td><td><code>zoom</code> <em>(unchanged)</em></td><td>scale</td></tr></tbody></table>
+<p><code>add.vertices</code> and <code>add.faces</code> still look and behave like the old lists of strings, and <code>layer()</code> still returns something you can index as <code>M[0]</code> and <code>M[1]</code>.</p>
+<h3>Two things that did change</h3>
+<p><code>example1()</code> ... <code>example8()</code> no longer live inside <code>add.py</code>; they are in <code>examples/20_classic_1_2.py</code>. This keeps the module to shapes and tools.</p>
+<p><code>axes()</code> draws its X/Y/Z labels as thin bars instead of the baked-in letter meshes, so a model that calls <code>axes()</code> has a slightly different face count.</p></div>
+<div class="only-lt"><h2>Pereinant nuo add.py 1.2</h2>
+<p><strong>Viskas veikia kaip veikę.</strong> 1.2 versijai rašyti modeliai 2.0 versijoje paleidžiami nepakeisti ir duoda tas pačias sienas; dvylika jų guli <code>tests/legacy/</code> aplanke, ir testai tikrina būtent tai.</p>
+<p>Seni vardai niekur nedingo. Naujame kode verta rinktis aiškesnius:</p>
+<table><thead><tr><th>add.py 1.2</th><th>add.py 2.0</th><th>kas tai</th></tr></thead><tbody><tr><td><code>cube(c, e, RGB)</code></td><td><code>box</code></td><td>kubas</td></tr><tr><td><code>rectangle3D(c, e, RGB)</code></td><td><code>cuboid</code></td><td>stačiakampis gretasienis</td></tr><tr><td><code>cube2(c, e, b, RGB)</code></td><td><code>frame</code></td><td>kubo briaunų karkasas</td></tr><tr><td><code>cylinder2(A, B, r, k, RGB)</code></td><td><code>tube</code></td><td>cilindras be dangtelių</td></tr><tr><td><code>cylinder3(A, B, r, k, RGB)</code></td><td><code>cup</code></td><td>uždarytas iš vieno galo</td></tr><tr><td><code>cone2(A, B, r, k, RGB)</code></td><td><code>cone_open</code></td><td>tik šoninis kūgio paviršius</td></tr><tr><td><code>newface(A, RGB)</code></td><td><code>polygon</code></td><td>viena plokščia siena</td></tr><tr><td><code>spin3D(A, B, S, ...)</code></td><td><code>revolve</code></td><td>sukinys</td></tr><tr><td><code>off(path)</code></td><td><code>save(path)</code></td><td>.off, .obj, .ply arba .stl</td></tr><tr><td><code>zoom(M, s)</code></td><td><code>zoom</code> <em>(nepakito)</em></td><td>mastelis</td></tr></tbody></table>
+<p><code>add.vertices</code> ir <code>add.faces</code> tebeatrodo ir tebeveikia kaip seni eilučių sąrašai, o <code>layer()</code> grąžina tai, ką galima indeksuoti <code>M[0]</code> ir <code>M[1]</code>.</p>
+<h3>Du dalykai, kurie pasikeitė</h3>
+<p><code>example1()</code> ... <code>example8()</code> nebegyvena <code>add.py</code> viduje &mdash; jie perkelti į <code>examples/20_classic_1_2.py</code>. Taip modulyje liko tik figūros ir įrankiai.</p>
+<p><code>axes()</code> X/Y/Z raides braižo plonomis juostelėmis, o ne įrašytais raidžių modeliais, todėl modelis, kviečiantis <code>axes()</code>, turi kiek kitokį sienų skaičių.</p></div>
+</section>
+<section id="faq">
+<div class="only-en"><h2>Questions</h2>
+<p><strong>Is it fast enough?</strong> For everything in the gallery, yes &mdash; the whole example set builds in about a minute and a half. Booleans are the expensive part: two 5000-face solids take a second or two. If something feels slow, lower the detail (<code>k</code>, <code>grid_u</code>, <code>grid_v</code>) before doing anything else; a smooth-looking result usually needs far less detail than you think.</p>
+<p><strong>Why no NumPy?</strong> Because the point is that you can read every line. Nothing here is hidden behind a library call, and the module runs on any Python 3 anywhere, including a school computer where you cannot install anything.</p>
+<p><strong>Can I use it for 3D printing?</strong> Yes &mdash; <code>save("model.stl")</code>. Run <code>add.clean(..., normals=True)</code> first and check that <code>add.check()</code> says the surface is closed.</p>
+<p><strong>Why is my boolean result not closed?</strong> Almost always because one of the inputs was not closed. Check both with <code>add.check()</code> before combining them. Surfaces made with <code>parametric</code> are open sheets unless you give them <code>thickness</code> or wrap them (<code>wrap_u</code>, <code>wrap_v</code>).</p>
+<p><strong>Does it do textures?</strong> No. Colour is per face. That is enough for the kind of model this library is for, and it keeps the file format simple.</p>
+<p><strong>Can I use it in my own project?</strong> Yes, MIT licence. Attribution is welcome but not required.</p></div>
+<div class="only-lt"><h2>Klausimai</h2>
+<p><strong>Ar pakankamai greita?</strong> Viskam, kas yra galerijoje, taip: visi pavyzdžiai sugeneruojami maždaug per pusantros minutės. Brangiausia dalis &mdash; loginės operacijos: du 5000 sienų kūnai užtrunka sekundę ar dvi. Jei kas nors strigdo, pirmiausia sumažinkite detalumą (<code>k</code>, <code>grid_u</code>, <code>grid_v</code>); gražiai atrodančiam rezultatui paprastai reikia kur kas mažiau detalumo, nei atrodo.</p>
+<p><strong>Kodėl nenaudojama NumPy?</strong> Nes visa esmė ta, kad galite perskaityti kiekvieną eilutę. Čia niekas nepaslėpta už bibliotekos kvietimo, ir modulis veikia bet kuriame Python 3, taip pat ir mokyklos kompiuteryje, kuriame nieko įdiegti negalima.</p>
+<p><strong>Ar tinka 3D spausdinimui?</strong> Taip &mdash; <code>save("modelis.stl")</code>. Prieš tai paleiskite <code>add.clean(..., normals=True)</code> ir įsitikinkite, kad <code>add.check()</code> sako, jog paviršius uždaras.</p>
+<p><strong>Kodėl loginės operacijos rezultatas neuždaras?</strong> Beveik visada todėl, kad neuždaras buvo vienas iš pradinių kūnų. Prieš jungdami patikrinkite abu su <code>add.check()</code>. Su <code>parametric</code> sukurti paviršiai yra atviri lakštai, nebent duosite jiems <code>thickness</code> arba uždarysite (<code>wrap_u</code>, <code>wrap_v</code>).</p>
+<p><strong>Ar yra tekstūros?</strong> Ne. Spalva priskiriama sienai. Tokio tipo modeliams to pakanka, o failo formatas lieka paprastas.</p>
+<p><strong>Ar galiu naudoti savo projekte?</strong> Taip, MIT licencija. Nuoroda į autorių maloni, bet neprivaloma.</p></div>
+</section>
+</main>
+<footer><div class="bar" style="padding-left:0;padding-right:0"><span class="only-en">add.py 2.0 &middot; MIT licence &middot; Martynas Sabaliauskas, Vilnius University, Faculty of Mathematics and Informatics</span><span class="only-lt">add.py 2.0 &middot; MIT licencija &middot; Martynas Sabaliauskas, Vilniaus universitetas, Matematikos ir informatikos fakultetas</span></div></footer>
+<script>
+(function(){
+  var root=document.documentElement;
+  var stored=null;
+  try{stored=localStorage.getItem('addpy-lang');}catch(e){}
+  var nav=(navigator.language||'').toLowerCase();
+  root.dataset.lang=stored||(nav.indexOf('lt')===0?'lt':'en');
+  function sync(){
+    document.querySelectorAll('.toggle button').forEach(function(b){
+      b.setAttribute('aria-pressed', b.dataset.lang===root.dataset.lang);
+    });
+  }
+  document.querySelectorAll('.toggle button').forEach(function(b){
+    b.addEventListener('click',function(){
+      root.dataset.lang=b.dataset.lang;
+      try{localStorage.setItem('addpy-lang',b.dataset.lang);}catch(e){}
+      sync();
+    });
+  });
+  sync();
+
+  var search=document.getElementById('api-search');
+  if(search){
+    search.addEventListener('input',function(){
+      var q=search.value.trim().toLowerCase();
+      document.querySelectorAll('.fn').forEach(function(f){
+        var hit=!q||f.dataset.search.indexOf(q)>=0;
+        f.style.display=hit?'':'none';
+        if(q&&hit){f.open=true;}
+        if(!q){f.open=false;}
+      });
+      document.querySelectorAll('.api-group').forEach(function(g){
+        var any=g.querySelectorAll('.fn:not([style*="none"])').length;
+        g.style.display=any?'':'none';
+      });
+    });
+  }
+
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.copy');
+    if(!b)return;
+    var code=b.parentNode.querySelector('code');
+    navigator.clipboard.writeText(code.textContent).then(function(){
+      var old=b.innerHTML; b.innerHTML='&#10003;';
+      setTimeout(function(){b.innerHTML=old;},1200);
+    });
+  });
+})();
+</script>
+</body></html>
