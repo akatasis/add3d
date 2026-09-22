@@ -18,3 +18,6 @@ examples/out/
 # local previews
 preview.png
 demo.png
+
+# the plain white variant of the knot curve (35_knot_curve.py) is not in the gallery
+docs/images/kreive1.png
