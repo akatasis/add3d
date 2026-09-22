@@ -116,8 +116,8 @@ add.beam([TX + 1.8, AXLE + 0.1, 0], [-3.2, AXLE + 0.1, 0], 0.3, 0.12, IRON)  # c
 coal = [[int(add.clamp(rng.gauss(2.5, 1.2), 1, 4)) for j in range(9)] for i in range(14)]
 add.heightmap(coal, 0.22, [TX - 1.55, AXLE + 1.05, -1.0],
               color=lambda i, j, k: add.shade(BLACK, rng.uniform(0.6, 1.6)))
-add.text("ADD 2.1", [TX - 1.2, AXLE + 0.5, 1.12], 0.45, color=BRASS, k=6)
-add.text("ADD 2.1", [TX + 1.2, AXLE + 0.5, -1.12], 0.45, color=BRASS, k=6,
+add.text("ADD 2.0", [TX - 1.2, AXLE + 0.5, 1.12], 0.45, color=BRASS, k=6)
+add.text("ADD 2.0", [TX + 1.2, AXLE + 0.5, -1.12], 0.45, color=BRASS, k=6,
          u=[-1, 0, 0])
 
 
@@ -138,5 +138,6 @@ add.mesh(add.color_gradient(smoke, [90, 90, 95], [235, 235, 240], axis=1))
 
 lo, hi = add.bbox()
 print("the train is %.1f long, %.1f high" % (hi[0] - lo[0], hi[1] - lo[1]))
+add.mesh(add.limit_colors(add.layer(), 50))   # at most 50 colours, so the .obj suits Sketchfab
 add.check()
 add.save("locomotive.off")

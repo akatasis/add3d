@@ -1,7 +1,7 @@
 
 
 # ============================================================================
-#  8. Round solids
+#  9. Round solids
 # ============================================================================
 
 def _revolve_grid(A, direction, profile, k, angle=2.0 * math.pi, phase=0.0):
@@ -99,18 +99,107 @@ def spin3D(A, B, S, min_t, max_t, grid_t, k, RGB):
     revolve(S, A, B, min_t, max_t, grid_t, k, RGB, caps=False)
 
 
-def sphere(center, r, k=10, color=None):
-    """A sphere built from six curved square patches (a "quad sphere").
+def _icosphere_grid(subdivisions):
+    """Unit geodesic sphere: vertex list and triangle list.
+
+    Start from the icosahedron, then ``subdivisions`` times split every
+    triangle into four by its edge midpoints and push the new points out
+    onto the sphere -- the principle of an observatory dome.  Midpoints are
+    shared through a dictionary, so neighbouring triangles use the same
+    vertex and the mesh is watertight: 12, 42, 162, 642 ... vertices and
+    20, 80, 320, 1280 ... triangles.
+    """
+    V, T = _platonic("icosahedron")
+    V = [list(_unit(p)) for p in V]
+    T = [tuple(f) for f in T]
+    for _ in range(int(subdivisions)):
+        mid = {}
+
+        def midpoint_index(a, b):
+            key = (a, b) if a < b else (b, a)
+            if key not in mid:
+                m = _unit(((V[a][0] + V[b][0]) * 0.5,
+                           (V[a][1] + V[b][1]) * 0.5,
+                           (V[a][2] + V[b][2]) * 0.5))
+                mid[key] = len(V)
+                V.append(list(m))
+            return mid[key]
+
+        new = []
+        for a, b, c in T:
+            ab, bc, ca = midpoint_index(a, b), midpoint_index(b, c), \
+                midpoint_index(c, a)
+            new += [(a, ab, ca), (b, bc, ab), (c, ca, bc), (ab, bc, ca)]
+        T = new
+    return V, T
+
+
+def icosphere(center, r, subdivisions=3, color=None):
+    """A geodesic sphere: an icosahedron whose triangles are split and
+    pushed out onto the sphere ``subdivisions`` times (0..7).
+
+    Every face is a triangle and all of them are nearly the same size, which
+    is why domes and 3D printers like it.  The face count is
+    ``20 * 4 ** subdivisions``: 20, 80, 320, 1280, 5120, 20480 ...
+    ``color`` may be a function of the face's direction from the centre
+    (a unit vector), so a globe is one line::
+
+        add.icosphere([0, 0, 0], 2, 4, lambda d: "white" if d[1] > 0.7 else "blue")
+    """
+    level = int(subdivisions)
+    level = 0 if level < 0 else (7 if level > 7 else level)
+    V, T = _icosphere_grid(level)
+    M = Mesh()
+    for p in V:
+        M.add_vertex((center[0] + p[0] * r, center[1] + p[1] * r,
+                      center[2] + p[2] * r))
+    if callable(color):
+        for a, b, c in T:
+            d = _unit((V[a][0] + V[b][0] + V[c][0], V[a][1] + V[b][1] + V[c][1],
+                       V[a][2] + V[b][2] + V[c][2]))
+            M.add_face((a, b, c), rgb(color(d)))
+    else:
+        color = rgb(color)
+        for f in T:
+            M.add_face(f, color)
+    _scene.extend(M)
+
+
+def sphere(center, r, k=10, color=None, subdivisions=None):
+    """A sphere built from triangles -- the geodesic dome of an observatory.
+
+    The icosahedron's 20 triangles are split into four again and again and
+    every new vertex is pushed out onto the sphere, so all the triangles are
+    nearly equal.  ``k`` is the detail number add.py has always taken
+    (``k=10`` is fine for a marble, ``k=30`` for a planet); it picks the
+    number of splits so that the face count stays close to the old
+    ``6*k*k``: k=5 gives 320 triangles, k=10 1280, k=20 5120, k=40 20480.
+    Pass ``subdivisions=`` (0..7) to choose the level directly, and see
+    :func:`icosphere` for painting by direction.  The older six-patch
+    sphere of quads is still there as :func:`quadsphere`::
+
+        add.sphere([0, 0, 0], 1.5, 20, "sky")
+    """
+    if subdivisions is None:
+        k = max(1, int(k))
+        subdivisions = int(round(math.log(2.0 * k / 3.0, 2))) if k > 1 else 0
+    icosphere(center, r, subdivisions, color)
+
+
+def quadsphere(center, r, k=10, color=None):
+    """A sphere built from six curved square patches (all faces are quads).
 
     ``k`` is the number of cells along the side of each patch, so the sphere
-    has ``6 * k * k`` faces.  The quads stay nearly square everywhere, which
-    is why this looks better than a globe made of latitude/longitude strips.
+    has ``6 * k * k`` faces.  The quads stay nearly square everywhere.  This
+    was add.py's ``sphere`` up to version 1.2; it is also exactly the
+    "Minecraft sphere" construction of a cube blown up into a ball, and the
+    quad layout suits :func:`smooth` and :func:`catmull_clark`.
     """
     ellipsoid(center, [r, r, r], k, color)
 
 
 def ellipsoid(center, radii, k=10, color=None):
-    """Like :func:`sphere` but with a separate radius for X, Y and Z."""
+    """Like :func:`quadsphere` but with a separate radius for X, Y and Z."""
     if not isinstance(radii, (list, tuple)):
         radii = [radii, radii, radii]
     sides = [((1, 0, 0), (0, 1, 0), (0, 0, 1)),
@@ -301,7 +390,7 @@ def helix(center, r, pitch, turns, k=200, thickness=0.1, sides=12, color=None,
 
 
 # ============================================================================
-#  9. Coordinate axes
+# 10. Coordinate axes
 # ============================================================================
 
 def axes(C=(0, 0, 0), length=4.0, width=0.03):

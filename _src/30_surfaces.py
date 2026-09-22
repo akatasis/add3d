@@ -1,7 +1,7 @@
 
 
 # ============================================================================
-# 11. Parametric surfaces
+# 12. Parametric surfaces
 # ============================================================================
 
 def parametric(S, min_u, max_u, grid_u, min_v, max_v, grid_v, RGB=None,
@@ -72,8 +72,10 @@ def two_sided(M=None):
     """
     M = as_mesh(M)
     out = M.copy()
-    for f, c in zip(M.F, M.C):
-        out.add_face(list(reversed(f)), c)
+    for k, (f, c) in enumerate(zip(M.F, M.C)):
+        uv = M.UV[k] if M.UV is not None else None
+        out.add_face(list(reversed(f)), c,
+                     None if uv is None else list(reversed(uv)))
     return out
 
 
@@ -159,7 +161,7 @@ def _boundary_edges(M):
 
 
 # ============================================================================
-# 12. Curves, sweeps and lofts -- "copy, turn, stretch a cross-section"
+# 13. Curves, sweeps and lofts -- "copy, turn, stretch a cross-section"
 # ============================================================================
 
 def _rmf(points, closed=False):

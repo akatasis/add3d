@@ -46,7 +46,7 @@ def test_push_and_pop():
     assert len(add.faces) == 0
     add.sphere([0, 0, 0], 1, 6, "blue")
     part = add.pop()
-    assert part.polygons == 216
+    assert part.polygons == 320                # geodesic: 20 * 4 ** 2
     assert len(add.faces) == 6              # the box came back
     add.clear()
 
@@ -463,9 +463,10 @@ def test_stats_and_check():
     add.clear()
     add.sphere([0, 0, 0], 1, 10, "red")
     s = add.stats()
-    assert s["faces"] == 600
+    assert s["faces"] == 1280                  # geodesic: 20 * 4 ** 3
     assert s["closed"]
     assert not add.check(quiet=True)
+    assert s["obj_bytes"] > 0
     add.clear()
 
 
@@ -700,7 +701,7 @@ def test_demo_runs():
 
 
 # --------------------------------------------------------------------------
-#  2.1: only "import add", colour functions, parts, placing, text
+#  only "import add", colour functions, parts, placing, text
 # --------------------------------------------------------------------------
 
 def test_math_and_random_are_reexported():
@@ -843,7 +844,7 @@ def test_wireframe_and_flow():
     B = add.layer()
     add.wireframe(B, 0.05, 6)
     M = add.layer()
-    assert M.polygons == 12 * (6 + 2 * 6) + 8 * 24
+    assert M.polygons == 12 * (6 + 2 * 6) + 8 * 20
     pts = add.flow(lambda p: [0, 1, 0], [0, 0, 0], 0.1, 10)
     assert len(pts) == 11 and abs(pts[-1][1] - 1.0) < 1e-9
     add.trace(lambda p: [1, 0, 0], [0, 0, 0], 0.1, 10, 0.1, 6, "red")
@@ -905,6 +906,333 @@ def test_text():
     assert hi[1] - lo[1] < 0.5 and lo[2] < 0 < hi[2]
     assert add.write is add.text and add.label is add.text
     add.clear()
+
+
+# --------------------------------------------------------------------------
+#  2.0: regular polyhedra, geodesic sphere, vertex tools, subdivision,
+#  named surfaces, Sketchfab limits
+# --------------------------------------------------------------------------
+
+def test_regular_polyhedra():
+    expect = {"tetrahedron": (4, 4, 3), "cube": (8, 6, 3), "octahedron": (6, 8, 4),
+              "dodecahedron": (20, 12, 3), "icosahedron": (12, 20, 5)}
+    for name, (nv, nf, val) in expect.items():
+        M = add.make(add.polyhedron, name, [1, 2, 3], 2.0, "red")
+        s = add.stats(M)
+        assert (s["vertices"], s["faces"]) == (nv, nf), name
+        assert s["closed"] and add.volume(M) > 0
+        # every vertex on the sphere of radius r, average exactly at the centre
+        P = add.polyhedron_points(name, [1, 2, 3], 2.0)
+        assert len(P) == nv
+        for p in P:
+            assert abs(add.distance(p, [1, 2, 3]) - 2.0) < 1e-9
+        mean = [sum(p[a] for p in P) / nv for a in range(3)]
+        assert max(abs(mean[a] - [1, 2, 3][a]) for a in range(3)) < 1e-12
+        assert add.valence(M, 0) == val
+        L = add.edge_lengths(M)
+        assert max(L) - min(L) < 1e-9                 # all edges equal
+        assert len(add.polyhedron_faces(name)) == nf
+    for fn, nf in ((add.tetrahedron, 4), (add.octahedron, 8),
+                   (add.dodecahedron, 12), (add.icosahedron, 20)):
+        assert add.make(fn, [0, 0, 0], 1, "red").polygons == nf
+    # duals: cube <-> octahedron, dodecahedron <-> icosahedron
+    cube = add.make(add.polyhedron, "cube")
+    assert add.dual(cube).polygons == 8 and closed(add.dual(cube))
+    ico = add.make(add.icosahedron)
+    assert add.dual(ico).polygons == 12 and closed(add.dual(ico))
+    assert add.dual(add.make(add.tetrahedron)).polygons == 4
+
+
+def test_geodesic_sphere():
+    add.clear()
+    for level, faces, verts in ((0, 20, 12), (1, 80, 42), (2, 320, 162),
+                                (3, 1280, 642)):
+        M = add.make(add.icosphere, [0, 0, 0], 1.0, level, "red")
+        s = add.stats(M)
+        assert (s["faces"], s["vertices"]) == (faces, verts)
+        assert s["closed"] and all(len(f) == 3 for f in M.F)
+        for p in M.V:
+            assert abs(add.distance(p, [0, 0, 0]) - 1.0) < 1e-12
+    # sphere(): the old detail number picks a level; k=10 -> 1280 triangles
+    for k, faces in ((1, 20), (3, 80), (5, 320), (10, 1280), (20, 5120)):
+        assert add.make(add.sphere, [0, 0, 0], 1, k).polygons == faces
+    assert add.make(add.sphere, [0, 0, 0], 1, 10, subdivisions=1).polygons == 80
+    M = add.make(add.sphere, [2, 0, 0], 1.5, 20, "sky")
+    check_volume(M, 4.0 / 3 * math.pi * 1.5 ** 3, 0.01)
+    assert closed(M) and add.ball is add.sphere
+    # painting by direction
+    M = add.make(add.icosphere, [0, 0, 0], 1, 2,
+                 lambda d: "white" if d[1] > 0 else "blue")
+    assert add.stats(M)["colors"] == 2
+    # the old quad sphere is still there
+    Q = add.make(add.quadsphere, [0, 0, 0], 1, 10, "red")
+    assert Q.polygons == 600 and closed(Q) and all(len(f) == 4 for f in Q.F)
+
+
+def test_vertex_tools():
+    cube = add.make(add.box, [0, 0, 0], 2, "red")
+    assert len(add.edges(cube)) == 12
+    assert abs(add.mean_edge_length(cube) - 2.0) < 1e-12
+    assert abs(add.edge_length(cube, *add.edges(cube)[0]) - 2.0) < 1e-12
+    assert add.adjacency(cube)[0] == add.neighbors(cube, 0) or \
+        sorted(add.adjacency(cube)[0]) == sorted(add.neighbors(cube, 0))
+    assert len(add.neighbors(cube, 0)) == 3 == add.valence(cube, 0)
+    assert abs(add.mean_neighbor_distance(cube, 0) - 2.0) < 1e-12
+    assert len(add.vertex_faces(cube, 0)) == 3
+    i = add.nearest_vertex(cube, [1, 1, 1])
+    assert add.vertex(cube, i) == [1.0, 1.0, 1.0]
+    moved = add.set_vertex(cube, i, [None, 3, None])
+    assert add.vertex(moved, i) == [1.0, 3.0, 1.0] and add.vertex(cube, i)[1] == 1.0
+    moved = add.move_vertex(cube, i, [1, 1, 1])
+    assert add.vertex(moved, i) == [2.0, 2.0, 2.0]
+    moved = add.set_vertices(cube, {0: [0, 0, 0], 1: [None, None, 9]})
+    assert add.vertex(moved, 0) == [0.0, 0.0, 0.0] and add.vertex(moved, 1)[2] == 9.0
+    n = add.vertex_normal(cube, i)
+    assert abs(add.distance(n, [0, 0, 0]) - 1.0) < 1e-9 and n[0] > 0 and n[1] > 0
+    assert abs(add.face_area(cube, 0) - 4.0) < 1e-9
+    assert len(add.face_centers(cube)) == 6
+    c, nrm = add.face_center(cube, 0), add.face_normal(cube, 0)
+    assert abs(add.distance(c, [0, 0, 0]) - 1.0) < 1e-9
+    assert abs(sum(c[a] * nrm[a] for a in range(3)) - 1.0) < 1e-9   # outward
+    assert add.boundary_edges(cube) == [] and add.boundary_loops(cube) == []
+    sheet = add.make(add.grid, [0, 0, 0], [2, 2], 2, 2, "red")
+    assert len(add.boundary_edges(sheet)) == 8
+    assert len(add.boundary_loops(sheet)) == 1 and len(add.boundary_loops(sheet)[0]) == 8
+    # neighbours of an icosahedron vertex go around it
+    ico = add.make(add.icosahedron, [0, 0, 0], 1)
+    ring = add.neighbors(ico, 0)
+    assert len(ring) == 5 and add.neighbours is add.neighbors
+    for k in range(5):                              # consecutive ones are joined
+        assert ring[(k + 1) % 5] in add.neighbors(ico, ring[k])
+    # refine / spherify / inflate / truncate / color_by_sides
+    R = add.refine(cube, 2)
+    assert R.polygons == 96 and closed(R) and abs(add.volume(R) - 8.0) < 1e-9
+    D = add.spherify(add.refine(add.make(add.octahedron), 3))
+    assert D.polygons == 512 and closed(D)
+    assert all(abs(add.distance(p, [0, 0, 0]) - 1.0) < 1e-9 for p in D.V)
+    big = add.inflate(cube, 0.5)
+    assert add.volume(big) > 8.0 and closed(big)
+    ball = add.truncate(ico, 1 / 3.0, "black")
+    s = add.stats(ball)
+    assert (s["vertices"], s["faces"]) == (60, 32) and s["closed"]
+    sides = sorted(len(f) for f in ball.F)
+    assert sides.count(5) == 12 and sides.count(6) == 20
+    L = add.edge_lengths(ball)
+    assert max(L) - min(L) < 1e-9                    # a regular truncation
+    ball = add.color_by_sides(ball, {5: "black", 6: "white"})
+    assert add.stats(ball)["colors"] == 2
+    half = add.truncate(cube, 0.5)                   # cuboctahedron
+    assert half.polygons == 14 and closed(half)
+
+
+def test_catmull_clark():
+    cube = add.make(add.box, [0, 0, 0], 2, "gold")
+    S = add.catmull_clark(cube, 1)
+    assert S.polygons == 24 and closed(S) and all(len(f) == 4 for f in S.F)
+    assert add.stats(S)["colors"] == 1 and S.C[0] == add.rgb("gold")
+    S3 = add.catmull_clark(cube, 3)
+    assert S3.polygons == 384 and closed(S3)
+    assert 8 * 0.25 < add.volume(S3) < 8.0            # rounded, so smaller
+    assert add.subdivide is add.catmull_clark
+    # a coloured control mesh keeps its colours per face
+    painted = add.color_random(cube, seed=1)
+    assert add.stats(add.catmull_clark(painted, 2))["colors"] == 6
+    # an open sheet keeps a smooth border
+    sheet = add.make(add.grid, [0, 0, 0], [4, 4], 4, 4, "red")
+    S = add.catmull_clark(sheet, 2)
+    assert S.polygons == 256 and add.stats(S)["open_edges"] == 64
+
+
+def test_smooth_uniform_grids():
+    cube = add.make(add.box, [0, 0, 0], 2, "gold")
+    # n = 1: the control vertices moved to the limit surface, faces kept
+    L = add.smooth(cube, 1)
+    assert L.polygons == 6 and len(L.V) == 8 and closed(L)
+    # for n = 2^k the grid is the classical subdivision at its limit
+    def points(M):
+        return sorted(tuple(round(c, 9) for c in p) for p in M.V)
+    for k in (1, 2, 3):
+        A = add.smooth(cube, 2 ** k, uniform=False)
+        B = add.smooth(add.catmull_clark(cube, k), 1)
+        assert A.polygons == B.polygons == 6 * 4 ** k
+        assert points(A) == points(B)
+    # any n: node counts, closedness, Euler characteristic 2 of a ball
+    for n in range(1, 8):
+        S = add.smooth(cube, n)
+        assert closed(S), n
+        q = n // 2
+        cells = 6 * (4 * q * q + (4 * q + 1 if n % 2 else 0))
+        assert S.polygons == cells, (n, S.polygons)
+        V, E, F = len(S.V), len(add.edges(S)), len(S.F)
+        assert V - E + F == 2, (n, V, E, F)
+        assert add.stats(S)["colors"] == 1
+    # every node lies on the limit surface: a cube's limit surface is
+    # symmetric and convex, all 2^k grids are subsets of one another
+    fine = points(add.smooth(cube, 8, uniform=False))
+    coarse = points(add.smooth(cube, 4, uniform=False))
+    assert set(coarse) <= set(fine)
+    # non-quad control faces: dodecahedron and a triangle mesh
+    dode = add.make(add.dodecahedron, [0, 0, 0], 1, "sky")
+    S = add.smooth(dode, 5)
+    assert closed(S) and S.polygons == 12 * (5 * 4 + 5 * 2 + 1)
+    ico = add.make(add.icosahedron, [0, 0, 0], 1, "sky")
+    S = add.smooth(ico, 4)
+    assert closed(S) and S.polygons == 20 * 3 * 4
+    # the boundary of an open mesh is a smooth curve: a single flat polygon
+    # stays flat and keeps its corner count on the rim
+    face = add.make(add.polygon, [[0, 0, 0], [2, 0, 0], [2, 2, 0], [1, 3, 0], [0, 2, 0]],
+                    "red")
+    for uniform in (False, True):
+        S = add.smooth(face, 3, uniform=uniform)
+        assert all(abs(p[2]) < 1e-12 for p in S.V)
+        assert len(add.boundary_loops(S)) == 1
+        assert len(add.boundary_loops(S)[0]) == 5 * 3
+    # options run and give the same counts
+    S1 = add.smooth(dode, 3, uniform=True, centre=False, p=3.0, scale=0.5)
+    assert S1.polygons == add.smooth(dode, 3).polygons and closed(S1)
+    # meshes that only touch are cut apart, not refused
+    add.clear()
+    add.voxels([(0, 0, 0), (1, 1, 0)], 1, color="red")
+    vox = add.layer()
+    S = add.smooth(vox, 2)
+    assert closed(S) and S.polygons == 2 * 24
+    # a mesh with a moved corner (the classroom use case)
+    block = add.set_vertex(cube, add.nearest_vertex(cube, [1, 1, 1]), [3, 3, 3])
+    S = add.smooth(block, 6)
+    assert closed(S) and add.bbox(S)[1][0] > 1.1     # the plain cube stays under 0.8
+
+
+def test_named_surfaces():
+    names = add.surface_names()
+    assert len(names) == 25 and "klein_bottle" in names and names == sorted(names)
+    for name in names:
+        M = add.make(add.surface, name, [0, 0, 0], 2.0, 12, "red")
+        assert M.polygons > 0, name
+        assert abs(max(add.size(M)) - 2.0) < 1e-9, name
+        for p in M.V:
+            assert all(abs(c) < 10 for c in p), name
+    f = add.surface_function("pillow", a=2.0)
+    assert abs(f(math.pi / 2, math.pi / 2)[2] - 2.0) < 1e-12
+    M = add.make(add.surface, "sine_surface", [5, 0, 0], grid=[10, 20], color="red")
+    assert M.polygons == 200 and closed(M)
+    assert abs(add.middle(M)[0] - 5.0) < 1e-9
+    M = add.make(add.surface, "enneper", size=1, grid=8, thickness=0.05)
+    assert closed(M)
+    M = add.make(add.surface, "apple", grid=8, color=lambda u, v: add.hsv(u))
+    assert add.stats(M)["colors"] > 3
+    assert set(add.SURFACES["dini"]) >= {"f", "u", "v", "wrap", "grid", "note", "params"}
+
+
+def test_sketchfab_limits():
+    add.clear()
+    add.sphere([0, 0, 0], 1, 10)
+    M = add.color_by(add.layer(), lambda p: add.hsv(p[1]))
+    assert add.stats(M)["colors"] > 50
+    assert len(add.palette(M)) == add.stats(M)["colors"]
+    assert add.palette(M)[0][1] >= add.palette(M)[-1][1]
+    small = add.limit_colors(M, 50)
+    assert add.stats(small)["colors"] <= 50 and small.polygons == M.polygons
+    assert add.stats(add.limit_colors(M, 5))["colors"] <= 5
+    assert add.stats(add.limit_colors(add.make(add.box, [0, 0, 0], 1, "red"), 5))["colors"] == 1
+    # obj_size predicts the written file to within a few bytes
+    with tempfile.TemporaryDirectory() as folder:
+        path = os.path.join(folder, "m.obj")
+        add.save(path, M, colors=50)
+        assert abs(os.path.getsize(path) - add.obj_size(small)) < 40
+        assert add.stats(add.load(path))["colors"] <= 50
+    assert add.stats(M)["obj_bytes"] == add.obj_size(M)
+    # check() reports the Sketchfab limits
+    assert not add.check(M, min_faces=10, quiet=True)          # too many colours
+    assert add.check(small, min_faces=10, quiet=True)
+    assert not add.check(small, min_faces=10, quiet=True, max_mb=0.01)
+    assert add.SKETCHFAB_MB == 50 and add.SKETCHFAB_COLORS == 50
+
+
+def test_transparency_and_textures():
+    # colours with an opacity
+    assert add.rgb([10, 20, 30]) == (10, 20, 30)
+    assert add.rgb([10, 20, 30, 0.5]) == (10, 20, 30, 0.5)
+    assert add.rgb([10, 20, 30, 1.0]) == (10, 20, 30)          # solid = plain
+    assert add.rgb("#ff000080") == (255, 0, 0, 0.502)
+    assert add.transparent("red", 0.25) == (255, 0, 0, 0.25)
+    assert add.transparent(add.transparent("red", 0.25), 1) == (255, 0, 0)
+    add.clear()
+    add.box([0, 0, 0], 1, add.transparent("sky", 0.4))
+    add.box([3, 0, 0], 1, "sky")
+    M = add.layer()
+    s = add.stats(M)
+    assert s["transparent_faces"] == 6 and s["colors"] == 2 and s["textures"] == []
+    G = add.opacity(M, 0.5)
+    assert add.stats(G)["transparent_faces"] == 12 and add.stats(G)["colors"] == 1
+    assert add.stats(add.opacity(G, 1))["transparent_faces"] == 0
+    # the old string API and .off output only see r g b
+    assert M.face_strings()[0].split()[-3:] == ["120", "190", "255"]
+    # textures: coordinates per corner, kept through transforms and clean()
+    with tempfile.TemporaryDirectory() as folder:
+        png = os.path.join(folder, "check.png")
+        rows = [["white" if (x // 4 + y // 4) % 2 else "black" for x in range(16)]
+                for y in range(16)]
+        add.write_png(png, rows)
+        assert os.path.getsize(png) > 50
+        wall = add.texture(add.make(add.cuboid, [0, 0, 0], [4, 2, 1], "red"),
+                           "check.png", "box", scale=2.0)
+        assert wall.UV is not None and len(wall.UV) == 6
+        assert all(len(uv) == 4 for uv in wall.UV)
+        assert wall.C[0] == (255, 255, 255, 1.0, "check.png")
+        assert add.stats(wall)["textures"] == ["check.png"]
+        moved = add.clean(add.mirror(add.move(wall, [1, 2, 3])))
+        assert moved.UV is not None and len(moved.UV) == 6 and moved.UV[0] is not None
+        tri = add.triangulate(wall)
+        assert len(tri.UV) == 12 and len(tri.UV[0]) == 3
+        both = add.merge([wall, add.make(add.box, [9, 0, 0], 1, "red")])
+        assert len(both.UV) == 12 and both.UV[6] is None
+        for mapping in ("xy", "xz", "yz", "fit", "sphere", "cylinder",
+                        lambda p, n: (p[0], p[1])):
+            T = add.texture(add.make(add.sphere, [0, 0, 0], 1, 5), "check.png",
+                            mapping)
+            assert len(T.UV) == T.polygons
+        tinted = add.texture(add.opacity(wall, 0.5), "check.png", color="red")
+        assert tinted.C[0] == (255, 0, 0, 0.5, "check.png")
+        # .obj + .mtl round trip: d, map_Kd, vt and f v/vt
+        path = os.path.join(folder, "t.obj")
+        scene = add.merge([wall, add.opacity(add.make(add.box, [9, 0, 0], 1, "sky"), 0.3)])
+        add.save(path, scene)
+        text = open(path).read()
+        mtl = open(os.path.join(folder, "t.mtl")).read()
+        assert "vt " in text and "/" in text.split("\nf ")[1]
+        assert "map_Kd check.png" in mtl and "d 0.300" in mtl and "d 1.000" in mtl
+        assert abs(os.path.getsize(path) - add.obj_size(scene)) < 80
+        back = add.load(path)
+        assert add.stats(back)["textures"] == ["check.png"]
+        assert add.stats(back)["transparent_faces"] == 6
+        assert back.UV is not None and back.UV[0] is not None
+        # .off keeps colours only, and plain models are written as before
+        off = os.path.join(folder, "t.off")
+        add.save(off, scene)
+        assert add.stats(add.load(off))["textures"] == []
+        add.save(off, add.make(add.box, [0, 0, 0], 1, "red"))
+        assert "255 0 0" in open(off).read()
+    # limit_colors leaves glass and textures alone
+    many = add.color_by(add.make(add.sphere, [0, 0, 0], 1, 10), lambda p: add.hsv(p[1]))
+    mixed = add.merge([many, wall, add.opacity(add.make(add.box, [5, 0, 0], 1, "sky"), 0.3)])
+    few = add.limit_colors(mixed, 10)
+    assert add.stats(few)["colors"] <= 12 and add.stats(few)["textures"] == ["check.png"]
+    assert add.stats(few)["transparent_faces"] == 6
+
+
+def test_make_and_every_public_name():
+    ball = add.make(add.sphere, [0, 0, 0], 1, 5, "red")
+    assert ball.polygons == 320 and len(add.faces) == 0
+    add.box([0, 0, 0], 1, "red")
+    part = add.make(add.box, [0, 0, 0], 1, "blue")       # the scene is untouched
+    assert len(add.faces) == 6 and part.polygons == 6
+    add.clear()
+    # every public name is documented and, if callable, has a docstring
+    for name in add.__all__:
+        obj = getattr(add, name)
+        if callable(obj) and not isinstance(obj, type):
+            assert obj.__doc__, name
+    assert add.__version__ == "2.0"
 
 
 # --------------------------------------------------------------------------

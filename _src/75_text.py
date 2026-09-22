@@ -1,7 +1,7 @@
 
 
 # ============================================================================
-# 22. Letters and labels
+# 26. Letters and labels
 # ============================================================================
 # A small stroke font: every character is a few polylines on a grid that is
 # 4 units wide and 6 units tall (Y up).  ``text`` draws them as round bars,
@@ -182,8 +182,9 @@ def text(string, at=(0, 0, 0), size=1.0, thickness=None, color=None,
     return widest
 
 
-#: ``add.write`` and ``add.label`` are other names for :func:`text`.
+#: ``add.write`` is another name for :func:`text`.
 write = text
+#: ``add.label`` is another name for :func:`text`.
 label = text
 
 

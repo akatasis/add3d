@@ -108,12 +108,14 @@ print("rgb('sky') =", add.rgb("sky"), " gradient =", add.gradient(0.5, "red", "b
 add.push()
 add.sphere([0, 0, 0], 0.9, 12, "white")
 ball = add.color_random(add.pop(), seed=2)               # every face its own colour
+ball = add.limit_colors(ball, 24)                        # ... then grouped into 24 shades
 add.mesh(add.move(ball, [7.5, 1.0, 3]))
 add.glyph("Z", [7.0, 2.3, 3], [1, 0, 0], [0, 1, 0], 0.6, 0.04, "navy")
 
 everything = add.scene()                                 # the live scene object
 print("scene so far:", everything)
-add.save("workbench.obj")                                # .obj + .mtl, scene stays
+print("colours:", len(add.palette()), " .obj size: %.2f MB" % (add.obj_size() / 1e6))
+add.save("workbench.obj", colors=50)                     # .obj + .mtl, scene stays
 add.save("workbench.ply")
 add.obj("workbench_copy.obj")                            # add.py 1.2 style: writes and clears
 print("after obj(): scene is", add.scene())

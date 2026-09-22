@@ -31,11 +31,11 @@ use this pair of names already.
 ## 2. Putting the repository on GitHub
 
 **Option A -- restore from the `.bundle` (keeps the whole history).**
-Next to this folder is `add3d-2.1-git-history.bundle`, the complete git
+Next to this folder is `add3d-2.0-git-history.bundle`, the complete git
 history in one file:
 
 ```bash
-git clone add3d-2.1-git-history.bundle add3d
+git clone add3d-2.0-git-history.bundle add3d
 cd add3d
 git remote remove origin
 ```
@@ -55,7 +55,7 @@ this folder is enough:
 cd add3d
 git init -b main
 git add .
-git commit -m "add.py 2.1"
+git commit -m "add.py 2.0"
 git remote add origin https://github.com/YOUR_NAME/add3d.git
 git push -u origin main
 ```
@@ -77,10 +77,13 @@ python3 tools/make_docs.py
 
 **Check the Actions tab.** The tests run on Python 3.8-3.13; a second job
 checks that `add.py` and `examples/add.py` match `_src/`, that every
-example runs, that every public function is used by an example
-(`tools/coverage.py --strict`) and that `docs/index.html` matches the
-docstrings. After editing anything in `_src/`, run `python3 build.py` and
-`python3 tools/make_docs.py` before committing.
+example runs and stays within the Sketchfab limits, that every public
+function is used by an example (`tools/coverage.py --strict`), that every
+documented example runs (`tests/test_docs.py`) and that `docs/index.html`
+matches the docstrings. After editing anything in `_src/`, run `python3
+build.py` and `python3 tools/make_docs.py` before committing; a new public
+function also needs its Lithuanian explanation and example in
+`docs/reference.py`, or the documentation build refuses.
 
 **Description and topics.** Suggested description:
 
@@ -100,7 +103,7 @@ release is:
 ```bash
 python3 -m pip install --upgrade build twine
 python3 build.py && python3 tests/test_add.py
-python3 -m build                      # -> dist/add3d-2.1.tar.gz and .whl
+python3 -m build                      # -> dist/add3d-2.0.tar.gz and .whl
 python3 -m twine upload dist/*        # needs a PyPI account and an API token
 ```
 
@@ -110,8 +113,10 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
 
 ## 5. Sharing beyond GitHub
 
-* **Sketchfab**: `add.save("model.obj")` writes `.obj` + `.mtl`; upload both
-  in one archive and the colours come along.
+* **Sketchfab**: `add.save("model.obj")` writes `.obj` + `.mtl` (opacity
+  and textures included); upload both, with any texture images, in one
+  archive. Keep under 50 MB and 50 colours (`add.check()` tells you;
+  `add.save("model.obj", colors=50)` reduces a colourful model).
 * **Paper**: `paper/paper.md` (+ `references.bib`) is written for a
   computer-science-education venue; the repository link and the DOI (if
   you archive a release on Zenodo) go into `CITATION.cff` too.
@@ -124,8 +129,8 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
 |---|---|
 | `add.py` | the library -- the only file students need |
 | `_src/` + `build.py` | the sections `add.py` is assembled from |
-| `examples/` | 30 commented example programs and a copy of `add.py` |
-| `tests/` | 80 unit tests + the add.py 1.2 compatibility fixture |
+| `examples/` | 42 commented example programs and a copy of `add.py` |
+| `tests/` | 89 unit tests, the add.py 1.2 compatibility fixture and the documentation-example runner |
 | `tools/` | `preview.py` (renderer), `make_docs.py`, `coverage.py` |
 | `docs/` | the documentation site (EN/LT) and its pictures |
 | `slides/` | the lecture slides (.pptx, .pdf and the generator) |
@@ -136,8 +141,10 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
 
 ```bash
 python3 build.py --check          # add.py and examples/add.py are up to date
-python3 tests/test_add.py         # 80 passed, 0 failed
+python3 tests/test_add.py         # 89 passed, 0 failed
 python3 tests/test_legacy.py      # all legacy models reproduce
+python3 tests/test_docs.py        # 231 documentation examples ran
 python3 tools/coverage.py --strict
 python3 tools/make_docs.py        # docs/index.html
+python3 examples/build_all.py --models   # every example fits the Sketchfab limits
 ```

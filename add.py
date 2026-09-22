@@ -2,7 +2,7 @@
 add.py -- build 3D models with nothing but Python code.
 ==============================================================================
 
-Version 2.1  |  Martynas Sabaliauskas (VU MIF DMSTI)  |  MIT licence
+Version 2.0  |  Martynas Sabaliauskas (VU MIF DMSTI)  |  MIT licence
 
 A tiny, dependency-free 3D modelling kernel for teaching.  The whole library
 uses only ``math`` and ``random`` from the standard library: no NumPy, no
@@ -35,12 +35,27 @@ Only ``import add``
 ``add.randint(1, 6)`` and ``add.seed(7)`` all work and a model file needs no
 other import.  (``import math`` still works too, of course.)
 
+What is in 2.0
+--------------
+Booleans written from scratch (``union``, ``difference``, ``intersect``,
+``cut``); the five regular polyhedra (``tetrahedron`` ... ``icosahedron``,
+``polyhedron_points``) and a geodesic ``sphere`` of triangles; vertex tools
+(``neighbors``, ``valence``, ``set_vertex``, ``dual``, ``truncate``,
+``refine``, ``spherify``); smooth surfaces (``catmull_clark`` and
+``smooth``, the generalised Catmull-Clark algorithm); a catalogue of named
+surfaces (``surface``); parts, placing and colour functions; repair and
+``check()`` with the Sketchfab limits (``limit_colors``, ``obj_size``);
+see-through colours and image textures for ``.obj`` files
+(``transparent``, ``opacity``, ``texture``, ``write_png``).
+
 Compatibility
 -------------
 Code written for add.py 1.2 keeps working unchanged: the old names
 (``cube2``, ``cylinder2``, ``cylinder3``, ``cone2``, ``rectangle3D``,
 ``spin3D``, ``curve``, ``off``, ``zoom`` ...) are all still here, and so are
-the module-level ``add.vertices`` / ``add.faces`` string lists.
+the module-level ``add.vertices`` / ``add.faces`` string lists.  The one
+visible change is ``sphere``, now made of triangles; ``quadsphere`` is the
+old six-patch version.
 
 Coordinate convention
 ---------------------
@@ -58,7 +73,7 @@ import random as _random
 from math import *          # noqa: F401,F403
 from random import *        # noqa: F401,F403
 
-__version__ = "2.1"
+__version__ = "2.0"
 __all__ = []  # filled in at the bottom of the file
 
 #: Numerical tolerance used by welding, boolean operations and plane tests.
@@ -155,6 +170,12 @@ def rgb(color):
 
     Accepts ``[255, 0, 0]``, ``(1.0, 0.0, 0.0)`` (floats 0..1 are scaled),
     ``"#ff0000"``, ``"red"`` or ``None`` (-> :data:`DEFAULT_COLOR`).
+
+    A fourth value is the *opacity*: ``[120, 190, 255, 0.4]`` or
+    ``"#78beff66"`` is a see-through blue, kept as a fourth element of the
+    tuple (see :func:`transparent`).  A fifth, a file name, is an image
+    texture (see :func:`texture`).  Both only take effect in ``.obj``
+    files; everything else treats the colour as before.
     """
     if color is None:
         return DEFAULT_COLOR
@@ -163,10 +184,13 @@ def rgb(color):
         if s in COLORS:
             return COLORS[s]
         s = s.lstrip("#")
-        if len(s) == 3:
-            s = s[0] * 2 + s[1] * 2 + s[2] * 2
-        if len(s) == 6:
-            return (int(s[0:2], 16), int(s[2:4], 16), int(s[4:6], 16))
+        if len(s) in (3, 4):
+            s = "".join(ch * 2 for ch in s)
+        if len(s) in (6, 8):
+            out = (int(s[0:2], 16), int(s[2:4], 16), int(s[4:6], 16))
+            if len(s) == 8 and int(s[6:8], 16) < 255:
+                return out + (round(int(s[6:8], 16) / 255.0, 3),)
+            return out
         raise ValueError("unknown colour: %r" % color)
     r, g, b = color[0], color[1], color[2]
     if isinstance(r, float) and isinstance(g, float) and isinstance(b, float) \
@@ -176,7 +200,40 @@ def rgb(color):
     for c in (r, g, b):
         c = int(round(c))
         out.append(0 if c < 0 else (255 if c > 255 else c))
-    return (out[0], out[1], out[2])
+    out = (out[0], out[1], out[2])
+    alpha, image = 1.0, None
+    if len(color) > 3 and color[3] is not None:
+        alpha = float(color[3])
+        if alpha > 1.0:                            # given as 0..255
+            alpha /= 255.0
+        alpha = round(0.0 if alpha < 0 else (1.0 if alpha > 1 else alpha), 3)
+    if len(color) > 4 and color[4]:
+        image = str(color[4])
+    if image is not None:
+        return out + (alpha, image)
+    if alpha < 1.0:
+        return out + (alpha,)
+    return out
+
+
+def transparent(color, alpha=0.5):
+    """A see-through version of a colour: ``alpha`` is the opacity, 0 for
+    invisible and 1 for solid.
+
+    Any drawing function takes the result in place of a colour, so a
+    window is ``add.cuboid(c, [2, 1.5, 0.05], add.transparent("sky", 0.35))``.
+    The opacity is written to the ``.mtl`` file of an ``.obj`` model (as
+    ``d``); ``.off`` files stay plain colours.  See also :func:`opacity`.
+    """
+    c = rgb(color)
+    return rgb((c[0], c[1], c[2], alpha) + tuple(c[4:5]))
+
+
+def _material(c):
+    """``(r, g, b, alpha, image)`` for any colour tuple."""
+    return (c[0], c[1], c[2],
+            c[3] if len(c) > 3 else 1.0,
+            c[4] if len(c) > 4 else None)
 
 
 #: A handful of named colours, so ``add.box(c, 1, "red")`` works.
@@ -239,12 +296,15 @@ class Mesh(object):
     still give you exactly what add.py 1.2 produced.
     """
 
-    __slots__ = ("V", "F", "C")
+    __slots__ = ("V", "F", "C", "UV")
 
-    def __init__(self, V=None, F=None, C=None):
+    def __init__(self, V=None, F=None, C=None, UV=None):
         self.V = V if V is not None else []
         self.F = F if F is not None else []
         self.C = C if C is not None else []
+        #: Texture coordinates, one ``[(u, v), ...]`` per face (or ``None``
+        #: for a face without a texture); ``None`` when nothing is textured.
+        self.UV = UV
 
     # -- basic dunder methods ------------------------------------------------
 
@@ -287,17 +347,25 @@ class Mesh(object):
         """An independent copy."""
         return Mesh([list(p) for p in self.V],
                     [list(f) for f in self.F],
-                    list(self.C))
+                    list(self.C),
+                    None if self.UV is None else
+                    [None if t is None else list(t) for t in self.UV])
 
     def add_vertex(self, p):
         """Append a point and return its index."""
         self.V.append([float(p[0]), float(p[1]), float(p[2])])
         return len(self.V) - 1
 
-    def add_face(self, indices, color=None):
+    def add_face(self, indices, color=None, uv=None):
         """Append one face given as a sequence of vertex indices."""
         self.F.append(list(indices))
         self.C.append(rgb(color))
+        if uv is not None:
+            if self.UV is None:
+                self.UV = [None] * (len(self.F) - 1)
+            self.UV.append(list(uv))
+        elif self.UV is not None:
+            self.UV.append(None)
 
     def add_polygon(self, points, color=None):
         """Append one face given as a sequence of 3D points."""
@@ -311,10 +379,22 @@ class Mesh(object):
         other = as_mesh(other)
         shift = len(self.V)
         self.V.extend([list(p) for p in other.V])
+        if other.UV is not None and self.UV is None:
+            self.UV = [None] * len(self.F)
         for f, c in zip(other.F, other.C):
             self.F.append([i + shift for i in f])
             self.C.append(c)
+        if self.UV is not None:
+            if other.UV is None:
+                self.UV.extend([None] * len(other.F))
+            else:
+                self.UV.extend([None if t is None else list(t)
+                                for t in other.UV])
         return self
+
+    def uv_of(self, i):
+        """The texture coordinates of face ``i``, or ``None``."""
+        return None if self.UV is None else self.UV[i]
 
     # -- convenience ---------------------------------------------------------
 
@@ -491,6 +571,25 @@ def pop():
     global _scene
     made = _scene
     _scene = _stack.pop() if _stack else Mesh()
+    return made
+
+
+def make(draw, *args, **kwargs):
+    """Call a drawing function and return what it drew as a mesh, without
+    touching the current scene.
+
+    ``add.make(add.sphere, [0, 0, 0], 1, 20, "red")`` is the same as
+    ``push()``, ``sphere(...)``, ``pop()``; it turns any of the drawing
+    functions into one that *returns* a mesh::
+
+        ball = add.make(add.sphere, [0, 0, 0], 1)
+        add.mesh(add.move(ball, [3, 0, 0]))
+    """
+    push()
+    try:
+        draw(*args, **kwargs)
+    finally:
+        made = pop()
     return made
 
 
@@ -902,11 +1001,24 @@ def prism(profile, height, color=None, center=(0, 0, 0), axis=(0, 1, 0)):
     _scene.extend(M)
 
 
+# ============================================================================
+#  7. The five regular polyhedra (Platonic solids)
+# ============================================================================
+# Each solid is stored with its centre at the origin, so the average of its
+# vertex coordinates is exactly [0, 0, 0]; ``polyhedron`` then scales it to
+# the circumscribed radius ``r`` and shifts it to ``center``.  The face tables
+# are wound counter-clockwise seen from outside.
+
 def polyhedron(name, center=(0, 0, 0), r=1.0, color=None):
     """One of the five Platonic solids, inscribed in a sphere of radius ``r``.
 
     ``name`` is ``"tetrahedron"``, ``"cube"``, ``"octahedron"``,
-    ``"dodecahedron"`` or ``"icosahedron"``.
+    ``"dodecahedron"`` or ``"icosahedron"``.  ``r`` is the distance from the
+    centre to every vertex.  The same solids also have functions of their
+    own (:func:`tetrahedron` ... :func:`icosahedron`), and
+    :func:`polyhedron_points` gives just the vertex coordinates::
+
+        add.polyhedron("dodecahedron", [0, 0, 0], 2, "gold")
     """
     V, F = _platonic(name)
     scale = r / _norm(V[0])
@@ -922,14 +1034,60 @@ def polyhedron(name, center=(0, 0, 0), r=1.0, color=None):
     _make_outward(_scene, first)
 
 
+def tetrahedron(center=(0, 0, 0), r=1.0, color=None):
+    """A regular tetrahedron: 4 vertices, 4 triangles, circumradius ``r``."""
+    polyhedron("tetrahedron", center, r, color)
+
+
+def octahedron(center=(0, 0, 0), r=1.0, color=None):
+    """A regular octahedron: 6 vertices, 8 triangles, circumradius ``r``."""
+    polyhedron("octahedron", center, r, color)
+
+
+def dodecahedron(center=(0, 0, 0), r=1.0, color=None):
+    """A regular dodecahedron: 20 vertices, 12 pentagons, circumradius ``r``."""
+    polyhedron("dodecahedron", center, r, color)
+
+
+def icosahedron(center=(0, 0, 0), r=1.0, color=None):
+    """A regular icosahedron: 12 vertices, 20 triangles, circumradius ``r``.
+
+    Its vertices are the natural starting point for a geodesic sphere
+    (:func:`sphere`), a football (:func:`truncate`) or anything with
+    twelve equally spread directions -- see :func:`polyhedron_points`.
+    """
+    polyhedron("icosahedron", center, r, color)
+
+
+def polyhedron_points(name, center=(0, 0, 0), r=1.0):
+    """The vertex coordinates of a Platonic solid, as a list of points.
+
+    The average of the points is exactly ``center``.  Use them to place
+    things evenly around a point -- twelve spikes on an icosahedron, say::
+
+        for p in add.polyhedron_points("icosahedron", [0, 0, 0], 2):
+            add.cone([0, 0, 0], p, 0.3, 12, "red")
+    """
+    V, F = _platonic(name)
+    scale = r / _norm(V[0])
+    return [[center[0] + p[0] * scale, center[1] + p[1] * scale,
+             center[2] + p[2] * scale] for p in V]
+
+
+def polyhedron_faces(name):
+    """The face table of a Platonic solid: lists of indices into
+    :func:`polyhedron_points`, counter-clockwise seen from outside."""
+    return [list(f) for f in _platonic(name)[1]]
+
+
 def _platonic(name):
-    """Vertex and face tables for the five Platonic solids."""
+    """Vertex and face tables for the five Platonic solids (centred at 0)."""
     name = name.lower()
     if name in ("tetrahedron", "tetra"):
         V = [(1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)]
         F = [[0, 1, 2], [0, 3, 1], [0, 2, 3], [1, 3, 2]]
         return V, F
-    if name in ("cube", "hexahedron"):
+    if name in ("cube", "hexahedron", "box"):
         V = [(x, y, z) for x in (-1, 1) for y in (-1, 1) for z in (-1, 1)]
         F = [[0, 1, 3, 2], [4, 6, 7, 5], [0, 4, 5, 1],
              [2, 3, 7, 6], [0, 2, 6, 4], [1, 5, 7, 3]]
@@ -941,12 +1099,16 @@ def _platonic(name):
         return V, F
     phi = (1 + math.sqrt(5)) / 2
     if name in ("icosahedron", "icosa"):
-        V = []
-        for s1 in (-1, 1):
-            for s2 in (-1, 1):
-                V += [(0, s1 * 1.0, s2 * phi), (s1 * 1.0, s2 * phi, 0),
-                      (s1 * phi, 0, s2 * 1.0)]
-        F = _hull_faces(V, 3)
+        # The classic table: three golden rectangles, 20 triangles listed
+        # counter-clockwise from outside (the same one the geodesic sphere
+        # starts from).
+        V = [(-1, phi, 0), (1, phi, 0), (-1, -phi, 0), (1, -phi, 0),
+             (0, -1, phi), (0, 1, phi), (0, -1, -phi), (0, 1, -phi),
+             (phi, 0, -1), (phi, 0, 1), (-phi, 0, -1), (-phi, 0, 1)]
+        F = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+             [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+             [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+             [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]]
         return V, F
     if name in ("dodecahedron", "dodeca"):
         V = [(x, y, z) for x in (-1, 1) for y in (-1, 1) for z in (-1, 1)]
@@ -999,7 +1161,7 @@ def _hull_faces(V, sides):
 
 
 # ============================================================================
-#  7. Numbers, points and 2D profiles
+#  8. Numbers, points and 2D profiles
 # ============================================================================
 # Small helpers that models need all the time: blend two values, keep a
 # number in range, measure a distance, turn a point, cut the corners of a
@@ -1225,7 +1387,7 @@ def points_on_curve(path, t0, t1, n, closed=False):
 
 
 # ============================================================================
-#  8. Round solids
+#  9. Round solids
 # ============================================================================
 
 def _revolve_grid(A, direction, profile, k, angle=2.0 * math.pi, phase=0.0):
@@ -1323,18 +1485,107 @@ def spin3D(A, B, S, min_t, max_t, grid_t, k, RGB):
     revolve(S, A, B, min_t, max_t, grid_t, k, RGB, caps=False)
 
 
-def sphere(center, r, k=10, color=None):
-    """A sphere built from six curved square patches (a "quad sphere").
+def _icosphere_grid(subdivisions):
+    """Unit geodesic sphere: vertex list and triangle list.
+
+    Start from the icosahedron, then ``subdivisions`` times split every
+    triangle into four by its edge midpoints and push the new points out
+    onto the sphere -- the principle of an observatory dome.  Midpoints are
+    shared through a dictionary, so neighbouring triangles use the same
+    vertex and the mesh is watertight: 12, 42, 162, 642 ... vertices and
+    20, 80, 320, 1280 ... triangles.
+    """
+    V, T = _platonic("icosahedron")
+    V = [list(_unit(p)) for p in V]
+    T = [tuple(f) for f in T]
+    for _ in range(int(subdivisions)):
+        mid = {}
+
+        def midpoint_index(a, b):
+            key = (a, b) if a < b else (b, a)
+            if key not in mid:
+                m = _unit(((V[a][0] + V[b][0]) * 0.5,
+                           (V[a][1] + V[b][1]) * 0.5,
+                           (V[a][2] + V[b][2]) * 0.5))
+                mid[key] = len(V)
+                V.append(list(m))
+            return mid[key]
+
+        new = []
+        for a, b, c in T:
+            ab, bc, ca = midpoint_index(a, b), midpoint_index(b, c), \
+                midpoint_index(c, a)
+            new += [(a, ab, ca), (b, bc, ab), (c, ca, bc), (ab, bc, ca)]
+        T = new
+    return V, T
+
+
+def icosphere(center, r, subdivisions=3, color=None):
+    """A geodesic sphere: an icosahedron whose triangles are split and
+    pushed out onto the sphere ``subdivisions`` times (0..7).
+
+    Every face is a triangle and all of them are nearly the same size, which
+    is why domes and 3D printers like it.  The face count is
+    ``20 * 4 ** subdivisions``: 20, 80, 320, 1280, 5120, 20480 ...
+    ``color`` may be a function of the face's direction from the centre
+    (a unit vector), so a globe is one line::
+
+        add.icosphere([0, 0, 0], 2, 4, lambda d: "white" if d[1] > 0.7 else "blue")
+    """
+    level = int(subdivisions)
+    level = 0 if level < 0 else (7 if level > 7 else level)
+    V, T = _icosphere_grid(level)
+    M = Mesh()
+    for p in V:
+        M.add_vertex((center[0] + p[0] * r, center[1] + p[1] * r,
+                      center[2] + p[2] * r))
+    if callable(color):
+        for a, b, c in T:
+            d = _unit((V[a][0] + V[b][0] + V[c][0], V[a][1] + V[b][1] + V[c][1],
+                       V[a][2] + V[b][2] + V[c][2]))
+            M.add_face((a, b, c), rgb(color(d)))
+    else:
+        color = rgb(color)
+        for f in T:
+            M.add_face(f, color)
+    _scene.extend(M)
+
+
+def sphere(center, r, k=10, color=None, subdivisions=None):
+    """A sphere built from triangles -- the geodesic dome of an observatory.
+
+    The icosahedron's 20 triangles are split into four again and again and
+    every new vertex is pushed out onto the sphere, so all the triangles are
+    nearly equal.  ``k`` is the detail number add.py has always taken
+    (``k=10`` is fine for a marble, ``k=30`` for a planet); it picks the
+    number of splits so that the face count stays close to the old
+    ``6*k*k``: k=5 gives 320 triangles, k=10 1280, k=20 5120, k=40 20480.
+    Pass ``subdivisions=`` (0..7) to choose the level directly, and see
+    :func:`icosphere` for painting by direction.  The older six-patch
+    sphere of quads is still there as :func:`quadsphere`::
+
+        add.sphere([0, 0, 0], 1.5, 20, "sky")
+    """
+    if subdivisions is None:
+        k = max(1, int(k))
+        subdivisions = int(round(math.log(2.0 * k / 3.0, 2))) if k > 1 else 0
+    icosphere(center, r, subdivisions, color)
+
+
+def quadsphere(center, r, k=10, color=None):
+    """A sphere built from six curved square patches (all faces are quads).
 
     ``k`` is the number of cells along the side of each patch, so the sphere
-    has ``6 * k * k`` faces.  The quads stay nearly square everywhere, which
-    is why this looks better than a globe made of latitude/longitude strips.
+    has ``6 * k * k`` faces.  The quads stay nearly square everywhere.  This
+    was add.py's ``sphere`` up to version 1.2; it is also exactly the
+    "Minecraft sphere" construction of a cube blown up into a ball, and the
+    quad layout suits :func:`smooth` and :func:`catmull_clark`.
     """
     ellipsoid(center, [r, r, r], k, color)
 
 
 def ellipsoid(center, radii, k=10, color=None):
-    """Like :func:`sphere` but with a separate radius for X, Y and Z."""
+    """Like :func:`quadsphere` but with a separate radius for X, Y and Z."""
     if not isinstance(radii, (list, tuple)):
         radii = [radii, radii, radii]
     sides = [((1, 0, 0), (0, 1, 0), (0, 0, 1)),
@@ -1525,7 +1776,7 @@ def helix(center, r, pitch, turns, k=200, thickness=0.1, sides=12, color=None,
 
 
 # ============================================================================
-#  9. Coordinate axes
+# 10. Coordinate axes
 # ============================================================================
 
 def axes(C=(0, 0, 0), length=4.0, width=0.03):
@@ -1548,7 +1799,7 @@ def axes(C=(0, 0, 0), length=4.0, width=0.03):
 
 
 # ============================================================================
-# 10. Parts that models keep needing
+# 11. Parts that models keep needing
 # ============================================================================
 # Each of these could be written from the primitives above in a dozen lines;
 # they are here because almost every student model contains a beam between
@@ -2060,7 +2311,7 @@ def trace(field, p0, dt=0.01, steps=1000, r=0.1, k=12, color=None, every=1):
 
 
 # ============================================================================
-# 11. Parametric surfaces
+# 12. Parametric surfaces
 # ============================================================================
 
 def parametric(S, min_u, max_u, grid_u, min_v, max_v, grid_v, RGB=None,
@@ -2131,8 +2382,10 @@ def two_sided(M=None):
     """
     M = as_mesh(M)
     out = M.copy()
-    for f, c in zip(M.F, M.C):
-        out.add_face(list(reversed(f)), c)
+    for k, (f, c) in enumerate(zip(M.F, M.C)):
+        uv = M.UV[k] if M.UV is not None else None
+        out.add_face(list(reversed(f)), c,
+                     None if uv is None else list(reversed(uv)))
     return out
 
 
@@ -2218,7 +2471,7 @@ def _boundary_edges(M):
 
 
 # ============================================================================
-# 12. Curves, sweeps and lofts -- "copy, turn, stretch a cross-section"
+# 13. Curves, sweeps and lofts -- "copy, turn, stretch a cross-section"
 # ============================================================================
 
 def _rmf(points, closed=False):
@@ -2442,7 +2695,235 @@ def circle(A, B, r, k=24, RGB=None, color=None):
 
 
 # ============================================================================
-# 13. Measuring a mesh
+# 14. A catalogue of named surfaces
+# ============================================================================
+# Two dozen classical parametric surfaces, ready to draw by name.  Each entry
+# holds the formula, the parameter ranges, whether the surface closes on
+# itself (so that it is drawn without a seam) and the constants it depends
+# on.  The formulas follow the collection at drhuang.com ("parametric
+# surfaces", A. Huang) and the standard references (Gray, "Modern
+# Differential Geometry of Curves and Surfaces"; 3D-XplorMath).
+
+def _catalog():
+    pi, cos, sin, sinh, cosh, exp, log, tan, sqrt = (
+        math.pi, math.cos, math.sin, math.sinh, math.cosh, math.exp, math.log,
+        math.tan, math.sqrt)
+    S = {}
+
+    def entry(name, f, u, v, wrap=(False, False), grid=(60, 60), note="",
+              flip=False, **params):
+        S[name] = {"f": f, "u": u, "v": v, "wrap": wrap, "grid": grid,
+                   "note": note, "flip": flip, "params": params}
+
+    entry("bohemian_dome",
+          lambda u, v, a, b, c: [a * cos(u), b * cos(v) + a * sin(u), c * sin(v)],
+          (0, 2 * pi), (0, 2 * pi), (True, True),
+          note="a circle swept along another circle", a=0.5, b=1.5, c=1.0)
+    entry("dini",
+          lambda u, v, a, b: [a * cos(u) * sin(v), a * sin(u) * sin(v),
+                              a * (cos(v) + log(tan(v / 2.0))) + b * u],
+          (0, 4 * pi), (0.01, 2.0), (False, False), (120, 40),
+          note="a twisted pseudosphere of constant negative curvature",
+          a=1.0, b=0.2)
+    entry("enneper",
+          lambda u, v: [u - u ** 3 / 3.0 + u * v * v, v - v ** 3 / 3.0 + u * u * v,
+                        u * u - v * v],
+          (-2, 2), (-2, 2), note="a minimal surface that crosses itself")
+
+    def klein(u, v, a, b):
+        r = 4.0 * (1.0 - cos(u) / 2.0)
+        if u < pi:
+            return [a * cos(u) * (1 + sin(u)) + r * cos(u) * cos(v),
+                    b * sin(u) + r * sin(u) * cos(v), r * sin(v)]
+        return [a * cos(u) * (1 + sin(u)) + r * cos(v + pi), b * sin(u),
+                r * sin(v)]
+    entry("klein_bottle", klein, (0, 2 * pi), (0, 2 * pi), (False, True),
+          (120, 40), note="the one-sided bottle whose neck passes through "
+          "its own wall", a=6.0, b=16.0)
+    entry("mobius",
+          lambda t, s, R: [(R + s * cos(t / 2.0)) * cos(t),
+                           (R + s * cos(t / 2.0)) * sin(t), s * sin(t / 2.0)],
+          (0, 2 * pi), (-0.5, 0.5), (False, False), (120, 8),
+          note="a strip with one side and one edge", R=2.0)
+    entry("plucker_conoid",
+          lambda u, v: [u * sqrt(1 - v * v), u * v, 1 - v * v],
+          (-2, 2), (-1, 1), note="a ruled surface: straight lines through "
+          "a vertical axis")
+
+    def worm(u, v, a, b):
+        h = exp(u / (6.0 * pi))
+        return [a * (1 - h) * cos(u) * cos(v / 2.0) ** 2,
+                1 - exp(u / (b * pi)) - sin(v) + h * sin(v),
+                a * (h - 1) * sin(u) * cos(v / 2.0) ** 2]
+    entry("worm", worm, (0, 6 * pi), (0, 2 * pi), (False, True), (160, 40),
+          note="a snail shell that widens as it turns", a=1.0, b=6.0)
+    entry("sine_surface",
+          lambda u, v: [sin(u), sin(v), sin(u + v)],
+          (-pi, pi), (-pi, pi), (True, True),
+          note="three sines; it closes on itself in both directions")
+    entry("cosine_surface",
+          lambda u, v: [cos(u), cos(v), cos(u + v)],
+          (-pi, pi), (-pi, pi), (True, True), flip=True,
+          note="the cosine twin of the sine surface")
+    entry("whitney_umbrella",
+          lambda u, v: [u * v, u, v * v],
+          (-1.5, 1.5), (-1.5, 1.5), note="a surface with a pinch point")
+    entry("helicoid",
+          lambda u, v, c: [u * cos(v), u * sin(v), c * v],
+          (-2, 2), (0, 2 * pi), (False, False), (30, 120),
+          note="a spiral staircase; the only ruled minimal surface", c=0.5)
+    entry("hyperbolic_helicoid",
+          lambda u, v, a: [sinh(v) * cos(a * u) / (1 + cosh(u) * cosh(v)),
+                           sinh(v) * sin(a * u) / (1 + cosh(u) * cosh(v)),
+                           cosh(v) * sinh(u) / (1 + cosh(u) * cosh(v))],
+          (-4, 4), (-4, 4), grid=(120, 60),
+          note="a helicoid bent into a ball", a=2.5)
+    entry("henneberg",
+          lambda u, v: [2 * cos(v) * sinh(u) - 0.667 * cos(3 * v) * sinh(3 * u),
+                        2 * sin(v) * sinh(u) + 0.667 * sin(3 * v) * sinh(3 * u),
+                        2 * cos(2 * v) * cosh(2 * u)],
+          (-1, 1), (-pi / 2, pi / 2), note="a one-sided minimal surface")
+    entry("owl",
+          lambda u, v: [v * cos(u) - 0.5 * v * v * cos(2 * u),
+                        -v * sin(u) - 0.5 * v * v * sin(2 * u),
+                        4 * exp(1.5 * log(v)) * cos(1.5 * u) / 3.0],
+          (0, 4 * pi), (0.001, 1), (False, False), (160, 30),
+          note="Maeder's owl, a twisted minimal surface")
+    entry("snail",
+          lambda u, v: [u * cos(v) * sin(u), u * cos(u) * cos(v), -u * sin(v)],
+          (0, 2 * pi), (-pi, pi), (False, True), (120, 40),
+          note="a horn that curls up on itself")
+    entry("kidney",
+          lambda u, v: [cos(u) * (3 * cos(v) - cos(3 * v)),
+                        sin(u) * (3 * cos(v) - cos(3 * v)),
+                        3 * sin(v) - sin(3 * v)],
+          (0, 2 * pi), (-pi / 2, pi / 2), (True, False), (80, 40),
+          note="a surface of revolution with a dent")
+    entry("pillow",
+          lambda u, v, a: [cos(u), cos(v), a * sin(u) * sin(v)],
+          (0, pi), (-pi, pi), (False, True), (40, 80),
+          note="a cushion with four corners", a=0.5)
+    entry("horn",
+          lambda u, v, a, b, c: [(a + u * cos(v)) * sin(b * pi * u),
+                                 (a + u * cos(v)) * cos(b * pi * u) + c * u,
+                                 u * sin(v)],
+          (0, 1), (-pi, pi), (False, True), (60, 40),
+          note="a tube that grows as it bends", a=1.0, b=1.0, c=1.0)
+    entry("stiletto",
+          lambda u, v: [(2 + cos(u)) * cos(v) ** 3 * sin(v),
+                        (2 + cos(u + 2 * pi / 3)) * cos(v + 2 * pi / 3) ** 2
+                        * sin(v + 2 * pi / 3) ** 2,
+                        -(2 + cos(u - 2 * pi / 3)) * cos(v + 2 * pi / 3) ** 2
+                        * sin(v + 2 * pi / 3) ** 2],
+          (0, 2 * pi), (0, pi), (True, False), (80, 60),
+          note="a pointed shoe")
+    entry("apple",
+          lambda u, v: [cos(u) * (4 + 3.8 * cos(v)), sin(u) * (4 + 3.8 * cos(v)),
+                        (cos(v) + sin(v) - 1) * (1 + sin(v))
+                        * log(1 - pi * v / 10.0) + 7.5 * sin(v)],
+          (0, 2 * pi), (-pi, pi), (True, False), (80, 60),
+          note="an apple with a dimple at the stalk")
+
+    def kuen(u, v):
+        h = 1 + u * u * sin(v) ** 2
+        return [2 * (cos(u) + u * sin(u)) * sin(v) / h,
+                2 * (-u * cos(u) + sin(u)) * sin(v) / h,
+                log(tan(v / 2.0)) + 2 * cos(v) / h]
+    entry("kuen", kuen, (-4.3, 4.3), (0.03, 3.11), grid=(120, 60),
+          note="a surface of constant negative curvature")
+    entry("tranguloid_trefoil",
+          lambda u, v: [2 * sin(3 * u) / (2 + cos(v)),
+                        2 * (sin(u) + 2 * sin(2 * u)) / (2 + cos(v + 2 * pi / 3)),
+                        (cos(u) - 2 * cos(2 * u)) * (2 + cos(v))
+                        * (2 + cos(v + 2 * pi / 3)) / 4.0],
+          (-pi, pi), (-pi, pi), (True, True), (160, 40),
+          note="a knotted tube with three lobes")
+    entry("antisymmetric_torus",
+          lambda u, v, R, r, a: [(R + r * cos(v) * (a + sin(u))) * cos(u),
+                                 (R + r * cos(v) * (a + sin(u))) * sin(u),
+                                 r * sin(v) * (a + sin(u))],
+          (0, 2 * pi), (0, 2 * pi), (True, True), (80, 40),
+          note="a torus whose tube is fat on one side", R=2.0, r=0.6, a=1.5)
+    entry("twisted_eight_torus",
+          lambda u, v, R, r: [(R + r * (cos(u / 2.0) * sin(v) - sin(u / 2.0)
+                                        * sin(2 * v))) * cos(u),
+                              (R + r * (cos(u / 2.0) * sin(v) - sin(u / 2.0)
+                                        * sin(2 * v))) * sin(u),
+                              r * (sin(u / 2.0) * sin(v) + cos(u / 2.0)
+                                   * sin(2 * v))],
+          (0, 2 * pi), (0, 2 * pi), (False, True), (120, 60),
+          note="a figure-eight cross-section that twists once around",
+          R=2.0, r=1.0)
+    entry("wave_ball",
+          lambda u, v: [u * cos(cos(u)) * cos(v), u * cos(cos(u)) * sin(v),
+                        u * sin(cos(u))],
+          (0, 14.5), (0, 2 * pi), (False, True), (160, 40),
+          note="rings that ripple outwards")
+    return S
+
+
+#: The named surfaces: ``add.SURFACES["apple"]`` holds the formula ``f``,
+#: the ranges ``u`` and ``v``, the ``wrap`` flags, a default ``grid``, a
+#: one-line ``note`` and the constants ``params``.  Draw one with
+#: :func:`surface`.
+SURFACES = _catalog()
+
+
+def surface_names():
+    """The names :func:`surface` understands, alphabetically."""
+    return sorted(SURFACES)
+
+
+def surface_function(name, **params):
+    """The ``f(u, v) -> [x, y, z]`` of a named surface, with its constants
+    filled in (override any of them by keyword).  Handy for feeding
+    :func:`parametric` yourself with a different range or colouring."""
+    entry = SURFACES[name]
+    values = dict(entry["params"])
+    values.update(params)
+    f = entry["f"]
+    if values:
+        return lambda u, v: f(u, v, **values)
+    return f
+
+
+def surface(name, center=(0, 0, 0), size=None, grid=None, color=None,
+            thickness=0.0, double_sided=False, **params):
+    """Draw one of the catalogued surfaces by name -- see :func:`surface_names`.
+
+    ``size`` scales the surface so that its largest dimension is ``size``
+    (leave it out for the natural size); ``grid`` is the number of cells,
+    one number or ``[along_u, along_v]``.  ``color`` may be a function
+    ``color(u, v)`` as with :func:`parametric`, and the surface's own
+    constants can be changed by keyword::
+
+        add.surface("klein_bottle", [0, 0, 0], 4, 120, "teal")
+        add.surface("dini", [6, 0, 0], 4, color=lambda u, v: add.hsv(u / 12))
+        add.surface("pillow", size=3, a=0.9, thickness=0.1)
+    """
+    entry = SURFACES[name]
+    f = surface_function(name, **params)
+    if grid is None:
+        gu, gv = entry["grid"]
+    elif isinstance(grid, (list, tuple)):
+        gu, gv = grid[0], grid[1]
+    else:
+        gu = gv = int(grid)
+    (u0, u1), (v0, v1) = entry["u"], entry["v"]
+    wu, wv = entry["wrap"]
+    push()
+    parametric(f, u0, u1, gu, v0, v1, gv, color, wrap_u=wu, wrap_v=wv,
+               flip=entry.get("flip", False), thickness=thickness,
+               double_sided=double_sided)
+    M = pop()
+    if size is not None:
+        M = fit(M, size)
+    M = place(M, center)
+    _scene.extend(M)
+
+
+# ============================================================================
+# 15. Measuring a mesh
 # ============================================================================
 
 def bbox(M=None):
@@ -2468,6 +2949,11 @@ def center(M=None):
         return [0.0, 0.0, 0.0]
     n = float(len(M.V))
     return [sum(p[a] for p in M.V) / n for a in range(3)]
+
+
+#: Private handle on :func:`center`, for functions whose own parameter is
+#: called ``center``.
+_centroid = center
 
 
 def middle(M=None):
@@ -2496,7 +2982,7 @@ def volume(M=None):
 
 
 # ============================================================================
-# 14. Moving, turning and reshaping a mesh
+# 16. Moving, turning and reshaping a mesh
 # ============================================================================
 # Every function here takes a mesh and returns a NEW mesh; the original is
 # left alone.  That is what makes chains like
@@ -2506,9 +2992,13 @@ def volume(M=None):
 def _mapped(M, f, flip=False):
     """Apply point function ``f`` to a copy of the mesh."""
     M = as_mesh(M)
+    UV = None
+    if M.UV is not None:
+        UV = [None if t is None else (list(reversed(t)) if flip else list(t))
+              for t in M.UV]
     out = Mesh([list(f(p)) for p in M.V],
                [list(reversed(x)) if flip else list(x) for x in M.F],
-               list(M.C))
+               list(M.C), UV)
     return out
 
 
@@ -2706,20 +3196,118 @@ def jitter(M, amount=0.05, seed=None):
 
 
 # ============================================================================
-# 15. Colour
+# 17. Colour
 # ============================================================================
 
 def color(M, RGB):
     """Paint the whole mesh one colour and return the painted copy."""
     M = as_mesh(M)
     c = rgb(RGB)
-    return Mesh([list(p) for p in M.V], [list(f) for f in M.F],
-                [c] * len(M.F))
+    out = M.copy()
+    out.C = [c] * len(M.F)
+    return out
+
+
+def opacity(M, alpha):
+    """A copy of the mesh with every face made see-through: ``alpha`` is the
+    opacity, 0 invisible, 1 solid (which also removes any transparency).
+
+    Colours and textures are kept; the opacity goes into the ``.mtl`` file
+    of an ``.obj`` model.  For one colour at a time use :func:`transparent`::
+
+        glass = add.opacity(add.make(add.box, [0, 0, 0], 2, "sky"), 0.3)
+    """
+    M = as_mesh(M)
+    out = M.copy()
+    out.C = [rgb((c[0], c[1], c[2], alpha) + tuple(c[4:5])) for c in M.C]
+    return out
 
 
 #: Private handle on :func:`color`, for functions whose own parameter is
 #: called ``color``.
 _paint = color
+
+
+def texture(M, image, mapping="box", scale=1.0, color="white", offset=(0, 0)):
+    """Wrap an image around a mesh and return the textured copy.
+
+    ``image`` is the file name of a picture (``.png`` or ``.jpg``) that will
+    sit next to the ``.obj`` -- put both, with the ``.mtl``, in one zip for
+    Sketchfab.  The mesh remembers a texture coordinate for every corner,
+    worked out from the ``mapping``:
+
+    * ``"box"`` (default): each face is projected along its dominant axis,
+      so the picture repeats every ``scale`` units on every side of a box;
+    * ``"xy"``, ``"xz"``, ``"yz"``: one flat projection for all faces;
+    * ``"fit"``: the picture stretched once over the mesh, seen from the front
+      (XY), whatever its size;
+    * ``"sphere"`` / ``"cylinder"``: wrapped around the mesh's centre, with
+      ``scale`` copies around;
+    * or your own function ``mapping(point, normal) -> (u, v)``.
+
+    ``color`` tints the picture (white shows it as it is) and keeps any
+    transparency the faces had.  Apply textures last: transforms, ``clean``
+    and ``merge`` keep them, but booleans, subdivision and ``solidify``
+    rebuild the faces and drop them.  ``.off`` files cannot hold textures;
+    ``.obj`` + ``.mtl`` can (``map_Kd``)::
+
+        add.write_png("bricks.png", rows)                   # or any picture
+        wall = add.texture(add.make(add.cuboid, [0, 0, 0], [4, 2, 0.3]),
+                           "bricks.png", "box", scale=1.0)
+        add.mesh(wall)
+        add.save("house.obj")
+    """
+    M = as_mesh(M)
+    lo, hi = bbox(M)
+    mid = [(lo[a] + hi[a]) / 2.0 for a in range(3)]
+    span = [max(hi[a] - lo[a], EPS) for a in range(3)]
+    ox, oy = offset[0], offset[1]
+    s = float(scale) if scale else 1.0
+
+    def planar(i, j):
+        return lambda p, n: ((p[i] - ox) / s, (p[j] - oy) / s)
+
+    if callable(mapping):
+        fn = mapping
+    elif mapping == "box":
+        flat = {0: planar(2, 1), 1: planar(0, 2), 2: planar(0, 1)}
+
+        def fn(p, n):
+            axis = max(range(3), key=lambda a: abs(n[a]))
+            return flat[axis](p, n)
+    elif mapping in ("xy", "xz", "yz"):
+        fn = {"xy": planar(0, 1), "xz": planar(0, 2), "yz": planar(2, 1)}[mapping]
+    elif mapping == "fit":
+        def fn(p, n):
+            return ((p[0] - lo[0]) / span[0], (p[1] - lo[1]) / span[1])
+    elif mapping == "sphere":
+        def fn(p, n):
+            d = _unit(_sub(p, mid))
+            return ((math.atan2(d[2], d[0]) / (2 * math.pi) + 0.5) * s,
+                    math.asin(max(-1.0, min(1.0, d[1]))) / math.pi + 0.5)
+    elif mapping == "cylinder":
+        def fn(p, n):
+            return ((math.atan2(p[2] - mid[2], p[0] - mid[0]) / (2 * math.pi)
+                     + 0.5) * s, (p[1] - lo[1]) / span[1])
+    else:
+        raise ValueError("unknown texture mapping: %r" % (mapping,))
+
+    out = M.copy()
+    out.UV = []
+    tint = rgb(color) if color is not None else None
+    for i, f in enumerate(M.F):
+        n = _unit(_face_normal(M, f))
+        uv = [tuple(fn(M.V[k], n)) for k in f]
+        if mapping in ("sphere", "cylinder"):          # mend the seam
+            us = [t[0] for t in uv]
+            if max(us) - min(us) > 0.5 * s:
+                uv = [(t[0] + s if t[0] < (min(us) + max(us)) / 2.0 else t[0], t[1])
+                      for t in uv]
+        out.UV.append(uv)
+        base = tint if tint is not None else M.C[i]
+        alpha = M.C[i][3] if len(M.C[i]) > 3 else 1.0
+        out.C[i] = rgb((base[0], base[1], base[2], alpha, image))
+    return out
 
 
 def color_by(M, fn):
@@ -2757,8 +3345,73 @@ def color_random(M, seed=None):
     return out
 
 
+def palette(M=None):
+    """The distinct colours of a mesh, most used first, as
+    ``[(colour, number of faces), ...]``."""
+    M = as_mesh(M)
+    count = {}
+    for c in M.C:
+        count[c] = count.get(c, 0) + 1
+    return sorted(count.items(), key=lambda item: (-item[1], item[0]))
+
+
+def limit_colors(M, n=50):
+    """Reduce a mesh to at most ``n`` distinct colours and return the copy.
+
+    Every colour in an ``.obj`` file becomes a *material*, and Sketchfab
+    merges materials beyond its limit of 100 (so keep to 50 to be safe).
+    Gradients and ``color_by`` paint jobs easily produce thousands of
+    shades; this groups similar shades together (median-cut quantisation,
+    weighted by how many faces use each shade) and replaces each group by
+    its average, so the picture hardly changes::
+
+        model = add.limit_colors(add.layer(), 50)
+        add.save("model.obj", model)
+    """
+    M = as_mesh(M)
+    counts = {}
+    for c in M.C:
+        if len(c) == 3:                       # transparent and textured
+            counts[c] = counts.get(c, 0) + 1  # materials are left alone
+    if len(counts) <= n:
+        return M.copy()
+    boxes = [list(counts.items())]
+    while len(boxes) < n:
+        # Split the box whose colours spread the most (weighted by use).
+        best, best_span, best_axis = None, -1, 0
+        for b in boxes:
+            if len(b) < 2:
+                continue
+            for axis in range(3):
+                span = max(c[axis] for c, w in b) - min(c[axis] for c, w in b)
+                if span > best_span:
+                    best, best_span, best_axis = b, span, axis
+        if best is None:
+            break
+        best.sort(key=lambda item: item[0][best_axis])
+        total = sum(w for c, w in best)
+        acc, cut = 0, 0
+        for cut in range(len(best) - 1):
+            acc += best[cut][1]
+            if acc * 2 >= total:
+                break
+        boxes.remove(best)
+        boxes.append(best[:cut + 1])
+        boxes.append(best[cut + 1:])
+    remap = {}
+    for b in boxes:
+        total = float(sum(w for c, w in b))
+        mean = tuple(int(round(sum(c[a] * w for c, w in b) / total))
+                     for a in range(3))
+        for c, w in b:
+            remap[c] = mean
+    out = M.copy()
+    out.C = [remap.get(c, c) for c in M.C]
+    return out
+
+
 # ============================================================================
-# 16. Copies and patterns
+# 18. Copies and patterns
 # ============================================================================
 
 def repeat(M, n, step):
@@ -2809,7 +3462,7 @@ def array_mirror(M, point=(0, 0, 0), normal=(1, 0, 0)):
 
 
 # ============================================================================
-# 17. Placing parts: aim, scatter, line up
+# 19. Placing parts: aim, scatter, line up
 # ============================================================================
 # The functions in the previous section make copies on a regular pattern.
 # These put a part *somewhere in particular*: pointing along a direction,
@@ -2942,7 +3595,7 @@ def along(M, path, n, t0=0.0, t1=1.0, axis=(0, 1, 0), closed=False, scale=None):
 
 
 # ============================================================================
-# 18. Repairing a model
+# 20. Repairing a model
 # ============================================================================
 # Models built by stacking shapes tend to collect three kinds of rubbish:
 # vertices that sit on top of each other, faces that are repeated, and walls
@@ -3000,43 +3653,56 @@ def _weld(M, tol=1e-7):
     return removed
 
 
+def _keep_faces(M, keep):
+    """Keep only the faces whose index is in ``keep`` (in place)."""
+    removed = len(M.F) - len(keep)
+    M.F = [M.F[i] for i in keep]
+    M.C = [M.C[i] for i in keep]
+    if M.UV is not None:
+        M.UV = [M.UV[i] for i in keep]
+    return removed
+
+
 def _drop_degenerate(M, tol=1e-12):
     """Delete faces with no area and remove repeated corners (in place)."""
-    F, C = [], []
-    for f, c in zip(M.F, M.C):
+    keep = []
+    for k, f in enumerate(M.F):
         clean_f = []
-        for i in f:                                  # drop repeated corners
+        uv = M.UV[k] if M.UV is not None else None
+        clean_uv = [] if uv is not None else None
+        for t, i in enumerate(f):                    # drop repeated corners
             if not clean_f or clean_f[-1] != i:
                 clean_f.append(i)
+                if clean_uv is not None:
+                    clean_uv.append(uv[t])
         if len(clean_f) > 1 and clean_f[0] == clean_f[-1]:
             clean_f.pop()
+            if clean_uv is not None:
+                clean_uv.pop()
         if len(clean_f) < 3:
             continue
         if len(set(clean_f)) < 3:
             continue
         if _norm(_face_normal(M, clean_f)) <= tol:
             continue
-        F.append(clean_f)
-        C.append(c)
-    removed = len(M.F) - len(F)
-    M.F, M.C = F, C
-    return removed
+        M.F[k] = clean_f
+        if clean_uv is not None:
+            M.UV[k] = clean_uv
+        keep.append(k)
+    return _keep_faces(M, keep)
 
 
 def _dedup_faces(M):
     """Delete repeats of a face that is already there (in place)."""
     seen = set()
-    F, C = [], []
-    for f, c in zip(M.F, M.C):
+    keep = []
+    for k, f in enumerate(M.F):
         key = tuple(sorted(f))
         if key in seen:
             continue
         seen.add(key)
-        F.append(f)
-        C.append(c)
-    removed = len(M.F) - len(F)
-    M.F, M.C = F, C
-    return removed
+        keep.append(k)
+    return _keep_faces(M, keep)
 
 
 def _drop_internal(M):
@@ -3061,11 +3727,7 @@ def _drop_internal(M):
             drop.add(backward[t])
     if not drop:
         return 0
-    F = [f for i, f in enumerate(M.F) if i not in drop]
-    C = [c for i, c in enumerate(M.C) if i not in drop]
-    removed = len(M.F) - len(F)
-    M.F, M.C = F, C
-    return removed
+    return _keep_faces(M, [i for i in range(len(M.F)) if i not in drop])
 
 
 def _winding(f):
@@ -3164,12 +3826,17 @@ def heal(M=None, tol=1e-7):
         return out
 
     newF = []
-    for f in M.F:
+    newUV = [] if M.UV is not None else None
+    for k, f in enumerate(M.F):
         n = len(f)
         out = []
+        uv = M.UV[k] if M.UV is not None else None
+        out_uv = [] if uv is not None else None
         for i in range(n):
             a, b = f[i], f[(i + 1) % n]
             out.append(a)
+            if out_uv is not None:
+                out_uv.append(uv[i])
             pa, pb = M.V[a], M.V[b]
             d = _sub(pb, pa)
             L2 = _dot(d, d)
@@ -3194,9 +3861,16 @@ def heal(M=None, tol=1e-7):
                 for t, v in hits:
                     if v != last:
                         out.append(v)
+                        if out_uv is not None:
+                            ua, ub = uv[i], uv[(i + 1) % n]
+                            out_uv.append((ua[0] + (ub[0] - ua[0]) * t,
+                                           ua[1] + (ub[1] - ua[1]) * t))
                     last = v
         newF.append(out)
+        if newUV is not None:
+            newUV.append(out_uv)
     M.F = newF
+    M.UV = newUV
     return M
 
 
@@ -3204,9 +3878,11 @@ def triangulate(M=None):
     """Return a copy in which every face is a triangle (fan triangulation)."""
     M = as_mesh(M)
     out = Mesh([list(p) for p in M.V], [], [])
-    for f, c in zip(M.F, M.C):
+    for k, (f, c) in enumerate(zip(M.F, M.C)):
+        uv = M.UV[k] if M.UV is not None else None
         for t in range(1, len(f) - 1):
-            out.add_face([f[0], f[t], f[t + 1]], c)
+            out.add_face([f[0], f[t], f[t + 1]], c,
+                         None if uv is None else [uv[0], uv[t], uv[t + 1]])
     return out
 
 
@@ -3252,6 +3928,8 @@ def fix_normals(M=None, outward=True):
                             break
                     if same:                       # neighbour disagrees
                         g.reverse()
+                        if M.UV is not None and M.UV[j] is not None:
+                            M.UV[j].reverse()
                     visited[j] = True
                     component.append(j)
                     stack.append(j)
@@ -3261,6 +3939,8 @@ def fix_normals(M=None, outward=True):
             if _signed_volume(part, 0) < 0:
                 for i in component:
                     M.F[i].reverse()
+                    if M.UV is not None and M.UV[i] is not None:
+                        M.UV[i].reverse()
     return M
 
 
@@ -3296,7 +3976,7 @@ def clean(M=None, tol=1e-7, weld=True, degenerate=True, duplicates=True,
 
 
 # ============================================================================
-# 19. Looking at a model
+# 21. Looking at a model
 # ============================================================================
 
 def stats(M=None):
@@ -3337,27 +4017,46 @@ def stats(M=None):
         "duplicate_faces": duplicate_faces,
         "back_to_back_faces": back_to_back,
         "closed": open_edges == 0,
+        "obj_bytes": obj_size(M),
+        "transparent_faces": sum(1 for c in M.C if len(c) > 3 and c[3] < 1.0),
+        "textures": sorted(set(c[4] for c in M.C if len(c) > 4)),
     }
 
 
-def check(M=None, min_faces=10000, min_colors=3, quiet=False):
+#: Sketchfab: files up to 100 MB on the free plan (the course asks for 50)
+#: and at most 100 materials, i.e. colours in an ``.obj`` (50 to be safe).
+SKETCHFAB_MB = 50
+SKETCHFAB_COLORS = 50
+
+
+def check(M=None, min_faces=10000, min_colors=3, quiet=False,
+          max_mb=SKETCHFAB_MB, max_colors=SKETCHFAB_COLORS):
     """Print a health report and say whether the model meets the assignment.
 
-    The course asks for at least 10000 polygons and at least 3 colours; this
-    tells you where you stand and what still needs repairing::
+    The course asks for at least 10000 polygons and at least 3 colours, and
+    an ``.obj`` that Sketchfab will take: under ``max_mb`` megabytes and
+    ``max_colors`` colours (each colour is a material there).  This tells
+    you where you stand and what still needs repairing::
 
         add.check()          # look at the current scene
+
+    Returns ``True`` when every requirement is met.
     """
     s = stats(M)
-    ok = s["faces"] >= min_faces and s["colors"] >= min_colors
+    mb = s["obj_bytes"] / 1e6
+    fits = mb <= max_mb and s["colors"] <= max_colors
+    ok = s["faces"] >= min_faces and s["colors"] >= min_colors and fits
     if not quiet:
         mark = lambda good: "OK " if good else "!! "
         print("-" * 56)
         print("  vertices            %d" % s["vertices"])
         print("%s polygons            %d  (need %d)"
               % (mark(s["faces"] >= min_faces), s["faces"], min_faces))
-        print("%s colours             %d  (need %d)"
-              % (mark(s["colors"] >= min_colors), s["colors"], min_colors))
+        print("%s colours             %d  (need %d, at most %d materials for Sketchfab)"
+              % (mark(min_colors <= s["colors"] <= max_colors), s["colors"],
+                 min_colors, max_colors))
+        print("%s .obj file size      %.1f MB  (at most %d MB for Sketchfab)"
+              % (mark(mb <= max_mb), mb, max_mb))
         print("   size                %.3f x %.3f x %.3f" % tuple(s["size"]))
         print("   surface area        %.3f" % s["area"])
         if s["closed"]:
@@ -3376,12 +4075,496 @@ def check(M=None, min_faces=10000, min_colors=3, quiet=False):
                   " add.clean() removes them)" % s["back_to_back_faces"])
         if s["closed"]:
             print("   volume              %.3f" % s["volume"])
+        if s["transparent_faces"]:
+            print("   see-through faces   %d   (opacity is kept in .obj + .mtl)"
+                  % s["transparent_faces"])
+        if s["textures"]:
+            print("   textures            %s   (put the images next to the .obj)"
+                  % ", ".join(s["textures"]))
+        if s["colors"] > max_colors:
+            print("   hint: add.limit_colors(M, %d) or add.save(..., colors=%d)"
+                  % (max_colors, max_colors))
+        if mb > max_mb:
+            print("   hint: fewer cells (a smaller k, grid or subdivisions)"
+                  " make the file smaller")
         print("-" * 56)
     return ok
 
 
 # ============================================================================
-# 20. Boolean operations: union, intersection, difference
+# 22. Vertices, edges and neighbours
+# ============================================================================
+# The functions above treat a mesh as a whole.  These look inside it: which
+# vertices are joined by an edge, how many neighbours a vertex has, how far
+# they are, which faces meet at a corner.  That is what you need to build a
+# model out of the *vertices* of an icosahedron or a dodecahedron, to move a
+# single corner of a box before rounding it with ``smooth``, or to turn a
+# polyhedron into its dual or its truncation (a football).
+
+def _directed_edges(M):
+    """``{(a, b): face index}`` for every directed edge of an oriented mesh.
+
+    A directed edge that appears in more than one face is marked with -1
+    (the mesh is not a manifold there, or two faces disagree on winding).
+    """
+    out = {}
+    for fi, f in enumerate(M.F):
+        n = len(f)
+        for t in range(n):
+            key = (f[t], f[(t + 1) % n])
+            out[key] = -1 if key in out else fi
+    return out
+
+
+def _rings(M):
+    """For every vertex the faces around it in order: ``[(face, next), ...]``.
+
+    ``next`` is the vertex the face's edge leaves ``v`` towards.  Walking
+    from face to face across that edge goes *clockwise* seen from outside,
+    so callers reverse the list when they need a counter-clockwise ring.
+    The second value of each entry tells whether the ring closes (``True``)
+    or the vertex lies on a border / is not a manifold (``False``).
+    """
+    E = _directed_edges(M)
+    corners = [[] for _ in M.V]                    # vertex -> [(face, prev, next)]
+    for fi, f in enumerate(M.F):
+        n = len(f)
+        for t in range(n):
+            corners[f[t]].append((fi, f[t - 1], f[(t + 1) % n]))
+    out = []
+    for v, cs in enumerate(corners):
+        if not cs:
+            out.append(([], False))
+            continue
+        by_face = {}
+        ok = True
+        for fi, prev, nxt in cs:
+            if fi in by_face:                          # v twice in one face
+                ok = False
+            by_face[fi] = (prev, nxt)
+        if not ok:
+            out.append(([(fi, nxt) for fi, prev, nxt in cs], False))
+            continue
+        # Start at a border face if there is one: the face whose edge
+        # prev -> v has no partner face on the other side.
+        start = cs[0][0]
+        for fi, prev, nxt in cs:
+            if E.get((v, prev), -1) == -1:
+                start = fi
+                break
+        ring = []
+        seen = set()
+        fi = start
+        closed = False
+        while fi not in seen:
+            seen.add(fi)
+            prev, nxt = by_face[fi]
+            ring.append((fi, nxt))
+            g = E.get((nxt, v), -1)
+            if g == -1 or g not in by_face:
+                break
+            fi = g
+        else:
+            closed = (fi == start)
+        if len(seen) != len(cs):                      # not all faces reached
+            closed = False
+            missing = [(f2, n2) for f2, p2, n2 in cs if f2 not in seen]
+            ring += missing
+        out.append((ring, closed))
+    return out
+
+
+def vertex(M, i):
+    """The coordinates of vertex ``i`` as a fresh ``[x, y, z]`` list."""
+    return list(as_mesh(M).V[i])
+
+
+def set_vertex(M, i, point):
+    """A copy of the mesh with vertex ``i`` moved to ``point``.
+
+    Any coordinate given as ``None`` keeps its old value, so raising one
+    corner of a box is ``add.set_vertex(box, 3, [None, 2.5, None])``.  The
+    faces are untouched, which is exactly what you want before rounding the
+    result with :func:`smooth`::
+
+        add.box([0, 0, 0], 2)
+        block = add.layer()
+        block = add.set_vertex(block, 7, [2, 2, 2])     # pull one corner out
+        add.mesh(add.smooth(block, 6))
+    """
+    return set_vertices(M, {i: point})
+
+
+def set_vertices(M, changes):
+    """Like :func:`set_vertex` for several vertices at once:
+    ``changes`` is ``{index: point, ...}`` (``None`` coordinates are kept)."""
+    out = as_mesh(M).copy()
+    for i, point in changes.items():
+        p = out.V[i]
+        for a in range(3):
+            if point[a] is not None:
+                p[a] = float(point[a])
+    return out
+
+
+def move_vertex(M, i, delta):
+    """A copy of the mesh with vertex ``i`` shifted by the vector ``delta``."""
+    p = as_mesh(M).V[i]
+    return set_vertices(M, {i: [p[0] + delta[0], p[1] + delta[1],
+                                p[2] + delta[2]]})
+
+
+def nearest_vertex(M, point):
+    """The index of the vertex closest to ``point`` -- so that you can pick a
+    corner by *where* it is instead of by its number::
+
+        i = add.nearest_vertex(block, [1, 1, 1])
+        block = add.set_vertex(block, i, [1.5, 1.5, 1.5])
+    """
+    M = as_mesh(M)
+    best, best_d = -1, None
+    for i, p in enumerate(M.V):
+        d = ((p[0] - point[0]) ** 2 + (p[1] - point[1]) ** 2
+             + (p[2] - point[2]) ** 2)
+        if best_d is None or d < best_d:
+            best, best_d = i, d
+    return best
+
+
+def edges(M=None):
+    """Every edge of the mesh once, as ``(a, b)`` index pairs with ``a < b``."""
+    M = as_mesh(M)
+    seen = set()
+    for f in M.F:
+        n = len(f)
+        for t in range(n):
+            a, b = f[t], f[(t + 1) % n]
+            if a != b:
+                seen.add((a, b) if a < b else (b, a))
+    return sorted(seen)
+
+
+def edge_length(M, a, b):
+    """The distance between vertices ``a`` and ``b``."""
+    M = as_mesh(M)
+    return _norm(_sub(M.V[a], M.V[b]))
+
+
+def edge_lengths(M=None):
+    """The length of every edge, in the order :func:`edges` lists them."""
+    M = as_mesh(M)
+    return [_norm(_sub(M.V[a], M.V[b])) for a, b in edges(M)]
+
+
+def mean_edge_length(M=None):
+    """The average edge length -- the natural "unit" of a mesh.  A regular
+    polyhedron has all edges equal, so this is *the* edge length there."""
+    L = edge_lengths(M)
+    return sum(L) / len(L) if L else 0.0
+
+
+def adjacency(M=None):
+    """``neighbours[i]`` = sorted list of the vertices joined to vertex ``i``
+    by an edge, for every vertex at once (faster than calling
+    :func:`neighbors` in a loop)."""
+    M = as_mesh(M)
+    nb = [set() for _ in M.V]
+    for a, b in edges(M):
+        nb[a].add(b)
+        nb[b].add(a)
+    return [sorted(s) for s in nb]
+
+
+def neighbors(M, i):
+    """The vertices joined to vertex ``i`` by an edge.
+
+    On a closed, well-formed surface they come in order *around* the vertex
+    (counter-clockwise seen from outside); otherwise sorted by index::
+
+        ico = add.make(add.icosahedron, [0, 0, 0], 1)
+        add.neighbors(ico, 0)          # five of them -> [5, 1, 7, 10, 11]
+    """
+    M = as_mesh(M)
+    ring, closed = _rings(M)[i]
+    if closed:
+        return [nxt for fi, nxt in reversed(ring)]
+    return adjacency(M)[i]
+
+
+#: British spelling of :func:`neighbors`.
+neighbours = neighbors
+
+
+def valence(M, i):
+    """How many edges (and neighbours) vertex ``i`` has: 3 on a cube or a
+    dodecahedron, 4 on an octahedron, 5 on an icosahedron."""
+    return len(adjacency(M)[i])
+
+
+def mean_neighbor_distance(M, i):
+    """The average distance from vertex ``i`` to its neighbours."""
+    M = as_mesh(M)
+    nb = adjacency(M)[i]
+    if not nb:
+        return 0.0
+    return sum(_norm(_sub(M.V[i], M.V[j])) for j in nb) / len(nb)
+
+
+def vertex_faces(M, i):
+    """The indices of the faces that meet at vertex ``i`` (in order around
+    the vertex when the surface is closed and well formed there)."""
+    M = as_mesh(M)
+    ring, closed = _rings(M)[i]
+    if closed:
+        return [fi for fi, nxt in reversed(ring)]
+    return sorted(set(fi for fi, nxt in ring))
+
+
+def vertex_normal(M, i):
+    """The unit normal at vertex ``i``: the average of its faces' normals."""
+    M = as_mesh(M)
+    acc = [0.0, 0.0, 0.0]
+    for fi in vertex_faces(M, i):
+        nrm = _face_normal(M, M.F[fi])
+        acc[0] += nrm[0]
+        acc[1] += nrm[1]
+        acc[2] += nrm[2]
+    return _unit(acc) if _norm(acc) > EPS else (0.0, 1.0, 0.0)
+
+
+def face_center(M, i):
+    """The centre (average corner) of face ``i``."""
+    M = as_mesh(M)
+    f = M.F[i]
+    n = float(len(f))
+    return [sum(M.V[k][a] for k in f) / n for a in range(3)]
+
+
+def face_normal(M, i):
+    """The unit normal of face ``i`` (points outward on a closed model)."""
+    M = as_mesh(M)
+    return _unit(_face_normal(M, M.F[i]))
+
+
+def face_area(M, i):
+    """The area of face ``i``."""
+    M = as_mesh(M)
+    return _norm(_face_normal(M, M.F[i])) / 2.0
+
+
+def face_centers(M=None):
+    """The centre of every face, as a list of points."""
+    M = as_mesh(M)
+    return [face_center(M, i) for i in range(len(M.F))]
+
+
+def boundary_edges(M=None):
+    """The edges that belong to only one face, as directed ``(a, b)`` pairs.
+    An empty list means the surface is closed."""
+    return sorted(_boundary_edges(as_mesh(M)).keys())
+
+
+def boundary_loops(M=None):
+    """The open borders of a mesh as closed rings of vertex indices --
+    one list per hole (or per sheet edge)."""
+    M = as_mesh(M)
+    nxt = {}
+    for a, b in _boundary_edges(M):
+        nxt.setdefault(a, []).append(b)
+    loops = []
+    while nxt:
+        start = min(nxt)
+        loop = [start]
+        v = nxt[start].pop()
+        if not nxt[start]:
+            del nxt[start]
+        while v != start and v in nxt:
+            loop.append(v)
+            w = nxt[v].pop()
+            if not nxt[v]:
+                del nxt[v]
+            v = w
+        loops.append(loop)
+    return loops
+
+
+def inflate(M, amount):
+    """Push every vertex out along its normal by ``amount`` (in for a
+    negative value).  Turns the panels of a ball into cushions, or thickens
+    a thin shape a little."""
+    M = as_mesh(M)
+    N = _vertex_normals(M)
+    out = M.copy()
+    out.V = [[p[0] + n[0] * amount, p[1] + n[1] * amount,
+              p[2] + n[2] * amount] for p, n in zip(M.V, N)]
+    return out
+
+
+def spherify(M, center=None, r=None, amount=1.0):
+    """Project every vertex onto a sphere.
+
+    By default the sphere is centred on the average vertex and passes
+    through the farthest one (so the corners of a polyhedron stay where
+    they are); ``amount`` less than 1 only goes part of the way (0.5 rounds
+    a cube into a cushion).  With :func:`refine` this is how a geodesic
+    dome comes out of any polyhedron::
+
+        octa = add.make(add.octahedron, [0, 0, 0], 1)
+        dome = add.spherify(add.refine(octa, 3))        # 512 triangles
+    """
+    M = as_mesh(M)
+    c = _centroid(M) if center is None else center
+    if r is None:
+        r = max([_norm(_sub(p, c)) for p in M.V] or [1.0])
+    V = []
+    for p in M.V:
+        u = _unit(_sub(p, c))
+        target = (c[0] + u[0] * r, c[1] + u[1] * r, c[2] + u[2] * r)
+        V.append([p[a] + (target[a] - p[a]) * amount for a in range(3)])
+    out = M.copy()
+    out.V = V
+    return out
+
+
+def refine(M, steps=1):
+    """Split every face into four (triangles) or into one quad per corner
+    (other polygons), ``steps`` times, without moving anything.
+
+    New vertices sit at edge midpoints (and face centres), shared between
+    neighbouring faces, so the mesh stays watertight.  Colours are kept.
+    This is the flat "observatory dome" split; :func:`spherify` afterwards
+    pushes the new points out to a ball, :func:`catmull_clark` is the
+    version that rounds the shape as it splits.
+    """
+    M = as_mesh(M)
+    for _ in range(int(steps)):
+        out = Mesh([list(p) for p in M.V], [], [])
+        mid = {}
+
+        def midpoint_index(a, b):
+            key = (a, b) if a < b else (b, a)
+            if key not in mid:
+                pa, pb = M.V[a], M.V[b]
+                mid[key] = out.add_vertex(((pa[0] + pb[0]) / 2.0,
+                                           (pa[1] + pb[1]) / 2.0,
+                                           (pa[2] + pb[2]) / 2.0))
+            return mid[key]
+
+        for f, c in zip(M.F, M.C):
+            n = len(f)
+            if n == 3:
+                a, b, d = f
+                ab, bd, da = midpoint_index(a, b), midpoint_index(b, d), \
+                    midpoint_index(d, a)
+                out.add_face([a, ab, da], c)
+                out.add_face([b, bd, ab], c)
+                out.add_face([d, da, bd], c)
+                out.add_face([ab, bd, da], c)
+            elif n >= 4:
+                centre = out.add_vertex([sum(M.V[k][a] for k in f) / float(n)
+                                         for a in range(3)])
+                m = [midpoint_index(f[t], f[(t + 1) % n]) for t in range(n)]
+                for t in range(n):
+                    out.add_face([f[t], m[t], centre, m[t - 1]], c)
+            else:
+                out.add_face(f, c)
+        M = out
+    return M
+
+
+def dual(M, color=None):
+    """The dual polyhedron: a vertex at the centre of every face, and a face
+    for every vertex, joining the centres of the faces around it.
+
+    Cube <-> octahedron, dodecahedron <-> icosahedron, and the tetrahedron
+    is its own dual.  Only vertices with a closed ring of faces get a face,
+    so the model should be closed.  ``color`` paints the result; without it
+    each new face takes the colour of one of the old faces around it.
+    """
+    M = as_mesh(M)
+    out = Mesh()
+    for i in range(len(M.F)):
+        out.add_vertex(face_center(M, i))
+    for v, (ring, closed) in enumerate(_rings(M)):
+        if not closed or len(ring) < 3:
+            continue
+        faces = [fi for fi, nxt in reversed(ring)]
+        out.add_face(faces, M.C[faces[0]] if color is None else color)
+    _drop_unused(out)
+    return out
+
+
+def truncate(M, t=1.0 / 3.0, color=None):
+    """Cut every corner off: each vertex is replaced by a small face and
+    each old face loses its corners.
+
+    ``t`` is how far along every edge the cut goes (``1/3`` turns an
+    icosahedron into the football's truncated icosahedron, ``1/2`` cuts
+    right to the edge midpoints).  The corner faces are painted ``color``;
+    the old faces keep their colour.  Works on any closed mesh::
+
+        ico = add.make(add.icosahedron, [0, 0, 0], 3, "white")
+        ball = add.truncate(ico, 1 / 3.0, "black")     # 20 hexagons, 12 pentagons
+    """
+    M = as_mesh(M)
+    t = float(t)
+    if t > 0.5:
+        t = 0.5
+    out = Mesh()
+    cut = {}
+
+    def point(a, b):
+        """Vertex on edge a -> b at fraction t from a."""
+        key = (a, b) if t < 0.5 - 1e-12 else ((a, b) if a < b else (b, a))
+        if key not in cut:
+            pa, pb = M.V[a], M.V[b]
+            cut[key] = out.add_vertex((pa[0] + (pb[0] - pa[0]) * t,
+                                       pa[1] + (pb[1] - pa[1]) * t,
+                                       pa[2] + (pb[2] - pa[2]) * t))
+        return cut[key]
+
+    for f, c in zip(M.F, M.C):
+        n = len(f)
+        poly = []
+        for i in range(n):
+            v, prev, nxt = f[i], f[i - 1], f[(i + 1) % n]
+            for idx in (point(v, prev), point(v, nxt)):
+                if not poly or poly[-1] != idx:
+                    poly.append(idx)
+        if len(poly) > 1 and poly[0] == poly[-1]:
+            poly.pop()
+        if len(poly) >= 3:
+            out.add_face(poly, c)
+    corner = rgb(color)
+    for v, (ring, closed) in enumerate(_rings(M)):
+        if len(ring) < 3:
+            continue
+        poly = [point(v, nxt) for fi, nxt in reversed(ring)]
+        if len(set(poly)) >= 3:
+            out.add_face(poly, corner)
+    return out
+
+
+def color_by_sides(M, colors, default=None):
+    """Paint every face by its number of corners.
+
+    ``colors`` is a dictionary such as ``{5: "black", 6: "white"}`` (the
+    football), faces with a count not in it get ``default`` or keep their
+    colour.
+    """
+    M = as_mesh(M)
+    out = M.copy()
+    for i, f in enumerate(M.F):
+        n = len(f)
+        if n in colors:
+            out.C[i] = rgb(colors[n])
+        elif default is not None:
+            out.C[i] = rgb(default)
+    return out
+
+
+# ============================================================================
+# 23. Boolean operations: union, intersection, difference
 # ============================================================================
 # Two solids can be added together, cut out of one another, or intersected.
 # The idea used here needs no library and fits on one screen:
@@ -4039,10 +5222,997 @@ def inside(M, p):
 
 
 # ============================================================================
-# 21. Saving and loading
+# 24. Smooth surfaces: Catmull-Clark and uniform n-grids
+# ============================================================================
+# A coarse polygon mesh -- a box with a corner pulled out, a dodecahedron, a
+# letter -- can be treated as the *control net* of a smooth surface.
+# Catmull-Clark subdivision (1978) rounds it by splitting every face into
+# quads and averaging; done for ever it converges to the *limit surface*.
+#
+# ``catmull_clark`` is the classical step.  ``smooth`` goes further: it is
+# the generalised algorithm of M. Sabaliauskas, "Uniform n-grids on
+# Catmull-Clark limit surfaces of arbitrary polygon meshes" (2026).  For
+# ANY n = 1, 2, 3, 4, 5 ... it puts n cells on every edge of the control
+# mesh with all the new vertices *exactly* on the limit surface (classical
+# subdivision only reaches n = 2, 4, 8 ...), and near the extraordinary
+# vertices (valence != 4) and non-quad faces it reparameterises the surface
+# so that the cells come out evenly sized.  The code below is a line-by-line
+# port of the reference implementation (unisub.js / unisub.hpp) into plain
+# Python, so that it too needs nothing but ``import add``.
+
+class _Topo(object):
+    """A polygon mesh with its edges and adjacency worked out.
+
+    ``E[e] = [a, b, f0, f1]`` (f1 = -1 on a border), ``VF[v]`` faces at a
+    vertex, ``VE[v]`` edges at a vertex, ``FE[f][k]`` the edge leaving
+    corner ``k`` of face ``f``, ``FN[f][k]`` the face across that edge.
+    """
+
+    __slots__ = ("V", "F", "E", "VF", "VE", "FE", "FN", "boundary")
+
+    def __init__(self, V, F):
+        self.V = V
+        self.F = F
+        nv, nf = len(V), len(F)
+        self.E = []
+        self.VF = [[] for _ in range(nv)]
+        self.VE = [[] for _ in range(nv)]
+        self.FE = [None] * nf
+        self.FN = [None] * nf
+        emap = {}
+        for f in range(nf):
+            p = F[f]
+            m = len(p)
+            if m < 3:
+                raise ValueError("face with fewer than 3 vertices")
+            fe = [0] * m
+            for k in range(m):
+                a, b = p[k], p[(k + 1) % m]
+                if a == b:
+                    raise ValueError("degenerate edge in face %d" % f)
+                key = (a, b) if a < b else (b, a)
+                e = emap.get(key)
+                if e is None:
+                    e = len(self.E)
+                    self.E.append([key[0], key[1], f, -1])
+                    emap[key] = e
+                    self.VE[a].append(e)
+                    self.VE[b].append(e)
+                else:
+                    ed = self.E[e]
+                    if ed[3] >= 0:
+                        raise ValueError("non-manifold edge (more than two "
+                                         "faces meet along it)")
+                    if ed[2] == f:
+                        raise ValueError("edge used twice by the same face")
+                    ed[3] = f
+                fe[k] = e
+            self.FE[f] = fe
+            for k in range(m):
+                self.VF[p[k]].append(f)
+        for f in range(nf):
+            fe = self.FE[f]
+            self.FN[f] = [self.E[e][3] if self.E[e][2] == f else self.E[e][2]
+                          for e in fe]
+        self.boundary = [False] * nv
+        for ed in self.E:
+            if ed[3] < 0:
+                self.boundary[ed[0]] = True
+                self.boundary[ed[1]] = True
+
+    def all_quads(self):
+        for f in self.F:
+            if len(f) != 4:
+                return False
+        return True
+
+    def centroid(self, f):
+        p = self.F[f]
+        n = float(len(p))
+        return [sum(self.V[v][a] for v in p) / n for a in range(3)]
+
+    def ordered_ring(self, v):
+        """Neighbours and faces counter-clockwise around ``v``, or ``None``."""
+        VF = self.VF[v]
+        if not VF:
+            return None
+        start = VF[0]
+        for f in VF:
+            k = self.F[f].index(v)
+            if self.FN[f][k] < 0:
+                start = f
+                break
+        nbrs, faces = [], []
+        f = start
+        guard = 0
+        while True:
+            p = self.F[f]
+            m = len(p)
+            k = p.index(v)
+            nxt, prv = p[(k + 1) % m], p[(k + m - 1) % m]
+            if not faces:
+                nbrs.append(nxt)
+            faces.append(f)
+            nbrs.append(prv)
+            g = self.FN[f][(k + m - 1) % m]
+            if g < 0:
+                break
+            if g == start:
+                nbrs.pop()
+                break
+            f = g
+            guard += 1
+            if guard > len(VF) + 2:
+                return None
+        if len(faces) != len(VF):
+            return None
+        return nbrs, faces
+
+
+def _cc_subdivide(T):
+    """One Catmull-Clark step on a :class:`_Topo`.
+
+    Returns ``(new topology, parent)`` where ``parent[i]`` is the face of
+    ``T`` that new quad ``i`` came from.  New vertices are numbered: the old
+    vertices first, then one per edge, then one per face.  Border edges and
+    vertices follow the cubic B-spline curve rules, so an open sheet keeps
+    a smooth rim, and a vertex with a single face stays where it is.
+    """
+    V, F, E = T.V, T.F, T.E
+    nv, ne, nf = len(V), len(E), len(F)
+    R = [None] * (nv + ne + nf)
+    for f in range(nf):
+        R[nv + ne + f] = T.centroid(f)
+    for e in range(ne):
+        a, b, f0, f1 = E[e]
+        pa, pb = V[a], V[b]
+        if f1 < 0:
+            R[nv + e] = [(pa[0] + pb[0]) * 0.5, (pa[1] + pb[1]) * 0.5,
+                         (pa[2] + pb[2]) * 0.5]
+        else:
+            c0, c1 = R[nv + ne + f0], R[nv + ne + f1]
+            R[nv + e] = [(pa[0] + pb[0] + c0[0] + c1[0]) * 0.25,
+                         (pa[1] + pb[1] + c0[1] + c1[1]) * 0.25,
+                         (pa[2] + pb[2] + c0[2] + c1[2]) * 0.25]
+    for v in range(nv):
+        p = V[v]
+        VF, VE = T.VF[v], T.VE[v]
+        if not VF:
+            R[v] = list(p)
+            continue
+        if T.boundary[v]:
+            if len(VF) <= 1:
+                R[v] = list(p)
+                continue
+            s = [0.0, 0.0, 0.0]
+            cnt = 0
+            for e in VE:
+                ed = E[e]
+                if ed[3] < 0:
+                    q = V[ed[1] if ed[0] == v else ed[0]]
+                    s[0] += q[0]
+                    s[1] += q[1]
+                    s[2] += q[2]
+                    cnt += 1
+            if cnt != 2:
+                R[v] = list(p)
+                continue
+            R[v] = [(s[0] + 6 * p[0]) / 8.0, (s[1] + 6 * p[1]) / 8.0,
+                    (s[2] + 6 * p[2]) / 8.0]
+        else:
+            n = len(VE)
+            Q = [0.0, 0.0, 0.0]
+            Rm = [0.0, 0.0, 0.0]
+            for f in VF:
+                c = R[nv + ne + f]
+                Q[0] += c[0]
+                Q[1] += c[1]
+                Q[2] += c[2]
+            for e in VE:
+                ed = E[e]
+                pa, pb = V[ed[0]], V[ed[1]]
+                Rm[0] += (pa[0] + pb[0]) * 0.5
+                Rm[1] += (pa[1] + pb[1]) * 0.5
+                Rm[2] += (pa[2] + pb[2]) * 0.5
+            nfc = float(len(VF))
+            R[v] = [(Q[0] / nfc + 2 * Rm[0] / n + (n - 3) * p[0]) / n,
+                    (Q[1] / nfc + 2 * Rm[1] / n + (n - 3) * p[1]) / n,
+                    (Q[2] / nfc + 2 * Rm[2] / n + (n - 3) * p[2]) / n]
+    newF = []
+    parent = []
+    for f in range(nf):
+        p = F[f]
+        fe = T.FE[f]
+        m = len(p)
+        for k in range(m):
+            newF.append([p[k], nv + fe[k], nv + ne + f, nv + fe[(k + m - 1) % m]])
+            parent.append(f)
+    return _Topo(R, newF), parent
+
+
+def _cc_lambda(N):
+    """Subdominant eigenvalue of the Catmull-Clark subdivision matrix."""
+    if N == 4:
+        return 0.5
+    c = math.cos(2 * math.pi / N)
+    return (c + 5 + math.sqrt((c + 1) * (c + 9))) / 16.0
+
+
+def _cc_gamma(N):
+    """Exponent of the radial reparameterisation at a valence-N vertex:
+    ``gamma = -1 / log2(lambda_N)`` (1 for the regular valence 4)."""
+    if N == 4:
+        return 1.0
+    return 1.0 / (-math.log(_cc_lambda(N), 2))
+
+
+def _cc_limit_positions(T):
+    """Limit position of every vertex of a quad topology (exact formula).
+
+    A mesh with other polygons is subdivided once first -- after that step
+    the formula is exact for the original vertices too.
+    """
+    if not T.all_quads():
+        S, parent = _cc_subdivide(T)
+        return _cc_limit_positions(S)[:len(T.V)]
+    V, E = T.V, T.E
+    L = [None] * len(V)
+    for v in range(len(V)):
+        p = V[v]
+        VF = T.VF[v]
+        if not VF:
+            L[v] = list(p)
+            continue
+        if T.boundary[v]:
+            if len(VF) <= 1:
+                L[v] = list(p)
+                continue
+            s = [0.0, 0.0, 0.0]
+            cnt = 0
+            for e in T.VE[v]:
+                ed = E[e]
+                if ed[3] < 0:
+                    q = V[ed[1] if ed[0] == v else ed[0]]
+                    s[0] += q[0]
+                    s[1] += q[1]
+                    s[2] += q[2]
+                    cnt += 1
+            if cnt != 2:
+                L[v] = list(p)
+                continue
+            L[v] = [(s[0] + 4 * p[0]) / 6.0, (s[1] + 4 * p[1]) / 6.0,
+                    (s[2] + 4 * p[2]) / 6.0]
+        else:
+            ring = T.ordered_ring(v)
+            if ring is None:
+                L[v] = list(p)
+                continue
+            nbrs, faces = ring
+            n = len(nbrs)
+            se = [0.0, 0.0, 0.0]
+            sf = [0.0, 0.0, 0.0]
+            for j in range(n):
+                q = V[nbrs[j]]
+                se[0] += q[0]
+                se[1] += q[1]
+                se[2] += q[2]
+                poly = T.F[faces[j]]
+                d = V[poly[(poly.index(v) + 2) % 4]]
+                sf[0] += d[0]
+                sf[1] += d[1]
+                sf[2] += d[2]
+            den = float(n * (n + 5))
+            L[v] = [(n * n * p[0] + 4 * se[0] + sf[0]) / den,
+                    (n * n * p[1] + 4 * se[1] + sf[1]) / den,
+                    (n * n * p[2] + 4 * se[2] + sf[2]) / den]
+    return L
+
+
+def _cc_limit_tangents(T, v):
+    """Two tangent vectors of the limit surface at an inner vertex."""
+    if T.boundary[v]:
+        return None
+    ring = T.ordered_ring(v)
+    if ring is None:
+        return None
+    nbrs, faces = ring
+    for f in faces:
+        if len(T.F[f]) != 4:
+            S, parent = _cc_subdivide(T)
+            return _cc_limit_tangents(S, v)
+    n = len(nbrs)
+    c = math.cos(2 * math.pi / n)
+    A = 1 + c + math.sqrt((c + 1) * (c + 9))
+    t1 = [0.0, 0.0, 0.0]
+    t2 = [0.0, 0.0, 0.0]
+    for j in range(n):
+        a0 = 2 * math.pi * j / n
+        a1 = 2 * math.pi * (j + 1) / n
+        poly = T.F[faces[j]]
+        fj = T.V[poly[(poly.index(v) + 2) % 4]]
+        e = T.V[nbrs[j]]
+        w1, w2 = A * math.cos(a0), math.cos(a0) + math.cos(a1)
+        s1, s2 = A * math.sin(a0), math.sin(a0) + math.sin(a1)
+        for a in range(3):
+            t1[a] += e[a] * w1 + fj[a] * w2
+            t2[a] += e[a] * s1 + fj[a] * s2
+    return t1, t2
+
+
+def _bspline_basis(t):
+    """The four uniform cubic B-spline basis functions at ``t`` in [0, 1]."""
+    t2 = t * t
+    t3 = t2 * t
+    return ((1 - 3 * t + 3 * t2 - t3) / 6.0, (4 - 6 * t2 + 3 * t3) / 6.0,
+            (1 + 3 * t + 3 * t2 - 3 * t3) / 6.0, t3 / 6.0)
+
+
+def _eval_bicubic(P, u, v):
+    """Point of the bicubic B-spline patch with 4x4 control net ``P[i][j]``."""
+    Nu = _bspline_basis(u)
+    Nv = _bspline_basis(v)
+    x = y = z = 0.0
+    for i in range(4):
+        wi = Nu[i]
+        if wi == 0.0:
+            continue
+        row = P[i]
+        for j in range(4):
+            w = wi * Nv[j]
+            c = row[j]
+            x += c[0] * w
+            y += c[1] * w
+            z += c[2] * w
+    return [x, y, z]
+
+
+def _regular_stencil(T, f):
+    """The 4x4 control net of quad ``f`` when its surroundings are regular
+    (all valences 4, all faces quads), or ``None``.
+
+    Missing rows along a border are reflected (``2a - b``), which is the
+    B-spline curve rule for the rim.
+    """
+    q = T.F[f]
+    if len(q) != 4:
+        return None
+    V = T.V
+    P = [[None] * 4 for _ in range(4)]
+    have = [[0] * 4 for _ in range(4)]
+    P[1][1], P[2][1], P[2][2], P[1][2] = V[q[0]], V[q[1]], V[q[2]], V[q[3]]
+    have[1][1] = have[2][1] = have[2][2] = have[1][2] = 1
+    ci = (1, 2, 2, 1)
+    cj = (1, 1, 2, 2)
+    for k in range(4):
+        v = q[k]
+        bnd = T.boundary[v]
+        nfc = len(T.VF[v])
+        if not bnd and (nfc != 4 or len(T.VE[v]) != 4):
+            return None
+        if bnd and nfc > 2:
+            return None
+        ring = T.ordered_ring(v)
+        if ring is None:
+            return None
+        nb, fc = ring
+        for g in fc:
+            if len(T.F[g]) != 4:
+                return None
+        vn, vp = q[(k + 1) % 4], q[(k + 3) % 4]
+        dn = (ci[(k + 1) % 4] - ci[k], cj[(k + 1) % 4] - cj[k])
+        dp = (ci[(k + 3) % 4] - ci[k], cj[(k + 3) % 4] - cj[k])
+        n = len(nb)
+        if vn not in nb:
+            return None
+        s = nb.index(vn)
+        if nb[(s + 1) % n] != vp:
+            return None
+        dirs = (dn, dp, (-dn[0], -dn[1]), (-dp[0], -dp[1]))
+        for idx in range(n):
+            off = (idx - s) % 4
+            gi, gj = ci[k] + dirs[off][0], cj[k] + dirs[off][1]
+            if gi < 0 or gi > 3 or gj < 0 or gj > 3:
+                return None
+            P[gi][gj] = V[nb[idx]]
+            have[gi][gj] = 1
+        for idx in range(len(fc)):
+            off = (idx - s) % 4
+            poly = T.F[fc[idx]]
+            diag = poly[(poly.index(v) + 2) % 4]
+            gi = ci[k] + dirs[off][0] + dirs[(off + 1) % 4][0]
+            gj = cj[k] + dirs[off][1] + dirs[(off + 1) % 4][1]
+            if gi < 0 or gi > 3 or gj < 0 or gj > 3:
+                return None
+            P[gi][gj] = V[diag]
+            have[gi][gj] = 1
+    miss = (not have[0][1] and not have[0][2], not have[3][1] and not have[3][2],
+            not have[1][0] and not have[2][0], not have[1][3] and not have[2][3])
+    if (have[0][1] != have[0][2] or have[3][1] != have[3][2]
+            or have[1][0] != have[2][0] or have[1][3] != have[2][3]):
+        return None
+
+    def refl(a, b):
+        return [2 * a[0] - b[0], 2 * a[1] - b[1], 2 * a[2] - b[2]]
+
+    def bil(a, b, c):
+        return [a[0] + b[0] - c[0], a[1] + b[1] - c[1], a[2] + b[2] - c[2]]
+
+    for t in (1, 2):
+        if miss[0]:
+            P[0][t] = refl(P[1][t], P[2][t])
+        if miss[1]:
+            P[3][t] = refl(P[2][t], P[1][t])
+        if miss[2]:
+            P[t][0] = refl(P[t][1], P[t][2])
+        if miss[3]:
+            P[t][3] = refl(P[t][2], P[t][1])
+    if not have[0][0]:
+        P[0][0] = (refl(P[1][0], P[2][0]) if miss[0] else
+                   refl(P[0][1], P[0][2]) if miss[2] else
+                   bil(P[0][1], P[1][0], P[1][1]))
+    if not have[3][0]:
+        P[3][0] = (refl(P[2][0], P[1][0]) if miss[1] else
+                   refl(P[3][1], P[3][2]) if miss[2] else
+                   bil(P[3][1], P[2][0], P[2][1]))
+    if not have[0][3]:
+        P[0][3] = (refl(P[1][3], P[2][3]) if miss[0] else
+                   refl(P[0][2], P[0][1]) if miss[3] else
+                   bil(P[0][2], P[1][3], P[1][2]))
+    if not have[3][3]:
+        P[3][3] = (refl(P[2][3], P[1][3]) if miss[1] else
+                   refl(P[3][2], P[3][1]) if miss[3] else
+                   bil(P[3][2], P[2][3], P[2][2]))
+    return P
+
+
+def _neighbourhood(T, f, origin_corner):
+    """The faces around face ``f`` as a small mesh of their own, with ``f``
+    first and its corners rotated so that ``origin_corner`` comes first."""
+    faces = [f]
+    seen = set([f])
+    for v in T.F[f]:
+        for g in T.VF[v]:
+            if g not in seen:
+                seen.add(g)
+                faces.append(g)
+    vmap = {}
+    LV, LF = [], []
+    for g in faces:
+        poly = T.F[g]
+        m = len(poly)
+        start = origin_corner if g == f else 0
+        out = []
+        for k in range(m):
+            v = poly[(start + k) % m]
+            idx = vmap.get(v)
+            if idx is None:
+                idx = len(LV)
+                LV.append(T.V[v])
+                vmap[v] = idx
+            out.append(idx)
+        LF.append(out)
+    return _Topo(LV, LF)
+
+
+class _PatchTree(object):
+    """Evaluates the limit surface over one quad next to an extraordinary
+    vertex by subdividing its neighbourhood only as deep as a query needs
+    (Algorithm 1 of the paper)."""
+
+    __slots__ = ("root",)
+    MAX_DEPTH = 48
+
+    def __init__(self, T, f):
+        self.root = self._node(_neighbourhood(T, f, 0), 0)
+
+    @staticmethod
+    def _node(L, depth):
+        return {"M": L, "depth": depth, "P": _regular_stencil(L, 0),
+                "child": [None, None, None, None], "sub": None}
+
+    def _child(self, node, k):
+        ch = node["child"][k]
+        if ch is not None:
+            return ch
+        if node["sub"] is None:
+            node["sub"], parent = _cc_subdivide(node["M"])
+        origin = (0, 3, 2, 1)
+        ch = self._node(_neighbourhood(node["sub"], k, origin[k]),
+                        node["depth"] + 1)
+        node["child"][k] = ch
+        return ch
+
+    def eval(self, u, v):
+        node = self.root
+        depth = 0
+        while node["P"] is None:
+            if depth >= self.MAX_DEPTH:
+                L = _cc_limit_positions(node["M"])
+                corner = (0 if v < 0.5 else 3) if u < 0.5 else (1 if v < 0.5 else 2)
+                return L[node["M"].F[0][corner]]
+            if u < 0.5:
+                if v < 0.5:
+                    k, u, v = 0, 2 * u, 2 * v
+                else:
+                    k, u, v = 3, 2 * u, 2 * v - 1
+            else:
+                if v < 0.5:
+                    k, u, v = 1, 2 * u - 1, 2 * v
+                else:
+                    k, u, v = 2, 2 * u - 1, 2 * v - 1
+            node = self._child(node, k)
+            depth += 1
+        return _eval_bicubic(node["P"], u, v)
+
+
+def _nu_norm(a, b, p):
+    """The paper's norm ``nu(s, t) = ((s^p + t^p) / (1 + s^p t^p))^(1/p)``."""
+    if p > 64:
+        return max(a, b)
+    ap, bp = a ** p, b ** p
+    return ((ap + bp) / (1 + ap * bp)) ** (1.0 / p)
+
+
+class _PolygonDomain(object):
+    """The regular m-gon in the plane, split into m kites
+    ``[corner_k, edge_mid_k, centre, edge_mid_{k-1}]`` (Section 5 of the
+    paper): the parameter domain of one control face."""
+
+    __slots__ = ("m", "P", "E")
+    _cache = {}
+
+    def __init__(self, m):
+        self.m = m
+        self.P = [(math.cos(2 * math.pi * k / m), math.sin(2 * math.pi * k / m))
+                  for k in range(m)]
+        self.E = [((self.P[k][0] + self.P[(k + 1) % m][0]) / 2.0,
+                   (self.P[k][1] + self.P[(k + 1) % m][1]) / 2.0)
+                  for k in range(m)]
+
+    @classmethod
+    def get(cls, m):
+        d = cls._cache.get(m)
+        if d is None:
+            d = cls._cache[m] = cls(m)
+        return d
+
+    def kite_map(self, k, u, v):
+        a, b, d = self.P[k], self.E[k], self.E[(k + self.m - 1) % self.m]
+        wa, wb, wd = (1 - u) * (1 - v), u * (1 - v), (1 - u) * v
+        return (a[0] * wa + b[0] * wb + d[0] * wd,
+                a[1] * wa + b[1] * wb + d[1] * wd)
+
+    def kite_of(self, x):
+        if x[0] == 0 and x[1] == 0:
+            return 0
+        t = math.atan2(x[1], x[0]) / (2 * math.pi) * self.m + 0.5
+        return int(math.floor(t)) % self.m
+
+    def kite_inverse(self, k, x):
+        a, b, d = self.P[k], self.E[k], self.E[(k + self.m - 1) % self.m]
+        e1 = (b[0] - a[0], b[1] - a[1])
+        e2 = (d[0] - a[0], d[1] - a[1])
+        e3 = (-(b[0] + d[0] - a[0]), -(b[1] + d[1] - a[1]))
+        u = v = 0.5
+        for _ in range(40):
+            rx = a[0] + e1[0] * u + e2[0] * v + e3[0] * u * v - x[0]
+            ry = a[1] + e1[1] * u + e2[1] * v + e3[1] * u * v - x[1]
+            jux, juy = e1[0] + e3[0] * v, e1[1] + e3[1] * v
+            jvx, jvy = e2[0] + e3[0] * u, e2[1] + e3[1] * u
+            det = jux * jvy - juy * jvx
+            if abs(det) < 1e-300:
+                break
+            du = (rx * jvy - ry * jvx) / det
+            dv = (jux * ry - juy * rx) / det
+            u -= du
+            v -= dv
+            if abs(du) + abs(dv) < 1e-16:
+                break
+        return (min(1.0, max(0.0, u)), min(1.0, max(0.0, v)))
+
+    def wachspress(self, x):
+        m = self.m
+        A = [0.0] * m
+        for j in range(m):
+            a, b = self.P[j], self.P[(j + 1) % m]
+            s = (a[0] - x[0]) * (b[1] - x[1]) - (a[1] - x[1]) * (b[0] - x[0])
+            A[j] = s if s > 0 else 0.0
+        lam = [0.0] * m
+        total = 0.0
+        for i in range(m):
+            w = 1.0
+            im = (i + m - 1) % m
+            for j in range(m):
+                if j != i and j != im:
+                    w *= A[j]
+            lam[i] = w
+            total += w
+        if total > 0:
+            for i in range(m):
+                lam[i] /= total
+        else:
+            best, bd = 0, None
+            for i in range(m):
+                dx, dy = self.P[i][0] - x[0], self.P[i][1] - x[1]
+                d = dx * dx + dy * dy
+                if bd is None or d < bd:
+                    bd, best = d, i
+            for i in range(m):
+                lam[i] = 0.0
+            lam[best] = 1.0
+        return lam
+
+    def corner_nu(self, lam, k, p):
+        m = self.m
+        kp, km = (k + 1) % m, (k + m - 1) % m
+        s, t = 1 - lam[k] - lam[km], 1 - lam[k] - lam[kp]
+        if m == 3:
+            ds, dt = 1 - lam[km], 1 - lam[kp]
+            s = s / ds if ds > 1e-300 else 0.0
+            t = t / dt if dt > 1e-300 else 0.0
+        s = min(1.0, max(0.0, s))
+        t = min(1.0, max(0.0, t))
+        return _nu_norm(s, t, p)
+
+
+def _face_reparam(dom, gamma, gamma_centre, p):
+    """The map psi of one control face: Wachspress blend of the radial
+    corner maps, then the radial centre map.  Returns ``(trivial, apply)``."""
+    m = dom.m
+    any_corner = any(g != 1 for g in gamma)
+    trivial = not any_corner and gamma_centre == 1
+
+    def apply(x):
+        y = x
+        if any_corner:
+            lam = dom.wachspress(x)
+            y0 = y1 = 0.0
+            for k in range(m):
+                w = lam[k]
+                if w == 0:
+                    continue
+                if gamma[k] == 1:
+                    y0 += x[0] * w
+                    y1 += x[1] * w
+                    continue
+                nu = dom.corner_nu(lam, k, p)
+                r = nu ** (gamma[k] - 1) if nu > 0 else 0.0
+                P = dom.P[k]
+                y0 += (P[0] + (x[0] - P[0]) * r) * w
+                y1 += (P[1] + (x[1] - P[1]) * r) * w
+            y = (y0, y1)
+        if gamma_centre != 1:
+            k = dom.kite_of(y)
+            uv = dom.kite_inverse(k, y)
+            nuF = _nu_norm(1 - uv[0], 1 - uv[1], p)
+            if nuF > 0:
+                r = nuF ** (gamma_centre - 1)
+                y = (y[0] * r, y[1] * r)
+        return y
+
+    return trivial, apply
+
+
+def _face_node_count(m, n):
+    q = n // 2
+    if n % 2 == 1:
+        return m * q * q
+    return m * (q - 1) * (q - 1) + m * (q - 1) + 1 if q >= 1 else 0
+
+
+def _topology_of(M, repair=True):
+    """Build the :class:`_Topo` of a mesh, tidying it first when asked."""
+    M = as_mesh(M)
+    if repair:
+        M = _repair_for_subdivision(M)
+    else:
+        M = M.copy()
+    return _Topo([list(p) for p in M.V], [list(f) for f in M.F]), M
+
+
+def _repair_for_subdivision(M):
+    """Weld, drop rubbish, close T-junctions, cut non-manifold edges and
+    vertices apart, drop unused vertices and make the winding consistent --
+    everything subdivision needs from a model built by stacking parts."""
+    M = M.copy()
+    lo, hi = bbox(M)
+    diag = _norm(_sub(hi, lo))
+    tol = 1e-7 * (diag if diag > 0 else 1.0)
+    _weld(M, tol)
+    _drop_degenerate(M)
+    _drop_internal(M)
+    _dedup_faces(M)
+    M = heal(M, 1e-6 * (diag if diag > 0 else 1.0))
+    _drop_degenerate(M)
+    _cut_non_manifold(M)
+    _drop_unused(M)
+    if M.F:
+        M = fix_normals(M)
+    return M
+
+
+def _cut_non_manifold(M):
+    """Separate faces that meet along an edge shared by three or more faces,
+    or only at a vertex, by giving them copies of the vertex (in place)."""
+    for _pass in range(4):
+        emap = {}
+        for f, poly in enumerate(M.F):
+            m = len(poly)
+            for k in range(m):
+                a, b = poly[k], poly[(k + 1) % m]
+                emap.setdefault((a, b) if a < b else (b, a), []).append((f, k))
+        any_bad = False
+        partner = [[-1] * len(poly) for poly in M.F]
+        detach = []
+        for lst in emap.values():
+            if len(lst) == 2:
+                (f0, k0), (f1, k1) = lst
+                partner[f0][k0] = f1
+                partner[f1][k1] = f0
+                continue
+            if len(lst) < 2:
+                continue
+            any_bad = True
+            used = [False] * len(lst)
+            for i in range(len(lst)):
+                if used[i]:
+                    continue
+                fa, ka = lst[i]
+                a0 = M.F[fa][ka]
+                best = -1
+                for j in range(i + 1, len(lst)):
+                    if not used[j] and M.F[lst[j][0]][lst[j][1]] != a0:
+                        best = j
+                        break
+                if best < 0:
+                    for j in range(i + 1, len(lst)):
+                        if not used[j]:
+                            best = j
+                            break
+                if best < 0:
+                    detach.append(lst[i])
+                    used[i] = True
+                    continue
+                used[i] = used[best] = True
+                fb, kb = lst[best]
+                partner[fa][ka] = fb
+                partner[fb][kb] = fa
+        for f, k in detach:
+            m = len(M.F[f])
+            for idx in (k, (k + 1) % m):
+                M.V.append(list(M.V[M.F[f][idx]]))
+                M.F[f][idx] = len(M.V) - 1
+        vf = [[] for _ in M.V]
+        for f, poly in enumerate(M.F):
+            for k, v in enumerate(poly):
+                vf[v].append((f, k))
+        nv0 = len(M.V)
+        any_split = False
+        for v in range(nv0):
+            lst = vf[v]
+            if len(lst) <= 1:
+                continue
+            pos = {}
+            for i, (f, k) in enumerate(lst):
+                pos[f] = i
+            group = list(range(len(lst)))
+
+            def find(x):
+                while group[x] != x:
+                    group[x] = group[group[x]]
+                    x = group[x]
+                return x
+
+            for i, (f, k) in enumerate(lst):
+                m = len(M.F[f])
+                for g in (partner[f][k], partner[f][(k + m - 1) % m]):
+                    if g < 0:
+                        continue
+                    j = pos.get(g)
+                    if j is not None:
+                        a, b = find(i), find(j)
+                        if a != b:
+                            group[a] = b
+            fan = {}
+            for i, (f, k) in enumerate(lst):
+                r = find(i)
+                vid = fan.get(r)
+                if vid is None:
+                    vid = v
+                    if fan:
+                        M.V.append(list(M.V[v]))
+                        vid = len(M.V) - 1
+                    fan[r] = vid
+                M.F[f][k] = vid
+            if len(fan) > 1:
+                any_split = True
+        if not any_bad and not any_split:
+            break
+    return M
+
+
+def catmull_clark(M, steps=1, repair=True):
+    """Classical Catmull-Clark subdivision: every face becomes quads and
+    the shape is rounded, ``steps`` times.
+
+    A cube turns into a rounded cube, then into a near sphere; a
+    dodecahedron into a ball with twelve soft dimples.  Border edges are
+    kept as smooth curves.  Faces inherit the colour of the face they came
+    from.  ``repair=True`` first welds and tidies the mesh the way
+    subdivision needs (parts that only touch are cut apart).  For any
+    number of cells per edge -- not only 2, 4, 8 -- see :func:`smooth`::
+
+        add.box([0, 0, 0], 2, "red")
+        add.mesh(add.catmull_clark(add.layer(), 3))     # 384 quads
+    """
+    T, M = _topology_of(M, repair)
+    colors = list(M.C)
+    for _ in range(int(steps)):
+        T, parent = _cc_subdivide(T)
+        colors = [colors[p] for p in parent]
+    return Mesh([list(p) for p in T.V], [list(f) for f in T.F], colors)
+
+
+def smooth(M, n=4, uniform=True, centre=True, p=2.0, scale=1.0, repair=True):
+    """Round a polygon mesh into its Catmull-Clark limit surface, sampled
+    with ``n`` cells along every control edge -- for *any* ``n``.
+
+    This is the generalised Catmull-Clark algorithm (Sabaliauskas, 2026):
+    each control face (triangle, quad, pentagon ...) is covered by a grid
+    of ``n x n`` cells per corner kite, every node of which lies exactly on
+    the smooth limit surface.  ``n = 1`` moves the control vertices to the
+    surface without adding faces; ``n = 2`` is the classical subdivision
+    step (with the vertices at their limit); ``n = 3, 5, 7`` leave a small
+    polygon in the middle of each face, even ``n`` meet at a centre node.
+    Cells keep the colour of the control face they lie on, so a coloured
+    box stays a coloured pillow.
+
+    ``uniform=True`` applies the paper's reparameterisation near the
+    extraordinary vertices and non-quad faces, so that the cells come out
+    evenly sized; ``uniform=False`` gives the plain characteristic-map
+    grid.  ``centre`` switches the extra centre map of non-quad faces,
+    ``p`` is the exponent of the blending norm and ``scale`` multiplies
+    the exponents (1 = the theoretical value).  ``repair=True`` welds and
+    tidies the mesh first.  Non-manifold meshes are cut apart, so voxel
+    models and stacked parts smooth too -- they just stay separate pieces::
+
+        add.dodecahedron([0, 0, 0], 2, "gold")
+        add.mesh(add.smooth(add.layer(), 5))           # 12 * 5 ... cells
+    """
+    n = int(n)
+    if n < 1:
+        raise ValueError("n must be at least 1")
+    T, M0 = _topology_of(M, repair)
+    if not T.F:
+        return Mesh()
+    colors = list(M0.C)
+    T1, parent1 = _cc_subdivide(T)
+    q, odd = n // 2, (n % 2 == 1)
+    nv, ne, nf = len(T.V), len(T.E), len(T.F)
+    face_base = [0] * (nf + 1)
+    kite_offset = [0] * (nf + 1)
+    face_base[0] = nv + ne * (n - 1)
+    for f in range(nf):
+        m = len(T.F[f])
+        face_base[f + 1] = face_base[f] + _face_node_count(m, n)
+        kite_offset[f + 1] = kite_offset[f] + m
+    total = face_base[nf]
+    GV = [None] * total
+    done = [False] * total
+    L = _cc_limit_positions(T1)
+    for v in range(nv):
+        GV[v] = L[v]
+        done[v] = True
+    F1 = T1.F
+    V1 = T1.V
+
+    def edge_node(f, k, t):
+        poly = T.F[f]
+        m = len(poly)
+        a, b = poly[k], poly[(k + 1) % m]
+        e = T.FE[f][k]
+        tt = t if a < b else n - t
+        return nv + e * (n - 1) + (tt - 1)
+
+    def node_id(f, k, i, j):
+        poly = T.F[f]
+        m = len(poly)
+        if i == 0 and j == 0:
+            return poly[k]
+        if j == 0:
+            return edge_node(f, k, i)
+        if i == 0:
+            return edge_node(f, (k + m - 1) % m, n - j)
+        base = face_base[f]
+        if not odd:
+            inner = m * (q - 1) * (q - 1)
+            if i == q and j == q:
+                return base + inner + m * (q - 1)
+            if i == q:
+                return base + inner + k * (q - 1) + (j - 1)
+            if j == q:
+                return base + inner + ((k + m - 1) % m) * (q - 1) + (i - 1)
+            return base + k * (q - 1) * (q - 1) + (i - 1) * (q - 1) + (j - 1)
+        return base + k * q * q + (i - 1) * q + (j - 1)
+
+    out_faces = []
+    out_colors = []
+    for f in range(nf):
+        poly = T.F[f]
+        m = len(poly)
+        dom = _PolygonDomain.get(m)
+        gamma = [1.0] * m
+        gamma_centre = 1.0
+        if uniform:
+            for k in range(m):
+                v = poly[k]
+                g = 1.0 if T.boundary[v] else _cc_gamma(len(T.VE[v]))
+                gamma[k] = 1 + (g - 1) * scale
+            if m != 4 and centre:
+                gamma_centre = 1 + (_cc_gamma(m) - 1) * scale
+        trivial, apply = _face_reparam(dom, gamma, gamma_centre, p)
+        evaluators = [None] * m
+
+        def evaluate(k, u, v):
+            ev = evaluators[k]
+            if ev is None:
+                P = _regular_stencil(T1, kite_offset[f] + k)
+                ev = evaluators[k] = (P, None) if P is not None else \
+                    (None, _PatchTree(T1, kite_offset[f] + k))
+            if ev[0] is not None:
+                return _eval_bicubic(ev[0], u, v)
+            return ev[1].eval(u, v)
+
+        for k in range(m):
+            for i in range(q + 1):
+                for j in range(q + 1):
+                    nid = node_id(f, k, i, j)
+                    if done[nid]:
+                        continue
+                    u0, v0 = 2.0 * i / n, 2.0 * j / n
+                    kk, u, v = k, u0, v0
+                    if not trivial:
+                        y = apply(dom.kite_map(k, u0, v0))
+                        kk = dom.kite_of(y)
+                        u, v = dom.kite_inverse(kk, y)
+                    if u > 1 - 1e-12 and v > 1 - 1e-12:
+                        GV[nid] = L[nv + ne + f]        # the face point
+                    else:
+                        GV[nid] = evaluate(kk, u, v)
+                    done[nid] = True
+        color = colors[f]
+        for k in range(m):
+            for i in range(q):
+                for j in range(q):
+                    out_faces.append([node_id(f, k, i, j), node_id(f, k, i + 1, j),
+                                      node_id(f, k, i + 1, j + 1),
+                                      node_id(f, k, i, j + 1)])
+                    out_colors.append(color)
+        if odd:
+            for k in range(m):
+                k1 = (k + 1) % m
+                for j in range(q):
+                    out_faces.append([node_id(f, k, q, j), node_id(f, k1, j, q),
+                                      node_id(f, k1, j + 1, q),
+                                      node_id(f, k, q, j + 1)])
+                    out_colors.append(color)
+            out_faces.append([node_id(f, k, q, q) for k in range(m)])
+            out_colors.append(color)
+    for i in range(total):
+        if GV[i] is None:                       # cannot happen; keep files valid
+            GV[i] = [0.0, 0.0, 0.0]
+    return Mesh([list(p) for p in GV], out_faces, out_colors)
+
+
+#: Other name for :func:`catmull_clark`.
+subdivide = catmull_clark
+
+
+# ============================================================================
+# 25. Saving and loading
 # ============================================================================
 
-def save(path, M=None, clear_scene=None):
+def save(path, M=None, clear_scene=None, colors=None):
     """Write a model to disk; the file format follows the extension.
 
     ``.off`` (the course format), ``.obj`` (+ a ``.mtl`` colour file, which is
@@ -4051,11 +6221,15 @@ def save(path, M=None, clear_scene=None):
         add.save("dragon.obj")
 
     Called without a mesh it saves -- and then empties -- the current scene,
-    exactly like add.py 1.2's ``off()``.
+    exactly like add.py 1.2's ``off()``.  ``colors=50`` reduces the model
+    to at most that many colours first (see :func:`limit_colors`), which
+    keeps an ``.obj`` within Sketchfab's material limit.
     """
     if clear_scene is None:
         clear_scene = M is None
     mesh_to_save = as_mesh(M)
+    if colors is not None:
+        mesh_to_save = limit_colors(mesh_to_save, colors)
     ext = path.lower().rsplit(".", 1)[-1] if "." in path else "off"
     if ext == "obj":
         _write_obj(path, mesh_to_save)
@@ -4107,6 +6281,19 @@ def _write_off(path, M):
         f.write("".join(out))
 
 
+def _material_name(c):
+    """``color_rrggbb``, plus ``_aNNN`` when see-through and ``_tNAME`` when
+    textured -- one material per distinct look."""
+    r, g, b, alpha, image = _material(c)
+    name = "color_%02x%02x%02x" % (r, g, b)
+    if alpha < 1.0:
+        name += "_a%03d" % int(round(alpha * 1000))
+    if image:
+        stem = image.replace("\\", "/").rsplit("/", 1)[-1].rsplit(".", 1)[0]
+        name += "_t" + "".join(ch if ch.isalnum() else "_" for ch in stem)
+    return name
+
+
 def _write_obj(path, M, mtl_path=None):
     if mtl_path is None:
         mtl_path = path[:-4] + ".mtl" if path.lower().endswith(".obj") \
@@ -4117,7 +6304,7 @@ def _write_obj(path, M, mtl_path=None):
     seen = {}
     for c in M.C:
         if c not in seen:
-            seen[c] = "color_%02x%02x%02x" % c
+            seen[c] = _material_name(c)
             palette.append(c)
 
     with open(path, "w") as f:
@@ -4128,27 +6315,87 @@ def _write_obj(path, M, mtl_path=None):
         for p in M.V:
             out.append("v %s %s %s\n" % (_num(p[0]), _num(p[1]), _num(p[2])))
         f.write("".join(out))
+        # Texture coordinates, one line per distinct (u, v) of textured faces.
+        vt_index = {}
+        if M.UV is not None:
+            out = []
+            for k, c in enumerate(M.C):
+                uv = M.UV[k]
+                if uv is None or len(c) < 5:
+                    continue
+                for t in uv:
+                    key = (round(t[0], 6), round(t[1], 6))
+                    if key not in vt_index:
+                        vt_index[key] = len(vt_index) + 1
+                        out.append("vt %s %s\n" % (_num(key[0]), _num(key[1])))
+            f.write("".join(out))
         # Group faces by colour: one `usemtl` line per colour, not per face.
         by_color = {}
-        for face, c in zip(M.F, M.C):
-            by_color.setdefault(c, []).append(face)
+        for k, (face, c) in enumerate(zip(M.F, M.C)):
+            by_color.setdefault(c, []).append(k)
         for c in palette:
             f.write("usemtl %s\n" % seen[c])
             out = []
-            for face in by_color[c]:
-                out.append("f %s\n" % " ".join(str(i + 1) for i in face))
+            textured = len(c) > 4 and M.UV is not None
+            for k in by_color[c]:
+                face = M.F[k]
+                uv = M.UV[k] if textured else None
+                if uv is None:
+                    out.append("f %s\n" % " ".join(str(i + 1) for i in face))
+                else:
+                    out.append("f %s\n" % " ".join(
+                        "%d/%d" % (i + 1, vt_index[(round(t[0], 6), round(t[1], 6))])
+                        for i, t in zip(face, uv)))
             f.write("".join(out))
 
     with open(mtl_path, "w") as f:
         f.write("# written by add.py %s\n" % __version__)
         for c in palette:
+            r, g, b, alpha, image = _material(c)
             f.write("newmtl %s\n" % seen[c])
-            f.write("Kd %.6f %.6f %.6f\n" % (c[0] / 255.0, c[1] / 255.0,
-                                             c[2] / 255.0))
+            f.write("Kd %.6f %.6f %.6f\n" % (r / 255.0, g / 255.0, b / 255.0))
             f.write("Ka 0.100000 0.100000 0.100000\n")
             f.write("Ks 0.000000 0.000000 0.000000\n")
-            f.write("d 1.0\nillum 1\n\n")
+            f.write("d %.3f\n" % alpha)
+            f.write("illum 1\n")
+            if image:
+                f.write("map_Kd %s\n" % image.replace("\\", "/").rsplit("/", 1)[-1])
+            f.write("\n")
     return path
+
+
+def obj_size(M=None):
+    """How many bytes :func:`save` would write for this model as ``.obj``
+    (the ``.mtl`` file is tiny and not counted).
+
+    Sketchfab's free plan accepts uploads up to 100 MB (200 MB Pro, 500 MB
+    Premium); the course asks for models under 50 MB.  The size is worked
+    out from the numbers themselves, without writing a file::
+
+        print(add.obj_size() / 1e6, "MB")
+    """
+    M = as_mesh(M)
+    total = 50                                          # header lines
+    for p in M.V:
+        total += 5 + len(_num(p[0])) + len(_num(p[1])) + len(_num(p[2]))
+    seen = set()
+    vts = set()
+    for k, (face, c) in enumerate(zip(M.F, M.C)):
+        total += 2 + len(face)
+        textured = len(c) > 4 and M.UV is not None and M.UV[k] is not None
+        for i in face:
+            total += len(str(i + 1))
+        if textured:
+            for t in M.UV[k]:
+                key = (round(t[0], 6), round(t[1], 6))
+                if key not in vts:
+                    vts.add(key)
+                    total += 6 + len(_num(key[0])) + len(_num(key[1]))
+                total += 1 + len(str(len(vts)))           # "/vt" per corner
+        if c not in seen:
+            seen.add(c)
+            total += 20 + (8 if len(c) > 3 else 0) + (10 + len(str(c[4])) if len(c) > 4 else 0)
+    return total
 
 
 def _write_ply(path, M):
@@ -4261,6 +6508,7 @@ def _read_obj(path, color=None):
     current = rgb(color) if color is not None else DEFAULT_COLOR
     folder = path.replace("\\", "/").rsplit("/", 1)
     folder = folder[0] + "/" if len(folder) > 1 else ""
+    vt = []
     with open(path, "r") as f:
         for line in f:
             parts = line.split()
@@ -4270,12 +6518,21 @@ def _read_obj(path, color=None):
             if tag == "v":
                 M.add_vertex((float(parts[1]), float(parts[2]),
                               float(parts[3])))
+            elif tag == "vt":
+                vt.append((float(parts[1]), float(parts[2]) if len(parts) > 2
+                           else 0.0))
             elif tag == "f":
                 face = []
+                uv = []
                 for p in parts[1:]:
-                    idx = int(p.split("/")[0])
+                    bits = p.split("/")
+                    idx = int(bits[0])
                     face.append(idx - 1 if idx > 0 else len(M.V) + idx)
-                M.add_face(face, current)
+                    if len(bits) > 1 and bits[1]:
+                        t = int(bits[1])
+                        uv.append(vt[t - 1 if t > 0 else len(vt) + t])
+                textured = len(current) > 4 and len(uv) == len(face)
+                M.add_face(face, current, uv if textured else None)
             elif tag == "mtllib" and color is None:
                 try:
                     materials.update(_read_mtl(folder + parts[1]))
@@ -4287,6 +6544,8 @@ def _read_obj(path, color=None):
 
 
 def _read_mtl(path):
+    """``{material name: colour}``, with opacity (``d`` / ``Tr``) and the
+    texture image (``map_Kd``) kept in the colour tuple."""
     out = {}
     name = None
     with open(path, "r") as f:
@@ -4296,10 +6555,61 @@ def _read_mtl(path):
                 continue
             if parts[0] == "newmtl":
                 name = parts[1]
-            elif parts[0] == "Kd" and name:
+                out[name] = DEFAULT_COLOR
+            elif name is None:
+                continue
+            elif parts[0] == "Kd":
+                c = out[name]
                 out[name] = rgb([float(parts[1]) * 255, float(parts[2]) * 255,
-                                 float(parts[3]) * 255])
+                                 float(parts[3]) * 255] + list(c[3:]))
+            elif parts[0] in ("d", "Tr") and len(parts) > 1:
+                alpha = float(parts[1])
+                if parts[0] == "Tr":
+                    alpha = 1.0 - alpha
+                c = out[name]
+                out[name] = rgb((c[0], c[1], c[2], alpha) + tuple(c[4:5]))
+            elif parts[0] == "map_Kd" and len(parts) > 1:
+                c = out[name]
+                out[name] = rgb((c[0], c[1], c[2], c[3] if len(c) > 3 else 1.0,
+                                 parts[-1]))
     return out
+
+
+def write_png(path, rows):
+    """Write a picture -- a list of rows, each a list of colours -- as a
+    ``.png``, to use as a texture (see :func:`texture`).
+
+    Row 0 is the top of the picture.  Any colour form that :func:`rgb`
+    accepts works, so a 64 x 64 chequerboard is::
+
+        rows = [["white" if (x // 8 + y // 8) % 2 else "black"
+                 for x in range(64)] for y in range(64)]
+        add.write_png("check.png", rows)
+    """
+    import struct
+    import zlib
+    height = len(rows)
+    width = len(rows[0]) if height else 0
+    raw = bytearray()
+    for row in rows:
+        raw.append(0)                                   # filter type "none"
+        for c in row:
+            c = rgb(c)
+            raw.append(c[0])
+            raw.append(c[1])
+            raw.append(c[2])
+
+    def chunk(tag, data):
+        out = struct.pack(">I", len(data)) + tag + data
+        return out + struct.pack(">I", zlib.crc32(tag + data) & 0xffffffff)
+
+    header = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    with open(path, "wb") as f:
+        f.write(b"\x89PNG\r\n\x1a\n")
+        f.write(chunk(b"IHDR", header))
+        f.write(chunk(b"IDAT", zlib.compress(bytes(raw), 6)))
+        f.write(chunk(b"IEND", b""))
+    return path
 
 
 def _read_ply(path, color=None):
@@ -4398,7 +6708,7 @@ def typeset(characters, font, at=(0, 0, 0), size=1.0, spacing=1.0, color=None,
 
 
 # ============================================================================
-# 22. Letters and labels
+# 26. Letters and labels
 # ============================================================================
 # A small stroke font: every character is a few polylines on a grid that is
 # 4 units wide and 6 units tall (Y up).  ``text`` draws them as round bars,
@@ -4579,8 +6889,9 @@ def text(string, at=(0, 0, 0), size=1.0, thickness=None, color=None,
     return widest
 
 
-#: ``add.write`` and ``add.label`` are other names for :func:`text`.
+#: ``add.write`` is another name for :func:`text`.
 write = text
+#: ``add.label`` is another name for :func:`text`.
 label = text
 
 
@@ -4591,7 +6902,7 @@ def glyph(letter, origin, u, v, size=1.0, thickness=0.04, color=None):
 
 
 # ============================================================================
-# 23. add.py 1.2 names
+# 27. add.py 1.2 names
 # ============================================================================
 # Everything below exists so that models written for earlier versions of the
 # course keep running unchanged.  New code should prefer the names on the
@@ -4632,26 +6943,36 @@ def cone2(A, B, r, k, RGB):
     cone_open(A, B, r, k, RGB)
 
 
-#: Other spellings people reach for.
+#: Other spelling of :func:`sphere`.
 ball = sphere
+#: Other spelling of :func:`cuboid`.
 block = cuboid
+#: Other spelling of :func:`cuboid`.
 cuboid3D = cuboid
+#: Other spelling of :func:`revolve`.
 lathe = revolve
+#: Other spelling of :func:`revolve`.
 solid_of_revolution = revolve
+#: Other spelling of :func:`clean`.
 weld = clean
+#: Other spelling of :func:`zoom`.
 scale = zoom
+#: Other spelling of :func:`move`.
 translate = move
+#: Other spelling of :func:`mirror`.
 reflect = mirror
 
 
 # ============================================================================
-# 24. A one-line demonstration
+# 28. A one-line demonstration
 # ============================================================================
 
 def demo(path="demo.off"):
     """Build a small model that exercises most of the library.
 
-    Run ``python add.py`` to produce ``demo.off`` and see the report.
+    Run ``python add.py`` to produce ``demo.off`` and see the report.  The
+    rainbow ring is painted with hundreds of shades; the save reduces them
+    to 50 so that the same model would also upload to Sketchfab as .obj.
     """
     clear()
     axes([0, 0, 0], 3.0)
@@ -4690,7 +7011,7 @@ def demo(path="demo.off"):
                   lambda p: hsv(math.atan2(p[2], p[0]) / (2 * math.pi))))
 
     check()
-    return save(path)
+    return save(path, colors=SKETCHFAB_COLORS)   # the .obj stays Sketchfab-ready
 
 
 if __name__ == "__main__":
@@ -4711,5 +7032,6 @@ __all__ = sorted(name for name, value in list(globals().items())
                  and name not in _REEXPORTED
                  and (callable(value) or name in ("vertices", "faces",
                                                   "COLORS", "PALETTE", "EPS",
-                                                  "DEFAULT_COLOR",
-                                                  "BOOL_EPS")))
+                                                  "DEFAULT_COLOR", "BOOL_EPS",
+                                                  "SURFACES", "SKETCHFAB_MB",
+                                                  "SKETCHFAB_COLORS")))

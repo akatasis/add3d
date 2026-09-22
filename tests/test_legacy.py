@@ -10,7 +10,9 @@ has been edited.
 The test runs every one of them against the current add.py and checks that the
 mesh it produces still has exactly the same number of faces.  Vertex counts
 are allowed to fall, because 2.0 welds the seams inside a primitive, and file
-sizes are allowed to fall, because numbers are written more compactly.
+sizes are allowed to fall, because numbers are written more compactly.  The
+one deliberate change is ``sphere``, which is now geodesic (triangles) --
+the expected count of the model that uses it is adjusted below.
 
     python3 tests/test_legacy.py
 """
@@ -29,7 +31,9 @@ sys.path.insert(0, ROOT)
 EXPECTED = {
     "modelis1.py": {"modelis1.off": None},        # contains axes(): see below
     "modelis2.py": {"modelis2.off": 111000},
-    "modelis3.py": {"modelis3.off": 66816},
+    # modelis3 draws 48 spheres with sphere(c, r, 10, RGB): 600 quads each in
+    # 1.2, 1280 triangles each since 2.0 made the sphere geodesic (+32640).
+    "modelis3.py": {"modelis3.off": 99456},
     "modelis4.py": {"modelis4.off": 78000},
     "checkers_v1.py": {"checkers1.off": None},    # contains axes()
     "checkers_v2.py": {"checkers2.off": 60857},

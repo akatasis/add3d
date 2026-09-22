@@ -1,10 +1,14 @@
 """
-Run every example in this folder and render a picture of each model.
+Run every example in this folder, check every model against the Sketchfab
+limits, and render a picture of each model.
 
-    python3 examples/build_all.py            build models and thumbnails
-    python3 examples/build_all.py --models   models only, no pictures
+    python3 examples/build_all.py            build models, check, thumbnails
+    python3 examples/build_all.py --models   models and the check, no pictures
 
 Output goes to ``examples/out/`` (models) and ``docs/images/`` (pictures).
+The check fails (exit code 1) when a model could not be uploaded to
+Sketchfab as an .obj: more than 50 MB or more than 50 colours (materials).
+Big "fine" variants (``--fine`` in the example) are not built here.
 """
 import os
 import subprocess
@@ -48,6 +52,19 @@ VIEWS = {
     "workbench": (20, 40, 1.5),
     "old_names": (25, 25, 1.6),
     "cross_sections": (15, 25, 2.3),
+    "surface_zoo": (12, 55, 1.2),
+    "knot_curve": (25, 30, 1.1),
+    "kreive1": (25, 30, 1.1),
+    "minecraft_sphere": (8, 22, 1.5),
+    "football": (15, 20, 1.6),
+    "polyhedra": (12, 42, 1.15),
+    "smooth_shapes": (10, 45, 1.5),
+    "vertex_tools": (15, 20, 1.6),
+    "sketchfab_ready": (15, 20, 1.3),
+    "pillow_letters": (20, 20, 1.4),
+    "planet": (20, 25, 1.3, (20, 20, 40)),
+    "geodesic_dome": (25, 22, 1.3),
+    "glass_and_textures": (25, 22, 1.35),
     "example1": (30, 22, 1.0), "example2": (30, 22, 1.0),
     "example3": (30, 28, 1.0), "example4": (20, 12, 1.0),
     "example5": (30, 22, 1.0), "example6": (30, 22, 1.0),
@@ -74,8 +91,9 @@ def main():
         if p.returncode:
             print(p.stderr.decode()[-800:])
 
+    problems = sketchfab_table()
     if models_only:
-        return 0
+        return 1 if problems else 0
 
     from tools import preview
     for model in sorted(os.listdir(OUT)):
@@ -86,13 +104,48 @@ def main():
         turn, tilt, zoom = view[:3]
         background = view[3] if len(view) > 3 else (250, 250, 250)
         t = time.time()
-        preview.render(os.path.join(OUT, model),
+        source = os.path.join(OUT, model)
+        if os.path.exists(source[:-4] + ".obj"):      # textures and glass
+            source = source[:-4] + ".obj"
+        preview.render(source,
                        os.path.join(IMAGES, stem + ".png"),
                        size=(880, 620), turn=turn, tilt=tilt, zoom=zoom,
                        background=background)
         print("%-34s -> docs/images/%s.png  %5.1fs" % (model, stem,
                                                        time.time() - t))
-    return 0
+    return 1 if problems else 0
+
+
+#: Sketchfab: the course wants .obj files under 50 MB with at most 50 colours.
+MAX_MB = 50
+MAX_COLORS = 50
+
+
+def sketchfab_table():
+    """Print one line per model: polygons, colours, .obj size, verdict."""
+    import add
+    problems = []
+    print()
+    print("%-28s %9s %7s %9s  %s" % ("model", "polygons", "colours", ".obj MB",
+                                      "Sketchfab"))
+    for model in sorted(os.listdir(OUT)):
+        if not model.endswith(".off"):
+            continue
+        M = add.load(os.path.join(OUT, model))
+        s = add.stats(M)
+        mb = s["obj_bytes"] / 1e6
+        ok = mb <= MAX_MB and s["colors"] <= MAX_COLORS
+        print("%-28s %9d %7d %9.1f  %s" % (model, s["faces"], s["colors"], mb,
+                                          "ok" if ok else "TOO BIG"))
+        if not ok:
+            problems.append(model)
+    if problems:
+        print("over the Sketchfab limits (%d MB, %d colours):" % (MAX_MB, MAX_COLORS),
+              ", ".join(problems))
+    else:
+        print("every model fits the Sketchfab limits (%d MB, %d colours)"
+              % (MAX_MB, MAX_COLORS))
+    return problems
 
 
 if __name__ == "__main__":

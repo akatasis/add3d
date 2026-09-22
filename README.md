@@ -16,15 +16,15 @@ add.box([0, 0, 0], 2, "red")
 add.sphere([3, 0, 0], 1, 20, "blue")
 add.cylinder([0, 2, 0], [3, 2, 0], 0.3, 24, "gold")
 
-add.check()                      # 2478 polygons, 3 colours, closed surface
+add.check()                      # 5198 polygons, 3 colours, closed surface
 add.save("first_model.off")      # or .obj (+ .mtl), .ply, .stl
 ```
 
 <p align="center">
   <img src="docs/images/lighthouse.png" width="49%" alt="A lighthouse island">
-  <img src="docs/images/locomotive.png" width="49%" alt="A steam locomotive">
-  <img src="docs/images/chess_set.png" width="49%" alt="A chess set">
-  <img src="docs/images/robot.png" width="49%" alt="A robot">
+  <img src="docs/images/football.png" width="49%" alt="A football from an icosahedron">
+  <img src="docs/images/glass_and_textures.png" width="49%" alt="Glass and textures">
+  <img src="docs/images/polyhedra.png" width="49%" alt="The regular polyhedra and what can be made of them">
 </p>
 
 Nobody drew any of these. Each is one short program in
@@ -34,10 +34,11 @@ Nobody drew any of these. Each is one short program in
 
 ## Why
 
-`add.py` was written for a second-year university course in which students
-are given a deliberately awkward assignment: **make a 3D model, but you may
-not touch a modelling program and you may not download a mesh.** Everything
-must be computed by a formula or a loop you wrote yourself.
+`add.py` was written for a university course in which students are given
+a deliberately awkward assignment: **make a 3D model, but you may not touch
+a modelling program and you may not download a mesh.** Everything must be
+computed by a formula or a loop you wrote yourself. It is for students, and
+for anyone who would rather build a shape from mathematics than from menus.
 
 Taking the tools away turns out to make the work more interesting, not less.
 A sphere stops being an icon in a toolbar and becomes three lines of
@@ -69,21 +70,25 @@ registered by someone else -- see [PUBLISHING.md](PUBLISHING.md).)
 
 | | |
 |---|---|
-| **Shapes** | box, cuboid, rounded_box, frame, pyramid, prism, the five Platonic solids, sphere, hemisphere, ellipsoid, torus, capsule, cylinder, tube, cone, frustum, pipe, disc, ring, grid, arrow, helix, voxels |
+| **Shapes** | box, cuboid, rounded_box, frame, pyramid, prism, the five regular polyhedra (`tetrahedron` ... `icosahedron`, each centred on its vertex average), a geodesic `sphere` of triangles, `quadsphere`, hemisphere, ellipsoid, torus, capsule, cylinder, tube, cone, frustum, pipe, disc, ring, grid, arrow, helix, voxels |
 | **Parts** | beam (a bar between two points), arch, stairs, gear, wheel, roof, column, bricks, tree, pixels (pixel art), heightmap (block terrain), wireframe, text (a built-in stroke font with Lithuanian letters) |
-| **Surfaces** | `parametric(S, ...)` for any `S(u, v)`, with seam wrapping, real thickness, two-sided sheets and a *colour function* of `(u, v)` |
+| **Surfaces** | `parametric(S, ...)` for any `S(u, v)`, with seam wrapping, real thickness, two-sided sheets and a *colour function* of `(u, v)`; a catalogue of 25 named surfaces (`surface("klein_bottle", ...)`) |
 | **Sweeps** | `revolve` (a lathe), `sweep` along a 3D path with scaling and twisting, `extrude`, `loft`, `curve` / `polyline` (tubes), `ribbon`, `trace` (the path of a vector field) |
 | **Profiles** | ready-made cross-sections: circle, ellipse, polygon, star, rounded rectangle, gear; `chaikin` corner rounding |
 | **Transforms** | move, rotate about any axis, scale, stretch, mirror, place, fit, aim, ground, align, twist, bend, taper, jitter, and `deform` with any function you like |
 | **Patterns** | `repeat`, linear / grid / radial / mirror arrays, `scatter` on random points, `along` a curve |
 | **Booleans** | `union`, `intersect`, `difference`, `symmetric_difference`, plus the cheaper `cut` with a plane |
+| **Smoothing** | `catmull_clark`, and `smooth` -- the generalised Catmull-Clark algorithm: any number of cells per control edge, every vertex on the limit surface |
+| **Vertex tools** | `set_vertex`, `neighbors`, `valence`, `mean_neighbor_distance`, `edges`, `vertex_normal`, `face_center`, `boundary_loops`, `dual`, `truncate`, `refine`, `spherify`, `inflate` |
 | **Repair** | `clean` (weld, dedupe, remove buried walls), `heal`, `fix_normals`, `triangulate` |
-| **Colour** | named colours, hex, HSV, gradients, and `color_by` for a colour that depends on position |
-| **Files** | write `.off`, `.obj` + `.mtl`, `.ply`, `.stl`; read `.off`, `.obj`, `.ply` |
-| **Checking** | `stats()` and `check()` — polygon count, colours, watertightness, volume |
+| **Colour** | named colours, hex, HSV, gradients, `color_by` for a colour that depends on position, `limit_colors` for a Sketchfab-sized palette |
+| **Glass and pictures** | `transparent` / `opacity` for see-through surfaces and `texture` for image textures, both written to the `.mtl` file; `write_png` for pictures you compute yourself |
+| **Files** | write `.off`, `.obj` + `.mtl`, `.ply`, `.stl`; read `.off`, `.obj`, `.ply`; `obj_size` before writing |
+| **Checking** | `stats()` and `check()` — polygon count, colours, watertightness, volume, and the Sketchfab limits (50 MB, 50 materials) |
 | **Looking** | `tools/preview.py`, a software renderer that also has no dependencies |
 
-178 public names, all documented, in one 4700-line file you can read.
+231 public names, every one documented in English and Lithuanian with a
+runnable example, in one 7000-line file you can read.
 
 ## Boolean operations, from scratch
 
@@ -109,11 +114,33 @@ drill = add.layer()
 add.mesh(add.difference(plate, drill))
 ```
 
+## Smooth surfaces, from a few polygons
+
+A box with a corner pulled out, a letter made of blocks, a dodecahedron —
+any polygon mesh can be treated as the control net of a smooth surface.
+`catmull_clark` is the classical subdivision. `smooth(M, n)` is the
+generalised algorithm described in
+[*Uniform n-grids on Catmull–Clark limit surfaces of arbitrary polygon
+meshes*](paper/): it puts `n` cells on every control edge for **any** `n`
+(classical subdivision only reaches 2, 4, 8, ...), with every new vertex
+exactly on the limit surface and evenly sized cells around the
+extraordinary vertices — a line-by-line port of the reference
+implementation into plain Python, cross-checked against it to 1e-15.
+
+```python
+add.box([0, 0, 0], 2, "gold")
+block = add.layer()
+block = add.set_vertex(block, add.nearest_vertex(block, [1, 1, 1]), [2.5, 2.5, None])
+add.mesh(add.smooth(block, 8))          # 8 cells per edge, colours kept per face
+```
+
 ## Coming from add.py 1.2
 
 Everything still works. Models written for 1.2 run unchanged and produce the
 same faces — twelve of them are in [`tests/legacy/`](tests/legacy/) and the
-test suite checks exactly that. New code can use the clearer names:
+test suite checks exactly that. (One deliberate change: `sphere` is now a
+geodesic sphere of triangles, so a model with spheres has different faces;
+`quadsphere` is the old construction.) New code can use the clearer names:
 `cube2` → `frame`, `cylinder2` → `tube`, `cylinder3` → `cup`,
 `cone2` → `cone_open`, `spin3D` → `revolve`, `off` → `save`.
 
@@ -132,9 +159,21 @@ reaching for a ball, a [voxel island](examples/28_voxel_island.py), [two
 bridges](examples/29_bridge.py), a [solar system](examples/30_solar_system.py)
 with banded planets, a [workbench](examples/31_workbench.py) of measuring
 and repair tools, a [still life](examples/32_old_names.py) in the 1.2
-vocabulary and a [gallery of cross-sections](examples/33_cross_sections.py).
+vocabulary, a [gallery of cross-sections](examples/33_cross_sections.py),
+the [surface zoo](examples/34_surface_zoo.py), a [knotted
+curve](examples/35_knot_curve.py), the [Minecraft
+sphere](examples/36_minecraft_sphere.py) in three constructions, a
+[football](examples/37_football.py) built from the vertices of an
+icosahedron, the [five polyhedra](examples/38_polyhedra.py) with their
+duals, truncations and smooth versions, [smoothing](examples/39_smooth_shapes.py)
+of pulled boxes and prisms, [vertex tools](examples/40_vertex_tools.py), a
+[Sketchfab-ready](examples/41_sketchfab_ready.py) colourful model, [pillow
+letters](examples/42_pillow_letters.py), a [planet](examples/43_planet.py),
+a [geodesic dome](examples/44_geodesic_dome.py) house and [glass and
+textures](examples/45_glass_and_textures.py).
 `python3 tools/coverage.py` lists which example uses which function; every
-public function is used by at least one.
+public function is used by at least one, and every model fits the Sketchfab
+limits (`examples/build_all.py` checks).
 
 ## Repository layout
 
@@ -142,18 +181,20 @@ public function is used by at least one.
 add.py               the library — this is the only file you need
 _src/                the sections add.py is assembled from
 build.py             concatenates _src/*.py into add.py
-examples/            30 commented example programs (18 studies, 12 complete models)
+examples/            42 commented example programs (studies and complete models)
   add.py             a copy of the library, so the examples run as they are
-  build_all.py       runs them all and renders the pictures
+  build_all.py       runs them all, checks the Sketchfab limits, renders the pictures
 tools/
   preview.py         dependency-free software renderer
-  make_docs.py       builds docs/index.html from the docstrings
+  make_docs.py       builds docs/index.html from the docstrings + docs/reference.py
   coverage.py        which example uses which function
 tests/
-  test_add.py        80 unit tests
+  test_add.py        89 unit tests
   test_legacy.py     runs the add.py 1.2 models and checks the face counts
+  test_docs.py       runs the example of every documented function
   legacy/            those models, unedited
 docs/                the documentation site (English and Lithuanian)
+  reference.py       a Lithuanian explanation and an example for every function
 paper/               a paper describing the design and the algorithms
 outreach/            a video script and a talk outline
 slides/              lecture slides
@@ -166,21 +207,28 @@ the repository so that a student only ever needs one file.
 ## Running the tests
 
 ```bash
-python3 tests/test_add.py        # 80 unit tests
+python3 tests/test_add.py        # 89 unit tests
 python3 tests/test_legacy.py     # the add.py 1.2 models
-python3 examples/build_all.py    # every example, plus pictures
+python3 tests/test_docs.py       # the 231 documentation examples
+python3 examples/build_all.py    # every example, the Sketchfab check, pictures
 ```
 
 The unit tests check the analytic volume of every primitive — a sphere
-against 4/3·πr³, a torus against 2π²Rr² — and that every closed shape really
-is closed.
+against 4/3·πr³, a torus against 2π²Rr² — that every closed shape really is
+closed, that the generalised subdivision reproduces classical Catmull–Clark
+for n = 2, 4, 8 and gives Euler characteristic 2 for every n, and that
+`.obj` files round-trip with their opacity and textures. They pass on
+Python 3.8 to 3.13.
 
 ## Sharing a model
 
-`save("model.obj")` writes an `.obj` and a `.mtl`. Put both in one archive
-and upload it to [Sketchfab](https://sketchfab.com) for a model anyone can
-turn around in a browser. For 3D printing, `save("model.stl")` after
-`clean(..., normals=True)`.
+`save("model.obj")` writes an `.obj` and a `.mtl` (plus any texture images
+you used). Put them in one archive and upload it to
+[Sketchfab](https://sketchfab.com) for a model anyone can turn around in a
+browser. Sketchfab accepts up to 100 MB on the free plan and merges
+materials beyond 100; `check()` warns at the course's limits of 50 MB and
+50 colours, and `save("model.obj", colors=50)` reduces a colourful model to
+fit. For 3D printing, `save("model.stl")` after `clean(..., normals=True)`.
 
 ## Publishing
 

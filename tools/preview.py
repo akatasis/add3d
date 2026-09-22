@@ -55,6 +55,67 @@ def write_png(path, width, height, pixels):
     return path
 
 
+def read_png(path):
+    """Read an 8-bit RGB / RGBA / grey PNG: ``(width, height, rows)`` with
+    ``rows[y][x] = (r, g, b)``.  Enough for textures written by
+    ``add.write_png`` and by most image programs (no palettes, no 16-bit)."""
+    with open(path, "rb") as f:
+        data = f.read()
+    if data[:8] != b"\x89PNG\r\n\x1a\n":
+        raise ValueError("not a PNG file: %s" % path)
+    pos = 8
+    width = height = 0
+    depth = ctype = 0
+    idat = bytearray()
+    while pos < len(data):
+        length = struct.unpack(">I", data[pos:pos + 4])[0]
+        tag = data[pos + 4:pos + 8]
+        body = data[pos + 8:pos + 8 + length]
+        pos += 12 + length
+        if tag == b"IHDR":
+            width, height, depth, ctype = struct.unpack(">IIBB", body[:10])
+        elif tag == b"IDAT":
+            idat.extend(body)
+        elif tag == b"IEND":
+            break
+    if depth != 8 or ctype not in (0, 2, 4, 6):
+        raise ValueError("unsupported PNG (need 8-bit grey/RGB/RGBA): %s" % path)
+    channels = {0: 1, 2: 3, 4: 2, 6: 4}[ctype]
+    raw = zlib.decompress(bytes(idat))
+    stride = width * channels
+    rows = []
+    prev = bytearray(stride)
+    at = 0
+    for y in range(height):
+        ftype = raw[at]
+        line = bytearray(raw[at + 1:at + 1 + stride])
+        at += 1 + stride
+        for i in range(stride):
+            a = line[i - channels] if i >= channels else 0
+            b = prev[i]
+            c = prev[i - channels] if i >= channels else 0
+            if ftype == 1:
+                line[i] = (line[i] + a) & 255
+            elif ftype == 2:
+                line[i] = (line[i] + b) & 255
+            elif ftype == 3:
+                line[i] = (line[i] + ((a + b) >> 1)) & 255
+            elif ftype == 4:
+                pa, pb, pc = abs(b - c), abs(a - c), abs(a + b - 2 * c)
+                pred = a if (pa <= pb and pa <= pc) else (b if pb <= pc else c)
+                line[i] = (line[i] + pred) & 255
+        row = []
+        for x in range(width):
+            px = line[x * channels:(x + 1) * channels]
+            if channels >= 3:
+                row.append((px[0], px[1], px[2]))
+            else:
+                row.append((px[0], px[0], px[0]))
+        rows.append(row)
+        prev = line
+    return width, height, rows
+
+
 # ---------------------------------------------------------------------------
 #  Rendering
 # ---------------------------------------------------------------------------
@@ -67,11 +128,23 @@ def render(model, path="preview.png", size=(900, 700), turn=35.0, tilt=22.0,
     ``turn`` and ``tilt`` are the camera angles in degrees, ``zoom`` scales the
     framing, ``light`` is the direction the light comes from.
     """
+    folder = ""
     if isinstance(model, str):
+        folder = os.path.dirname(os.path.abspath(model))
         model = add.load(model)
     M = add.as_mesh(model)
     if not M.F:
         raise ValueError("nothing to render")
+    # Texture images, by file name (a missing picture falls back to colour).
+    images = {}
+    for colour in M.C:
+        if len(colour) > 4 and colour[4] not in images:
+            name = colour[4]
+            try:
+                images[name] = read_png(os.path.join(folder, name)
+                                        if folder else name)
+            except (IOError, OSError, ValueError, KeyError):
+                images[name] = None
 
     width, height = int(size[0]), int(size[1])
     lo, hi = add.bbox(M)
@@ -119,9 +192,13 @@ def render(model, path="preview.png", size=(900, 700), turn=35.0, tilt=22.0,
         return (half_w + v[0] * focal / z, half_h - v[1] * focal / z, z)
 
     triangles = 0
-    for f, colour in zip(M.F, M.C):
+    see_through = []                      # drawn last, far to near, blended
+    for k, (f, colour) in enumerate(zip(M.F, M.C)):
         if len(f) < 3:
             continue
+        alpha = colour[3] if len(colour) > 3 else 1.0
+        image = images.get(colour[4]) if len(colour) > 4 else None
+        uv = M.UV[k] if (image is not None and M.UV is not None) else None
         a3 = M.V[f[0]]
         for t in range(1, len(f) - 1):
             b3, c3 = M.V[f[t]], M.V[f[t + 1]]
@@ -141,14 +218,32 @@ def render(model, path="preview.png", size=(900, 700), turn=35.0, tilt=22.0,
                           project(cam[f[t + 1]]))
             if pa is None or pb is None or pc is None:
                 continue
-            triangles += _raster(pixels, depth, width, height, pa, pb, pc, col)
+            tex = None
+            if uv is not None:
+                tex = (image, uv[0], uv[t], uv[t + 1], shade)
+            if alpha < 1.0:
+                see_through.append(((pa[2] + pb[2] + pc[2]) / 3.0, pa, pb, pc,
+                                    col, alpha, tex))
+                continue
+            triangles += _raster(pixels, depth, width, height, pa, pb, pc, col,
+                                 1.0, tex)
+    see_through.sort(key=lambda item: -item[0])
+    for z, pa, pb, pc, col, alpha, tex in see_through:
+        triangles += _raster(pixels, depth, width, height, pa, pb, pc, col,
+                             alpha, tex)
 
     write_png(path, width, height, pixels)
     return path
 
 
-def _raster(pixels, depth, width, height, a, b, c, col):
-    """Fill one triangle with a z-buffer test."""
+def _raster(pixels, depth, width, height, a, b, c, col, alpha=1.0, tex=None):
+    """Fill one triangle with a z-buffer test.
+
+    A see-through triangle (``alpha`` < 1) is blended over what is already
+    there and does not write to the depth buffer.  ``tex`` is
+    ``(image, uv_a, uv_b, uv_c, shade)`` for a textured triangle: the colour
+    is then looked up in the image (nearest texel, repeating).
+    """
     minx = max(0, int(math.floor(min(a[0], b[0], c[0]))))
     maxx = min(width - 1, int(math.ceil(max(a[0], b[0], c[0]))))
     miny = max(0, int(math.floor(min(a[1], b[1], c[1]))))
@@ -176,8 +271,23 @@ def _raster(pixels, depth, width, height, a, b, c, col):
             i = row + x
             if z >= depth[i]:
                 continue
-            depth[i] = z
             j = i * 3
+            if tex is not None:
+                image, ua, ub, uc, shade = tex
+                tw, th, rows = image
+                u = w0 * ua[0] + w1 * ub[0] + w2 * uc[0]
+                v = w0 * ua[1] + w1 * ub[1] + w2 * uc[1]
+                texel = rows[int((1.0 - v) * th) % th][int(u * tw) % tw]
+                r = min(255, int(texel[0] * shade))
+                g = min(255, int(texel[1] * shade))
+                bl = min(255, int(texel[2] * shade))
+            if alpha < 1.0:
+                keep = 1.0 - alpha
+                pixels[j] = int(pixels[j] * keep + r * alpha)
+                pixels[j + 1] = int(pixels[j + 1] * keep + g * alpha)
+                pixels[j + 2] = int(pixels[j + 2] * keep + bl * alpha)
+                continue
+            depth[i] = z
             pixels[j] = r
             pixels[j + 1] = g
             pixels[j + 2] = bl

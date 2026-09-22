@@ -10,7 +10,7 @@ descriptions come from the source and are in English; ``SHORT`` below gives
 each function a one-line Lithuanian description for the Lithuanian view.
 """
 
-VERSION = "2.1"
+VERSION = "2.0"
 
 #: Where the project lives.  The module is ``add.py``; the repository and the
 #: distribution are called ``add3d`` because plain "add" is taken on PyPI.
@@ -527,6 +527,114 @@ add.wireframe(add.polyhedron("icosahedron"), 0.03)          # every edge as a ba
 ```
 
 !vector_fields.png|Lorenz, Rössler, an arrow field, beads on a helix.
+
+## I want a regular polyhedron, a football, a geodesic dome
+
+The five Platonic solids are one call each (`tetrahedron`, `cube` via
+`polyhedron("cube")`, `octahedron`, `dodecahedron`, `icosahedron`), all
+centred so that the average of their vertices is exactly the centre, and
+`polyhedron_points` gives just the coordinates. `truncate` cuts the corners
+off (the icosahedron becomes the football), `dual` swaps faces and
+vertices, `refine` + `spherify` turns any of them into a geodesic dome, and
+`sphere` itself is now such a dome: an icosahedron split and pushed out
+onto the sphere, all triangles nearly equal.
+
+```
+ico = add.make(add.icosahedron, [0, 0, 0], 3, "white")
+ball = add.truncate(ico, 1 / 3.0, "black")               # 12 pentagons, 20 hexagons
+ball = add.color_by_sides(ball, {5: "black", 6: "white"})
+add.mesh(add.smooth(ball, 12))                           # and round it off
+add.mesh(add.spherify(add.refine(add.make(add.octahedron, [7, 0, 0], 3), 3)))
+```
+
+!football.png|A football from the vertices of an icosahedron, flat and smoothed.
+
+## I want to round a shape off
+
+Build a coarse shape -- a box with a corner pulled out, a letter from a few
+blocks, a dodecahedron -- and treat it as the *control net* of a smooth
+surface. `catmull_clark(M, steps)` is the classical subdivision; `smooth(M,
+n)` is the generalised algorithm: `n` cells on every control edge for *any*
+`n`, all the new vertices exactly on the smooth limit surface, evenly sized
+cells near the odd corners, and every cell keeps the colour of the face it
+came from.
+
+```
+add.box([0, 0, 0], 2, "gold")
+block = add.layer()
+i = add.nearest_vertex(block, [1, 1, 1])
+block = add.set_vertex(block, i, [2.5, 2.5, None])      # move one corner, keep z
+add.mesh(add.smooth(block, 8))
+```
+
+!smooth_shapes.png|A pulled box rounded off; one prism with n = 1 ... 7; a flat star with and without the uniform grid.
+
+## I want a Klein bottle
+
+Twenty-five classical surfaces are in the catalogue: `add.surface_names()`
+lists them and `add.surface(name, center, size, grid, color)` draws one,
+scaled to `size`. `add.surface_function(name)` gives you the bare formula
+for `parametric` when you want your own range or colouring.
+
+```
+add.surface("klein_bottle", [0, 0, 0], 4, 120, "teal")
+add.surface("dini", [6, 0, 0], 4, color=lambda u, v: add.hsv(u / 12))
+```
+
+!surface_zoo.png|All twenty-five named surfaces.
+
+## I want to know a vertex's neighbours
+
+`neighbors(M, i)` (in order around the vertex), `valence(M, i)`,
+`mean_neighbor_distance(M, i)`, `edges(M)`, `mean_edge_length(M)`,
+`vertex_normal`, `face_center`, `face_normal`, `boundary_loops` -- the
+questions you need answered to build on the vertices of an icosahedron or
+a dodecahedron:
+
+```
+ico = add.make(add.icosahedron, [0, 0, 0], 2)
+for i, p in enumerate(ico.V):
+    n = add.vertex_normal(ico, i)
+    tip = [p[a] + n[a] for a in range(3)]
+    add.cone(p, tip, 0.25 * add.mean_neighbor_distance(ico, i), 8,
+             "red" if add.valence(ico, i) == 5 else "blue")
+```
+
+!vertex_tools.png|A buckyball, a spiky virus, a stellated dodecahedron, a cage with its dual.
+
+## I want to upload it to Sketchfab
+
+Sketchfab takes `.obj` + `.mtl` (zip them together). Two limits matter:
+the file size (100 MB on the free plan -- the course asks for 50) and the
+number of materials, which is the number of distinct colours (100 at most;
+50 to be safe). `check()` reports both. Gradients easily make thousands of
+shades; `limit_colors(M, 50)` groups them, or `save("x.obj", colors=50)`
+does it while saving, and `obj_size(M)` tells the size before writing.
+
+```
+model = add.limit_colors(add.layer(), 50)
+add.check(model)
+add.save("model.obj", model)
+```
+
+## I want glass, or a picture on a wall
+
+`transparent(colour, alpha)` is a see-through colour that works wherever a
+colour does; `opacity(M, alpha)` makes a finished part see-through. Both go
+into the `.mtl` file (`d`). `texture(M, "picture.png", mapping)` wraps an
+image around a part (`map_Kd`), with box, planar, spherical or cylindrical
+mapping; `write_png` writes a picture you computed yourself. `.off` files
+keep plain colours, so old models are unchanged.
+
+```
+glass = add.transparent("sky", 0.35)
+add.cuboid([0, 1.5, 2], [2, 1.2, 0.05], glass)                 # a window
+wall = add.make(add.cuboid, [0, 1.5, 0], [6, 3, 0.3])
+add.mesh(add.texture(wall, "bricks.png", "box", scale=1.5))
+add.save("house.obj")                                          # + house.mtl
+```
+
+!glass_and_textures.png|A fish tank, a brick house with glass windows and a textured globe.
 """),
 "lt": ("""# Receptai
 
@@ -723,19 +831,130 @@ add.wireframe(add.polyhedron("icosahedron"), 0.03)          # kiekviena briauna 
 ```
 
 !vector_fields.png|Lorencas, Rösleris, rodyklių laukas, karoliukai ant spiralės.
+
+## Noriu taisyklingojo briaunainio, futbolo kamuolio, geodezinio kupolo
+
+Penki Platono kūnai -- po vieną kvietimą (`tetrahedron`, `cube` per
+`polyhedron("cube")`, `octahedron`, `dodecahedron`, `icosahedron`), visi
+sucentruoti taip, kad viršūnių vidurkis būtų lygiai centras, o
+`polyhedron_points` duoda vien koordinates. `truncate` nupjauna kampus
+(ikosaedras virsta futbolo kamuoliu), `dual` sukeičia sienas ir viršūnes,
+`refine` + `spherify` iš bet kurio padaro geodezinį kupolą, o pati `sphere`
+dabar ir yra toks kupolas: ikosaedras, padalytas ir išstumtas ant sferos,
+visi trikampiai beveik lygūs.
+
+```
+ico = add.make(add.icosahedron, [0, 0, 0], 3, "white")
+ball = add.truncate(ico, 1 / 3.0, "black")               # 12 penkiakampių, 20 šešiakampių
+ball = add.color_by_sides(ball, {5: "black", 6: "white"})
+add.mesh(add.smooth(ball, 12))                           # ir suapvaliname
+add.mesh(add.spherify(add.refine(add.make(add.octahedron, [7, 0, 0], 3), 3)))
+```
+
+!football.png|Futbolo kamuolys iš ikosaedro viršūnių: plokščias ir suapvalintas.
+
+## Noriu suapvalinti formą
+
+Sukurkite grubią formą -- dėžę su ištrauktu kampu, raidę iš kelių blokų,
+dodekaedrą -- ir laikykite ją glotnaus paviršiaus *kontroliniu tinklu*.
+`catmull_clark(M, steps)` yra klasikinis dalijimas; `smooth(M, n)` --
+apibendrintas algoritmas: ant kiekvienos kontrolinės briaunos `n` langelių
+*bet kokiam* `n`, visos naujos viršūnės tiksliai ant ribinio paviršiaus,
+vienodo dydžio langeliai prie ypatingųjų kampų, o kiekvienas langelis
+išlaiko sienos, iš kurios kilo, spalvą.
+
+```
+add.box([0, 0, 0], 2, "gold")
+block = add.layer()
+i = add.nearest_vertex(block, [1, 1, 1])
+block = add.set_vertex(block, i, [2.5, 2.5, None])      # pastumiame kampą, z paliekame
+add.mesh(add.smooth(block, 8))
+```
+
+!smooth_shapes.png|Ištraukto kampo dėžė suapvalinta; ta pati prizmė su n = 1 ... 7; plokščia žvaigždė su tolygiu tinklu ir be jo.
+
+## Noriu Kleino butelio
+
+Kataloge -- dvidešimt penki klasikiniai paviršiai: `add.surface_names()`
+juos išvardija, `add.surface(vardas, centras, dydis, tinklelis, spalva)`
+nupiešia, sumastelintą iki `size`. `add.surface_function(vardas)` duoda
+gryną formulę funkcijai `parametric`, kai norite savos srities ar spalvinimo.
+
+```
+add.surface("klein_bottle", [0, 0, 0], 4, 120, "teal")
+add.surface("dini", [6, 0, 0], 4, color=lambda u, v: add.hsv(u / 12))
+```
+
+!surface_zoo.png|Visi dvidešimt penki vardiniai paviršiai.
+
+## Noriu žinoti viršūnės kaimynes
+
+`neighbors(M, i)` (eilės tvarka aplink viršūnę), `valence(M, i)`,
+`mean_neighbor_distance(M, i)`, `edges(M)`, `mean_edge_length(M)`,
+`vertex_normal`, `face_center`, `face_normal`, `boundary_loops` -- atsakymai
+į klausimus, kurių reikia statant ant ikosaedro ar dodekaedro viršūnių:
+
+```
+ico = add.make(add.icosahedron, [0, 0, 0], 2)
+for i, p in enumerate(ico.V):
+    n = add.vertex_normal(ico, i)
+    tip = [p[a] + n[a] for a in range(3)]
+    add.cone(p, tip, 0.25 * add.mean_neighbor_distance(ico, i), 8,
+             "red" if add.valence(ico, i) == 5 else "blue")
+```
+
+!vertex_tools.png|Fulerenas, spygliuotas virusas, žvaigždinis dodekaedras, narvas su dualiuoju kūnu viduje.
+
+## Noriu įkelti į Sketchfab
+
+Sketchfab priima `.obj` + `.mtl` (suarchyvuokite kartu). Svarbūs du
+apribojimai: failo dydis (nemokamame plane 100 MB -- kursas prašo 50) ir
+medžiagų skaičius, kuris lygus skirtingų spalvų skaičiui (daugiausia 100;
+50 saugu). `check()` praneša abu. Gradientai lengvai padaro tūkstančius
+atspalvių; `limit_colors(M, 50)` juos sugrupuoja, `save("x.obj",
+colors=50)` tai padaro įrašant, o `obj_size(M)` pasako dydį dar prieš
+rašant failą.
+
+```
+model = add.limit_colors(add.layer(), 50)
+add.check(model)
+add.save("modelis.obj", model)
+```
+
+## Noriu stiklo arba paveikslo ant sienos
+
+`transparent(spalva, alpha)` -- permatoma spalva, tinkanti visur, kur
+tinka spalva; `opacity(M, alpha)` padaro permatomą jau sukurtą detalę.
+Abu įrašomi į `.mtl` failą (`d`). `texture(M, "paveikslas.png",
+mapping)` apvynioja detalę paveikslėliu (`map_Kd`) -- dėžės, plokštumos,
+sferos ar cilindro atvaizdžiu; `write_png` įrašo patį paskaičiuotą
+paveikslėlį. `.off` failuose lieka paprastos spalvos, todėl seni modeliai
+nesikeičia.
+
+```
+glass = add.transparent("sky", 0.35)
+add.cuboid([0, 1.5, 2], [2, 1.2, 0.05], glass)                 # langas
+wall = add.make(add.cuboid, [0, 1.5, 0], [6, 3, 0.3])
+add.mesh(add.texture(wall, "bricks.png", "box", scale=1.5))
+add.save("namas.obj")                                          # + namas.mtl
+```
+
+!glass_and_textures.png|Akvariumas, plytų namas su stiklo langais ir tekstūruotas gaublys.
 """),
 }),
 
 ("upgrade", {
 "en": ("""# Coming from add.py 1.2
 
-**Everything still works.** Models written for 1.2 run on 2.1 unchanged and
+**Everything still works.** Models written for 1.2 run on 2.0 unchanged and
 produce the same faces; twelve of them are in `tests/legacy/` and the test
-suite checks exactly that on every commit.
+suite checks exactly that on every commit. (The one deliberate change:
+`sphere` is now made of triangles, so a model with spheres has more, and
+different, faces than before -- see below.)
 
 The old names are all still there. New code can use the clearer ones:
 
-| add.py 1.2 | add.py 2.1 | what it is |
+| add.py 1.2 | add.py 2.0 | what it is |
 |---|---|---|
 | `cube(c, e, RGB)` | `box` | a cube |
 | `rectangle3D(c, e, RGB)` | `cuboid` | a rectangular block |
@@ -754,24 +973,46 @@ strings, and `layer()` still returns something you can index as `M[0]` and
 and `examples/32_old_names.py` is a whole model written in the 1.2
 vocabulary.
 
-## What is new in 2.1
+## What is new in 2.0
 
+* **Boolean operations** written from scratch: `union`, `intersect`,
+  `difference`, `symmetric_difference`, and the cheap `cut`.
 * **Only `import add`**: `math` and `random` are re-exported.
+* **The five regular polyhedra**, centred: `tetrahedron`, `octahedron`,
+  `dodecahedron`, `icosahedron`, `polyhedron("cube")`, `polyhedron_points`.
+* **A geodesic `sphere`** built from triangles (the observatory dome
+  principle); the old quad sphere is `quadsphere`.
+* **Smooth surfaces**: `catmull_clark`, and `smooth` -- the generalised
+  Catmull-Clark algorithm with any number of cells per edge.
+* **Vertex tools**: `set_vertex`, `neighbors`, `valence`,
+  `mean_neighbor_distance`, `edges`, `vertex_normal`, `face_center`,
+  `dual`, `truncate`, `refine`, `spherify`, `inflate` ...
+* **A catalogue of 25 named surfaces**: `surface("klein_bottle", ...)`.
+* **Sketchfab-ready files**: `limit_colors`, `obj_size`, `save(...,
+  colors=50)`, and `check()` reports the size and colour limits.
+* **Glass and pictures**: `transparent`, `opacity`, `texture`, `write_png`
+  -- written to the `.mtl` file of an `.obj` model.
 * **Colour functions** on `parametric`, `revolve`, `sweep`, `curve`,
   `polyline` and `grid`.
 * **Parts**: `beam`, `rounded_box`, `hemisphere`, `arch`, `stairs`, `gear`,
   `wheel`, `roof`, `column`, `bricks`, `tree`, `pixels`, `heightmap`,
   `polyline`, `wireframe`, `flow`, `trace`.
-* **Placing**: `aim`, `ground`, `align`, `random_points`, `scatter`, `along`.
+* **Placing**: `aim`, `ground`, `align`, `random_points`, `scatter`, `along`,
+  and `make` to build any part as a separate mesh.
 * **Profiles and helpers**: `profile_circle/ellipse/polygon/star/rect/gear`,
   `chaikin`, `points_on_line/circle/helix/spiral/curve`, `lerp`, `clamp`,
   `remap`, `distance`, `midpoint`, `direction`, `rotate_point`, `shade`.
 * **Labels**: `text` with a built-in font (Lithuanian letters included);
-  the 2.0 function that laid out *loaded* letter meshes is now `typeset`.
-* `inside(M, points)` accepts a list of points; `check()` reports
-  "touching edges" separately from open edges.
+  loaded letter meshes are laid out with `typeset`.
+* **Repair and checking**: `clean`, `heal`, `fix_normals`, `stats`,
+  `check`; four file formats; a dependency-free renderer in `tools/`.
 
-## Two things that did change
+## Three things that did change
+
+`sphere(center, r, k, color)` is now a geodesic sphere of triangles: `k`
+still sets the detail (k=10 gives 1280 triangles, k=20 gives 5120), but the
+faces are different from the old `6*k*k` quads. The old construction is
+`quadsphere` with exactly the same arguments.
 
 `example1()` ... `example8()` no longer live inside `add.py`; they are in
 `examples/20_classic_1_2.py`. This keeps the module to shapes and tools.
@@ -781,13 +1022,15 @@ meshes, so a model that calls `axes()` has a slightly different face count.
 """),
 "lt": ("""# Pereinant nuo add.py 1.2
 
-**Viskas veikia kaip veikę.** 1.2 versijai rašyti modeliai 2.1 versijoje
+**Viskas veikia kaip veikę.** 1.2 versijai rašyti modeliai 2.0 versijoje
 paleidžiami nepakeisti ir duoda tas pačias sienas; dvylika jų guli
-`tests/legacy/` aplanke, ir testai tikrina būtent tai.
+`tests/legacy/` aplanke, ir testai tikrina būtent tai. (Vienintelis
+sąmoningas pokytis: `sphere` dabar sudaryta iš trikampių, todėl modelis su
+sferomis turi daugiau ir kitokių sienų -- žr. žemiau.)
 
 Seni vardai niekur nedingo. Naujame kode verta rinktis aiškesnius:
 
-| add.py 1.2 | add.py 2.1 | kas tai |
+| add.py 1.2 | add.py 2.0 | kas tai |
 |---|---|---|
 | `cube(c, e, RGB)` | `box` | kubas |
 | `rectangle3D(c, e, RGB)` | `cuboid` | stačiakampis gretasienis |
@@ -805,25 +1048,48 @@ sąrašai, o `layer()` grąžina tai, ką galima indeksuoti `M[0]` ir `M[1]`.
 `example1()` ... `example8()` gyvena `examples/20_classic_1_2.py`, o
 `examples/32_old_names.py` -- ištisas modelis, parašytas 1.2 žodynu.
 
-## Kas naujo 2.1 versijoje
+## Kas naujo 2.0 versijoje
 
+* **Loginės operacijos**, parašytos nuo nulio: `union`, `intersect`,
+  `difference`, `symmetric_difference` ir pigus `cut`.
 * **Užtenka `import add`**: `math` ir `random` eksportuojami iš modulio.
+* **Penki taisyklingieji briaunainiai**, sucentruoti: `tetrahedron`,
+  `octahedron`, `dodecahedron`, `icosahedron`, `polyhedron("cube")`,
+  `polyhedron_points`.
+* **Geodezinė `sphere`** iš trikampių (observatorijos kupolo principu);
+  senoji keturkampių sfera -- `quadsphere`.
+* **Glotnūs paviršiai**: `catmull_clark` ir `smooth` -- apibendrintas
+  Catmull–Clark algoritmas su bet kokiu langelių skaičiumi ant briaunos.
+* **Viršūnių įrankiai**: `set_vertex`, `neighbors`, `valence`,
+  `mean_neighbor_distance`, `edges`, `vertex_normal`, `face_center`,
+  `dual`, `truncate`, `refine`, `spherify`, `inflate` ...
+* **25 vardinių paviršių katalogas**: `surface("klein_bottle", ...)`.
+* **Sketchfab tinkami failai**: `limit_colors`, `obj_size`, `save(...,
+  colors=50)`, o `check()` praneša dydžio ir spalvų ribas.
+* **Stiklas ir paveikslėliai**: `transparent`, `opacity`, `texture`,
+  `write_png` -- įrašomi į `.obj` modelio `.mtl` failą.
 * **Spalvų funkcijos** funkcijoms `parametric`, `revolve`, `sweep`, `curve`,
   `polyline` ir `grid`.
 * **Detalės**: `beam`, `rounded_box`, `hemisphere`, `arch`, `stairs`, `gear`,
   `wheel`, `roof`, `column`, `bricks`, `tree`, `pixels`, `heightmap`,
   `polyline`, `wireframe`, `flow`, `trace`.
 * **Išdėstymas**: `aim`, `ground`, `align`, `random_points`, `scatter`,
-  `along`.
+  `along`, ir `make` bet kuriai detalei sukurti kaip atskirą tinklą.
 * **Profiliai ir pagalbininkai**: `profile_circle/ellipse/polygon/star/rect/gear`,
   `chaikin`, `points_on_line/circle/helix/spiral/curve`, `lerp`, `clamp`,
   `remap`, `distance`, `midpoint`, `direction`, `rotate_point`, `shade`.
-* **Užrašai**: `text` su įmontuotu šriftu (yra lietuviškos raidės); 2.0
-  funkcija, dėliojusi *įkeltas* raidžių figūras, dabar vadinasi `typeset`.
-* `inside(M, taškai)` priima taškų sąrašą; `check()` „touching edges“
-  praneša atskirai nuo atvirų briaunų.
+* **Užrašai**: `text` su įmontuotu šriftu (yra lietuviškos raidės); įkeltų
+  raidžių figūros dėliojamos su `typeset`.
+* **Taisymas ir tikrinimas**: `clean`, `heal`, `fix_normals`, `stats`,
+  `check`; keturi failų formatai; `tools/` aplanke -- atvaizdavimo įrankis be
+  priklausomybių.
 
-## Du dalykai, kurie pasikeitė
+## Trys dalykai, kurie pasikeitė
+
+`sphere(centras, r, k, spalva)` dabar yra geodezinė sfera iš trikampių: `k`
+tebenurodo detalumą (k=10 duoda 1280 trikampių, k=20 -- 5120), bet sienos
+kitokios nei senieji `6*k*k` keturkampiai. Senoji konstrukcija -- `quadsphere`
+su lygiai tais pačiais argumentais.
 
 `example1()` ... `example8()` nebegyvena `add.py` viduje -- jie perkelti į
 `examples/20_classic_1_2.py`. Taip modulyje liko tik figūros ir įrankiai.
@@ -856,8 +1122,11 @@ inputs was not closed. Check both with `add.check()` before combining them.
 Surfaces made with `parametric` are open sheets unless you give them
 `thickness` or wrap them (`wrap_u`, `wrap_v`).
 
-**Does it do textures?** No. Colour is per face. That is enough for the kind
-of model this library is for, and it keeps the file format simple.
+**Does it do textures and glass?** Yes, since 2.0: `texture(M, "picture.png")`
+wraps an image around a part and `transparent(colour, alpha)` makes a colour
+see-through; both are written to the `.mtl` file of an `.obj` model
+(`map_Kd` and `d`). Colour is still per face, and `.off` files keep plain
+colours, so nothing changes for a model that uses neither.
 
 **Can I use it in my own project?** Yes, MIT licence. Attribution is welcome
 but not required.
@@ -897,8 +1166,12 @@ neuždaras buvo vienas iš pradinių kūnų. Prieš jungdami patikrinkite abu su
 `add.check()`. Su `parametric` sukurti paviršiai yra atviri lakštai, nebent
 duosite jiems `thickness` arba uždarysite (`wrap_u`, `wrap_v`).
 
-**Ar yra tekstūros?** Ne. Spalva priskiriama sienai. Tokio tipo modeliams to
-pakanka, o failo formatas lieka paprastas.
+**Ar yra tekstūros ir stiklas?** Taip, nuo 2.0: `texture(M, "paveikslas.png")`
+apvynioja detalę paveikslėliu, o `transparent(spalva, alpha)` padaro spalvą
+permatomą; abu įrašomi į `.obj` modelio `.mtl` failą (`map_Kd` ir `d`).
+Spalva ir toliau priskiriama sienai, o `.off` failuose lieka paprastos
+spalvos, todėl modeliui, kuris nei vieno, nei kito nenaudoja, niekas
+nesikeičia.
 
 **Ar galiu naudoti savo projekte?** Taip, MIT licencija. Nuoroda į autorių
 maloni, bet neprivaloma.
@@ -1038,6 +1311,58 @@ GALLERY = [
     ("example7.png", "20_classic_1_2.py",
      "A ball-and-stick buckyball (from add.py 1.2).",
      "Fulerenas iš rutuliukų ir strypelių (iš add.py 1.2)."),
+    ("surface_zoo.png", "34_surface_zoo.py",
+     "The surface zoo: all twenty-five named surfaces of the catalogue, "
+     "labelled.",
+     "Paviršių zoologijos sodas: visi dvidešimt penki katalogo paviršiai su "
+     "užrašais."),
+    ("knot_curve.png", "35_knot_curve.py",
+     "An epicyclic knot: a sum of rotating circles drawn as a closed tube "
+     "of 60 000 quads.",
+     "Epiciklinis mazgas: besisukančių apskritimų suma, nubraižyta kaip "
+     "uždaras 60 000 keturkampių vamzdis."),
+    ("minecraft_sphere.png", "36_minecraft_sphere.py",
+     "Three spheres: the Maple cube-sphere, a ball of blocks, and the "
+     "geodesic sphere.",
+     "Trys sferos: Maple kubo sfera, kubelių rutulys ir geodezinė sfera."),
+    ("football.png", "37_football.py",
+     "A football built from the vertices of an icosahedron -- flat panels "
+     "and the smoothed ball.",
+     "Futbolo kamuolys iš ikosaedro viršūnių -- plokšti skydeliai ir "
+     "suapvalintas kamuolys."),
+    ("polyhedra.png", "38_polyhedra.py",
+     "The five Platonic solids, their duals, truncations, geodesic domes "
+     "and smooth limit surfaces.",
+     "Penki Platono kūnai, jų dualieji kūnai, nupjovimai, geodeziniai "
+     "kupolai ir glotnūs ribiniai paviršiai."),
+    ("smooth_shapes.png", "39_smooth_shapes.py",
+     "Generalised Catmull-Clark: a pulled box rounded off, n = 1 ... 7 on "
+     "one prism, uniform and plain grids on a star.",
+     "Apibendrintas Catmull–Clark: suapvalinta ištraukto kampo dėžė, n = 1 "
+     "... 7 ant vienos prizmės, tolygus ir paprastas tinklas ant žvaigždės."),
+    ("vertex_tools.png", "40_vertex_tools.py",
+     "Building on vertices, edges and faces: a buckyball, a spiky virus, a "
+     "stellated dodecahedron, a cage with its dual inside.",
+     "Statyba ant viršūnių, briaunų ir sienų: fulerenas, spygliuotas "
+     "virusas, žvaigždinis dodekaedras, narvas su dualiuoju kūnu."),
+    ("sketchfab_ready.png", "41_sketchfab_ready.py",
+     "Thousands of shades reduced to fifty materials for Sketchfab.",
+     "Tūkstančiai atspalvių, sumažinti iki penkiasdešimties medžiagų "
+     "Sketchfab."),
+    ("pillow_letters.png", "42_pillow_letters.py",
+     "Pillow letters: blocks united and rounded into cushions.",
+     "Pagalvinės raidės: sujungti blokai, suapvalinti į pagalvėles."),
+    ("planet.png", "43_planet.py",
+     "A planet with craters, an ocean, a ring and two rocky moons.",
+     "Planeta su krateriais, vandenynu, žiedu ir dviem uolėtais mėnuliais."),
+    ("geodesic_dome.png", "44_geodesic_dome.py",
+     "A geodesic dome house: panels, struts, hubs and a door.",
+     "Geodezinio kupolo namas: skydai, statramsčiai, mazgai ir durys."),
+    ("glass_and_textures.png", "45_glass_and_textures.py",
+     "Glass and pictures: a fish tank, a brick house with windows and a "
+     "textured globe (rendered from the .obj).",
+     "Stiklas ir paveikslėliai: akvariumas, plytų namas su langais ir "
+     "tekstūruotas gaublys (atvaizduota iš .obj)."),
 ]
 
 # --------------------------------------------------------------------------
@@ -1241,4 +1566,43 @@ SHORT = {
 "DEFAULT_COLOR": "Spalva, naudojama, kai jokia nenurodyta.",
 "vertices": "Dabartinės scenos viršūnės senuoju eilučių pavidalu.",
 "faces": "Dabartinės scenos sienos senuoju eilučių pavidalu.",
+}
+
+
+# --------------------------------------------------------------------------
+#  Lithuanian names of the reference sections (keyed by the English title
+#  as it appears in add.py's section headers, without the number)
+# --------------------------------------------------------------------------
+
+SECTION_TITLES_LT = {
+    "Constants": "Konstantos",
+    "Small helpers -- vectors and colours": "Pagalbinės funkcijos -- vektoriai ir spalvos",
+    "Mesh -- the one data structure in this library": "Mesh -- vienintelė bibliotekos duomenų struktūra",
+    "The current scene (the \"default layer\")": "Dabartinė scena (numatytasis sluoksnis)",
+    "Building blocks used by every shape below": "Statybiniai blokai, naudojami visų figūrų",
+    "Flat shapes": "Plokščios figūros",
+    "Boxes and other flat-sided solids": "Dėžės ir kiti plokščiasieniai kūnai",
+    "The five regular polyhedra (Platonic solids)": "Penki taisyklingieji briaunainiai (Platono kūnai)",
+    "Numbers, points and 2D profiles": "Skaičiai, taškai ir 2D profiliai",
+    "Round solids": "Apvalūs kūnai",
+    "Coordinate axes": "Koordinačių ašys",
+    "Parts that models keep needing": "Detalės, kurių modeliams nuolat reikia",
+    "Parametric surfaces": "Parametriniai paviršiai",
+    "Curves, sweeps and lofts -- \"copy, turn, stretch a cross-section\"":
+        "Kreivės, šlavimai ir loftai -- „kopijuok, pasuk, ištempk skerspjūvį“",
+    "A catalogue of named surfaces": "Vardinių paviršių katalogas",
+    "Measuring a mesh": "Tinklo matavimas",
+    "Moving, turning and reshaping a mesh": "Tinklo stūmimas, sukimas ir formos keitimas",
+    "Colour": "Spalva",
+    "Copies and patterns": "Kopijos ir raštai",
+    "Placing parts: aim, scatter, line up": "Detalių išdėstymas: nukreipti, išbarstyti, sustatyti",
+    "Repairing a model": "Modelio taisymas",
+    "Looking at a model": "Modelio apžiūra",
+    "Vertices, edges and neighbours": "Viršūnės, briaunos ir kaimynės",
+    "Boolean operations: union, intersection, difference": "Loginės operacijos: sąjunga, sankirta, skirtumas",
+    "Smooth surfaces: Catmull-Clark and uniform n-grids": "Glotnūs paviršiai: Catmull–Clark ir tolygūs n-tinklai",
+    "Saving and loading": "Įrašymas ir įkėlimas",
+    "Letters and labels": "Raidės ir užrašai",
+    "add.py 1.2 names": "add.py 1.2 vardai",
+    "A one-line demonstration": "Demonstracija viena eilute",
 }

@@ -99,5 +99,6 @@ for bx in range(BLOCKS):
             add.mesh(add.move(piece, [x0 + rng.uniform(0.7, 2.3), 0,
                                       z0 + rng.uniform(0.7, 2.3)]))
 
+add.mesh(add.limit_colors(add.layer(), 50))   # at most 50 colours, so the .obj suits Sketchfab
 add.check()
 add.save("city.off")

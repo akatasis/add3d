@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.join(ROOT, "docs"))
 sys.path.insert(0, ROOT)
 
 import content                                                    # noqa: E402
+import reference                                                  # noqa: E402
 
 SOURCE = os.path.join(ROOT, "add.py")
 OUTPUT = os.path.join(ROOT, "docs", "index.html")
@@ -257,9 +258,21 @@ def docstring_html(doc, skip_summary=True):
                        'title="copy">&#128203;</button><code>%s</code></pre>'
                        % html.escape("\n".join(block)))
             continue
+        if lines[i].strip().startswith("* "):
+            items = []
+            while i < len(lines) and lines[i].strip():
+                if lines[i].strip().startswith("* "):
+                    items.append(lines[i].strip()[2:])
+                else:
+                    items[-1] += " " + lines[i].strip()
+                i += 1
+            out.append("<ul>%s</ul>" % "".join(
+                "<li>%s</li>" % inline(re.sub(r"::$", ":", t)) for t in items))
+            continue
         para = []
         while i < len(lines) and lines[i].strip() \
-                and len(lines[i]) - len(lines[i].lstrip()) < 4:
+                and len(lines[i]) - len(lines[i].lstrip()) < 4 \
+                and not lines[i].strip().startswith("* "):
             para.append(lines[i].strip())
             i += 1
         text = " ".join(para)
@@ -549,50 +562,82 @@ def _reference_section(api):
            % (content.UI["search"]["en"], content.UI["search"]["en"])]
     used = coverage.usage()
     for title, entries in api:
-        out.append('<div class="api-group"><h3>%s</h3>' % html.escape(title))
+        number, _, name = title.partition(". ")
+        title_lt = content.SECTION_TITLES_LT.get(name, name)
+        out.append('<div class="api-group"><h3>%s. <span class="only-en">%s</span>'
+                   '<span class="only-lt">%s</span></h3>'
+                   % (number, html.escape(name), html.escape(title_lt)))
         for e in entries:
+            name = e["name"]
             summary_en = (e["doc"].split("\n")[0] if e["doc"] else "")
-            summary_lt = content.SHORT.get(e["name"], summary_en)
-            body = docstring_html(e["doc"])
-            scripts = used.get(e["name"], [])
+            explain_lt = reference.EXPLAIN_LT[name]
+            summary_lt = content.SHORT.get(name) or _first_sentence(explain_lt)
+            # English: the docstring; Lithuanian: the written explanation.
+            body_en = docstring_html(e["doc"]) or ""
+            body = ""
+            if body_en:
+                body += '<div class="only-en">%s</div>' % body_en
+            body += '<div class="only-lt"><p>%s</p></div>' % inline(explain_lt)
+            body += ('<h4><span class="only-en">Example</span>'
+                     '<span class="only-lt">Pavyzdys</span></h4>'
+                     '<pre class="code"><button class="copy" title="copy">'
+                     '&#128203;</button><code>%s</code></pre>'
+                     % html.escape(reference.EXAMPLES[name]))
+            scripts = used.get(name, [])
             if scripts:
                 links = ", ".join(
-                    '<a href="%s/blob/main/examples/%s">%s</a>' % (content.REPO_URL, name, name[:-3])
-                    for name in scripts[:6])
+                    '<a href="%s/blob/main/examples/%s">%s</a>' % (content.REPO_URL, s, s[:-3])
+                    for s in scripts[:6])
                 if len(scripts) > 6:
                     links += ", &hellip;"
                 body += ('<p class="used"><span class="only-en">Used in: </span>'
                          '<span class="only-lt">Naudojama: </span>%s</p>' % links)
-            search_key = (e["name"] + " " + summary_en + " "
-                          + summary_lt).lower()
+            search_key = (name + " " + summary_en + " " + summary_lt + " "
+                          + explain_lt).lower()
             head = ('<span class="nm">%s</span>'
                     '<span class="sig">%s</span>'
                     '<span class="sum only-en">%s</span>'
                     '<span class="sum only-lt">%s</span>'
-                    % (e["name"], html.escape(e["signature"]),
+                    % (name, html.escape(e["signature"]),
                        html.escape(summary_en), html.escape(summary_lt)))
-            if body:
-                out.append('<details class="fn" id="fn-%s" data-search="%s">'
-                           '<summary>%s</summary><div class="body">%s</div>'
-                           '</details>'
-                           % (e["name"], html.escape(search_key, quote=True),
-                              head, body))
-            else:
-                out.append('<div class="fn flat" id="fn-%s" data-search="%s">'
-                           '<div class="head">%s</div></div>'
-                           % (e["name"], html.escape(search_key, quote=True),
-                              head))
+            out.append('<details class="fn" id="fn-%s" data-search="%s">'
+                       '<summary>%s</summary><div class="body">%s</div>'
+                       '</details>'
+                       % (name, html.escape(search_key, quote=True), head, body))
         out.append("</div>")
     out.append("</section>")
     return "\n".join(out)
 
 
+def _first_sentence(text):
+    """The first sentence of a paragraph (for the one-line summary)."""
+    for stop in (". ", "; ", ": "):
+        i = text.find(stop)
+        if 0 < i < 110:
+            return text[:i + 1].rstrip(":;")
+    return text if len(text) <= 120 else text[:117] + "..."
+
+
+def completeness(api):
+    """Names without a Lithuanian explanation or an example (must be none)."""
+    problems = []
+    for _, entries in api:
+        for e in entries:
+            if e["name"] not in reference.EXPLAIN_LT:
+                problems.append("no Lithuanian explanation: " + e["name"])
+            if e["name"] not in reference.EXAMPLES:
+                problems.append("no example: " + e["name"])
+    return problems
+
+
 if __name__ == "__main__":
+    problems = completeness(read_api())
+    if problems:
+        for line in problems:
+            print(line)
+        sys.exit(1)
     page, api = build()
     total = sum(len(e) for _, e in api)
-    missing = [e["name"] for _, entries in api for e in entries
-               if e["name"] not in content.SHORT]
-    print("docs/index.html written: %d KB, %d entries in %d groups"
+    print("docs/index.html written: %d KB, %d entries in %d groups, every one "
+          "with an explanation in both languages and an example"
           % (len(page) // 1024, total, len(api)))
-    if missing:
-        print("no Lithuanian one-liner for: %s" % ", ".join(sorted(missing)))

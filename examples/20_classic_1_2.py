@@ -20,7 +20,7 @@ def example1():
                     if k != 0:
                         add.cube([i + k / 2, -k / 2, j + k / 2], 0.8,
                                  add.random_color())
-    add.save("example1.off")
+    add.save("example1.off", colors=50)         # Sketchfab: at most 50 colours
 
 
 def example2():
@@ -35,7 +35,7 @@ def example2():
                     if k != 0:
                         add.frame([i + k / 2, -k / 2, j + k / 2], 0.8, 0.1,
                                   add.random_color())
-    add.save("example2.off")
+    add.save("example2.off", colors=50)         # Sketchfab: at most 50 colours
 
 
 def example3():
@@ -105,7 +105,7 @@ def example5():
                             k * add.sqrt(2 / 3),
                             j + 0.5 * (i - 1) + (k - 1) / 2],
                            0.5, 10, add.random_color())
-    add.save("example5.off")
+    add.save("example5.off", colors=50)         # Sketchfab: at most 50 colours
 
 
 ICOSA = [[-0.262865, 0, 0.425325], [0.262865, 0, 0.425325],

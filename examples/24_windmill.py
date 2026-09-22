@@ -133,5 +133,6 @@ for row in range(5):                                                          # 
 
 add.text("MALŪNAS", [-2.6, TOP + 0.35, 2.75], 0.5, color=CLOTH, k=6)
 
+add.mesh(add.limit_colors(add.layer(), 50))   # at most 50 colours, so the .obj suits Sketchfab
 add.check()
 add.save("windmill.off")

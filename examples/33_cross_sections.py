@@ -89,5 +89,6 @@ print("scene as strings:", len(old_style[0]), "vertices,", len(old_style[1]), "f
 same = add.as_mesh(old_style)
 print("as_mesh gives", same)
 
+add.mesh(add.limit_colors(add.layer(), 50))   # at most 50 colours, so the .obj suits Sketchfab
 add.check()
 add.save("cross_sections.off")

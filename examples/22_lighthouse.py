@@ -175,5 +175,6 @@ add.cylinder([-4.3, island(-4.3, 7.4), 7.4], [-4.3, island(-4.3, 7.4) + 0.6, 7.4
 add.cuboid([2.6, island(2.6, 2) + 0.4, 2.0], [1.7, 0.8, 0.12], ROCK)
 add.text("1863", [1.9, island(2.6, 2) + 0.2, 2.07], 0.4, color="gold", k=6)
 
+add.mesh(add.limit_colors(add.layer(), 50))   # at most 50 colours, so the .obj suits Sketchfab
 add.check()
 add.save("lighthouse.off")

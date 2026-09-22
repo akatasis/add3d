@@ -138,5 +138,6 @@ add.sphere(head, 0.35, 5, "white")
 for q in add.random_points(200, [-32, -6, -32], [32, -6, 32], SEED + 1):
     add.sphere(q, rng.uniform(0.05, 0.12), 2, "white")
 
+add.mesh(add.limit_colors(add.layer(), 50))   # at most 50 colours, so the .obj suits Sketchfab
 add.check()
 add.save("solar_system.off")

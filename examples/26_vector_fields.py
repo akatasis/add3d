@@ -90,5 +90,6 @@ spiral = add.points_on_spiral([0, 0.25, -8], 0.3, 4.5, 3, 60, rise=3.0)
 add.mesh(add.along(cube, spiral, len(spiral), axis=[1, 0, 0],
                    scale=lambda t: 0.5 + t))
 
+add.mesh(add.limit_colors(add.layer(), 50))   # at most 50 colours, so the .obj suits Sketchfab
 add.check()
 add.save("vector_fields.off")

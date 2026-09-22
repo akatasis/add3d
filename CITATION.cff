@@ -8,8 +8,8 @@ authors:
     affiliation: "Vilnius University, Faculty of Mathematics and Informatics,
       Institute of Data Science and Digital Technologies"
     email: martynas.sabaliauskas@mif.vu.lt
-version: "2.1"
-date-released: "2026-09-18"
+version: "2.0"
+date-released: "2026-09-22"
 license: MIT
 repository-code: "https://github.com/martynas-sabaliauskas/add3d"
 url: "https://martynas-sabaliauskas.github.io/add3d/"
@@ -22,8 +22,11 @@ keywords:
   - Python
 abstract: >-
   add.py is a single-file, dependency-free Python module for building 3D
-  models from program code alone. It provides primitives, parametric
-  surfaces, sweeps and lathes, mesh boolean operations implemented from
-  scratch, mesh repair and validation, and export to OFF, OBJ, PLY and STL.
-  It is used in an undergraduate course in which students must create a 3D
-  model without using any modelling software or mesh library.
+  models from program code alone. It provides primitives, the regular
+  polyhedra, a geodesic sphere, parametric surfaces and a catalogue of named
+  ones, sweeps and lathes, mesh boolean operations implemented from scratch,
+  classical and generalised Catmull-Clark subdivision, vertex-level tools,
+  mesh repair and validation, transparency and image textures, and export to
+  OFF, OBJ (+MTL), PLY and STL. It is used in a university course in which
+  students must create a 3D model without using any modelling software or
+  mesh library.

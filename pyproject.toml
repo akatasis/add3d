@@ -12,13 +12,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "add3d"
-version = "2.1"
-description = "Build 3D models with nothing but Python code: one file, no dependencies, mesh booleans from scratch."
+version = "2.0"
+description = "Build 3D models with nothing but Python code: one file, no dependencies, mesh booleans and subdivision surfaces from scratch."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.8"
 authors = [{name = "Martynas Sabaliauskas", email = "martynas.sabaliauskas@mif.vu.lt"}]
-keywords = ["3d", "geometry", "mesh", "csg", "parametric-surfaces", "education", "off", "obj"]
+keywords = ["3d", "geometry", "mesh", "csg", "parametric-surfaces", "subdivision-surfaces", "catmull-clark", "education", "off", "obj", "sketchfab"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Education",

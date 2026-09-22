@@ -28,6 +28,9 @@ jobs:
       - name: add.py 1.2 models still build
         run: python tests/test_legacy.py
 
+      - name: every documentation example runs
+        run: python tests/test_docs.py
+
   examples:
     runs-on: ubuntu-latest
     steps:
@@ -36,7 +39,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: every example runs
+      - name: every example runs and fits the Sketchfab limits
         run: python examples/build_all.py --models
 
       - name: every public function is used by at least one example

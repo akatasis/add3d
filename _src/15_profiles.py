@@ -1,7 +1,7 @@
 
 
 # ============================================================================
-#  7. Numbers, points and 2D profiles
+#  8. Numbers, points and 2D profiles
 # ============================================================================
 # Small helpers that models need all the time: blend two values, keep a
 # number in range, measure a distance, turn a point, cut the corners of a

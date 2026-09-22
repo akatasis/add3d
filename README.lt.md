@@ -16,15 +16,15 @@ add.box([0, 0, 0], 2, "red")
 add.sphere([3, 0, 0], 1, 20, "blue")
 add.cylinder([0, 2, 0], [3, 2, 0], 0.3, 24, "gold")
 
-add.check()                      # 2478 daugiakampiai, 3 spalvos, uždaras
+add.check()                      # 5198 daugiakampiai, 3 spalvos, uždaras
 add.save("pirmas_modelis.off")   # arba .obj (+ .mtl), .ply, .stl
 ```
 
 <p align="center">
   <img src="docs/images/lighthouse.png" width="49%" alt="Švyturio sala">
-  <img src="docs/images/locomotive.png" width="49%" alt="Garvežys">
-  <img src="docs/images/chess_set.png" width="49%" alt="Šachmatų komplektas">
-  <img src="docs/images/robot.png" width="49%" alt="Robotas">
+  <img src="docs/images/football.png" width="49%" alt="Futbolo kamuolys iš ikosaedro">
+  <img src="docs/images/glass_and_textures.png" width="49%" alt="Stiklas ir tekstūros">
+  <img src="docs/images/polyhedra.png" width="49%" alt="Taisyklingieji briaunainiai ir kas iš jų padaroma">
 </p>
 
 Nė vienas jų nenupieštas ranka. Kiekvienas – viena trumpa programa
@@ -34,10 +34,12 @@ Nė vienas jų nenupieštas ranka. Kiekvienas – viena trumpa programa
 
 ## Kam to reikia
 
-`add.py` parašytas antro kurso universiteto kursui, kuriame studentams
-skiriama sąmoningai nepatogi užduotis: **sukurti 3D modelį, bet neliesti
-jokios modeliavimo programos ir neatsisiųsti jokio paruošto modelio.**
-Viskas turi būti apskaičiuota jūsų pačių parašyta formule arba ciklu.
+`add.py` parašytas universiteto kursui, kuriame studentams skiriama
+sąmoningai nepatogi užduotis: **sukurti 3D modelį, bet neliesti jokios
+modeliavimo programos ir neatsisiųsti jokio paruošto modelio.** Viskas turi
+būti apskaičiuota jūsų pačių parašyta formule arba ciklu. Modulis skirtas
+studentams ir visiems, kam įdomiau formą sukurti iš matematikos, o ne iš
+meniu.
 
 Paaiškėja, kad atimti įrankiai darbą padaro ne nuobodesnį, o įdomesnį. Sfera
 nustoja būti mygtuku įrankių juostoje ir tampa trimis trigonometrijos
@@ -68,22 +70,25 @@ nes vardas `add` PyPI kataloge užimtas kito žmogaus tuščiu įrašu – žr.
 
 | | |
 |---|---|
-| **Figūros** | kubas, gretasienis, suapvalinta dėžė, karkasas, piramidė, prizmė, penki Platono kūnai, sfera, pusrutulis, elipsoidas, toras, kapsulė, cilindras, vamzdis, kūgis, nupjautinis kūgis, tuščiaviduris vamzdis, skritulys, žiedas, tinklelis, rodyklė, spiralė, kubeliai |
+| **Figūros** | kubas, gretasienis, suapvalinta dėžė, karkasas, piramidė, prizmė, penki taisyklingieji briaunainiai (`tetrahedron` ... `icosahedron`, kiekvieno viršūnių vidurkis – centre), geodezinė `sphere` iš trikampių, `quadsphere`, pusrutulis, elipsoidas, toras, kapsulė, cilindras, vamzdis, kūgis, nupjautinis kūgis, tuščiaviduris vamzdis, skritulys, žiedas, tinklelis, rodyklė, spiralė, kubeliai |
 | **Detalės** | `beam` (sija tarp dviejų taškų), `arch`, `stairs`, `gear`, `wheel`, `roof`, `column`, `bricks`, `tree`, `pixels` (pikselinis piešinys), `heightmap` (kubelių reljefas), `wireframe`, `text` (įmontuotas šriftas su lietuviškomis raidėmis) |
-| **Paviršiai** | `parametric(S, ...)` bet kokiai `S(u, v)` funkcijai – su siūlių uždarymu, tikru storiu, dvipusiais lakštais ir *spalvos funkcija* nuo `(u, v)` |
+| **Paviršiai** | `parametric(S, ...)` bet kokiai `S(u, v)` funkcijai – su siūlių uždarymu, tikru storiu, dvipusiais lakštais ir *spalvos funkcija* nuo `(u, v)`; 25 vardinių paviršių katalogas (`surface("klein_bottle", ...)`) |
 | **Sukimas ir tempimas** | `revolve` (sukinys), `sweep` išilgai 3D kelio su mastelio ir sukimo keitimu, `extrude`, `loft`, `curve` / `polyline` (vamzdžiai), `ribbon`, `trace` (vektorinio lauko trajektorija) |
 | **Profiliai** | paruošti skerspjūviai: apskritimas, elipsė, daugiakampis, žvaigždė, suapvalintas stačiakampis, krumpliaratis; `chaikin` kampų apvalinimas |
 | **Transformacijos** | stūmimas, sukimas apie bet kokią ašį, mastelis, tempimas, veidrodis, `place`, `fit`, `aim`, `ground`, `align`, `twist`, `bend`, `taper`, `jitter` ir `deform` su bet kokia jūsų funkcija |
 | **Kopijos** | `repeat`, tiesiniai / tinklelio / žiediniai / veidrodiniai masyvai, `scatter` atsitiktiniuose taškuose, `along` išilgai kreivės |
 | **Loginės operacijos** | `union`, `intersect`, `difference`, `symmetric_difference` ir pigesnis `cut` plokštuma |
+| **Apvalinimas** | `catmull_clark` ir `smooth` – apibendrintas Catmull–Clark algoritmas: bet koks langelių skaičius ant kontrolinės briaunos, kiekviena viršūnė ant ribinio paviršiaus |
+| **Viršūnių įrankiai** | `set_vertex`, `neighbors`, `valence`, `mean_neighbor_distance`, `edges`, `vertex_normal`, `face_center`, `boundary_loops`, `dual`, `truncate`, `refine`, `spherify`, `inflate` |
 | **Taisymas** | `clean` (viršūnių klijavimas, dublikatų ir vidinių sienų šalinimas), `heal`, `fix_normals`, `triangulate` |
-| **Spalvos** | vardinės spalvos, hex, HSV, perėjimai ir `color_by` – spalva pagal padėtį |
-| **Failai** | rašo `.off`, `.obj` + `.mtl`, `.ply`, `.stl`; skaito `.off`, `.obj`, `.ply` |
-| **Tikrinimas** | `stats()` ir `check()` – daugiakampių skaičius, spalvos, uždarumas, tūris |
+| **Spalvos** | vardinės spalvos, hex, HSV, perėjimai, `color_by` – spalva pagal padėtį, `limit_colors` – Sketchfab dydžio paletė |
+| **Stiklas ir paveikslėliai** | `transparent` / `opacity` permatomiems paviršiams ir `texture` paveikslėlių tekstūroms, abu įrašomi į `.mtl` failą; `write_png` patiems paskaičiuotiems paveikslėliams |
+| **Failai** | rašo `.off`, `.obj` + `.mtl`, `.ply`, `.stl`; skaito `.off`, `.obj`, `.ply`; `obj_size` dar prieš rašant |
+| **Tikrinimas** | `stats()` ir `check()` – daugiakampių skaičius, spalvos, uždarumas, tūris ir Sketchfab ribos (50 MB, 50 medžiagų) |
 | **Peržiūra** | `tools/preview.py` – atvaizdavimo įrankis, irgi be jokių priklausomybių |
 
-178 viešų vardų, visi su aprašymais, viename 4700 eilučių faile, kurį galima
-perskaityti.
+231 viešas vardas, kiekvienas aprašytas angliškai ir lietuviškai su veikiančiu
+pavyzdžiu, viename 7000 eilučių faile, kurį galima perskaityti.
 
 ## Loginės operacijos, parašytos nuo nulio
 
@@ -108,13 +113,35 @@ grezlas = add.layer()
 add.mesh(add.difference(plokste, grezlas))
 ```
 
+## Glotnūs paviršiai iš kelių daugiakampių
+
+Dėžė su ištrauktu kampu, raidė iš blokų, dodekaedras – bet kokį daugiakampių
+tinklą galima laikyti glotnaus paviršiaus kontroliniu tinklu. `catmull_clark`
+– klasikinis dalijimas. `smooth(M, n)` – apibendrintas algoritmas iš
+straipsnio [*Uniform n-grids on Catmull–Clark limit surfaces of arbitrary
+polygon meshes*](paper/): ant kiekvienos kontrolinės briaunos jis padeda `n`
+langelių **bet kokiam** `n` (klasikinis dalijimas pasiekia tik 2, 4, 8, ...),
+visos naujos viršūnės guli tiksliai ant ribinio paviršiaus, o langeliai prie
+ypatingųjų viršūnių yra vienodo dydžio – etaloninės realizacijos perkėlimas
+eilutė po eilutės į gryną Python, sutikrintas su ja iki 1e-15.
+
+```python
+add.box([0, 0, 0], 2, "gold")
+blokas = add.layer()
+blokas = add.set_vertex(blokas, add.nearest_vertex(blokas, [1, 1, 1]), [2.5, 2.5, None])
+add.mesh(add.smooth(blokas, 8))         # 8 langeliai ant briaunos, spalvos pagal sienas
+```
+
 ## Pereinant nuo add.py 1.2
 
 Viskas veikia kaip veikę. 1.2 versijai rašyti modeliai paleidžiami nepakeisti
 ir duoda tas pačias sienas – dvylika jų guli [`tests/legacy/`](tests/legacy/)
-aplanke, ir testai tikrina būtent tai. Naujame kode verta rinktis aiškesnius
-vardus: `cube2` → `frame`, `cylinder2` → `tube`, `cylinder3` → `cup`,
-`cone2` → `cone_open`, `spin3D` → `revolve`, `off` → `save`.
+aplanke, ir testai tikrina būtent tai. (Vienintelis sąmoningas pokytis:
+`sphere` dabar yra geodezinė sfera iš trikampių, todėl modelis su sferomis
+turi kitokias sienas; senoji konstrukcija – `quadsphere`.) Naujame kode verta
+rinktis aiškesnius vardus: `cube2` → `frame`, `cylinder2` → `tube`,
+`cylinder3` → `cup`, `cone2` → `cone_open`, `spin3D` → `revolve`, `off` →
+`save`.
 
 ## Pilni modeliai
 
@@ -127,10 +154,21 @@ laukai](examples/26_vector_fields.py), [robotas](examples/27_robot.py), siekiant
 kamuolio, [kubelių sala](examples/28_voxel_island.py), [du tiltai](examples/29_bridge.py),
 [Saulės sistema](examples/30_solar_system.py) su dryžuotomis planetomis,
 [dirbtuvės](examples/31_workbench.py) su matavimo ir taisymo įrankiais,
-[natiurmortas](examples/32_old_names.py) 1.2 žodynu ir [skerspjūvių
-galerija](examples/33_cross_sections.py). `python3 tools/coverage.py` parodo,
-kuris pavyzdys kurią funkciją naudoja; kiekviena vieša funkcija panaudota bent
-viename.
+[natiurmortas](examples/32_old_names.py) 1.2 žodynu, [skerspjūvių
+galerija](examples/33_cross_sections.py), [paviršių zoologijos
+sodas](examples/34_surface_zoo.py), [mazgo kreivė](examples/35_knot_curve.py),
+[Minecraft sfera](examples/36_minecraft_sphere.py) trimis būdais, [futbolo
+kamuolys](examples/37_football.py) iš ikosaedro viršūnių, [penki
+briaunainiai](examples/38_polyhedra.py) su dualiaisiais kūnais, nupjovimais ir
+glotniomis versijomis, [apvalinimas](examples/39_smooth_shapes.py),
+[viršūnių įrankiai](examples/40_vertex_tools.py), [Sketchfab
+paruoštas](examples/41_sketchfab_ready.py) spalvingas modelis, [pagalvinės
+raidės](examples/42_pillow_letters.py), [planeta](examples/43_planet.py),
+[geodezinio kupolo namas](examples/44_geodesic_dome.py) ir [stiklas su
+tekstūromis](examples/45_glass_and_textures.py). `python3 tools/coverage.py`
+parodo, kuris pavyzdys kurią funkciją naudoja; kiekviena vieša funkcija
+panaudota bent viename, o kiekvienas modelis telpa į Sketchfab ribas (tikrina
+`examples/build_all.py`).
 
 ## Repozitorijos sandara
 
@@ -138,18 +176,20 @@ viename.
 add.py               biblioteka – vienintelis failas, kurio jums reikia
 _src/                dalys, iš kurių surenkamas add.py
 build.py             sujungia _src/*.py į add.py
-examples/            30 pavyzdinių programų su komentarais (18 studijų, 12 pilnų modelių)
+examples/            42 pavyzdinės programos su komentarais (studijos ir pilni modeliai)
   add.py             bibliotekos kopija, kad pavyzdžiai veiktų tokie, kokie yra
-  build_all.py       paleidžia visas ir sugeneruoja paveikslėlius
+  build_all.py       paleidžia visas, tikrina Sketchfab ribas, sugeneruoja paveikslėlius
 tools/
   preview.py         atvaizdavimo įrankis be priklausomybių
-  make_docs.py       sukuria docs/index.html iš kodo aprašymų
+  make_docs.py       sukuria docs/index.html iš kodo aprašymų ir docs/reference.py
   coverage.py        kuris pavyzdys kurią funkciją naudoja
 tests/
-  test_add.py        80 vienetinių testų
+  test_add.py        89 vienetiniai testai
   test_legacy.py     paleidžia add.py 1.2 modelius ir tikrina sienų skaičių
+  test_docs.py       paleidžia kiekvienos aprašytos funkcijos pavyzdį
   legacy/            tie modeliai, nepakeisti
 docs/                dokumentacijos svetainė (lietuvių ir anglų kalbomis)
+  reference.py       lietuviškas paaiškinimas ir pavyzdys kiekvienai funkcijai
 paper/               mokslinis straipsnis apie sandarą ir algoritmus
 outreach/            populiarinimo vaizdo įrašo scenarijus ir pranešimo planas
 slides/              paskaitos skaidrės
@@ -163,20 +203,27 @@ vieno failo.
 ## Testai
 
 ```bash
-python3 tests/test_add.py        # 80 vienetinių testų
+python3 tests/test_add.py        # 89 vienetiniai testai
 python3 tests/test_legacy.py     # add.py 1.2 modeliai
-python3 examples/build_all.py    # visi pavyzdžiai ir paveikslėliai
+python3 tests/test_docs.py       # 231 dokumentacijos pavyzdys
+python3 examples/build_all.py    # visi pavyzdžiai, Sketchfab patikra, paveikslėliai
 ```
 
 Vienetiniai testai tikrina kiekvienos figūros analitinį tūrį – sferą pagal
-4/3·πr³, torą pagal 2π²Rr² – ir kad kiekvienas uždaras kūnas tikrai uždaras.
+4/3·πr³, torą pagal 2π²Rr² – kad kiekvienas uždaras kūnas tikrai uždaras, kad
+apibendrintas dalijimas su n = 2, 4, 8 sutampa su klasikiniu Catmull–Clark ir
+kiekvienam n duoda Eulerio charakteristiką 2, ir kad `.obj` failai išsaugo
+permatomumą bei tekstūras. Jie praeina su Python 3.8–3.13.
 
 ## Kaip pasidalinti modeliu
 
-`save("modelis.obj")` sukuria `.obj` ir `.mtl` failus. Abu sudėkite į vieną
-archyvą ir įkelkite į [Sketchfab](https://sketchfab.com) – modelį galės
-pasukioti bet kas naršyklėje. 3D spausdinimui naudokite
-`save("modelis.stl")` po `clean(..., normals=True)`.
+`save("modelis.obj")` sukuria `.obj` ir `.mtl` failus (ir naudoja jūsų
+tekstūrų paveikslėlius). Sudėkite juos į vieną archyvą ir įkelkite į
+[Sketchfab](https://sketchfab.com) – modelį galės pasukioti bet kas
+naršyklėje. Nemokamas Sketchfab planas priima iki 100 MB, o medžiagas virš 100
+sulieja; `check()` įspėja ties kurso ribomis – 50 MB ir 50 spalvų, o
+`save("modelis.obj", colors=50)` sumažina spalvingą modelį, kad tilptų. 3D
+spausdinimui naudokite `save("modelis.stl")` po `clean(..., normals=True)`.
 
 ## Publikavimas
 

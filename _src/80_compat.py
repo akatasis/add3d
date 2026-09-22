@@ -1,7 +1,7 @@
 
 
 # ============================================================================
-# 23. add.py 1.2 names
+# 27. add.py 1.2 names
 # ============================================================================
 # Everything below exists so that models written for earlier versions of the
 # course keep running unchanged.  New code should prefer the names on the
@@ -42,26 +42,36 @@ def cone2(A, B, r, k, RGB):
     cone_open(A, B, r, k, RGB)
 
 
-#: Other spellings people reach for.
+#: Other spelling of :func:`sphere`.
 ball = sphere
+#: Other spelling of :func:`cuboid`.
 block = cuboid
+#: Other spelling of :func:`cuboid`.
 cuboid3D = cuboid
+#: Other spelling of :func:`revolve`.
 lathe = revolve
+#: Other spelling of :func:`revolve`.
 solid_of_revolution = revolve
+#: Other spelling of :func:`clean`.
 weld = clean
+#: Other spelling of :func:`zoom`.
 scale = zoom
+#: Other spelling of :func:`move`.
 translate = move
+#: Other spelling of :func:`mirror`.
 reflect = mirror
 
 
 # ============================================================================
-# 24. A one-line demonstration
+# 28. A one-line demonstration
 # ============================================================================
 
 def demo(path="demo.off"):
     """Build a small model that exercises most of the library.
 
-    Run ``python add.py`` to produce ``demo.off`` and see the report.
+    Run ``python add.py`` to produce ``demo.off`` and see the report.  The
+    rainbow ring is painted with hundreds of shades; the save reduces them
+    to 50 so that the same model would also upload to Sketchfab as .obj.
     """
     clear()
     axes([0, 0, 0], 3.0)
@@ -100,7 +110,7 @@ def demo(path="demo.off"):
                   lambda p: hsv(math.atan2(p[2], p[0]) / (2 * math.pi))))
 
     check()
-    return save(path)
+    return save(path, colors=SKETCHFAB_COLORS)   # the .obj stays Sketchfab-ready
 
 
 if __name__ == "__main__":
@@ -121,5 +131,6 @@ __all__ = sorted(name for name, value in list(globals().items())
                  and name not in _REEXPORTED
                  and (callable(value) or name in ("vertices", "faces",
                                                   "COLORS", "PALETTE", "EPS",
-                                                  "DEFAULT_COLOR",
-                                                  "BOOL_EPS")))
+                                                  "DEFAULT_COLOR", "BOOL_EPS",
+                                                  "SURFACES", "SKETCHFAB_MB",
+                                                  "SKETCHFAB_COLORS")))

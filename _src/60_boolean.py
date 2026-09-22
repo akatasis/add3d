@@ -1,7 +1,7 @@
 
 
 # ============================================================================
-# 20. Boolean operations: union, intersection, difference
+# 23. Boolean operations: union, intersection, difference
 # ============================================================================
 # Two solids can be added together, cut out of one another, or intersected.
 # The idea used here needs no library and fits on one screen:

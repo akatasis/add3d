@@ -1,10 +1,10 @@
 
 
 # ============================================================================
-# 21. Saving and loading
+# 25. Saving and loading
 # ============================================================================
 
-def save(path, M=None, clear_scene=None):
+def save(path, M=None, clear_scene=None, colors=None):
     """Write a model to disk; the file format follows the extension.
 
     ``.off`` (the course format), ``.obj`` (+ a ``.mtl`` colour file, which is
@@ -13,11 +13,15 @@ def save(path, M=None, clear_scene=None):
         add.save("dragon.obj")
 
     Called without a mesh it saves -- and then empties -- the current scene,
-    exactly like add.py 1.2's ``off()``.
+    exactly like add.py 1.2's ``off()``.  ``colors=50`` reduces the model
+    to at most that many colours first (see :func:`limit_colors`), which
+    keeps an ``.obj`` within Sketchfab's material limit.
     """
     if clear_scene is None:
         clear_scene = M is None
     mesh_to_save = as_mesh(M)
+    if colors is not None:
+        mesh_to_save = limit_colors(mesh_to_save, colors)
     ext = path.lower().rsplit(".", 1)[-1] if "." in path else "off"
     if ext == "obj":
         _write_obj(path, mesh_to_save)
@@ -69,6 +73,19 @@ def _write_off(path, M):
         f.write("".join(out))
 
 
+def _material_name(c):
+    """``color_rrggbb``, plus ``_aNNN`` when see-through and ``_tNAME`` when
+    textured -- one material per distinct look."""
+    r, g, b, alpha, image = _material(c)
+    name = "color_%02x%02x%02x" % (r, g, b)
+    if alpha < 1.0:
+        name += "_a%03d" % int(round(alpha * 1000))
+    if image:
+        stem = image.replace("\\", "/").rsplit("/", 1)[-1].rsplit(".", 1)[0]
+        name += "_t" + "".join(ch if ch.isalnum() else "_" for ch in stem)
+    return name
+
+
 def _write_obj(path, M, mtl_path=None):
     if mtl_path is None:
         mtl_path = path[:-4] + ".mtl" if path.lower().endswith(".obj") \
@@ -79,7 +96,7 @@ def _write_obj(path, M, mtl_path=None):
     seen = {}
     for c in M.C:
         if c not in seen:
-            seen[c] = "color_%02x%02x%02x" % c
+            seen[c] = _material_name(c)
             palette.append(c)
 
     with open(path, "w") as f:
@@ -90,27 +107,87 @@ def _write_obj(path, M, mtl_path=None):
         for p in M.V:
             out.append("v %s %s %s\n" % (_num(p[0]), _num(p[1]), _num(p[2])))
         f.write("".join(out))
+        # Texture coordinates, one line per distinct (u, v) of textured faces.
+        vt_index = {}
+        if M.UV is not None:
+            out = []
+            for k, c in enumerate(M.C):
+                uv = M.UV[k]
+                if uv is None or len(c) < 5:
+                    continue
+                for t in uv:
+                    key = (round(t[0], 6), round(t[1], 6))
+                    if key not in vt_index:
+                        vt_index[key] = len(vt_index) + 1
+                        out.append("vt %s %s\n" % (_num(key[0]), _num(key[1])))
+            f.write("".join(out))
         # Group faces by colour: one `usemtl` line per colour, not per face.
         by_color = {}
-        for face, c in zip(M.F, M.C):
-            by_color.setdefault(c, []).append(face)
+        for k, (face, c) in enumerate(zip(M.F, M.C)):
+            by_color.setdefault(c, []).append(k)
         for c in palette:
             f.write("usemtl %s\n" % seen[c])
             out = []
-            for face in by_color[c]:
-                out.append("f %s\n" % " ".join(str(i + 1) for i in face))
+            textured = len(c) > 4 and M.UV is not None
+            for k in by_color[c]:
+                face = M.F[k]
+                uv = M.UV[k] if textured else None
+                if uv is None:
+                    out.append("f %s\n" % " ".join(str(i + 1) for i in face))
+                else:
+                    out.append("f %s\n" % " ".join(
+                        "%d/%d" % (i + 1, vt_index[(round(t[0], 6), round(t[1], 6))])
+                        for i, t in zip(face, uv)))
             f.write("".join(out))
 
     with open(mtl_path, "w") as f:
         f.write("# written by add.py %s\n" % __version__)
         for c in palette:
+            r, g, b, alpha, image = _material(c)
             f.write("newmtl %s\n" % seen[c])
-            f.write("Kd %.6f %.6f %.6f\n" % (c[0] / 255.0, c[1] / 255.0,
-                                             c[2] / 255.0))
+            f.write("Kd %.6f %.6f %.6f\n" % (r / 255.0, g / 255.0, b / 255.0))
             f.write("Ka 0.100000 0.100000 0.100000\n")
             f.write("Ks 0.000000 0.000000 0.000000\n")
-            f.write("d 1.0\nillum 1\n\n")
+            f.write("d %.3f\n" % alpha)
+            f.write("illum 1\n")
+            if image:
+                f.write("map_Kd %s\n" % image.replace("\\", "/").rsplit("/", 1)[-1])
+            f.write("\n")
     return path
+
+
+def obj_size(M=None):
+    """How many bytes :func:`save` would write for this model as ``.obj``
+    (the ``.mtl`` file is tiny and not counted).
+
+    Sketchfab's free plan accepts uploads up to 100 MB (200 MB Pro, 500 MB
+    Premium); the course asks for models under 50 MB.  The size is worked
+    out from the numbers themselves, without writing a file::
+
+        print(add.obj_size() / 1e6, "MB")
+    """
+    M = as_mesh(M)
+    total = 50                                          # header lines
+    for p in M.V:
+        total += 5 + len(_num(p[0])) + len(_num(p[1])) + len(_num(p[2]))
+    seen = set()
+    vts = set()
+    for k, (face, c) in enumerate(zip(M.F, M.C)):
+        total += 2 + len(face)
+        textured = len(c) > 4 and M.UV is not None and M.UV[k] is not None
+        for i in face:
+            total += len(str(i + 1))
+        if textured:
+            for t in M.UV[k]:
+                key = (round(t[0], 6), round(t[1], 6))
+                if key not in vts:
+                    vts.add(key)
+                    total += 6 + len(_num(key[0])) + len(_num(key[1]))
+                total += 1 + len(str(len(vts)))           # "/vt" per corner
+        if c not in seen:
+            seen.add(c)
+            total += 20 + (8 if len(c) > 3 else 0) + (10 + len(str(c[4])) if len(c) > 4 else 0)
+    return total
 
 
 def _write_ply(path, M):
@@ -223,6 +300,7 @@ def _read_obj(path, color=None):
     current = rgb(color) if color is not None else DEFAULT_COLOR
     folder = path.replace("\\", "/").rsplit("/", 1)
     folder = folder[0] + "/" if len(folder) > 1 else ""
+    vt = []
     with open(path, "r") as f:
         for line in f:
             parts = line.split()
@@ -232,12 +310,21 @@ def _read_obj(path, color=None):
             if tag == "v":
                 M.add_vertex((float(parts[1]), float(parts[2]),
                               float(parts[3])))
+            elif tag == "vt":
+                vt.append((float(parts[1]), float(parts[2]) if len(parts) > 2
+                           else 0.0))
             elif tag == "f":
                 face = []
+                uv = []
                 for p in parts[1:]:
-                    idx = int(p.split("/")[0])
+                    bits = p.split("/")
+                    idx = int(bits[0])
                     face.append(idx - 1 if idx > 0 else len(M.V) + idx)
-                M.add_face(face, current)
+                    if len(bits) > 1 and bits[1]:
+                        t = int(bits[1])
+                        uv.append(vt[t - 1 if t > 0 else len(vt) + t])
+                textured = len(current) > 4 and len(uv) == len(face)
+                M.add_face(face, current, uv if textured else None)
             elif tag == "mtllib" and color is None:
                 try:
                     materials.update(_read_mtl(folder + parts[1]))
@@ -249,6 +336,8 @@ def _read_obj(path, color=None):
 
 
 def _read_mtl(path):
+    """``{material name: colour}``, with opacity (``d`` / ``Tr``) and the
+    texture image (``map_Kd``) kept in the colour tuple."""
     out = {}
     name = None
     with open(path, "r") as f:
@@ -258,10 +347,61 @@ def _read_mtl(path):
                 continue
             if parts[0] == "newmtl":
                 name = parts[1]
-            elif parts[0] == "Kd" and name:
+                out[name] = DEFAULT_COLOR
+            elif name is None:
+                continue
+            elif parts[0] == "Kd":
+                c = out[name]
                 out[name] = rgb([float(parts[1]) * 255, float(parts[2]) * 255,
-                                 float(parts[3]) * 255])
+                                 float(parts[3]) * 255] + list(c[3:]))
+            elif parts[0] in ("d", "Tr") and len(parts) > 1:
+                alpha = float(parts[1])
+                if parts[0] == "Tr":
+                    alpha = 1.0 - alpha
+                c = out[name]
+                out[name] = rgb((c[0], c[1], c[2], alpha) + tuple(c[4:5]))
+            elif parts[0] == "map_Kd" and len(parts) > 1:
+                c = out[name]
+                out[name] = rgb((c[0], c[1], c[2], c[3] if len(c) > 3 else 1.0,
+                                 parts[-1]))
     return out
+
+
+def write_png(path, rows):
+    """Write a picture -- a list of rows, each a list of colours -- as a
+    ``.png``, to use as a texture (see :func:`texture`).
+
+    Row 0 is the top of the picture.  Any colour form that :func:`rgb`
+    accepts works, so a 64 x 64 chequerboard is::
+
+        rows = [["white" if (x // 8 + y // 8) % 2 else "black"
+                 for x in range(64)] for y in range(64)]
+        add.write_png("check.png", rows)
+    """
+    import struct
+    import zlib
+    height = len(rows)
+    width = len(rows[0]) if height else 0
+    raw = bytearray()
+    for row in rows:
+        raw.append(0)                                   # filter type "none"
+        for c in row:
+            c = rgb(c)
+            raw.append(c[0])
+            raw.append(c[1])
+            raw.append(c[2])
+
+    def chunk(tag, data):
+        out = struct.pack(">I", len(data)) + tag + data
+        return out + struct.pack(">I", zlib.crc32(tag + data) & 0xffffffff)
+
+    header = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    with open(path, "wb") as f:
+        f.write(b"\x89PNG\r\n\x1a\n")
+        f.write(chunk(b"IHDR", header))
+        f.write(chunk(b"IDAT", zlib.compress(bytes(raw), 6)))
+        f.write(chunk(b"IEND", b""))
+    return path
 
 
 def _read_ply(path, color=None):

@@ -14,7 +14,7 @@ const fs = require("fs");
 
 const ROOT = path.join(__dirname, "..");
 const IMG = path.join(ROOT, "docs", "images");
-const VERSION = "2.1";
+const VERSION = "2.0";
 
 // ---------------------------------------------------------------- palette
 const BROWN = "8A4B1E";      // the colour of the documentation's accent
@@ -196,50 +196,40 @@ function build(lang) {
       x: M, y: 6.6, w: W - 2 * M, h: 0.4, isTextBox: true, margin: 0,
       fontFace: BODY_FONT, fontSize: 13, color: "C9BFB6",
     });
-    s.addNotes(T("The add.py part of the first lecture, updated for version 2.1. "
-      + "The module is refreshed every year; 2.x is the largest change since 1.2.",
-      "Šiose skaidrėse – atnaujinta add.py modulio dalis (2.1 versija). "
-      + "Modulis kasmet atnaujinamas; 2.x versija yra didžiausias pokytis nuo 1.2."));
+    s.addNotes(T("The add.py part of the first lecture, updated for version 2.0 -- for students and for anyone "
+      + "who wants to build 3D models from code. The module is refreshed every year; 2.0 is the largest change since 1.2.",
+      "Šiose skaidrėse – atnaujinta add.py modulio dalis (2.0 versija) – studentams ir visiems, "
+      + "kas nori kurti 3D modelius programuodami. Modulis kasmet atnaujinamas; 2.0 versija yra didžiausias pokytis nuo 1.2."));
   }
 
   // =========================================================== 2. what's new
   {
-    const s = sheet(T("What is new in 2.x", "Kas naujo 2.x versijoje"), "add.py");
+    const s = sheet(T("What is new in " + VERSION, "Kas naujo " + VERSION + " versijoje"), "add.py");
     cards(s, [
       [T("Boolean operations", "Loginės operacijos"),
         T("union, intersect, difference -- written from scratch, no libraries.",
           "union, intersect, difference – sąjunga, sankirta ir skirtumas. "
           + "Parašyta nuo nulio, be jokių bibliotekų.")],
-      [T("Only import add", "Užtenka import add"),
-        T("math and random are re-exported: add.sin, add.pi, add.randint. "
-          + "A model file needs one import.",
-          "math ir random eksportuojami iš modulio: add.sin, add.pi, add.randint. "
-          + "Modelio failui užtenka vieno importo.")],
-      [T("Colour functions", "Spalvų funkcijos"),
-        T("Every surface takes color=lambda u, v: ... -- stripes, maps and "
-          + "gradients in one line.",
-          "Kiekvienas paviršius priima color=lambda u, v: ... – juostos, "
-          + "žemėlapiai ir perėjimai viena eilute.")],
-      [T("Ready-made parts", "Paruoštos detalės"),
-        T("beam, wheel, gear, arch, stairs, roof, bricks, tree, text, pixels, "
-          + "heightmap ...",
-          "beam, wheel, gear, arch, stairs, roof, bricks, tree, text, pixels, "
-          + "heightmap ...")],
-      [T("Placing", "Išdėstymas"),
-        T("aim a part along a direction, scatter copies on a landscape, "
-          + "string them along a curve.",
-          "aim nukreipia detalę, scatter išbarsto kopijas ant reljefo, "
-          + "along išdėsto jas išilgai kreivės.")],
-      [T("Repair and export", "Taisymas ir išsaugojimas"),
-        T("clean(), heal(), check(); .obj + .mtl straight to Sketchfab, "
-          + ".stl for printing.",
-          "clean(), heal(), check(); .obj + .mtl tiesiai į Sketchfab, "
-          + ".stl spausdinimui.")],
+      [T("Regular polyhedra and a geodesic sphere", "Taisyklingieji briaunainiai ir geodezinė sfera"),
+        T("tetrahedron ... icosahedron, centred; sphere() is now a dome of triangles.",
+          "tetrahedron ... icosahedron, sucentruoti; sphere() dabar – kupolas iš trikampių.")],
+      [T("Smooth surfaces", "Glotnūs paviršiai"),
+        T("catmull_clark, and smooth(): the generalised Catmull-Clark algorithm, any number of cells per edge.",
+          "catmull_clark ir smooth(): apibendrintas Catmull–Clark algoritmas, bet koks langelių skaičius ant briaunos.")],
+      [T("Vertex tools", "Viršūnių įrankiai"),
+        T("set_vertex, neighbors, valence, dual, truncate -- a football from the vertices of an icosahedron.",
+          "set_vertex, neighbors, valence, dual, truncate – futbolo kamuolys iš ikosaedro viršūnių.")],
+      [T("Named surfaces, colour functions, parts", "Vardiniai paviršiai, spalvų funkcijos, detalės"),
+        T("25 surfaces by name; color=lambda u, v: ...; beam, wheel, gear, roof, tree, text ...",
+          "25 paviršių pagal vardą; color=lambda u, v: ...; beam, wheel, gear, roof, tree, text ...")],
+      [T("Sketchfab-ready export", "Išsaugojimas Sketchfab"),
+        T("check() watches the 50 MB / 50 colour limits; glass (transparent) and image textures go into the .mtl.",
+          "check() prižiūri 50 MB / 50 spalvų ribas; stiklas (transparent) ir tekstūros įrašomi į .mtl.")],
     ], { h: 1.28 });
-    note(s, T("Everything written for 1.2 keeps working without a single change.",
-              "Viskas, kas parašyta senajai 1.2 versijai, veikia be jokių pataisymų."));
-    s.addNotes(T("The key message: nothing has to be rewritten.",
-                 "Svarbiausia žinia: nieko perrašinėti nereikia."));
+    note(s, T("Everything written for 1.2 keeps working without a single change; only import add is needed.",
+              "Viskas, kas parašyta senajai 1.2 versijai, veikia be jokių pataisymų; užtenka import add."));
+    s.addNotes(T("The key message: nothing has to be rewritten. For students and for anyone interested.",
+                 "Svarbiausia žinia: nieko perrašinėti nereikia. Studentams ir visiems besidomintiems."));
   }
 
   // =========================================================== 3. assignment
@@ -909,6 +899,131 @@ function build(lang) {
               + "niekas nemato. clean() jas randa ir pašalina. examples/31_workbench.py rodo visus taisymo įrankius."));
   }
 
+  // =========================================================== 27b. polyhedra + sphere
+  {
+    const s = sheet(T("The five regular polyhedra, and a sphere of triangles",
+                      "Penki taisyklingieji briaunainiai ir sfera iš trikampių"), T("shapes", "figūros"));
+    code(s, [
+      "add.icosahedron([0, 0, 0], 2, \"purple\")",
+      "add.dodecahedron([5, 0, 0], 2, \"gold\")",
+      "P = add.polyhedron_points(\"icosahedron\")",
+      "",
+      "add.sphere([0, 5, 0], 2, 20, \"sky\")    # 5120 tri",
+      "add.icosphere([5, 5, 0], 2, 3, \"red\")  # 1280",
+      "add.quadsphere([9, 5, 0], 2, 12, \"gold\")",
+    ], { x: M, y: 1.6, w: 5.15, h: 2.45, fontSize: 11.5 });
+    picture(s, "polyhedra.png", { x: 5.95, y: 1.6, w: 3.43, h: 2.45,
+      caption: T("38_polyhedra.py -- solids, duals, truncations, domes, smooth",
+                 "38_polyhedra.py – kūnai, dualieji, nupjovimai, kupolai, glotnūs") });
+    cards(s, [
+      [T("Centred", "Sucentruota"), T("The average of the vertices is exactly the centre; every vertex at distance r.",
+                                      "Viršūnių vidurkis yra lygiai centras; kiekviena viršūnė atstumu r.")],
+      [T("The dome principle", "Kupolo principas"), T("Split every triangle in four, push the midpoints out to the sphere, repeat: 20, 80, 320, 1280 ...",
+                                                        "Kiekvieną trikampį į keturis, vidurio taškus – ant sferos, kartoti: 20, 80, 320, 1280 ...")],
+      [T("k as before", "k kaip anksčiau"), T("sphere(c, r, k) picks the level from k: k=10 -> 1280, k=20 -> 5120 faces.",
+                                             "sphere(c, r, k) lygį parenka pagal k: k=10 -> 1280, k=20 -> 5120 sienų.")],
+    ], { y: 4.5, h: 1.5, perRow: 3 });
+    s.addNotes(T("Example 36 shows the same sphere three ways: the Maple cube-sphere, a ball of blocks, the geodesic one.",
+                 "36 pavyzdys rodo tą pačią sferą trimis būdais: Maple kubo sferą, kubelių rutulį, geodezinę."));
+  }
+
+  // =========================================================== 27c. football
+  {
+    const s = sheet(T("A football from the vertices of an icosahedron", "Futbolo kamuolys iš ikosaedro viršūnių"),
+                    T("vertex tools", "viršūnių įrankiai"));
+    code(s, [
+      "ico = add.make(add.icosahedron, [0, 0, 0], 3)",
+      "print(add.neighbors(ico, 0))   # 5, in order",
+      "print(add.valence(ico, 0))",
+      "",
+      "ball = add.truncate(ico, 1 / 3.0)   # corners off",
+      "ball = add.color_by_sides(ball,",
+      "                          {5: \"black\", 6: \"white\"})",
+      "add.mesh(add.smooth(ball, 16))      # rounded",
+    ], { x: M, y: 1.6, w: 5.15, h: 2.6, fontSize: 11.5 });
+    picture(s, "football.png", { x: 5.95, y: 1.6, w: 3.43, h: 2.6,
+      caption: T("37_football.py", "37_football.py") });
+    cards(s, [
+      [T("Ask the mesh", "Paklauskite tinklo"), T("neighbors, valence, mean_neighbor_distance, edges, vertex_normal, face_center, boundary_loops.",
+                                                  "neighbors, valence, mean_neighbor_distance, edges, vertex_normal, face_center, boundary_loops.")],
+      [T("Change one corner", "Pakeiskite vieną kampą"), T("set_vertex(M, i, [x, None, z]) moves vertex i and keeps the faces -- then smooth() it.",
+                                                            "set_vertex(M, i, [x, None, z]) perkelia viršūnę i ir palieka sienas – tada smooth().")],
+      [T("Rebuild", "Perkurkite"), T("dual, truncate, refine + spherify, inflate -- new solids from old ones.",
+                                    "dual, truncate, refine + spherify, inflate – nauji kūnai iš senų.")],
+    ], { y: 4.65, h: 1.45, perRow: 3 });
+  }
+
+  // =========================================================== 27d. smooth
+  {
+    const s = sheet(T("Smooth surfaces: generalised Catmull-Clark", "Glotnūs paviršiai: apibendrintas Catmull–Clark"),
+                    T("smooth()", "smooth()"));
+    code(s, [
+      "add.box([0, 0, 0], 2, \"gold\")",
+      "block = add.layer()",
+      "i = add.nearest_vertex(block, [1, 1, 1])",
+      "block = add.set_vertex(block, i, [2.5, 2.5, None])",
+      "",
+      "add.mesh(add.smooth(block, 8))    # 8 per edge",
+      "add.mesh(add.catmull_clark(block, 3))",
+    ], { x: M, y: 1.6, w: 5.15, h: 2.35, fontSize: 11.5 });
+    picture(s, "smooth_shapes.png", { x: 5.95, y: 1.6, w: 3.43, h: 2.35,
+      caption: T("39_smooth_shapes.py -- n = 1 ... 7 on one prism", "39_smooth_shapes.py – n = 1 ... 7 ant vienos prizmės") });
+    cards(s, [
+      [T("Any n", "Bet koks n"), T("n cells on every control edge for n = 1, 2, 3, 4, 5 ... -- classical subdivision only gives 2, 4, 8.",
+                                  "n langelių ant kiekvienos kontrolinės briaunos, n = 1, 2, 3, 4, 5 ... – klasikinis dalijimas duoda tik 2, 4, 8.")],
+      [T("Exactly on the limit surface", "Tiksliai ant ribinio paviršiaus"), T("Every new vertex is evaluated on the limit surface; near odd corners the grid is reparameterised to stay even.",
+                                                                              "Kiekviena nauja viršūnė skaičiuojama ant ribinio paviršiaus; prie ypatingųjų kampų tinklas perparametrizuojamas, kad liktų tolygus.")],
+      [T("The paper", "Straipsnis"), T("Sabaliauskas, Uniform n-grids on Catmull-Clark limit surfaces of arbitrary polygon meshes (2026); a line-by-line port to pure Python.",
+                                       "Sabaliauskas, Uniform n-grids on Catmull–Clark limit surfaces of arbitrary polygon meshes (2026); perkelta eilutė po eilutės į gryną Python.")],
+    ], { y: 4.4, h: 1.75, perRow: 3 });
+  }
+
+  // =========================================================== 27e. catalogue
+  {
+    const s = sheet(T("Twenty-five surfaces by name", "Dvidešimt penki paviršiai pagal vardą"), T("surface()", "surface()"));
+    code(s, [
+      "print(add.surface_names())",
+      "add.surface(\"klein_bottle\", [0, 0, 0], 4, 120)",
+      "add.surface(\"dini\", [6, 0, 0], 4,",
+      "            color=lambda u, v: add.hsv(u / 12))",
+      "add.surface(\"pillow\", [-6, 0, 0], 3, a=0.9)",
+      "",
+      "owl = add.surface_function(\"owl\")   # bare f(u, v)",
+    ], { x: M, y: 1.6, w: 5.15, h: 2.35, fontSize: 11.5 });
+    picture(s, "surface_zoo.png", { x: 5.95, y: 1.6, w: 3.43, h: 2.35,
+      caption: T("34_surface_zoo.py", "34_surface_zoo.py") });
+    picture(s, "knot_curve.png", { x: M, y: 4.35, w: 4.3, h: 2.2,
+      caption: T("35_knot_curve.py -- a knot from rotating circles, one curve() call",
+                 "35_knot_curve.py – mazgas iš besisukančių apskritimų, vienas curve() kvietimas") });
+    picture(s, "minecraft_sphere.png", { x: 5.1, y: 4.35, w: 4.28, h: 2.2,
+      caption: T("36_minecraft_sphere.py -- Maple, blocks, geodesic", "36_minecraft_sphere.py – Maple, kubeliai, geodezinė") });
+  }
+
+  // =========================================================== 27f. glass and textures
+  {
+    const s = sheet(T("Glass, pictures and the Sketchfab limits", "Stiklas, paveikslėliai ir Sketchfab ribos"),
+                    T(".obj + .mtl", ".obj + .mtl"));
+    code(s, [
+      "glass = add.transparent(\"sky\", 0.35)  # 0..1",
+      "add.cuboid([0, 1.5, 2], [2, 1.2, 0.1], glass)",
+      "wall = add.make(add.cuboid, [0, 1.5, 0], [6, 3, 1])",
+      "add.mesh(add.texture(wall, \"bricks.png\", \"box\"))",
+      "",
+      "add.check()     # <= 50 MB, <= 50 colours",
+      "add.save(\"house.obj\", colors=50)   # .mtl",
+    ], { x: M, y: 1.6, w: 5.15, h: 2.35, fontSize: 11.5 });
+    picture(s, "glass_and_textures.png", { x: 5.95, y: 1.6, w: 3.43, h: 2.35,
+      caption: T("45_glass_and_textures.py", "45_glass_and_textures.py") });
+    cards(s, [
+      [T("Optional", "Neprivaloma"), T("Without transparent/texture everything is exactly as before; .off files keep plain colours.",
+                                      "Be transparent/texture viskas lygiai kaip anksčiau; .off failuose lieka paprastos spalvos.")],
+      [T("Limits", "Ribos"), T("Sketchfab: 100 MB free plan, 100 materials merged beyond that. The course: 50 MB, 50 colours. limit_colors() and obj_size() help.",
+                              "Sketchfab: 100 MB nemokamai, medžiagos virš 100 suliejamos. Kursas: 50 MB, 50 spalvų. Padeda limit_colors() ir obj_size().")],
+      [T("Pictures from code", "Paveikslėliai iš kodo"), T("write_png(\"bricks.png\", rows) writes a picture you computed -- no image files needed.",
+                                                          "write_png(\"bricks.png\", rows) įrašo patį paskaičiuotą paveikslėlį – failų nereikia.")],
+    ], { y: 4.4, h: 1.75, perRow: 3 });
+  }
+
   // =========================================================== 28. export
   {
     const s = sheet(T("Saving and sharing a model", "Modelio išsaugojimas ir viešinimas"), T("files", "failai"));
@@ -955,10 +1070,10 @@ function build(lang) {
       caption: T("17_fractals.py -- Menger sponge, Sierpinski, a tree", "17_fractals.py – Mengerio kempinė, Sierpinskis, medis") });
     picture(s, "city.png", { x: M, y: 4.55, w: 4.3, h: 2.1 });
     picture(s, "example4.png", { x: 5.1, y: 4.55, w: 4.28, h: 2.1 });
-    s.addNotes(T("30 example programs; every public function is used by at least one of them "
-                 + "(python3 tools/coverage.py).",
-                 "30 pavyzdinių programų; kiekviena vieša funkcija panaudota bent vienoje "
-                 + "(python3 tools/coverage.py)."));
+    s.addNotes(T("42 example programs; every public function is used by at least one of them "
+                 + "(python3 tools/coverage.py), and every model fits the Sketchfab limits.",
+                 "42 pavyzdinės programos; kiekviena vieša funkcija panaudota bent vienoje "
+                 + "(python3 tools/coverage.py), ir kiekvienas modelis telpa į Sketchfab ribas."));
   }
 
   // =========================================================== 31. migration
@@ -990,10 +1105,12 @@ function build(lang) {
       x: M, y: 5.35, w: W - 2 * M, h: 1.15, rectRadius: 0.05, fill: { color: SAND },
     });
     s.addText(T("All the old names still work. Twelve models written for 1.2 live in tests/legacy/, "
-                + "and the tests check that they produce exactly as many faces as before. "
+                + "and the tests check that they produce exactly as many faces as before "
+                + "(only sphere changed: it is geodesic now; quadsphere is the old one). "
                 + "examples/32_old_names.py is a whole model in the 1.2 vocabulary.",
                 "Visi seni vardai tebeveikia. Dvylika 1.2 versijai rašytų modelių guli tests/legacy/ "
-                + "aplanke, ir testai tikrina, kad jie duotų lygiai tiek pat sienų kaip anksčiau. "
+                + "aplanke, ir testai tikrina, kad jie duotų lygiai tiek pat sienų kaip anksčiau "
+                + "(pasikeitė tik sphere: dabar geodezinė; senoji – quadsphere). "
                 + "examples/32_old_names.py – ištisas modelis 1.2 žodynu."), {
       x: M + 0.25, y: 5.55, w: W - 2 * M - 0.5, h: 0.8, isTextBox: true,
       margin: 0, fontFace: BODY_FONT, fontSize: 13, color: INK, valign: "top",

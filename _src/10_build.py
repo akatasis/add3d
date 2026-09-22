@@ -381,11 +381,24 @@ def prism(profile, height, color=None, center=(0, 0, 0), axis=(0, 1, 0)):
     _scene.extend(M)
 
 
+# ============================================================================
+#  7. The five regular polyhedra (Platonic solids)
+# ============================================================================
+# Each solid is stored with its centre at the origin, so the average of its
+# vertex coordinates is exactly [0, 0, 0]; ``polyhedron`` then scales it to
+# the circumscribed radius ``r`` and shifts it to ``center``.  The face tables
+# are wound counter-clockwise seen from outside.
+
 def polyhedron(name, center=(0, 0, 0), r=1.0, color=None):
     """One of the five Platonic solids, inscribed in a sphere of radius ``r``.
 
     ``name`` is ``"tetrahedron"``, ``"cube"``, ``"octahedron"``,
-    ``"dodecahedron"`` or ``"icosahedron"``.
+    ``"dodecahedron"`` or ``"icosahedron"``.  ``r`` is the distance from the
+    centre to every vertex.  The same solids also have functions of their
+    own (:func:`tetrahedron` ... :func:`icosahedron`), and
+    :func:`polyhedron_points` gives just the vertex coordinates::
+
+        add.polyhedron("dodecahedron", [0, 0, 0], 2, "gold")
     """
     V, F = _platonic(name)
     scale = r / _norm(V[0])
@@ -401,14 +414,60 @@ def polyhedron(name, center=(0, 0, 0), r=1.0, color=None):
     _make_outward(_scene, first)
 
 
+def tetrahedron(center=(0, 0, 0), r=1.0, color=None):
+    """A regular tetrahedron: 4 vertices, 4 triangles, circumradius ``r``."""
+    polyhedron("tetrahedron", center, r, color)
+
+
+def octahedron(center=(0, 0, 0), r=1.0, color=None):
+    """A regular octahedron: 6 vertices, 8 triangles, circumradius ``r``."""
+    polyhedron("octahedron", center, r, color)
+
+
+def dodecahedron(center=(0, 0, 0), r=1.0, color=None):
+    """A regular dodecahedron: 20 vertices, 12 pentagons, circumradius ``r``."""
+    polyhedron("dodecahedron", center, r, color)
+
+
+def icosahedron(center=(0, 0, 0), r=1.0, color=None):
+    """A regular icosahedron: 12 vertices, 20 triangles, circumradius ``r``.
+
+    Its vertices are the natural starting point for a geodesic sphere
+    (:func:`sphere`), a football (:func:`truncate`) or anything with
+    twelve equally spread directions -- see :func:`polyhedron_points`.
+    """
+    polyhedron("icosahedron", center, r, color)
+
+
+def polyhedron_points(name, center=(0, 0, 0), r=1.0):
+    """The vertex coordinates of a Platonic solid, as a list of points.
+
+    The average of the points is exactly ``center``.  Use them to place
+    things evenly around a point -- twelve spikes on an icosahedron, say::
+
+        for p in add.polyhedron_points("icosahedron", [0, 0, 0], 2):
+            add.cone([0, 0, 0], p, 0.3, 12, "red")
+    """
+    V, F = _platonic(name)
+    scale = r / _norm(V[0])
+    return [[center[0] + p[0] * scale, center[1] + p[1] * scale,
+             center[2] + p[2] * scale] for p in V]
+
+
+def polyhedron_faces(name):
+    """The face table of a Platonic solid: lists of indices into
+    :func:`polyhedron_points`, counter-clockwise seen from outside."""
+    return [list(f) for f in _platonic(name)[1]]
+
+
 def _platonic(name):
-    """Vertex and face tables for the five Platonic solids."""
+    """Vertex and face tables for the five Platonic solids (centred at 0)."""
     name = name.lower()
     if name in ("tetrahedron", "tetra"):
         V = [(1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)]
         F = [[0, 1, 2], [0, 3, 1], [0, 2, 3], [1, 3, 2]]
         return V, F
-    if name in ("cube", "hexahedron"):
+    if name in ("cube", "hexahedron", "box"):
         V = [(x, y, z) for x in (-1, 1) for y in (-1, 1) for z in (-1, 1)]
         F = [[0, 1, 3, 2], [4, 6, 7, 5], [0, 4, 5, 1],
              [2, 3, 7, 6], [0, 2, 6, 4], [1, 5, 7, 3]]
@@ -420,12 +479,16 @@ def _platonic(name):
         return V, F
     phi = (1 + math.sqrt(5)) / 2
     if name in ("icosahedron", "icosa"):
-        V = []
-        for s1 in (-1, 1):
-            for s2 in (-1, 1):
-                V += [(0, s1 * 1.0, s2 * phi), (s1 * 1.0, s2 * phi, 0),
-                      (s1 * phi, 0, s2 * 1.0)]
-        F = _hull_faces(V, 3)
+        # The classic table: three golden rectangles, 20 triangles listed
+        # counter-clockwise from outside (the same one the geodesic sphere
+        # starts from).
+        V = [(-1, phi, 0), (1, phi, 0), (-1, -phi, 0), (1, -phi, 0),
+             (0, -1, phi), (0, 1, phi), (0, -1, -phi), (0, 1, -phi),
+             (phi, 0, -1), (phi, 0, 1), (-phi, 0, -1), (-phi, 0, 1)]
+        F = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+             [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+             [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+             [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]]
         return V, F
     if name in ("dodecahedron", "dodeca"):
         V = [(x, y, z) for x in (-1, 1) for y in (-1, 1) for z in (-1, 1)]

@@ -2,7 +2,7 @@
 add.py -- build 3D models with nothing but Python code.
 ==============================================================================
 
-Version 2.1  |  Martynas Sabaliauskas (VU MIF DMSTI)  |  MIT licence
+Version 2.0  |  Martynas Sabaliauskas (VU MIF DMSTI)  |  MIT licence
 
 A tiny, dependency-free 3D modelling kernel for teaching.  The whole library
 uses only ``math`` and ``random`` from the standard library: no NumPy, no
@@ -35,12 +35,27 @@ Only ``import add``
 ``add.randint(1, 6)`` and ``add.seed(7)`` all work and a model file needs no
 other import.  (``import math`` still works too, of course.)
 
+What is in 2.0
+--------------
+Booleans written from scratch (``union``, ``difference``, ``intersect``,
+``cut``); the five regular polyhedra (``tetrahedron`` ... ``icosahedron``,
+``polyhedron_points``) and a geodesic ``sphere`` of triangles; vertex tools
+(``neighbors``, ``valence``, ``set_vertex``, ``dual``, ``truncate``,
+``refine``, ``spherify``); smooth surfaces (``catmull_clark`` and
+``smooth``, the generalised Catmull-Clark algorithm); a catalogue of named
+surfaces (``surface``); parts, placing and colour functions; repair and
+``check()`` with the Sketchfab limits (``limit_colors``, ``obj_size``);
+see-through colours and image textures for ``.obj`` files
+(``transparent``, ``opacity``, ``texture``, ``write_png``).
+
 Compatibility
 -------------
 Code written for add.py 1.2 keeps working unchanged: the old names
 (``cube2``, ``cylinder2``, ``cylinder3``, ``cone2``, ``rectangle3D``,
 ``spin3D``, ``curve``, ``off``, ``zoom`` ...) are all still here, and so are
-the module-level ``add.vertices`` / ``add.faces`` string lists.
+the module-level ``add.vertices`` / ``add.faces`` string lists.  The one
+visible change is ``sphere``, now made of triangles; ``quadsphere`` is the
+old six-patch version.
 
 Coordinate convention
 ---------------------
@@ -58,7 +73,7 @@ import random as _random
 from math import *          # noqa: F401,F403
 from random import *        # noqa: F401,F403
 
-__version__ = "2.1"
+__version__ = "2.0"
 __all__ = []  # filled in at the bottom of the file
 
 #: Numerical tolerance used by welding, boolean operations and plane tests.
@@ -155,6 +170,12 @@ def rgb(color):
 
     Accepts ``[255, 0, 0]``, ``(1.0, 0.0, 0.0)`` (floats 0..1 are scaled),
     ``"#ff0000"``, ``"red"`` or ``None`` (-> :data:`DEFAULT_COLOR`).
+
+    A fourth value is the *opacity*: ``[120, 190, 255, 0.4]`` or
+    ``"#78beff66"`` is a see-through blue, kept as a fourth element of the
+    tuple (see :func:`transparent`).  A fifth, a file name, is an image
+    texture (see :func:`texture`).  Both only take effect in ``.obj``
+    files; everything else treats the colour as before.
     """
     if color is None:
         return DEFAULT_COLOR
@@ -163,10 +184,13 @@ def rgb(color):
         if s in COLORS:
             return COLORS[s]
         s = s.lstrip("#")
-        if len(s) == 3:
-            s = s[0] * 2 + s[1] * 2 + s[2] * 2
-        if len(s) == 6:
-            return (int(s[0:2], 16), int(s[2:4], 16), int(s[4:6], 16))
+        if len(s) in (3, 4):
+            s = "".join(ch * 2 for ch in s)
+        if len(s) in (6, 8):
+            out = (int(s[0:2], 16), int(s[2:4], 16), int(s[4:6], 16))
+            if len(s) == 8 and int(s[6:8], 16) < 255:
+                return out + (round(int(s[6:8], 16) / 255.0, 3),)
+            return out
         raise ValueError("unknown colour: %r" % color)
     r, g, b = color[0], color[1], color[2]
     if isinstance(r, float) and isinstance(g, float) and isinstance(b, float) \
@@ -176,7 +200,40 @@ def rgb(color):
     for c in (r, g, b):
         c = int(round(c))
         out.append(0 if c < 0 else (255 if c > 255 else c))
-    return (out[0], out[1], out[2])
+    out = (out[0], out[1], out[2])
+    alpha, image = 1.0, None
+    if len(color) > 3 and color[3] is not None:
+        alpha = float(color[3])
+        if alpha > 1.0:                            # given as 0..255
+            alpha /= 255.0
+        alpha = round(0.0 if alpha < 0 else (1.0 if alpha > 1 else alpha), 3)
+    if len(color) > 4 and color[4]:
+        image = str(color[4])
+    if image is not None:
+        return out + (alpha, image)
+    if alpha < 1.0:
+        return out + (alpha,)
+    return out
+
+
+def transparent(color, alpha=0.5):
+    """A see-through version of a colour: ``alpha`` is the opacity, 0 for
+    invisible and 1 for solid.
+
+    Any drawing function takes the result in place of a colour, so a
+    window is ``add.cuboid(c, [2, 1.5, 0.05], add.transparent("sky", 0.35))``.
+    The opacity is written to the ``.mtl`` file of an ``.obj`` model (as
+    ``d``); ``.off`` files stay plain colours.  See also :func:`opacity`.
+    """
+    c = rgb(color)
+    return rgb((c[0], c[1], c[2], alpha) + tuple(c[4:5]))
+
+
+def _material(c):
+    """``(r, g, b, alpha, image)`` for any colour tuple."""
+    return (c[0], c[1], c[2],
+            c[3] if len(c) > 3 else 1.0,
+            c[4] if len(c) > 4 else None)
 
 
 #: A handful of named colours, so ``add.box(c, 1, "red")`` works.
@@ -239,12 +296,15 @@ class Mesh(object):
     still give you exactly what add.py 1.2 produced.
     """
 
-    __slots__ = ("V", "F", "C")
+    __slots__ = ("V", "F", "C", "UV")
 
-    def __init__(self, V=None, F=None, C=None):
+    def __init__(self, V=None, F=None, C=None, UV=None):
         self.V = V if V is not None else []
         self.F = F if F is not None else []
         self.C = C if C is not None else []
+        #: Texture coordinates, one ``[(u, v), ...]`` per face (or ``None``
+        #: for a face without a texture); ``None`` when nothing is textured.
+        self.UV = UV
 
     # -- basic dunder methods ------------------------------------------------
 
@@ -287,17 +347,25 @@ class Mesh(object):
         """An independent copy."""
         return Mesh([list(p) for p in self.V],
                     [list(f) for f in self.F],
-                    list(self.C))
+                    list(self.C),
+                    None if self.UV is None else
+                    [None if t is None else list(t) for t in self.UV])
 
     def add_vertex(self, p):
         """Append a point and return its index."""
         self.V.append([float(p[0]), float(p[1]), float(p[2])])
         return len(self.V) - 1
 
-    def add_face(self, indices, color=None):
+    def add_face(self, indices, color=None, uv=None):
         """Append one face given as a sequence of vertex indices."""
         self.F.append(list(indices))
         self.C.append(rgb(color))
+        if uv is not None:
+            if self.UV is None:
+                self.UV = [None] * (len(self.F) - 1)
+            self.UV.append(list(uv))
+        elif self.UV is not None:
+            self.UV.append(None)
 
     def add_polygon(self, points, color=None):
         """Append one face given as a sequence of 3D points."""
@@ -311,10 +379,22 @@ class Mesh(object):
         other = as_mesh(other)
         shift = len(self.V)
         self.V.extend([list(p) for p in other.V])
+        if other.UV is not None and self.UV is None:
+            self.UV = [None] * len(self.F)
         for f, c in zip(other.F, other.C):
             self.F.append([i + shift for i in f])
             self.C.append(c)
+        if self.UV is not None:
+            if other.UV is None:
+                self.UV.extend([None] * len(other.F))
+            else:
+                self.UV.extend([None if t is None else list(t)
+                                for t in other.UV])
         return self
+
+    def uv_of(self, i):
+        """The texture coordinates of face ``i``, or ``None``."""
+        return None if self.UV is None else self.UV[i]
 
     # -- convenience ---------------------------------------------------------
 
@@ -491,6 +571,25 @@ def pop():
     global _scene
     made = _scene
     _scene = _stack.pop() if _stack else Mesh()
+    return made
+
+
+def make(draw, *args, **kwargs):
+    """Call a drawing function and return what it drew as a mesh, without
+    touching the current scene.
+
+    ``add.make(add.sphere, [0, 0, 0], 1, 20, "red")`` is the same as
+    ``push()``, ``sphere(...)``, ``pop()``; it turns any of the drawing
+    functions into one that *returns* a mesh::
+
+        ball = add.make(add.sphere, [0, 0, 0], 1)
+        add.mesh(add.move(ball, [3, 0, 0]))
+    """
+    push()
+    try:
+        draw(*args, **kwargs)
+    finally:
+        made = pop()
     return made
 
 

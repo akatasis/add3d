@@ -31,11 +31,11 @@ jau naudoja.
 ## 2. Repozitorijos įkėlimas į GitHub
 
 **Variantas A – atkurti iš `.bundle` failo (su visa istorija).** Šalia šio
-aplanko yra `add3d-2.1-git-history.bundle` – visa git istorija viename
+aplanko yra `add3d-2.0-git-history.bundle` – visa git istorija viename
 faile:
 
 ```bash
-git clone add3d-2.1-git-history.bundle add3d
+git clone add3d-2.0-git-history.bundle add3d
 cd add3d
 git remote remove origin
 ```
@@ -56,7 +56,7 @@ git push -u origin main
 cd add3d
 git init -b main
 git add .
-git commit -m "add.py 2.1"
+git commit -m "add.py 2.0"
 git remote add origin https://github.com/JUSU_VARDAS/add3d.git
 git push -u origin main
 ```
@@ -77,10 +77,13 @@ python3 tools/make_docs.py
 
 **Pasitikrinkite skirtuką Actions.** Testai paleidžiami su Python 3.8–3.13;
 antras darbas tikrina, ar `add.py` ir `examples/add.py` sutampa su `_src/`,
-ar veikia visi pavyzdžiai, ar kiekviena vieša funkcija panaudota bent viename
-pavyzdyje (`tools/coverage.py --strict`) ir ar `docs/index.html` atitinka
-kodo aprašymus. Ką nors pakeitę `_src/` aplanke, prieš commit'ą paleiskite
-`python3 build.py` ir `python3 tools/make_docs.py`.
+ar veikia visi pavyzdžiai ir telpa į Sketchfab ribas, ar kiekviena vieša
+funkcija panaudota bent viename pavyzdyje (`tools/coverage.py --strict`), ar
+veikia kiekvienas dokumentacijos pavyzdys (`tests/test_docs.py`) ir ar
+`docs/index.html` atitinka kodo aprašymus. Ką nors pakeitę `_src/` aplanke,
+prieš commit'ą paleiskite `python3 build.py` ir `python3 tools/make_docs.py`;
+naujai viešai funkcijai dar reikia lietuviško paaiškinimo ir pavyzdžio faile
+`docs/reference.py`, kitaip dokumentacija nesigeneruoja.
 
 **Aprašymas ir raktažodžiai.** Siūlomas aprašymas:
 
@@ -99,7 +102,7 @@ Vieno failo atsisiuntimas lieka pagrindinis būdas, bet paketas leidžia
 ```bash
 python3 -m pip install --upgrade build twine
 python3 build.py && python3 tests/test_add.py
-python3 -m build                      # -> dist/add3d-2.1.tar.gz ir .whl
+python3 -m build                      # -> dist/add3d-2.0.tar.gz ir .whl
 python3 -m twine upload dist/*        # reikia PyPI paskyros ir API rakto
 ```
 
@@ -110,8 +113,10 @@ Jei abejojate, pirmiausia išbandykite `test.pypi.org`
 
 ## 5. Dalijimasis ne tik GitHub
 
-* **Sketchfab**: `add.save("modelis.obj")` sukuria `.obj` + `.mtl`; įkelkite
-  abu viename archyve, ir spalvos bus išsaugotos.
+* **Sketchfab**: `add.save("modelis.obj")` sukuria `.obj` + `.mtl` (su
+  permatomumu ir tekstūromis); įkelkite abu, kartu su tekstūrų paveikslėliais,
+  viename archyve. Neviršykite 50 MB ir 50 spalvų (`add.check()` pasako;
+  `add.save("modelis.obj", colors=50)` sumažina spalvingą modelį).
 * **Straipsnis**: `paper/paper.md` (+ `references.bib`) parašytas
   informatikos didaktikos leidiniui; repozitorijos nuorodą ir DOI (jei
   leidimą archyvuosite Zenodo) įrašykite ir į `CITATION.cff`.
@@ -124,8 +129,8 @@ Jei abejojate, pirmiausia išbandykite `test.pypi.org`
 |---|---|
 | `add.py` | pati biblioteka – vienintelis failas, kurio reikia studentams |
 | `_src/` + `build.py` | dalys, iš kurių surenkamas `add.py` |
-| `examples/` | 30 pavyzdinių programų su komentarais ir `add.py` kopija |
-| `tests/` | 80 vienetinių testų + add.py 1.2 suderinamumo testas |
+| `examples/` | 42 pavyzdinės programos su komentarais ir `add.py` kopija |
+| `tests/` | 89 vienetiniai testai, add.py 1.2 suderinamumo testas ir dokumentacijos pavyzdžių paleidiklis |
 | `tools/` | `preview.py` (peržiūra), `make_docs.py`, `coverage.py` |
 | `docs/` | dokumentacijos svetainė (EN/LT) ir paveikslėliai |
 | `slides/` | paskaitos skaidrės (.pptx, .pdf ir generatorius) |
@@ -136,8 +141,10 @@ Jei abejojate, pirmiausia išbandykite `test.pypi.org`
 
 ```bash
 python3 build.py --check          # add.py ir examples/add.py atnaujinti
-python3 tests/test_add.py         # 80 passed, 0 failed
+python3 tests/test_add.py         # 89 passed, 0 failed
 python3 tests/test_legacy.py      # all legacy models reproduce
+python3 tests/test_docs.py        # 231 documentation examples ran
 python3 tools/coverage.py --strict
 python3 tools/make_docs.py        # docs/index.html
+python3 examples/build_all.py --models   # visi pavyzdžiai telpa į Sketchfab ribas
 ```

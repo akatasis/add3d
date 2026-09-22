@@ -1,7 +1,7 @@
 
 
 # ============================================================================
-# 13. Measuring a mesh
+# 15. Measuring a mesh
 # ============================================================================
 
 def bbox(M=None):
@@ -27,6 +27,11 @@ def center(M=None):
         return [0.0, 0.0, 0.0]
     n = float(len(M.V))
     return [sum(p[a] for p in M.V) / n for a in range(3)]
+
+
+#: Private handle on :func:`center`, for functions whose own parameter is
+#: called ``center``.
+_centroid = center
 
 
 def middle(M=None):
@@ -55,7 +60,7 @@ def volume(M=None):
 
 
 # ============================================================================
-# 14. Moving, turning and reshaping a mesh
+# 16. Moving, turning and reshaping a mesh
 # ============================================================================
 # Every function here takes a mesh and returns a NEW mesh; the original is
 # left alone.  That is what makes chains like
@@ -65,9 +70,13 @@ def volume(M=None):
 def _mapped(M, f, flip=False):
     """Apply point function ``f`` to a copy of the mesh."""
     M = as_mesh(M)
+    UV = None
+    if M.UV is not None:
+        UV = [None if t is None else (list(reversed(t)) if flip else list(t))
+              for t in M.UV]
     out = Mesh([list(f(p)) for p in M.V],
                [list(reversed(x)) if flip else list(x) for x in M.F],
-               list(M.C))
+               list(M.C), UV)
     return out
 
 
@@ -265,20 +274,118 @@ def jitter(M, amount=0.05, seed=None):
 
 
 # ============================================================================
-# 15. Colour
+# 17. Colour
 # ============================================================================
 
 def color(M, RGB):
     """Paint the whole mesh one colour and return the painted copy."""
     M = as_mesh(M)
     c = rgb(RGB)
-    return Mesh([list(p) for p in M.V], [list(f) for f in M.F],
-                [c] * len(M.F))
+    out = M.copy()
+    out.C = [c] * len(M.F)
+    return out
+
+
+def opacity(M, alpha):
+    """A copy of the mesh with every face made see-through: ``alpha`` is the
+    opacity, 0 invisible, 1 solid (which also removes any transparency).
+
+    Colours and textures are kept; the opacity goes into the ``.mtl`` file
+    of an ``.obj`` model.  For one colour at a time use :func:`transparent`::
+
+        glass = add.opacity(add.make(add.box, [0, 0, 0], 2, "sky"), 0.3)
+    """
+    M = as_mesh(M)
+    out = M.copy()
+    out.C = [rgb((c[0], c[1], c[2], alpha) + tuple(c[4:5])) for c in M.C]
+    return out
 
 
 #: Private handle on :func:`color`, for functions whose own parameter is
 #: called ``color``.
 _paint = color
+
+
+def texture(M, image, mapping="box", scale=1.0, color="white", offset=(0, 0)):
+    """Wrap an image around a mesh and return the textured copy.
+
+    ``image`` is the file name of a picture (``.png`` or ``.jpg``) that will
+    sit next to the ``.obj`` -- put both, with the ``.mtl``, in one zip for
+    Sketchfab.  The mesh remembers a texture coordinate for every corner,
+    worked out from the ``mapping``:
+
+    * ``"box"`` (default): each face is projected along its dominant axis,
+      so the picture repeats every ``scale`` units on every side of a box;
+    * ``"xy"``, ``"xz"``, ``"yz"``: one flat projection for all faces;
+    * ``"fit"``: the picture stretched once over the mesh, seen from the front
+      (XY), whatever its size;
+    * ``"sphere"`` / ``"cylinder"``: wrapped around the mesh's centre, with
+      ``scale`` copies around;
+    * or your own function ``mapping(point, normal) -> (u, v)``.
+
+    ``color`` tints the picture (white shows it as it is) and keeps any
+    transparency the faces had.  Apply textures last: transforms, ``clean``
+    and ``merge`` keep them, but booleans, subdivision and ``solidify``
+    rebuild the faces and drop them.  ``.off`` files cannot hold textures;
+    ``.obj`` + ``.mtl`` can (``map_Kd``)::
+
+        add.write_png("bricks.png", rows)                   # or any picture
+        wall = add.texture(add.make(add.cuboid, [0, 0, 0], [4, 2, 0.3]),
+                           "bricks.png", "box", scale=1.0)
+        add.mesh(wall)
+        add.save("house.obj")
+    """
+    M = as_mesh(M)
+    lo, hi = bbox(M)
+    mid = [(lo[a] + hi[a]) / 2.0 for a in range(3)]
+    span = [max(hi[a] - lo[a], EPS) for a in range(3)]
+    ox, oy = offset[0], offset[1]
+    s = float(scale) if scale else 1.0
+
+    def planar(i, j):
+        return lambda p, n: ((p[i] - ox) / s, (p[j] - oy) / s)
+
+    if callable(mapping):
+        fn = mapping
+    elif mapping == "box":
+        flat = {0: planar(2, 1), 1: planar(0, 2), 2: planar(0, 1)}
+
+        def fn(p, n):
+            axis = max(range(3), key=lambda a: abs(n[a]))
+            return flat[axis](p, n)
+    elif mapping in ("xy", "xz", "yz"):
+        fn = {"xy": planar(0, 1), "xz": planar(0, 2), "yz": planar(2, 1)}[mapping]
+    elif mapping == "fit":
+        def fn(p, n):
+            return ((p[0] - lo[0]) / span[0], (p[1] - lo[1]) / span[1])
+    elif mapping == "sphere":
+        def fn(p, n):
+            d = _unit(_sub(p, mid))
+            return ((math.atan2(d[2], d[0]) / (2 * math.pi) + 0.5) * s,
+                    math.asin(max(-1.0, min(1.0, d[1]))) / math.pi + 0.5)
+    elif mapping == "cylinder":
+        def fn(p, n):
+            return ((math.atan2(p[2] - mid[2], p[0] - mid[0]) / (2 * math.pi)
+                     + 0.5) * s, (p[1] - lo[1]) / span[1])
+    else:
+        raise ValueError("unknown texture mapping: %r" % (mapping,))
+
+    out = M.copy()
+    out.UV = []
+    tint = rgb(color) if color is not None else None
+    for i, f in enumerate(M.F):
+        n = _unit(_face_normal(M, f))
+        uv = [tuple(fn(M.V[k], n)) for k in f]
+        if mapping in ("sphere", "cylinder"):          # mend the seam
+            us = [t[0] for t in uv]
+            if max(us) - min(us) > 0.5 * s:
+                uv = [(t[0] + s if t[0] < (min(us) + max(us)) / 2.0 else t[0], t[1])
+                      for t in uv]
+        out.UV.append(uv)
+        base = tint if tint is not None else M.C[i]
+        alpha = M.C[i][3] if len(M.C[i]) > 3 else 1.0
+        out.C[i] = rgb((base[0], base[1], base[2], alpha, image))
+    return out
 
 
 def color_by(M, fn):
@@ -316,8 +423,73 @@ def color_random(M, seed=None):
     return out
 
 
+def palette(M=None):
+    """The distinct colours of a mesh, most used first, as
+    ``[(colour, number of faces), ...]``."""
+    M = as_mesh(M)
+    count = {}
+    for c in M.C:
+        count[c] = count.get(c, 0) + 1
+    return sorted(count.items(), key=lambda item: (-item[1], item[0]))
+
+
+def limit_colors(M, n=50):
+    """Reduce a mesh to at most ``n`` distinct colours and return the copy.
+
+    Every colour in an ``.obj`` file becomes a *material*, and Sketchfab
+    merges materials beyond its limit of 100 (so keep to 50 to be safe).
+    Gradients and ``color_by`` paint jobs easily produce thousands of
+    shades; this groups similar shades together (median-cut quantisation,
+    weighted by how many faces use each shade) and replaces each group by
+    its average, so the picture hardly changes::
+
+        model = add.limit_colors(add.layer(), 50)
+        add.save("model.obj", model)
+    """
+    M = as_mesh(M)
+    counts = {}
+    for c in M.C:
+        if len(c) == 3:                       # transparent and textured
+            counts[c] = counts.get(c, 0) + 1  # materials are left alone
+    if len(counts) <= n:
+        return M.copy()
+    boxes = [list(counts.items())]
+    while len(boxes) < n:
+        # Split the box whose colours spread the most (weighted by use).
+        best, best_span, best_axis = None, -1, 0
+        for b in boxes:
+            if len(b) < 2:
+                continue
+            for axis in range(3):
+                span = max(c[axis] for c, w in b) - min(c[axis] for c, w in b)
+                if span > best_span:
+                    best, best_span, best_axis = b, span, axis
+        if best is None:
+            break
+        best.sort(key=lambda item: item[0][best_axis])
+        total = sum(w for c, w in best)
+        acc, cut = 0, 0
+        for cut in range(len(best) - 1):
+            acc += best[cut][1]
+            if acc * 2 >= total:
+                break
+        boxes.remove(best)
+        boxes.append(best[:cut + 1])
+        boxes.append(best[cut + 1:])
+    remap = {}
+    for b in boxes:
+        total = float(sum(w for c, w in b))
+        mean = tuple(int(round(sum(c[a] * w for c, w in b) / total))
+                     for a in range(3))
+        for c, w in b:
+            remap[c] = mean
+    out = M.copy()
+    out.C = [remap.get(c, c) for c in M.C]
+    return out
+
+
 # ============================================================================
-# 16. Copies and patterns
+# 18. Copies and patterns
 # ============================================================================
 
 def repeat(M, n, step):

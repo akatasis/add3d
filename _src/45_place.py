@@ -1,7 +1,7 @@
 
 
 # ============================================================================
-# 17. Placing parts: aim, scatter, line up
+# 19. Placing parts: aim, scatter, line up
 # ============================================================================
 # The functions in the previous section make copies on a regular pattern.
 # These put a part *somewhere in particular*: pointing along a direction,

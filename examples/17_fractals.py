@@ -151,5 +151,6 @@ for i, (name, M) in enumerate(shown):
     add.mesh(add.move(M, [(i % columns) * CELL, 0, (i // columns) * CELL]))
     print("%2d. %-26s %7d faces" % (i + 1, name, M.polygons))
 
+add.mesh(add.limit_colors(add.layer(), 50))   # at most 50 colours, so the .obj suits Sketchfab
 add.check()
 add.save("fractals.off")
