@@ -69,33 +69,69 @@ def _keep_faces(M, keep):
     return removed
 
 
-def _drop_degenerate(M, tol=1e-12):
-    """Delete faces with no area and remove repeated corners (in place)."""
-    keep = []
-    for k, f in enumerate(M.F):
-        clean_f = []
-        uv = M.UV[k] if M.UV is not None else None
-        clean_uv = [] if uv is not None else None
-        for t, i in enumerate(f):                    # drop repeated corners
-            if not clean_f or clean_f[-1] != i:
-                clean_f.append(i)
-                if clean_uv is not None:
-                    clean_uv.append(uv[t])
-        if len(clean_f) > 1 and clean_f[0] == clean_f[-1]:
-            clean_f.pop()
+def _split_repeats(f, uv):
+    """Cut a face that visits a vertex twice into loops that do not.
+
+    ``[a, b, c, a, d]`` -- a polygon pinched at ``a`` -- becomes
+    ``[a, b, c]`` and ``[a, d]`` (the second is then dropped as too short).
+    Consecutive repeats are removed first.  Returns ``[(face, uv), ...]``.
+    """
+    clean_f, clean_uv = [], ([] if uv is not None else None)
+    for t, i in enumerate(f):                        # drop repeated corners
+        if not clean_f or clean_f[-1] != i:
+            clean_f.append(i)
             if clean_uv is not None:
-                clean_uv.pop()
-        if len(clean_f) < 3:
-            continue
-        if len(set(clean_f)) < 3:
-            continue
-        if _norm(_face_normal(M, clean_f)) <= tol:
-            continue
-        M.F[k] = clean_f
+                clean_uv.append(uv[t])
+    if len(clean_f) > 1 and clean_f[0] == clean_f[-1]:
+        clean_f.pop()
         if clean_uv is not None:
-            M.UV[k] = clean_uv
-        keep.append(k)
-    return _keep_faces(M, keep)
+            clean_uv.pop()
+    if len(set(clean_f)) == len(clean_f):
+        return [(clean_f, clean_uv)]
+    seen = {}
+    for j, i in enumerate(clean_f):
+        if i in seen:                                # pinch: split here
+            a = seen[i]
+            first = (clean_f[a:j], clean_uv[a:j] if clean_uv is not None else None)
+            rest = (clean_f[j:] + clean_f[:a],
+                    (clean_uv[j:] + clean_uv[:a]) if clean_uv is not None else None)
+            return _split_repeats(first[0], first[1]) + _split_repeats(rest[0], rest[1])
+        seen[i] = j
+    return [(clean_f, clean_uv)]
+
+
+def _drop_degenerate(M, tol=1e-12):
+    """Delete faces with no area, remove repeated corners and split faces
+    pinched at a vertex (in place)."""
+    keep = []
+    extra_F, extra_C, extra_UV = [], [], []
+    for k, f in enumerate(M.F):
+        uv = M.UV[k] if M.UV is not None else None
+        pieces = [(list(f), uv)] if len(set(f)) == len(f) else _split_repeats(f, uv)
+        first = True
+        for clean_f, clean_uv in pieces:
+            if len(clean_f) < 3 or len(set(clean_f)) < 3:
+                continue
+            if _norm(_face_normal(M, clean_f)) <= tol:
+                continue
+            if first:
+                M.F[k] = clean_f
+                if clean_uv is not None:
+                    M.UV[k] = clean_uv
+                keep.append(k)
+                first = False
+            else:                                    # a second loop of a pinched face
+                extra_F.append(clean_f)
+                extra_C.append(M.C[k])
+                extra_UV.append(clean_uv)
+    removed = _keep_faces(M, keep)
+    if extra_F:
+        M.F.extend(extra_F)
+        M.C.extend(extra_C)
+        if M.UV is not None:
+            M.UV.extend(extra_UV)
+        removed -= len(extra_F)
+    return removed
 
 
 def _dedup_faces(M):
@@ -280,6 +316,288 @@ def heal(M=None, tol=1e-7):
     return M
 
 
+# -- coplanar overlaps: the cause of flicker ("z-fighting") in viewers -------
+
+def _poly_area2(pts):
+    """Twice the signed area of a 2D polygon (positive when counter-clockwise)."""
+    a = 0.0
+    n = len(pts)
+    for i in range(n):
+        x0, y0 = pts[i]
+        x1, y1 = pts[(i + 1) % n]
+        a += x0 * y1 - x1 * y0
+    return a
+
+
+def _clip_half(pts, a, b, keep_left):
+    """Sutherland-Hodgman: the part of convex polygon ``pts`` on one side of
+    the directed line a -> b (left = the inside of a counter-clockwise polygon)."""
+    ax, ay = a
+    bx, by = b
+    ex, ey = bx - ax, by - ay
+    out = []
+    n = len(pts)
+    if n == 0:
+        return out
+    prev = pts[-1]
+    prev_s = ex * (prev[1] - ay) - ey * (prev[0] - ax)
+    for cur in pts:
+        cur_s = ex * (cur[1] - ay) - ey * (cur[0] - ax)
+        cur_in = cur_s >= 0 if keep_left else cur_s <= 0
+        prev_in = prev_s >= 0 if keep_left else prev_s <= 0
+        if cur_in != prev_in:
+            t = prev_s / (prev_s - cur_s)
+            out.append((prev[0] + (cur[0] - prev[0]) * t, prev[1] + (cur[1] - prev[1]) * t))
+        if cur_in:
+            out.append(cur)
+        prev, prev_s = cur, cur_s
+    return out
+
+
+def _convex_minus(A, B, eps):
+    """Convex polygon ``A`` with convex polygon ``B`` taken away, as a list
+    of convex pieces (both counter-clockwise).  ``A`` comes back untouched
+    when the two only touch along an edge."""
+    inside = A
+    for i in range(len(B)):
+        inside = _clip_half(inside, B[i], B[(i + 1) % len(B)], True)
+        if len(inside) < 3:
+            return [A]
+    if abs(_poly_area2(inside)) <= eps:
+        return [A]
+    pieces = []
+    current = A
+    for i in range(len(B)):
+        a, b = B[i], B[(i + 1) % len(B)]
+        outside = _clip_half(current, a, b, False)
+        if len(outside) >= 3 and abs(_poly_area2(outside)) > eps:
+            pieces.append(outside)
+        current = _clip_half(current, a, b, True)
+        if len(current) < 3:
+            break
+    return pieces
+
+
+def _ears(pts):
+    """Ear-clipping triangulation of a simple 2D polygon (counter-clockwise);
+    returns triangles as lists of points."""
+    idx = list(range(len(pts)))
+    tris = []
+    guard = 0
+    while len(idx) > 3 and guard < 10 * len(pts):
+        guard += 1
+        n = len(idx)
+        found = False
+        for k in range(n):
+            i0, i1, i2 = idx[k - 1], idx[k], idx[(k + 1) % n]
+            a, b, c = pts[i0], pts[i1], pts[i2]
+            if (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]) <= 0:
+                continue                             # a reflex corner, not an ear
+            ok = True
+            for j in idx:
+                if j in (i0, i1, i2):
+                    continue
+                p = pts[j]
+                s1 = (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
+                s2 = (c[0] - b[0]) * (p[1] - b[1]) - (c[1] - b[1]) * (p[0] - b[0])
+                s3 = (a[0] - c[0]) * (p[1] - c[1]) - (a[1] - c[1]) * (p[0] - c[0])
+                if s1 > 0 and s2 > 0 and s3 > 0:
+                    ok = False
+                    break
+            if ok:
+                tris.append([a, b, c])
+                del idx[k]
+                found = True
+                break
+        if not found:
+            break
+    if len(idx) == 3:
+        tris.append([pts[idx[0]], pts[idx[1]], pts[idx[2]]])
+    return tris
+
+
+def _convex_pieces(pts):
+    """A counter-clockwise 2D polygon as convex pieces: itself if convex,
+    ear triangles otherwise."""
+    n = len(pts)
+    for i in range(n):
+        a, b, c = pts[i - 1], pts[i], pts[(i + 1) % n]
+        if (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]) < 0:
+            return _ears(pts)
+    return [pts]
+
+
+def _overlap_groups(M, tol):
+    """Faces grouped by their plane and orientation, each as 2D polygons:
+    ``{key: (u, v, n, [(area, index, pts2d, bbox), ...])}``."""
+    groups = {}
+    for i, f in enumerate(M.F):
+        if len(f) < 3:
+            continue
+        n = _face_normal(M, f)
+        ln = _norm(n)
+        if ln < 1e-12:
+            continue
+        n = (n[0] / ln, n[1] / ln, n[2] / ln)
+        c = [0.0, 0.0, 0.0]
+        for k in f:
+            p = M.V[k]
+            c[0] += p[0]
+            c[1] += p[1]
+            c[2] += p[2]
+        d = _dot(n, c) / len(f)
+        key = (round(n[0], 3), round(n[1], 3), round(n[2], 3), round(d / tol) * tol)
+        groups.setdefault(key, []).append(i)
+    out = {}
+    for key, idx in groups.items():
+        if len(idx) < 2:
+            continue
+        n = _unit((key[0], key[1], key[2]))
+        u, v, w = _frame(n)
+        polys = []
+        for i in idx:
+            pts = [(_dot(M.V[k], u), _dot(M.V[k], v)) for k in M.F[i]]
+            area2 = _poly_area2(pts)
+            if area2 < 0:
+                pts = pts[::-1]
+                area2 = -area2
+            xs = [p[0] for p in pts]
+            ys = [p[1] for p in pts]
+            polys.append((area2 / 2.0, i, pts, (min(xs), min(ys), max(xs), max(ys))))
+        out[key] = (u, v, n, polys)
+    return out
+
+
+def _overlap_scan(M, tol, cut):
+    """The engine behind :func:`overlaps` and :func:`_cut_overlaps`: walk
+    every plane group largest face first, find the kept faces each one
+    overlaps (a grid of cells makes this fast for thousands of faces in one
+    plane, such as a floor of tiles), and either count the offenders or
+    replace them by the convex pieces left outside the bigger faces.
+    Returns ``(count, replaced)``; ``replaced`` maps a face index to
+    ``(pieces, u, v, n, d)``."""
+    count = 0
+    replaced = {}
+    for key, (u, v, n, polys) in _overlap_groups(M, tol).items():
+        polys.sort(key=lambda t: -t[0])
+        largest = polys[0][0]
+        eps = 1e-9 * (1.0 + largest)
+        cell = max(1e-6, math.sqrt(max(1e-12, polys[len(polys) // 2][0])) * 2.0)
+        grid = {}
+        big = []                                     # a few big faces: checked against everyone
+
+        def cells(bb):
+            return (int(math.floor(bb[0] / cell)), int(math.floor(bb[1] / cell)),
+                    int(math.floor(bb[2] / cell)), int(math.floor(bb[3] / cell)))
+
+        def keep(pieces, bb):
+            entry = (pieces, bb)
+            x0, y0, x1, y1 = cells(bb)
+            if (x1 - x0 + 1) * (y1 - y0 + 1) > 400:
+                big.append(entry)
+                return
+            for cx in range(x0, x1 + 1):
+                for cy in range(y0, y1 + 1):
+                    grid.setdefault((cx, cy), []).append(entry)
+
+        for area, i, pts, bb in polys:
+            x0, y0, x1, y1 = cells(bb)
+            seen = set()
+            candidates = list(big)
+            for cx in range(x0, x1 + 1):
+                for cy in range(y0, y1 + 1):
+                    for entry in grid.get((cx, cy), ()):
+                        if id(entry) not in seen:
+                            seen.add(id(entry))
+                            candidates.append(entry)
+            own = _convex_pieces(pts)                # the face as it was drawn
+            pieces = own
+            changed = False
+            for kpieces, kbb in candidates:
+                if bb[0] >= kbb[2] or bb[2] <= kbb[0] or bb[1] >= kbb[3] or bb[3] <= kbb[1]:
+                    continue
+                new_pieces = []
+                for piece in pieces:
+                    parts = [piece]
+                    for other in kpieces:
+                        parts = [q for part in parts for q in _convex_minus(part, other, eps)]
+                    if len(parts) != 1 or parts[0] is not piece:
+                        changed = True
+                    new_pieces.extend(parts)
+                pieces = new_pieces
+                if changed and (not cut or len(pieces) > 64):
+                    break
+            if changed:
+                count += 1
+                if cut and len(pieces) <= 64:
+                    replaced[i] = (pieces, u, v, n, key[3])
+            # later, smaller faces are cut against the face as drawn: the same
+            # result as against its pieces, with far less to compare
+            keep(own, bb)
+    return count, replaced
+
+
+def overlaps(M=None, tol=1e-3):
+    """How many faces lie in the same plane, face the same way and overlap
+    a bigger face -- the faces that flicker in a viewer.  :func:`clean`
+    (and :func:`save`) cut them back; see also :func:`check`."""
+    return _overlap_scan(as_mesh(M), tol, False)[0]
+
+
+def _cut_overlaps(M, tol=1e-3):
+    """Where two faces lie in one plane, face the same way and overlap,
+    cut the smaller one back so that only the larger covers the shared
+    patch (in place).  This is what stops the flicker between, say, the
+    side of a beam and the face of the wall it runs into.  Returns how
+    many faces were cut."""
+    count, replaced = _overlap_scan(M, tol, True)
+    if not replaced:
+        return 0
+    keep_idx = [i for i in range(len(M.F)) if i not in replaced]
+    new_F, new_C, new_UV = [], [], []
+    for i, (pieces, u, v, n, d) in replaced.items():
+        f = M.F[i]
+        base = [n[0] * d, n[1] * d, n[2] * d]        # a point of the plane
+        # texture coordinates: the affine map of the original corners, if any
+        uv = M.UV[i] if M.UV is not None else None
+        affine = None
+        if uv is not None and len(f) >= 3:
+            P2 = [(_dot(M.V[k], u), _dot(M.V[k], v)) for k in f]
+            for a in range(len(f)):
+                b, c = (a + 1) % len(f), (a + 2) % len(f)
+                det = ((P2[b][0] - P2[a][0]) * (P2[c][1] - P2[a][1])
+                       - (P2[c][0] - P2[a][0]) * (P2[b][1] - P2[a][1]))
+                if abs(det) > 1e-12:
+                    affine = (P2[a], P2[b], P2[c], uv[a], uv[b], uv[c], det)
+                    break
+        for piece in pieces:
+            if len(piece) < 3 or abs(_poly_area2(piece)) <= 1e-12:
+                continue
+            idx = []
+            piece_uv = [] if affine else None
+            for s_, t_ in piece:
+                idx.append(M.add_vertex([base[0] + u[0] * s_ + v[0] * t_,
+                                         base[1] + u[1] * s_ + v[1] * t_,
+                                         base[2] + u[2] * s_ + v[2] * t_]))
+                if affine:
+                    a, b, c, ua, ub, uc, det = affine
+                    l1 = ((s_ - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (t_ - a[1])) / det
+                    l2 = ((b[0] - a[0]) * (t_ - a[1]) - (s_ - a[0]) * (b[1] - a[1])) / det
+                    piece_uv.append((ua[0] + l1 * (ub[0] - ua[0]) + l2 * (uc[0] - ua[0]),
+                                     ua[1] + l1 * (ub[1] - ua[1]) + l2 * (uc[1] - ua[1])))
+            new_F.append(idx)
+            new_C.append(M.C[i])
+            new_UV.append(piece_uv)
+    _keep_faces(M, keep_idx)
+    M.F.extend(new_F)
+    M.C.extend(new_C)
+    if M.UV is not None:
+        M.UV.extend(new_UV)
+    elif any(t is not None for t in new_UV):
+        M.UV = [None] * (len(M.F) - len(new_F)) + new_UV
+    return count
+
+
 def triangulate(M=None):
     """Return a copy in which every face is a triangle (fan triangulation)."""
     M = as_mesh(M)
@@ -351,19 +669,22 @@ def fix_normals(M=None, outward=True):
 
 
 def clean(M=None, tol=1e-7, weld=True, degenerate=True, duplicates=True,
-          internal=True, unused=True, normals=False, report=False):
+          internal=True, unused=True, normals=False, report=False, overlaps=True):
     """Repair a model and return the tidy copy.
 
-    By default it welds coincident vertices, throws away zero-area faces,
-    removes repeated faces and removes the walls buried where two solids
-    touch.  Pass ``normals=True`` to also make every face point outward, and
+    By default it welds coincident vertices, throws away zero-area faces
+    (and splits faces pinched at a vertex), removes repeated faces, removes
+    the walls buried where two solids touch, and cuts back the smaller of
+    two faces that lie in one plane, face the same way and overlap -- the
+    faces that flicker in a viewer (``overlaps``; see :func:`overlaps`).
+    Pass ``normals=True`` to also make every face point outward, and
     ``report=True`` to get ``(mesh, report_dict)`` instead of just the mesh::
 
         model = add.clean(add.layer())
         add.mesh(model)
     """
     M = as_mesh(M).copy()
-    info = {"vertices_removed": 0, "faces_removed": 0}
+    info = {"vertices_removed": 0, "faces_removed": 0, "faces_cut": 0}
     if weld:
         info["vertices_removed"] += _weld(M, tol)
     if degenerate:
@@ -372,6 +693,8 @@ def clean(M=None, tol=1e-7, weld=True, degenerate=True, duplicates=True,
         info["faces_removed"] += _drop_internal(M)
     if duplicates:
         info["faces_removed"] += _dedup_faces(M)
+    if overlaps:
+        info["faces_cut"] += _cut_overlaps(M)
     if normals:
         M = fix_normals(M)
     if unused:
@@ -398,6 +721,10 @@ def stats(M=None):
             edges[key] = edges.get(key, 0) + 1
     open_edges = sum(1 for v in edges.values() if v == 1)
     odd_edges = sum(1 for v in edges.values() if v > 2)
+    spots = {}
+    for p in M.V:                                    # vertices sitting on the same spot
+        spots[(round(p[0], 6), round(p[1], 6), round(p[2], 6))] = 1
+    duplicate_vertices = len(M.V) - len(spots)
     groups = {}
     for f in M.F:
         groups.setdefault(tuple(sorted(f)), []).append(f)
@@ -420,6 +747,7 @@ def stats(M=None):
         "volume": volume(M),
         "open_edges": open_edges,
         "non_manifold_edges": odd_edges,
+        "duplicate_vertices": duplicate_vertices,
         "duplicate_faces": duplicate_faces,
         "back_to_back_faces": back_to_back,
         "closed": open_edges == 0,
@@ -471,14 +799,21 @@ def check(M=None, min_faces=10000, min_colors=3, quiet=False,
             why = "no, %d edges have nothing on the other side" % s["open_edges"]
         print("%s closed surface      %s" % (mark(s["closed"]), why))
         if s["non_manifold_edges"]:
-            print("   touching edges      %d   (parts meet along an edge;"
-                  " normal for voxel models)" % s["non_manifold_edges"])
+            print("   repeated edges      %d   (an edge shared by more than two faces:"
+                  " parts meet along it; normal for voxel models)" % s["non_manifold_edges"])
+        if s["duplicate_vertices"]:
+            print("!! repeated vertices   %d   (two vertices on one spot -- add.clean() welds them)"
+                  % s["duplicate_vertices"])
         if s["duplicate_faces"]:
-            print("!! repeated faces      %d   -- try add.clean()"
+            print("!! repeated faces      %d   -- add.clean() removes them"
                   % s["duplicate_faces"])
         if s["back_to_back_faces"]:
             print("   back-to-back faces  %d   (fine for a two-sided sheet;"
                   " add.clean() removes them)" % s["back_to_back_faces"])
+        flicker = overlaps(M)
+        if flicker:
+            print("!! overlapping faces   %d   (in one plane, facing the same way:"
+                  " they flicker in a viewer -- add.clean() cuts them)" % flicker)
         if s["closed"]:
             print("   volume              %.3f" % s["volume"])
         if s["transparent_faces"]:

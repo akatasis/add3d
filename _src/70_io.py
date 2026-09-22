@@ -4,7 +4,7 @@
 # 25. Saving and loading
 # ============================================================================
 
-def save(path, M=None, clear_scene=None, colors=None):
+def save(path, M=None, clear_scene=None, colors=None, clean=True):
     """Write a model to disk; the file format follows the extension.
 
     ``.off`` (the course format), ``.obj`` (+ a ``.mtl`` colour file, which is
@@ -16,10 +16,18 @@ def save(path, M=None, clear_scene=None, colors=None):
     exactly like add.py 1.2's ``off()``.  ``colors=50`` reduces the model
     to at most that many colours first (see :func:`limit_colors`), which
     keeps an ``.obj`` within Sketchfab's material limit.
+
+    The file is tidied on the way out (``clean=True``): coincident vertices
+    are welded, faces without area go, so do the walls buried where two
+    solids touch, and a face overlapping a bigger one in the same plane is
+    cut back so that nothing flickers in a viewer (see :func:`clean`).
+    ``clean=False`` writes the model exactly as it is.
     """
     if clear_scene is None:
         clear_scene = M is None
     mesh_to_save = as_mesh(M)
+    if clean:
+        mesh_to_save = globals()["clean"](mesh_to_save, tol=1e-6)
     if colors is not None:
         mesh_to_save = limit_colors(mesh_to_save, colors)
     ext = path.lower().rsplit(".", 1)[-1] if "." in path else "off"
@@ -58,7 +66,35 @@ def obj(path, M=None, mtl=None):
     return path
 
 
+def _safe_faces(M):
+    """``(face, colour, uv)`` for every face, with a face pinched at a
+    vertex split into loops -- viewers refuse a repeated index in a face."""
+    for k, (face, c) in enumerate(zip(M.F, M.C)):
+        uv = M.UV[k] if M.UV is not None else None
+        if len(set(face)) == len(face):
+            yield face, c, uv
+            continue
+        for piece, piece_uv in _split_repeats(face, uv):
+            if len(piece) >= 3 and len(set(piece)) >= 3:
+                yield piece, c, piece_uv
+
+
+def _writable(M):
+    """The mesh itself, or a copy with pinched faces split (rare: a boolean
+    cut can leave a polygon that touches itself at one vertex)."""
+    if all(len(set(f)) == len(f) for f in M.F):
+        return M
+    out = Mesh(M.V, [], [], [] if M.UV is not None else None)
+    for face, c, uv in _safe_faces(M):
+        out.F.append(list(face))
+        out.C.append(c)
+        if out.UV is not None:
+            out.UV.append(uv)
+    return out
+
+
 def _write_off(path, M):
+    M = _writable(M)
     with open(path, "w") as f:
         f.write("OFF\n%d %d 0\n" % (len(M.V), len(M.F)))
         out = []
@@ -67,9 +103,12 @@ def _write_off(path, M):
         f.write("".join(out))
         out = []
         for face, c in zip(M.F, M.C):
-            out.append("%d %s %d %d %d\n" % (len(face),
-                                             " ".join(str(i) for i in face),
-                                             c[0], c[1], c[2]))
+            if len(c) > 3 and c[3] < 1.0:              # see-through: r g b a
+                out.append("%d %s %d %d %d %d\n" % (len(face), " ".join(str(i) for i in face),
+                                                    c[0], c[1], c[2], int(round(c[3] * 255))))
+            else:
+                out.append("%d %s %d %d %d\n" % (len(face), " ".join(str(i) for i in face),
+                                                 c[0], c[1], c[2]))
         f.write("".join(out))
 
 
@@ -87,6 +126,7 @@ def _material_name(c):
 
 
 def _write_obj(path, M, mtl_path=None):
+    M = _writable(M)
     if mtl_path is None:
         mtl_path = path[:-4] + ".mtl" if path.lower().endswith(".obj") \
             else path + ".mtl"
@@ -191,6 +231,7 @@ def obj_size(M=None):
 
 
 def _write_ply(path, M):
+    M = _writable(M)
     with open(path, "w") as f:
         f.write("ply\nformat ascii 1.0\ncomment add.py %s\n" % __version__)
         f.write("element vertex %d\n" % len(M.V))
@@ -223,6 +264,18 @@ def _write_stl(path, M):
         f.write("endsolid addpy\n")
 
 
+def _rounded(decimals):
+    """A number formatter with a fixed number of decimals (trailing zeros
+    dropped): ``precision=4`` makes a big .obj a third smaller and lets it
+    compress far better, at a tenth of a millimetre for a model in metres."""
+    pattern = "%%.%df" % decimals
+
+    def fmt(x):
+        text = (pattern % x).rstrip("0").rstrip(".")
+        return "0" if text in ("", "-0") else text
+    return fmt
+
+
 class Stream(object):
     """Write a model part by part, straight to disk, so that a model far
     bigger than the computer's memory can still be built.
@@ -240,13 +293,27 @@ class Stream(object):
                 out.add()                    # the scene, then cleared
             out.add(add.make(add.box, [0, 5, 0], 2, "gold"))
         print(out.faces, "faces,", out.bytes / 1e6, "MB")
+
+    ``precision=4`` writes every coordinate with at most four decimals,
+    which makes a big file a third smaller and far easier to compress.
+
+    Every part is tidied before it is written (``clean=True``): coincident
+    vertices are welded, faces without area or pinched at a vertex are
+    removed or split, the walls buried where two solids touch go, and a
+    face that overlaps a bigger one in the same plane is cut back -- so
+    viewers get a file without flicker or "identical vertex" warnings.
     """
 
-    def __init__(self, path):
+    def __init__(self, path, clean=True, precision=None):
         self.path = path
+        self.clean = clean
+        self.precision = precision             # decimals per coordinate (None: as short as exact)
+        self._fmt = _num if precision is None else _rounded(precision)
         self.faces = 0
         self.vertices = 0
         self.bytes = 0
+        self.removed = 0                       # faces the tidying threw away
+        self.cut = 0                           # faces cut back where they overlapped another
         self.materials = {}                    # colour tuple -> material name
         self._kind = "obj" if path.lower().endswith(".obj") else "off"
         self._vt = 0
@@ -258,10 +325,13 @@ class Stream(object):
             self._file.write("mtllib %s\n" % mtl.replace("\\", "/").rsplit("/", 1)[-1])
             self._file.write("o model\n")
         else:
+            # OFF wants every vertex before every face, so the faces go to a
+            # second file for the time being and are appended on close.
             self._file.write("OFF\n")
             self._header_at = self._file.tell()
             self._file.write("%12d %12d 0\n" % (0, 0))
-            self._offV, self._offF = [], []
+            self._faces_path = path + ".faces~"
+            self._faces = open(self._faces_path, "w")
         self._current = None
 
     def __enter__(self):
@@ -271,9 +341,12 @@ class Stream(object):
         self.close()
         return False
 
-    def add(self, M=None):
+    def add(self, M=None, clean=None):
         """Write a mesh to the file now.  Without a mesh the current scene is
-        written and then cleared.  Returns the number of faces written."""
+        written and then cleared.  ``clean`` overrides the stream's setting
+        for this part (``False`` for a part known to be tidy, such as
+        thousands of separate pebbles, saves the time of checking it).
+        Returns the number of faces written."""
         if M is None:
             M = _scene
             clear_after = True
@@ -282,12 +355,22 @@ class Stream(object):
             clear_after = False
         if self._file is None:
             raise ValueError("stream is closed")
+        if self.clean if clean is None else clean:
+            if not clear_after:
+                M = M.copy()
+            _weld(M, 1e-6)
+            self.removed += _drop_degenerate(M)
+            self.removed += _drop_internal(M)
+            self.removed += _dedup_faces(M)
+            self.cut += _cut_overlaps(M)
+            _drop_unused(M)
         f = self._file
         base = self.vertices
         out = []
+        num = self._fmt
         if self._kind == "obj":
             for p in M.V:
-                out.append("v %s %s %s\n" % (_num(p[0]), _num(p[1]), _num(p[2])))
+                out.append("v %s %s %s\n" % (num(p[0]), num(p[1]), num(p[2])))
             vt_index = {}
             if M.UV is not None:
                 for k, c in enumerate(M.C):
@@ -327,15 +410,21 @@ class Stream(object):
                             for i, t in zip(face, uv)))
             text = "".join(out)
         else:
-            # OFF wants every vertex before every face, so the two lists are
-            # kept as text and written on close (that is why .obj is the
-            # format for really big models).
             for p in M.V:
-                self._offV.append("%s %s %s\n" % (_num(p[0]), _num(p[1]), _num(p[2])))
+                out.append("%s %s %s\n" % (num(p[0]), num(p[1]), num(p[2])))
+            faces = []
             for face, c in zip(M.F, M.C):
-                self._offF.append("%d %s %d %d %d\n" % (
-                    len(face), " ".join(str(i + base) for i in face), c[0], c[1], c[2]))
-            text = ""
+                if len(c) > 3 and c[3] < 1.0:          # see-through: r g b a
+                    faces.append("%d %s %d %d %d %d\n" % (
+                        len(face), " ".join(str(i + base) for i in face),
+                        c[0], c[1], c[2], int(round(c[3] * 255))))
+                else:
+                    faces.append("%d %s %d %d %d\n" % (
+                        len(face), " ".join(str(i + base) for i in face), c[0], c[1], c[2]))
+            faces = "".join(faces)
+            self._faces.write(faces)
+            self.bytes += len(faces)
+            text = "".join(out)
         if text:
             f.write(text)
             self.bytes += len(text)
@@ -364,9 +453,15 @@ class Stream(object):
                         m.write("map_Kd %s\n" % image.replace("\\", "/").rsplit("/", 1)[-1])
                     m.write("\n")
         else:
-            text = "".join(self._offV) + "".join(self._offF)
-            self._file.write(text)
-            self.bytes += len(text)
+            self._faces.close()
+            with open(self._faces_path) as faces:
+                while True:
+                    chunk = faces.read(1 << 22)
+                    if not chunk:
+                        break
+                    self._file.write(chunk)
+            import os
+            os.remove(self._faces_path)                # the only file system call add.py makes
             self._file.seek(self._header_at)
             self._file.write("%12d %12d 0\n" % (self.vertices, self.faces))
         self._file.close()
@@ -374,7 +469,7 @@ class Stream(object):
         return self.path
 
 
-def stream(path):
+def stream(path, clean=True, precision=None):
     """Open a :class:`Stream`: a model written to ``path`` part by part,
     without ever holding all of it in memory.
 
@@ -394,7 +489,7 @@ def stream(path):
     (the format wants all vertices before all faces), so ``.obj`` is the
     one to use for really big models.
     """
-    return Stream(path)
+    return Stream(path, clean, precision)
 
 
 def load(path, color=None):
@@ -460,9 +555,11 @@ def _read_off(path, color=None):
         rest = p[1 + n:]
         c = default
         if len(rest) >= 3 and color is None:
-            vals = [float(x) for x in rest[:3]]
+            vals = [float(x) for x in rest[:4]]
             if max(vals) <= 1.0 and any(v != int(v) for v in vals):
                 vals = [v * 255.0 for v in vals]
+            if len(vals) == 4:                         # r g b a: alpha as 0..255
+                vals[3] = vals[3] / 255.0
             c = rgb(vals)
         M.add_face(face, c)
     return M

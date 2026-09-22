@@ -85,15 +85,15 @@ registered by someone else -- see [PUBLISHING.md](PUBLISHING.md).)
 | **Booleans** | `union`, `intersect`, `difference`, `symmetric_difference`, plus the cheaper `cut` with a plane |
 | **Smoothing** | `catmull_clark`, and `smooth` -- the generalised Catmull-Clark algorithm: any number of cells per control edge, every vertex on the limit surface |
 | **Vertex tools** | `set_vertex`, `neighbors`, `valence`, `mean_neighbor_distance`, `edges`, `vertex_normal`, `face_center`, `boundary_loops`, `dual`, `truncate`, `refine`, `spherify`, `inflate` |
-| **Repair** | `clean` (weld, dedupe, remove buried walls), `heal`, `fix_normals`, `triangulate` |
+| **Repair** | `clean` (weld repeated vertices, remove repeated and buried faces, cut back faces that overlap in one plane so nothing flickers -- `save` and `stream` do this on the way to the file), `overlaps`, `heal`, `fix_normals`, `triangulate` |
 | **Colour** | named colours, hex, HSV, gradients, `color_by` for a colour that depends on position, `limit_colors` for a Sketchfab-sized palette |
 | **Glass and pictures** | `transparent` / `opacity` for see-through surfaces and `texture` for image textures, both written to the `.mtl` file; `write_png` for pictures you compute yourself |
 | **Files** | write `.off`, `.obj` + `.mtl`, `.ply`, `.stl`; read `.off`, `.obj`, `.ply`; `obj_size` before writing; `stream` writes a model part by part, so it can be bigger than the memory of the computer |
 | **Checking** | `stats()` and `check()` — polygon count, colours, watertightness, volume, and the Sketchfab limits (50 MB, 50 materials) |
-| **Looking** | `tools/preview.py`, a software renderer that also has no dependencies |
+| **Looking** | `tools/preview.py`, a software renderer that also has no dependencies; it streams a file too big to load (the 600 MB castle) |
 
-231 public names, every one documented in English and Lithuanian with a
-runnable example, in one 7000-line file you can read.
+234 public names, every one documented in English and Lithuanian with a
+runnable example, in one 7600-line file you can read.
 
 ## Boolean operations, from scratch
 
@@ -178,17 +178,23 @@ a [geodesic dome](examples/44_geodesic_dome.py) house, [glass and
 textures](examples/45_glass_and_textures.py) -- and the
 [castle](examples/46_castle.py): an island in a transparent lake with fish
 and a sunken boat, an octagonal wall of individual stone blocks with eight
-towers, a gatehouse with a portcullis and a drawbridge hanging on real
-chains, a palace with glass windows, balconies, dormers and a roof of
-single tiles, a chapel with stained glass, a courtyard with a well, a
-fountain, a smithy, a market, a stable, a trebuchet, cannons, carts,
+hollow towers -- spiral stairs, doors onto the wall walk, lookouts on top
+-- a gatehouse with a portcullis and a drawbridge hanging on real chains,
+a palace with glass windows, balconies, dormers and a roof of single
+tiles, a chapel with stained glass and an altar, a courtyard with a well,
+a fountain, a smithy, a market, a stable, a trebuchet, cannons, carts,
 barrels, crates, weapon racks, guards in armour, horses, chickens and a
-dog -- and, inside, two easter eggs: the great hall with the king's throne
-and a feast on the long tables, and the treasury with a dragon asleep on
-the gold. `python3 46_castle.py` writes a 26 MB Sketchfab-ready `.obj`
-(48 materials), `--full` every cobblestone and grass tuft (180 MB),
-`--ultra` more than a gigabyte -- written streaming, so memory is never
-the limit.
+dog -- and, inside, the easter eggs: the great hall with the king on his
+throne, a feast on the long tables and a chess study ("White to play and
+win"), the soldiers' dormitory upstairs, an attic full of old things, and
+in the big tower the treasury with a dragon asleep on the gold, the
+armoury and the lord's chamber above it. There are no textures: every
+stone block, roof tile, cobblestone, pane of stained glass and coat of
+arms is geometry. `python3 46_castle.py` streams the model to
+`castle.off` (about 600 MB) and `castle.obj` at once, tidied on the way
+(no repeated vertices, no repeated, buried or overlapping faces), under
+100 colours; compressed with 7-Zip the `.obj` is under 100 MB, which is
+what Sketchfab takes.
 `python3 tools/coverage.py` lists which example uses which function; every
 public function is used by at least one, and every model fits the Sketchfab
 limits (`examples/build_all.py` checks).
@@ -204,10 +210,11 @@ examples/            43 commented example programs (studies and complete models)
   build_all.py       runs them all, checks the Sketchfab limits, renders the pictures
 tools/
   preview.py         dependency-free software renderer
+  castle_photos.py   thirty photographs of the castle, taken with preview.py
   make_docs.py       builds docs/index.html from the docstrings + docs/reference.py
   coverage.py        which example uses which function
 tests/
-  test_add.py        90 unit tests
+  test_add.py        91 unit tests
   test_legacy.py     runs the add.py 1.2 models and checks the face counts
   test_docs.py       runs the example of every documented function
   legacy/            those models, unedited
@@ -225,7 +232,7 @@ the repository so that a student only ever needs one file.
 ## Running the tests
 
 ```bash
-python3 tests/test_add.py        # 90 unit tests
+python3 tests/test_add.py        # 91 unit tests
 python3 tests/test_legacy.py     # the add.py 1.2 models
 python3 tests/test_docs.py       # the 231 documentation examples
 python3 examples/build_all.py    # every example, the Sketchfab check, pictures

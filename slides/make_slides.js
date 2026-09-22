@@ -191,8 +191,8 @@ function build(lang) {
       path: img("lighthouse.png"), x: M + 0.08, y: 3.23, w: W - 2 * M - 0.16,
       h: 3.04, sizing: { type: "contain", w: W - 2 * M - 0.16, h: 3.04 },
     });
-    s.addText(T("Algorithm Design and Analysis  ·  creative assignment  ·  2026",
-                "Algoritmų kūrimas ir analizė  ·  kūrybinė užduotis  ·  2026"), {
+    s.addText(T("Algorithms and Data Structures  ·  Algorithm Design and Analysis  ·  creative assignment",
+                "Algoritmai ir duomenų struktūros  ·  Algoritmų kūrimas ir analizė  ·  kūrybinė užduotis"), {
       x: M, y: 6.6, w: W - 2 * M, h: 0.4, isTextBox: true, margin: 0,
       fontFace: BODY_FONT, fontSize: 13, color: "C9BFB6",
     });
@@ -1029,16 +1029,16 @@ function build(lang) {
     const s = sheet(T("The castle: a model bigger than memory", "Pilis: modelis, didesnis už atmintį"),
                     T("46_castle.py, stream()", "46_castle.py, stream()"));
     picture(s, "castle.png", { x: M, y: 1.45, w: 5.3, h: 3.4,
-      caption: T("26 MB and 48 materials for Sketchfab; --full 180 MB; --ultra over 1 GB",
-                 "26 MB ir 48 medžiagos Sketchfab; --full 180 MB; --ultra daugiau nei 1 GB") });
+      caption: T("no textures, every stone a polygon: a 600 MB .off and an .obj that 7-Zip brings under 100 MB for Sketchfab",
+                 "be tekstūrų, kiekvienas akmuo – daugiakampis: 600 MB .off ir .obj, kurį 7-Zip suglaudina iki 100 MB Sketchfab") });
     picture(s, "castle_hall.png", { x: 5.85, y: 1.45, w: 3.55, h: 1.55,
       caption: T("the throne hall and the feast", "sosto menė ir puota") });
     picture(s, "castle_treasury.png", { x: 5.85, y: 3.3, w: 3.55, h: 1.55,
       caption: T("the dragon on the treasure", "drakonas ant lobio") });
     code(s, [
-      "out = add.stream(\"castle.obj\")   # parts go to disk at once",
-      "wall_of_bricks(); out.add()      # scene written, then cleared",
-      "out.close()                      # writes castle.mtl",
+      "out = add.stream(\"castle.off\", precision=4)   # parts go to disk at once,",
+      "wall_of_bricks(); out.add()   # tidied (no overlaps), written, cleared",
+      "out.close()                   # fills in the OFF header (.mtl for .obj)",
     ], { x: M, y: 5.55, w: 9.1, h: 1.05, fontSize: 11 });
   }
 

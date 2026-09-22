@@ -8,7 +8,10 @@ limits, and render a picture of each model.
 Output goes to ``examples/out/`` (models) and ``docs/images/`` (pictures).
 The check fails (exit code 1) when a model could not be uploaded to
 Sketchfab as an .obj: more than 50 MB or more than 50 colours (materials).
-Big "fine" variants (``--fine`` in the example) are not built here.
+Big "fine" variants (``--fine`` in the example) are not built here, and the
+castle (46) is built at a tenth of its density (``CASTLE_DENSITY=0.1``) --
+the full castle is a 600 MB .off (and an .obj meant to be uploaded
+compressed with 7-Zip).
 """
 import os
 import subprocess
@@ -103,10 +106,12 @@ def main():
     scripts = sorted(n for n in os.listdir(HERE)
                      if n.endswith(".py") and n[0].isdigit())
     os.chdir(OUT)
+    env = dict(os.environ)
+    env["CASTLE_DENSITY"] = env.get("CASTLE_DENSITY", "0.1")   # the full castle is ~600 MB; the docs get a lighter one
     for name in scripts:
         t = time.time()
         p = subprocess.run([sys.executable, os.path.join(HERE, name)],
-                           capture_output=True)
+                           capture_output=True, env=env)
         status = "ok  " if p.returncode == 0 else "FAIL"
         print("%-34s %s %6.1fs" % (name, status, time.time() - t))
         if p.returncode:
@@ -128,10 +133,13 @@ def main():
                 options["background"] = view[3]
         options.setdefault("size", (880, 620))
         source = os.path.join(OUT, model)
-        if os.path.exists(source[:-4] + ".obj"):      # textures and glass
+        if os.path.exists(source[:-4] + ".obj"):      # glass is kept in the .obj
             source = source[:-4] + ".obj"
+        full = os.path.join(OUT, "castle_full", model[:-4] + ".obj")
+        if stem == "castle" and os.path.exists(full):  # the full castle, rendered streaming
+            source = full
         t = time.time()
-        loaded = add_load(source)
+        loaded = source if os.path.getsize(source) > preview.BIG_FILE else add_load(source)
         preview.render(loaded, os.path.join(IMAGES, stem + ".png"), folder=OUT, **options)
         print("%-34s -> docs/images/%s.png  %5.1fs" % (model, stem, time.time() - t))
         for extra, more in EXTRA_VIEWS.get(stem, ()):
@@ -142,7 +150,7 @@ def main():
 
 
 def add_load(source):
-    """Load a model once (the castle is big) so several views can share it."""
+    """Load a model once (several views share it)."""
     import add
     return add.load(source)
 
@@ -150,6 +158,10 @@ def add_load(source):
 #: Sketchfab: the course wants .obj files under 50 MB with at most 50 colours.
 MAX_MB = 50
 MAX_COLORS = 50
+#: Models meant to be uploaded compressed (7-Zip): the size limit is 100 MB
+#: compressed, and the course allows them 100 colours.
+COMPRESSED = {"castle.off", "castle.obj"}
+MAX_COLORS_BIG = 100
 
 
 def sketchfab_table():
@@ -163,9 +175,12 @@ def sketchfab_table():
         M = add.load(os.path.join(OUT, model))
         s = add.stats(M)
         mb = s["obj_bytes"] / 1e6
-        ok = mb <= MAX_MB and s["colors"] <= MAX_COLORS
-        print("%-28s %9d %7d %9.1f  %s" % (model, s["faces"], s["colors"], mb,
-                                          "ok" if ok else "TOO BIG"))
+        colors = MAX_COLORS_BIG if model in COMPRESSED else MAX_COLORS
+        ok = (mb <= MAX_MB or model in COMPRESSED) and s["colors"] <= colors
+        verdict = "ok" if ok else ("TOO MANY COLOURS" if s["colors"] > colors else "TOO BIG")
+        if model in COMPRESSED:
+            verdict += " (7-Zip it: under 100 MB compressed)"
+        print("%-28s %9d %7d %9.1f  %s" % (model, s["faces"], s["colors"], mb, verdict))
         if not ok:
             problems.append(model)
     if problems:

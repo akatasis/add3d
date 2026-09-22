@@ -381,14 +381,28 @@ for i in range(PETALS):
 Then changing one number changes the whole model, which is exactly what the
 assignment asks for.
 
-## My model has stray faces inside it
+## My model flickers, or has stray faces inside it
 
-That happens when two solids touch: each keeps its own wall, buried where
-nobody can see it. `clean()` finds and removes them, along with repeated
-vertices and zero-area faces:
+Flicker ("z-fighting") is two faces in exactly the same plane, facing the
+same way: the side of a beam running into a wall, two boxes of the same
+height crossing, a tile laid on a floor of the same colour. The viewer
+cannot decide which is in front and shows a little of each. Stray faces
+are the other case: two solids touch, and each keeps its own wall buried
+where nobody sees it.
+
+`add.py` checks the model for the three things that cause this --
+repeated vertices, repeated or overlapping faces, and repeated edges --
+and repairs them: `check()` reports them, `clean()` welds vertices on one
+spot, removes repeated and buried faces, and cuts the smaller of two
+overlapping faces back so that the larger one alone covers the shared
+patch. `save()` and `stream()` do the same on the way to the file, so a
+model needs nothing extra; `add.save("x.obj", clean=False)` writes it
+exactly as drawn.
 
 ```
-model = add.clean(add.layer())
+add.check()                              # "!! overlapping faces  146"
+model, report = add.clean(add.layer(), report=True)
+print(report["faces_cut"], add.overlaps(model))    # 106, 0
 add.mesh(model)
 ```
 
@@ -640,24 +654,27 @@ add.save("house.obj")                                          # + house.mtl
 
 `save` keeps the whole model in memory, which is fine up to a few million
 faces. A model with every brick, cobblestone and roof tile as its own
-piece can run to a gigabyte -- so build it in parts and hand each part to
-a *stream* as soon as it is finished: `stream("castle.obj")` returns a
-`Stream`, `out.add()` writes the scene and clears it, `out.close()` writes
-the `.mtl` (or fills in the OFF header). `out.faces`, `out.bytes` and
-`out.materials` count as you go, so the Sketchfab limits can be checked
-before the file is complete.
+piece can run to hundreds of megabytes -- so build it in parts and hand
+each part to a *stream* as soon as it is finished: `stream("castle.obj")`
+returns a `Stream`, `out.add()` writes the scene and clears it,
+`out.close()` writes the `.mtl` (or fills in the OFF header). Every part
+is tidied on the way (welded, no repeated, buried or overlapping faces),
+`precision=4` keeps the coordinates short, and `out.faces`, `out.bytes`
+and `out.materials` count as you go, so the limits can be checked before
+the file is complete. The same parts can go to two streams -- an `.off`
+and an `.obj` -- at once.
 
 ```
-out = add.stream("castle.obj")
+out = add.stream("castle.obj", precision=4)
 for k in range(8):
     wall_segment(k)                    # thousands of bricks
     out.add()                          # written now, memory freed
 out.add(add.make(add.tree, [0, 0, 0], 5))
 out.close()
-print(out.faces, "faces,", out.bytes / 1e6, "MB,", len(out.materials), "materials")
+print(out.faces, "faces,", out.bytes / 1e6, "MB,", len(out.materials), "colours")
 ```
 
-!castle.png|The castle of example 46, written streaming: 26 MB for Sketchfab, 180 MB with every cobblestone, over a gigabyte with `--ultra`.
+!castle.png|The castle of example 46, written streaming to castle.off (about 600 MB) and castle.obj: no textures, every stone a polygon; the .obj is under 100 MB once 7-Zip has compressed it.
 """),
 "lt": ("""# Receptai
 
@@ -708,14 +725,28 @@ for i in range(ZIEDLAPIU):
 
 Tada vieno skaičiaus pakeitimas pakeičia visą modelį -- to ir prašo užduotis.
 
-## Modelio viduje liko nereikalingų sienų
+## Mano modelis mirga arba jo viduje liko nereikalingų sienų
 
-Taip nutinka, kai du kūnai liečiasi: kiekvienas pasilieka savo sienelę,
-palaidotą ten, kur jos niekas nemato. `clean()` jas suranda ir pašalina kartu
-su besidubliuojančiomis viršūnėmis ir nulinio ploto sienomis:
+Mirgėjimas („z-fighting") -- tai dvi sienos lygiai toje pačioje plokštumoje,
+žiūrinčios ta pačia kryptimi: sija, įeinanti į sieną, du vienodo aukščio
+susikertantys blokai, plytelė ant tokios pat spalvos grindų. Peržiūros
+programa negali nuspręsti, kuri priekyje, ir rodo po truputį abiejų.
+Nereikalingos sienos -- kitas atvejis: du kūnai liečiasi ir kiekvienas
+pasilieka savo sienelę, palaidotą ten, kur jos niekas nemato.
+
+`add.py` patikrina modelį dėl trijų šito priežasčių -- pasikartojančių
+viršūnių, pasikartojančių ar persidengiančių sienų ir pasikartojančių
+briaunų -- ir jas taiso: `check()` apie jas praneša, `clean()` suklijuoja
+viename taške esančias viršūnes, pašalina pasikartojančias ir palaidotas
+sienas, o mažesnę iš dviejų persidengiančių apkerpa, kad bendrą lopą dengtų
+tik didesnioji. `save()` ir `stream()` tą patį padaro rašydami failą, todėl
+modeliui nieko papildomo nereikia; `add.save("x.obj", clean=False)` įrašo
+lygiai taip, kaip nupiešta.
 
 ```
-modelis = add.clean(add.layer())
+add.check()                              # "!! overlapping faces  146"
+modelis, ataskaita = add.clean(add.layer(), report=True)
+print(ataskaita["faces_cut"], add.overlaps(modelis))    # 106, 0
 add.mesh(modelis)
 ```
 
@@ -968,24 +999,27 @@ add.save("namas.obj")                                          # + namas.mtl
 
 `save` laiko visą modelį atmintyje -- to užtenka iki kelių milijonų sienų.
 Modelis, kuriame kiekviena plyta, grindinio akmuo ir stogo čerpė yra
-atskira detalė, gali siekti gigabaitą, todėl jį reikia kurti dalimis ir
+atskira detalė, siekia šimtus megabaitų, todėl jį reikia kurti dalimis ir
 kiekvieną baigtą dalį iš karto atiduoti *srautui*: `stream("pilis.obj")`
 grąžina `Stream`, `out.add()` įrašo sceną ir ją išvalo, `out.close()`
-įrašo `.mtl` (arba užpildo OFF antraštę). `out.faces`, `out.bytes` ir
-`out.materials` skaičiuoja rašant, todėl Sketchfab ribas galima tikrinti
-dar nebaigus failo.
+įrašo `.mtl` (arba užpildo OFF antraštę). Kiekviena dalis pakeliui
+sutvarkoma (suklijuota, be pasikartojančių, palaidotų ir persidengiančių
+sienų), `precision=4` trumpina koordinates, o `out.faces`, `out.bytes` ir
+`out.materials` skaičiuoja rašant, todėl ribas galima tikrinti dar
+nebaigus failo. Tos pačios dalys gali eiti į du srautus -- `.off` ir
+`.obj` -- iš karto.
 
 ```
-out = add.stream("pilis.obj")
+out = add.stream("pilis.obj", precision=4)
 for k in range(8):
     siena(k)                           # tūkstančiai plytų
     out.add()                          # įrašyta dabar, atmintis laisva
 out.add(add.make(add.tree, [0, 0, 0], 5))
 out.close()
-print(out.faces, "sienų,", out.bytes / 1e6, "MB,", len(out.materials), "medžiagų")
+print(out.faces, "sienų,", out.bytes / 1e6, "MB,", len(out.materials), "spalvų")
 ```
 
-!castle.png|46 pavyzdžio pilis, rašyta srautu: 26 MB Sketchfab variantas, 180 MB su kiekvienu grindinio akmeniu, daugiau nei gigabaitas su `--ultra`.
+!castle.png|46 pavyzdžio pilis, rašyta srautu į castle.off (apie 600 MB) ir castle.obj: be tekstūrų, kiekvienas akmuo -- daugiakampis; .obj, suglaudintas 7-Zip, telpa į 100 MB.
 """),
 }),
 
@@ -1039,6 +1073,9 @@ vocabulary.
 * **Glass and pictures**: `transparent`, `opacity`, `texture`, `write_png`
   -- written to the `.mtl` file of an `.obj` model.
 * **Streaming output** for models bigger than memory: `stream`, `Stream`.
+* **No flicker**: `clean`, `save` and `stream` weld repeated vertices,
+  remove repeated and buried faces and cut back faces that overlap in one
+  plane; `check` reports them, `overlaps` counts them.
 * **Colour functions** on `parametric`, `revolve`, `sweep`, `curve`,
   `polyline` and `grid`.
 * **Parts**: `beam`, `rounded_box`, `hemisphere`, `arch`, `stairs`, `gear`,
@@ -1116,6 +1153,10 @@ sąrašai, o `layer()` grąžina tai, ką galima indeksuoti `M[0]` ir `M[1]`.
 * **Stiklas ir paveikslėliai**: `transparent`, `opacity`, `texture`,
   `write_png` -- įrašomi į `.obj` modelio `.mtl` failą.
 * **Srautinis rašymas** už atmintį didesniems modeliams: `stream`, `Stream`.
+* **Jokio mirgėjimo**: `clean`, `save` ir `stream` suklijuoja pasikartojančias
+  viršūnes, pašalina pasikartojančias ir palaidotas sienas, apkerpa vienoje
+  plokštumoje persidengiančias sienas; `check` apie jas praneša, `overlaps`
+  suskaičiuoja.
 * **Spalvų funkcijos** funkcijoms `parametric`, `revolve`, `sweep`, `curve`,
   `polyline` ir `grid`.
 * **Detalės**: `beam`, `rounded_box`, `hemisphere`, `arch`, `stairs`, `gear`,
@@ -1413,17 +1454,22 @@ GALLERY = [
      "tekstūruotas gaublys (atvaizduota iš .obj)."),
     ("castle.png", "46_castle.py",
      "The castle: an island in a transparent lake, a wall of stone blocks "
-     "with eight towers, a gatehouse with a portcullis and a drawbridge on "
-     "chains, a palace with glass windows and a tiled roof, a chapel with "
-     "stained glass, a courtyard full of barrels, carts, weapons and "
-     "animals -- and, inside, a throne hall with a feast and a dragon on "
-     "its treasure. Written streaming; over a gigabyte with --ultra.",
+     "with eight hollow towers (spiral stairs inside), a gatehouse with a "
+     "portcullis and a drawbridge on chains, a palace with glass windows "
+     "and a tiled roof, a chapel with stained glass, a courtyard full of "
+     "barrels, carts, weapons and animals -- and, inside, the king in his "
+     "throne hall with a feast, a dormitory, an attic and a dragon on its "
+     "treasure. No textures: every stone, tile and coat of arms is "
+     "geometry. Written streaming: a 600 MB .off, an .obj under 100 MB "
+     "compressed.",
      "Pilis: sala permatomame ežere, akmens blokų siena su aštuoniais "
-     "bokštais, vartai su pakeliamomis grotomis ir tiltu ant grandinių, "
-     "rūmai su stiklo langais ir čerpių stogu, koplyčia su vitražais, "
-     "kiemas pilnas statinių, vežimų, ginklų ir gyvūnų -- o viduje sosto "
-     "menė su puota ir drakonas ant lobio. Rašyta srautu; su --ultra "
-     "daugiau nei gigabaitas."),
+     "tuščiaviduriais bokštais (viduje sraigtiniai laiptai), vartai su "
+     "pakeliamomis grotomis ir tiltu ant grandinių, rūmai su stiklo langais "
+     "ir čerpių stogu, koplyčia su vitražais, kiemas pilnas statinių, "
+     "vežimų, ginklų ir gyvūnų -- o viduje karalius sosto menėje su puota, "
+     "miegamasis, palėpė ir drakonas ant lobio. Be tekstūrų: kiekvienas "
+     "akmuo, čerpė ir herbas -- daugiakampiai. Rašyta srautu: 600 MB .off, "
+     ".obj suglaudintas mažiau nei 100 MB."),
     ("castle_hall.png", "46_castle.py",
      "Inside the castle: the great hall with the king's throne, the feast "
      "on the long tables and the chandeliers (a view from the .obj).",
@@ -1553,7 +1599,8 @@ SHORT = {
 "array_mirror": "Modelis kartu su savo veidrodiniu atvaizdu.",
 # -- repair
 "clean": "Sutvarko modelį: suklijuoja viršūnes, pašalina dublikatus ir "
-         "vidines sienas.",
+         "vidines sienas, apkerpa persidengiančias (mirgančias) sienas.",
+"overlaps": "Kiek sienų persidengia vienoje plokštumoje (mirga peržiūroje).",
 "weld": "Tas pats, kas clean.",
 "heal": "Uždaro plyšelius ten, kur briauna praeina pro svetimą viršūnę.",
 "triangulate": "Kopija, kurioje visos sienos -- trikampiai.",

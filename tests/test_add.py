@@ -1260,6 +1260,52 @@ def test_stream():
             pass
 
 
+def test_overlaps_and_pinched_faces():
+    """clean() cuts back coplanar overlapping faces (the cause of flicker),
+    splits faces pinched at a vertex, and save() does the same on the way
+    to the file; check() and overlaps() report them."""
+    tall = add.make(add.cuboid, [0, 0, 0], [2, 6, 1], "red")
+    wide = add.make(add.cuboid, [0, 0, 0], [5, 1, 1], "blue")     # the front faces share a plane
+    M = add.merge([tall, wide])
+    assert add.overlaps(M) == 2                                    # front and back of the wide box
+    C, info = add.clean(M, report=True)
+    assert info["faces_cut"] == 2 and add.overlaps(C) == 0
+    # the smaller face was cut into the two stubs outside the tall box; area is kept
+    front = [f for f in C.F if all(abs(C.V[i][2] - 0.5) < 1e-9 for i in f)]
+    assert len(front) == 3
+    assert abs(add.area(C) - (add.area(M) - 2 * 2 * 1)) < 1e-9      # minus the two hidden 2x1 patches
+    # a face that is not overlapped is left exactly as it was
+    assert add.clean(tall).polygons == 6
+    # a face pinched at a vertex (a bow tie) is split into its two loops
+    P = add.Mesh()
+    for q in ([0, 0, 0], [1, 0, 0], [1, 1, 0], [-1, 0, 0], [-1, -1, 0]):
+        P.add_vertex(q)
+    P.add_face([0, 1, 2, 0, 3, 4], "red")
+    assert sorted(len(f) for f in add.clean(P).F) == [3, 3]
+    with tempfile.TemporaryDirectory() as folder:
+        path = os.path.join(folder, "o.obj")
+        add.save(path, M)
+        back = add.load(path)
+        assert add.overlaps(back) == 0 and back.polygons == C.polygons
+        add.save(path, M, clean=False)
+        assert add.overlaps(add.load(path)) == 2
+        with add.stream(os.path.join(folder, "s.obj")) as out:
+            out.add(M)
+        assert out.cut == 2
+        add.save(path, P)
+        for line in open(path):
+            if line.startswith("f "):
+                idx = line.split()[1:]
+                assert len(set(idx)) == len(idx)                    # no repeated index in any face
+    # the report in check()
+    import io
+    import contextlib
+    text = io.StringIO()
+    with contextlib.redirect_stdout(text):
+        add.check(M, min_faces=1, min_colors=1)
+    assert "overlapping faces   2" in text.getvalue()
+
+
 def test_make_and_every_public_name():
     ball = add.make(add.sphere, [0, 0, 0], 1, 5, "red")
     assert ball.polygons == 320 and len(add.faces) == 0

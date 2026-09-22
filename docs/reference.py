@@ -479,8 +479,13 @@ EXPLAIN_LT.update({
                    "uždaro modelio – į išorę.",
     "clean": "Sutvarko modelį ir grąžina kopiją: sulieja sutampančias viršūnes, "
              "išmeta nulinio ploto ir pasikartojančias sienas bei sienas, "
-             "paslėptas ten, kur du kūnai liečiasi. normals=True dar ir "
-             "atsuka sienas į išorę.",
+             "paslėptas ten, kur du kūnai liečiasi, o mažesnę iš dviejų toje "
+             "pačioje plokštumoje persidengiančių sienų apkerpa (overlaps=True), "
+             "kad modelis peržiūroje nemirgėtų. normals=True dar ir atsuka "
+             "sienas į išorę. save() tai daro pats (clean=True).",
+    "overlaps": "Kiek sienų guli vienoje plokštumoje su didesne siena, žiūri ta "
+                "pačia kryptimi ir su ja persidengia – tokios sienos peržiūroje "
+                "mirga. clean() (ir save()) jas apkerpa; check() apie jas praneša.",
     "stats": "Žodynas apie modelį: viršūnių, sienų, spalvų skaičius, matmenys, "
              "plotas, tūris, sandarumas, .obj dydis, permatomos sienos, "
              "tekstūros.",
@@ -538,7 +543,8 @@ EXAMPLES.update({
     "heal": 'a = add.make(add.box, [0, 0, 0], 2, "red")\nb = add.make(add.box, [1, 1, 1], 2, "blue")\nfixed = add.heal(add.difference(a, b))\nprint(add.stats(fixed)["closed"])',
     "triangulate": 'M = add.make(add.box, [0, 0, 0], 2, "red")\nprint(add.triangulate(M).polygons)   # 12',
     "fix_normals": 'M = add.make(add.box, [0, 0, 0], 2, "red")\nM.F[0].reverse()                     # spoil one face\nprint(add.volume(M), add.volume(add.fix_normals(M)))',
-    "clean": 'add.box([0, 0, 0], 2, "red")\nadd.box([2, 0, 0], 2, "red")          # touches the first one\nmodel, report = add.clean(add.layer(), report=True)\nprint(report)                         # the hidden walls are gone\nadd.mesh(model)',
+    "clean": 'add.box([0, 0, 0], 2, "red")\nadd.box([2, 0, 0], 2, "red")          # touches the first one\nadd.cuboid([1, 0, 0], [6, 0.5, 2], "blue")   # runs through both: overlapping faces\nmodel, report = add.clean(add.layer(), report=True)\nprint(report)                         # hidden walls gone, overlaps cut\nadd.mesh(model)',
+    "overlaps": 'add.cuboid([0, 0, 0], [2, 6, 1], "red")\nadd.cuboid([0, 0, 0], [5, 1, 1], "blue")   # the front faces share a plane\nprint(add.overlaps())                     # 2 -- they would flicker\nadd.mesh(add.clean(add.layer()))\nprint(add.overlaps())                     # 0',
     "stats": 'M = add.make(add.torus, [0, 0, 0], 3, 1)\ns = add.stats(M)\nprint(s["faces"], s["closed"], round(s["volume"], 2), s["obj_bytes"])',
     "check": 'add.sphere([0, 0, 0], 2, 30, "red")\nadd.box([3, 0, 0], 1, "blue")\nadd.cone([0, 3, 0], [0, 5, 0], 1, 12, "gold")\nok = add.check()\nprint(ok)',
 })
@@ -642,7 +648,11 @@ EXPLAIN_LT.update({
     "save": "Įrašo modelį į diską; formatą lemia plėtinys: .off (kurso "
             "formatas), .obj (+ .mtl spalvų failas, kurio reikia Sketchfab), "
             ".ply arba .stl. Iškviesta be tinklo įrašo ir išvalo sceną (kaip "
-            "add.py 1.2 off()). colors=50 pirmiau sumažina spalvų skaičių.",
+            "add.py 1.2 off()). colors=50 pirmiau sumažina spalvų skaičių. "
+            "Prieš rašant modelis sutvarkomas kaip clean() – suklijuojamos "
+            "viršūnės, pašalinamos pasikartojančios ir palaidotos sienos, "
+            "apkerpamos persidengiančios (mirgančios) sienos; clean=False "
+            "įrašo lygiai taip, kaip nupiešta.",
     "off": "Įrašo OFF failą ir išvalo sceną – add.py 1.2 elgsena.",
     "obj": "Įrašo OBJ failą kartu su MTL spalvų failu; abu įkelkite į "
            "Sketchfab viename archyve.",
@@ -655,12 +665,16 @@ EXPLAIN_LT.update({
                  "yra spalvų sąrašas – kaip .png failą tekstūrai (žr. texture).",
     "stream": "Atidaro srautinį rašymą į .obj ar .off failą: modelis rašomas "
               "dalimis, todėl gali būti daug didesnis už kompiuterio atmintį "
-              "(pilis su kiekviena plyta – ir gigabaitas). Grąžina Stream: "
+              "(pilis su kiekviena plyta – šimtai megabaitų). Grąžina Stream: "
               "out.add() įrašo sceną ir ją išvalo, out.add(M) įrašo modelį, "
-              "out.close() užbaigia failą (.mtl arba OFF antraštę).",
+              "out.close() užbaigia failą (.mtl arba OFF antraštę). Kiekviena "
+              "dalis prieš rašant sutvarkoma kaip clean() (clean=False – ne); "
+              "precision=4 rašo koordinates keturiais skaitmenimis po kablelio, "
+              "todėl failas mažesnis ir geriau glaudinasi.",
     "Stream": "Srautinio rašymo objektas, kurį grąžina stream(kelias): metodai "
-              "add(M=None) ir close(), skaitikliai faces, vertices, bytes ir "
-              "materials. Veikia ir kaip with blokas.",
+              "add(M=None, clean=None) ir close(), skaitikliai faces, vertices, "
+              "bytes, materials, removed (išmestos sienos) ir cut (apkirptos "
+              "persidengiančios sienos). Veikia ir kaip with blokas.",
     "load_font": "Įkelia visą raidžių ar skaitmenų modelių aplanką į žodyną "
                  "{„A“: tinklas, ...}.",
     "typeset": "Išdėsto jau įkeltų raidžių tinklus (iš load_font) į eilutę ir "

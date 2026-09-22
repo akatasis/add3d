@@ -141,6 +141,8 @@ add.loft(sections, [160, 100, 60])
 boat = add.solidify(add.pop(), 0.05)
 add.mesh(add.move(add.rotateY(boat, 0.4), [3.0, -1.0, ZB + 4.0]))
 
-add.mesh(add.limit_colors(add.layer(), 50))   # at most 50 colours, so the .obj suits Sketchfab
+bridge = add.limit_colors(add.layer(), 50)    # at most 50 colours, so the .obj suits Sketchfab
+print("faces lying on other faces:", add.overlaps(bridge), "-- the cause of flicker; save() cuts them")
+add.mesh(bridge)
 add.check()
 add.save("bridge.off")

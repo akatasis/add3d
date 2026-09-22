@@ -85,15 +85,15 @@ nes vardas `add` PyPI kataloge užimtas kito žmogaus tuščiu įrašu – žr.
 | **Loginės operacijos** | `union`, `intersect`, `difference`, `symmetric_difference` ir pigesnis `cut` plokštuma |
 | **Apvalinimas** | `catmull_clark` ir `smooth` – apibendrintas Catmull–Clark algoritmas: bet koks langelių skaičius ant kontrolinės briaunos, kiekviena viršūnė ant ribinio paviršiaus |
 | **Viršūnių įrankiai** | `set_vertex`, `neighbors`, `valence`, `mean_neighbor_distance`, `edges`, `vertex_normal`, `face_center`, `boundary_loops`, `dual`, `truncate`, `refine`, `spherify`, `inflate` |
-| **Taisymas** | `clean` (viršūnių klijavimas, dublikatų ir vidinių sienų šalinimas), `heal`, `fix_normals`, `triangulate` |
+| **Taisymas** | `clean` (suklijuoja pasikartojančias viršūnes, pašalina pasikartojančias ir palaidotas sienas, apkerpa vienoje plokštumoje persidengiančias sienas, kad niekas nemirgėtų -- `save` ir `stream` tai daro rašydami failą), `overlaps`, `heal`, `fix_normals`, `triangulate` |
 | **Spalvos** | vardinės spalvos, hex, HSV, perėjimai, `color_by` – spalva pagal padėtį, `limit_colors` – Sketchfab dydžio paletė |
 | **Stiklas ir paveikslėliai** | `transparent` / `opacity` permatomiems paviršiams ir `texture` paveikslėlių tekstūroms, abu įrašomi į `.mtl` failą; `write_png` patiems paskaičiuotiems paveikslėliams |
 | **Failai** | rašo `.off`, `.obj` + `.mtl`, `.ply`, `.stl`; skaito `.off`, `.obj`, `.ply`; `obj_size` dar prieš rašant; `stream` rašo modelį dalimis, todėl jis gali būti didesnis už kompiuterio atmintį |
 | **Tikrinimas** | `stats()` ir `check()` – daugiakampių skaičius, spalvos, uždarumas, tūris ir Sketchfab ribos (50 MB, 50 medžiagų) |
-| **Peržiūra** | `tools/preview.py` – atvaizdavimo įrankis, irgi be jokių priklausomybių |
+| **Peržiūra** | `tools/preview.py` – atvaizdavimo įrankis, irgi be jokių priklausomybių; per didelį įkelti failą (600 MB pilį) jis skaito srautu |
 
-231 viešas vardas, kiekvienas aprašytas angliškai ir lietuviškai su veikiančiu
-pavyzdžiu, viename 7000 eilučių faile, kurį galima perskaityti.
+234 viešų vardų, kiekvienas aprašytas angliškai ir lietuviškai su veikiančiu
+pavyzdžiu, viename 7600 eilučių faile, kurį galima perskaityti.
 
 ## Loginės operacijos, parašytos nuo nulio
 
@@ -173,17 +173,24 @@ raidės](examples/42_pillow_letters.py), [planeta](examples/43_planet.py),
 tekstūromis](examples/45_glass_and_textures.py) -- ir
 [pilis](examples/46_castle.py): sala permatomame ežere su žuvimis ir
 nuskendusia valtimi, aštuonkampė siena iš atskirų akmens blokų su
-aštuoniais bokštais, vartai su pakeliamomis grotomis ir tiltu, kabančiu ant
-tikrų grandinių, rūmai su stiklo langais, balkonais, stoglangiais ir
-stogu iš atskirų čerpių, koplyčia su vitražais, kiemas su šuliniu,
-fontanu, kalve, turgumi, arklide, katapulta, patrankomis, vežimais,
-statinėmis, dėžėmis, ginklų stovais, sargybiniais šarvuose, arkliais,
-vištomis ir šunimi -- o viduje du siurprizai: didžioji menė su karaliaus
-sostu ir puota ant ilgųjų stalų, ir lobynas su drakonu, miegančiu ant
-aukso. `python3 46_castle.py` įrašo 26 MB Sketchfab tinkamą `.obj` (48
-medžiagos), `--full` -- kiekvieną grindinio akmenį ir žolės kuokštą (180
-MB), `--ultra` -- daugiau nei gigabaitą; rašoma srautu, todėl atmintis
-niekada neriboja. `python3 tools/coverage.py`
+aštuoniais tuščiaviduriais bokštais -- sraigtiniai laiptai, durys į sienos
+taką, apžvalgos aikštelės viršuje -- vartai su pakeliamomis grotomis ir
+tiltu, kabančiu ant tikrų grandinių, rūmai su stiklo langais, balkonais,
+stoglangiais ir stogu iš atskirų čerpių, koplyčia su vitražais ir
+altoriumi, kiemas su šuliniu, fontanu, kalve, turgumi, arklide, katapulta,
+patrankomis, vežimais, statinėmis, dėžėmis, ginklų stovais, sargybiniais
+šarvuose, arkliais, vištomis ir šunimi -- o viduje siurprizai: didžioji
+menė su karaliumi soste, puota ant ilgųjų stalų ir šachmatų etiudu
+(„Baltieji pradeda ir laimi"), kareivių miegamasis antrame aukšte, palėpė
+pilna senų daiktų, o didžiajame bokšte -- lobynas su drakonu, miegančiu
+ant aukso, virš jo ginklinė ir valdovo kambarys. Tekstūrų nėra: kiekvienas
+akmens blokas, čerpė, grindinio akmuo, vitražo stiklelis ir herbas --
+daugiakampiai. `python3 46_castle.py` rašo modelį srautu iš karto į
+`castle.off` (apie 600 MB) ir `castle.obj`, pakeliui sutvarkydamas
+(jokių pasikartojančių viršūnių, pasikartojančių, palaidotų ar
+persidengiančių sienų), mažiau nei 100 spalvų; `.obj`, suglaudintas 7-Zip,
+telpa į 100 MB, kuriuos priima Sketchfab.
+`python3 tools/coverage.py`
 parodo, kuris pavyzdys kurią funkciją naudoja; kiekviena vieša funkcija
 panaudota bent viename, o kiekvienas modelis telpa į Sketchfab ribas (tikrina
 `examples/build_all.py`).
@@ -199,10 +206,11 @@ examples/            43 pavyzdinės programos su komentarais (studijos ir pilni 
   build_all.py       paleidžia visas, tikrina Sketchfab ribas, sugeneruoja paveikslėlius
 tools/
   preview.py         atvaizdavimo įrankis be priklausomybių
+  castle_photos.py   trisdešimt pilies nuotraukų, darytų su preview.py
   make_docs.py       sukuria docs/index.html iš kodo aprašymų ir docs/reference.py
   coverage.py        kuris pavyzdys kurią funkciją naudoja
 tests/
-  test_add.py        90 vienetiniai testai
+  test_add.py        91 vienetiniai testai
   test_legacy.py     paleidžia add.py 1.2 modelius ir tikrina sienų skaičių
   test_docs.py       paleidžia kiekvienos aprašytos funkcijos pavyzdį
   legacy/            tie modeliai, nepakeisti
@@ -221,7 +229,7 @@ vieno failo.
 ## Testai
 
 ```bash
-python3 tests/test_add.py        # 90 vienetiniai testai
+python3 tests/test_add.py        # 91 vienetiniai testai
 python3 tests/test_legacy.py     # add.py 1.2 modeliai
 python3 tests/test_docs.py       # 231 dokumentacijos pavyzdys
 python3 examples/build_all.py    # visi pavyzdžiai, Sketchfab patikra, paveikslėliai

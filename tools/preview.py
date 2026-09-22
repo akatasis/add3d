@@ -14,6 +14,10 @@ From the command line::
     python3 tools/preview.py castle.obj hall.png --at 0 18 -34 --radius 12
     python3 tools/preview.py castle.obj in.png --eye 0 17 -22 --at 0 17 -44 --fov 40
 
+A file bigger than 150 MB is not loaded but streamed (``render_big``): the
+vertices go into a flat array, the faces are drawn as they are read, so the
+600 MB castle renders in a few hundred megabytes of memory.
+
 From Python::
 
     import add
@@ -138,6 +142,9 @@ def render(model, path="preview.png", size=(900, 700), turn=35.0, tilt=22.0,
     """
     folder = folder or ""
     if isinstance(model, str):
+        if os.path.getsize(model) > BIG_FILE:
+            return render_big(model, path, size, turn, tilt, zoom, background, light,
+                              ambient, at, radius, eye, fov)
         folder = os.path.dirname(os.path.abspath(model))
         model = add.load(model)
     M = add.as_mesh(model)
@@ -256,6 +263,200 @@ def render(model, path="preview.png", size=(900, 700), turn=35.0, tilt=22.0,
 
 
 NEAR = 0.05                                 # camera-space clipping distance
+BIG_FILE = 150 * 1024 * 1024                # files above this are rendered streaming
+
+
+def _camera(lo, hi, at, radius, eye, turn, tilt, zoom, height, fov):
+    """The camera basis: ``(eye, eye_dir, right, up, forward, focal)``."""
+    centre = [(lo[a] + hi[a]) / 2.0 for a in range(3)] if at is None else list(at)
+    if radius is None:
+        radius = max(1e-6, max(hi[a] - lo[a] for a in range(3))) * 0.5
+    if eye is None:
+        ta, ti = math.radians(turn), math.radians(tilt)
+        eye_dir = (math.cos(ti) * math.sin(ta), math.sin(ti), math.cos(ti) * math.cos(ta))
+        distance = radius * 3.2 / max(0.05, zoom)
+        eye = [centre[a] + eye_dir[a] * distance for a in range(3)]
+    else:
+        eye = list(eye)
+        eye_dir = _unit(_sub(eye, centre))
+    forward = [-eye_dir[a] for a in range(3)]
+    right = _unit(_cross(forward, (0.0, 1.0, 0.0)))
+    if _norm(right) < 1e-9:
+        right = (1.0, 0.0, 0.0)
+    up = _cross(right, forward)
+    focal = 0.5 * height / math.tan(math.radians(fov))
+    return eye, eye_dir, right, up, forward, focal
+
+
+def _read_mtl(path):
+    """``{material name: (r, g, b, alpha)}`` from a .mtl file (no textures)."""
+    out = {}
+    name = None
+    try:
+        with open(path) as f:
+            for line in f:
+                parts = line.split()
+                if not parts:
+                    continue
+                if parts[0] == "newmtl":
+                    name = parts[1]
+                    out[name] = [200, 200, 200, 1.0]
+                elif parts[0] == "Kd" and name:
+                    out[name][0:3] = [int(round(float(v) * 255)) for v in parts[1:4]]
+                elif parts[0] == "d" and name:
+                    out[name][3] = float(parts[1])
+    except (IOError, OSError):
+        pass
+    return {k: tuple(v) for k, v in out.items()}
+
+
+def _big_faces(path):
+    """Yield ``(vertex_reader_done, ...)``: a two-phase reader for a big
+    ``.obj`` or ``.off`` -- first every vertex, then every face with its
+    colour, without ever holding the faces in memory.  Returns a pair of
+    generators: ``vertices()`` yields (x, y, z); ``faces()`` yields
+    ``(indices, (r, g, b, alpha))``."""
+    from array import array
+    kind = "obj" if path.lower().endswith(".obj") else "off"
+    V = array("d")
+    lo = [1e30, 1e30, 1e30]
+    hi = [-1e30, -1e30, -1e30]
+    faces_from = 0
+    if kind == "obj":
+        with open(path) as f:
+            for line in f:
+                if line.startswith("v "):
+                    x, y, z = (float(t) for t in line.split()[1:4])
+                    V.append(x)
+                    V.append(y)
+                    V.append(z)
+                    for a, v in enumerate((x, y, z)):
+                        if v < lo[a]:
+                            lo[a] = v
+                        if v > hi[a]:
+                            hi[a] = v
+        materials = _read_mtl(os.path.splitext(path)[0] + ".mtl")
+
+        def faces():
+            colour = (200, 200, 200, 1.0)
+            with open(path) as f:
+                for line in f:
+                    if line.startswith("f "):
+                        idx = [int(t.split("/")[0]) - 1 for t in line.split()[1:]]
+                        yield idx, colour
+                    elif line.startswith("usemtl"):
+                        colour = materials.get(line.split()[1], colour)
+    else:
+        with open(path) as f:
+            head = f.readline().split()
+            counts = head[1:] if len(head) >= 3 else f.readline().split()
+            nv = int(counts[0])
+            for _ in range(nv):
+                x, y, z = (float(t) for t in f.readline().split()[:3])
+                V.append(x)
+                V.append(y)
+                V.append(z)
+                for a, v in enumerate((x, y, z)):
+                    if v < lo[a]:
+                        lo[a] = v
+                    if v > hi[a]:
+                        hi[a] = v
+            faces_from = f.tell()
+
+        def faces():
+            with open(path) as f:
+                f.seek(faces_from)
+                for line in f:
+                    p = line.split()
+                    if not p:
+                        continue
+                    n = int(p[0])
+                    idx = [int(t) for t in p[1:1 + n]]
+                    rest = p[1 + n:]
+                    if len(rest) >= 4:
+                        colour = (int(rest[0]), int(rest[1]), int(rest[2]), int(rest[3]) / 255.0)
+                    elif len(rest) >= 3:
+                        colour = (int(rest[0]), int(rest[1]), int(rest[2]), 1.0)
+                    else:
+                        colour = (200, 200, 200, 1.0)
+                    yield idx, colour
+    return V, lo, hi, faces
+
+
+def render_big(path, out="preview.png", size=(900, 700), turn=35.0, tilt=22.0, zoom=1.0,
+               background=(250, 250, 250), light=(-0.4, 0.8, 0.6), ambient=0.28,
+               at=None, radius=None, eye=None, fov=26.0):
+    """Render a model file too big to load: the vertices are read into a
+    flat array and turned into camera space, then the faces are streamed
+    from the file and drawn one by one -- a 600 MB castle in a few hundred
+    megabytes of memory.  Colours and opacity come from the .mtl (for
+    .obj) or the face lines (for .off); textures are ignored."""
+    V, lo, hi, faces = _big_faces(path)
+    width, height = int(size[0]), int(size[1])
+    eye, eye_dir, right, up, forward, focal = _camera(lo, hi, at, radius, eye, turn, tilt, zoom, height, fov)
+    n = len(V) // 3
+    for i in range(n):                                  # to camera space, in place
+        j = 3 * i
+        dx, dy, dz = V[j] - eye[0], V[j + 1] - eye[1], V[j + 2] - eye[2]
+        V[j] = dx * right[0] + dy * right[1] + dz * right[2]
+        V[j + 1] = dx * up[0] + dy * up[1] + dz * up[2]
+        V[j + 2] = dx * forward[0] + dy * forward[1] + dz * forward[2]
+    light = _unit(light)
+    # the light and the eye direction in camera space, so normals can be
+    # taken from the camera-space corners directly
+    cam_light = (_dot(light, right), _dot(light, up), _dot(light, forward))
+    cam_eye = (_dot(eye_dir, right), _dot(eye_dir, up), _dot(eye_dir, forward))
+    pixels = bytearray()
+    for y in range(height):
+        shade = 1.0 - 0.10 * y / float(height - 1)
+        row = bytes((int(background[0] * shade), int(background[1] * shade), int(background[2] * shade))) * width
+        pixels.extend(row)
+    depth = [1e30] * (width * height)
+    half_w, half_h = width * 0.5, height * 0.5
+
+    def project(v):
+        z = v[2]
+        if z <= 1e-6:
+            return None
+        return (half_w + v[0] * focal / z, half_h - v[1] * focal / z, z)
+
+    see_through = []
+    for idx, colour in faces():
+        if len(idx) < 3:
+            continue
+        alpha = colour[3]
+        a3 = (V[3 * idx[0]], V[3 * idx[0] + 1], V[3 * idx[0] + 2])
+        for t in range(1, len(idx) - 1):
+            jb, jc = 3 * idx[t], 3 * idx[t + 1]
+            b3 = (V[jb], V[jb + 1], V[jb + 2])
+            c3 = (V[jc], V[jc + 1], V[jc + 2])
+            nx = (b3[1] - a3[1]) * (c3[2] - a3[2]) - (b3[2] - a3[2]) * (c3[1] - a3[1])
+            ny = (b3[2] - a3[2]) * (c3[0] - a3[0]) - (b3[0] - a3[0]) * (c3[2] - a3[2])
+            nz = (b3[0] - a3[0]) * (c3[1] - a3[1]) - (b3[1] - a3[1]) * (c3[0] - a3[0])
+            ln = math.sqrt(nx * nx + ny * ny + nz * nz)
+            if ln < 1e-15:
+                continue
+            lam = abs(nx * cam_light[0] + ny * cam_light[1] + nz * cam_light[2]) / ln
+            rim = abs(nx * cam_eye[0] + ny * cam_eye[1] + nz * cam_eye[2]) / ln
+            shade = ambient + (1.0 - ambient) * (0.75 * lam + 0.25 * rim)
+            col = (min(255, int(colour[0] * shade)), min(255, int(colour[1] * shade)), min(255, int(colour[2] * shade)))
+            if a3[2] >= NEAR and b3[2] >= NEAR and c3[2] >= NEAR:
+                pieces = (((a3, None), (b3, None), (c3, None)),)
+            else:
+                pieces = _clip_near([(a3, None), (b3, None), (c3, None)], NEAR)
+            for clipped in pieces:
+                pa, pb, pc = project(clipped[0][0]), project(clipped[1][0]), project(clipped[2][0])
+                if pa is None or pb is None or pc is None:
+                    continue
+                if alpha < 1.0:
+                    see_through.append(((pa[2] + pb[2] + pc[2]) / 3.0, pa, pb, pc, col, alpha))
+                    continue
+                _raster(pixels, depth, width, height, pa, pb, pc, col, 1.0, None)
+    see_through.sort(key=lambda item: -item[0])
+    for z, pa, pb, pc, col, alpha in see_through:
+        _raster(pixels, depth, width, height, pa, pb, pc, col, alpha, None)
+    write_png(out, width, height, pixels)
+    return out
 
 
 def _clip_near(corners, near):

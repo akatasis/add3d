@@ -118,8 +118,9 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
   archive. Keep under 50 MB and 50 colours (`add.check()` tells you;
   `add.save("model.obj", colors=50)` reduces a colourful model). A model
   too big for memory is written with `add.stream("model.obj")` part by
-  part (the castle of example 46 is: 26 MB for Sketchfab, over a gigabyte
-  with `--ultra`).
+  part (the castle of example 46 is: a 600 MB `.off` and an `.obj` that
+  is under 100 MB once 7-Zip has compressed it). `save` and `stream` tidy
+  the model on the way out, so nothing flickers in the viewer.
 * **Paper**: `paper/paper.md` (+ `references.bib`) is written for a
   computer-science-education venue; the repository link and the DOI (if
   you archive a release on Zenodo) go into `CITATION.cff` too.
@@ -133,7 +134,7 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
 | `add.py` | the library -- the only file students need |
 | `_src/` + `build.py` | the sections `add.py` is assembled from |
 | `examples/` | 43 commented example programs and a copy of `add.py` |
-| `tests/` | 90 unit tests, the add.py 1.2 compatibility fixture and the documentation-example runner |
+| `tests/` | 91 unit tests, the add.py 1.2 compatibility fixture and the documentation-example runner |
 | `tools/` | `preview.py` (renderer), `make_docs.py`, `coverage.py` |
 | `docs/` | the documentation site (EN/LT) and its pictures |
 | `slides/` | the lecture slides (.pptx, .pdf and the generator) |
@@ -144,7 +145,7 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
 
 ```bash
 python3 build.py --check          # add.py and examples/add.py are up to date
-python3 tests/test_add.py         # 90 passed, 0 failed
+python3 tests/test_add.py         # 91 passed, 0 failed
 python3 tests/test_legacy.py      # all legacy models reproduce
 python3 tests/test_docs.py        # 231 documentation examples ran
 python3 tools/coverage.py --strict
