@@ -116,7 +116,10 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
 * **Sketchfab**: `add.save("model.obj")` writes `.obj` + `.mtl` (opacity
   and textures included); upload both, with any texture images, in one
   archive. Keep under 50 MB and 50 colours (`add.check()` tells you;
-  `add.save("model.obj", colors=50)` reduces a colourful model).
+  `add.save("model.obj", colors=50)` reduces a colourful model). A model
+  too big for memory is written with `add.stream("model.obj")` part by
+  part (the castle of example 46 is: 26 MB for Sketchfab, over a gigabyte
+  with `--ultra`).
 * **Paper**: `paper/paper.md` (+ `references.bib`) is written for a
   computer-science-education venue; the repository link and the DOI (if
   you archive a release on Zenodo) go into `CITATION.cff` too.
@@ -129,8 +132,8 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
 |---|---|
 | `add.py` | the library -- the only file students need |
 | `_src/` + `build.py` | the sections `add.py` is assembled from |
-| `examples/` | 42 commented example programs and a copy of `add.py` |
-| `tests/` | 89 unit tests, the add.py 1.2 compatibility fixture and the documentation-example runner |
+| `examples/` | 43 commented example programs and a copy of `add.py` |
+| `tests/` | 90 unit tests, the add.py 1.2 compatibility fixture and the documentation-example runner |
 | `tools/` | `preview.py` (renderer), `make_docs.py`, `coverage.py` |
 | `docs/` | the documentation site (EN/LT) and its pictures |
 | `slides/` | the lecture slides (.pptx, .pdf and the generator) |
@@ -141,7 +144,7 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
 
 ```bash
 python3 build.py --check          # add.py and examples/add.py are up to date
-python3 tests/test_add.py         # 89 passed, 0 failed
+python3 tests/test_add.py         # 90 passed, 0 failed
 python3 tests/test_legacy.py      # all legacy models reproduce
 python3 tests/test_docs.py        # 231 documentation examples ran
 python3 tools/coverage.py --strict

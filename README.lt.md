@@ -21,6 +21,11 @@ add.save("pirmas_modelis.off")   # arba .obj (+ .mtl), .ply, .stl
 ```
 
 <p align="center">
+  <img src="docs/images/castle.png" width="98%" alt="Pilis: sala permatomame ežere, akmens blokų sienos, vartai su pakeliamu tiltu, rūmai su stiklo langais">
+  <img src="docs/images/castle_hall.png" width="49%" alt="Pilies viduje: sosto menė ir puota">
+  <img src="docs/images/castle_treasury.png" width="49%" alt="Lobynas su drakonu, miegančiu ant aukso">
+  <img src="docs/images/castle_gate.png" width="49%" alt="Vartai nuo pakeliamo tilto: grotos, grandinės, sargybiniai">
+  <img src="docs/images/castle_yard.png" width="49%" alt="Kiemas iš viršaus nuo vartų">
   <img src="docs/images/lighthouse.png" width="49%" alt="Švyturio sala">
   <img src="docs/images/football.png" width="49%" alt="Futbolo kamuolys iš ikosaedro">
   <img src="docs/images/glass_and_textures.png" width="49%" alt="Stiklas ir tekstūros">
@@ -83,7 +88,7 @@ nes vardas `add` PyPI kataloge užimtas kito žmogaus tuščiu įrašu – žr.
 | **Taisymas** | `clean` (viršūnių klijavimas, dublikatų ir vidinių sienų šalinimas), `heal`, `fix_normals`, `triangulate` |
 | **Spalvos** | vardinės spalvos, hex, HSV, perėjimai, `color_by` – spalva pagal padėtį, `limit_colors` – Sketchfab dydžio paletė |
 | **Stiklas ir paveikslėliai** | `transparent` / `opacity` permatomiems paviršiams ir `texture` paveikslėlių tekstūroms, abu įrašomi į `.mtl` failą; `write_png` patiems paskaičiuotiems paveikslėliams |
-| **Failai** | rašo `.off`, `.obj` + `.mtl`, `.ply`, `.stl`; skaito `.off`, `.obj`, `.ply`; `obj_size` dar prieš rašant |
+| **Failai** | rašo `.off`, `.obj` + `.mtl`, `.ply`, `.stl`; skaito `.off`, `.obj`, `.ply`; `obj_size` dar prieš rašant; `stream` rašo modelį dalimis, todėl jis gali būti didesnis už kompiuterio atmintį |
 | **Tikrinimas** | `stats()` ir `check()` – daugiakampių skaičius, spalvos, uždarumas, tūris ir Sketchfab ribos (50 MB, 50 medžiagų) |
 | **Peržiūra** | `tools/preview.py` – atvaizdavimo įrankis, irgi be jokių priklausomybių |
 
@@ -164,8 +169,21 @@ glotniomis versijomis, [apvalinimas](examples/39_smooth_shapes.py),
 [viršūnių įrankiai](examples/40_vertex_tools.py), [Sketchfab
 paruoštas](examples/41_sketchfab_ready.py) spalvingas modelis, [pagalvinės
 raidės](examples/42_pillow_letters.py), [planeta](examples/43_planet.py),
-[geodezinio kupolo namas](examples/44_geodesic_dome.py) ir [stiklas su
-tekstūromis](examples/45_glass_and_textures.py). `python3 tools/coverage.py`
+[geodezinio kupolo namas](examples/44_geodesic_dome.py), [stiklas su
+tekstūromis](examples/45_glass_and_textures.py) -- ir
+[pilis](examples/46_castle.py): sala permatomame ežere su žuvimis ir
+nuskendusia valtimi, aštuonkampė siena iš atskirų akmens blokų su
+aštuoniais bokštais, vartai su pakeliamomis grotomis ir tiltu, kabančiu ant
+tikrų grandinių, rūmai su stiklo langais, balkonais, stoglangiais ir
+stogu iš atskirų čerpių, koplyčia su vitražais, kiemas su šuliniu,
+fontanu, kalve, turgumi, arklide, katapulta, patrankomis, vežimais,
+statinėmis, dėžėmis, ginklų stovais, sargybiniais šarvuose, arkliais,
+vištomis ir šunimi -- o viduje du siurprizai: didžioji menė su karaliaus
+sostu ir puota ant ilgųjų stalų, ir lobynas su drakonu, miegančiu ant
+aukso. `python3 46_castle.py` įrašo 26 MB Sketchfab tinkamą `.obj` (48
+medžiagos), `--full` -- kiekvieną grindinio akmenį ir žolės kuokštą (180
+MB), `--ultra` -- daugiau nei gigabaitą; rašoma srautu, todėl atmintis
+niekada neriboja. `python3 tools/coverage.py`
 parodo, kuris pavyzdys kurią funkciją naudoja; kiekviena vieša funkcija
 panaudota bent viename, o kiekvienas modelis telpa į Sketchfab ribas (tikrina
 `examples/build_all.py`).
@@ -176,7 +194,7 @@ panaudota bent viename, o kiekvienas modelis telpa į Sketchfab ribas (tikrina
 add.py               biblioteka – vienintelis failas, kurio jums reikia
 _src/                dalys, iš kurių surenkamas add.py
 build.py             sujungia _src/*.py į add.py
-examples/            42 pavyzdinės programos su komentarais (studijos ir pilni modeliai)
+examples/            43 pavyzdinės programos su komentarais (studijos ir pilni modeliai)
   add.py             bibliotekos kopija, kad pavyzdžiai veiktų tokie, kokie yra
   build_all.py       paleidžia visas, tikrina Sketchfab ribas, sugeneruoja paveikslėlius
 tools/
@@ -184,7 +202,7 @@ tools/
   make_docs.py       sukuria docs/index.html iš kodo aprašymų ir docs/reference.py
   coverage.py        kuris pavyzdys kurią funkciją naudoja
 tests/
-  test_add.py        89 vienetiniai testai
+  test_add.py        90 vienetiniai testai
   test_legacy.py     paleidžia add.py 1.2 modelius ir tikrina sienų skaičių
   test_docs.py       paleidžia kiekvienos aprašytos funkcijos pavyzdį
   legacy/            tie modeliai, nepakeisti
@@ -203,7 +221,7 @@ vieno failo.
 ## Testai
 
 ```bash
-python3 tests/test_add.py        # 89 vienetiniai testai
+python3 tests/test_add.py        # 90 vienetiniai testai
 python3 tests/test_legacy.py     # add.py 1.2 modeliai
 python3 tests/test_docs.py       # 231 dokumentacijos pavyzdys
 python3 examples/build_all.py    # visi pavyzdžiai, Sketchfab patikra, paveikslėliai

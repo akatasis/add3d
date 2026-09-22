@@ -116,7 +116,10 @@ Jei abejojate, pirmiausia išbandykite `test.pypi.org`
 * **Sketchfab**: `add.save("modelis.obj")` sukuria `.obj` + `.mtl` (su
   permatomumu ir tekstūromis); įkelkite abu, kartu su tekstūrų paveikslėliais,
   viename archyve. Neviršykite 50 MB ir 50 spalvų (`add.check()` pasako;
-  `add.save("modelis.obj", colors=50)` sumažina spalvingą modelį).
+  `add.save("modelis.obj", colors=50)` sumažina spalvingą modelį). Į
+  atmintį netelpantis modelis rašomas dalimis su `add.stream("modelis.obj")`
+  (taip rašoma 46 pavyzdžio pilis: 26 MB Sketchfab variantas, su `--ultra`
+  daugiau nei gigabaitas).
 * **Straipsnis**: `paper/paper.md` (+ `references.bib`) parašytas
   informatikos didaktikos leidiniui; repozitorijos nuorodą ir DOI (jei
   leidimą archyvuosite Zenodo) įrašykite ir į `CITATION.cff`.
@@ -129,8 +132,8 @@ Jei abejojate, pirmiausia išbandykite `test.pypi.org`
 |---|---|
 | `add.py` | pati biblioteka – vienintelis failas, kurio reikia studentams |
 | `_src/` + `build.py` | dalys, iš kurių surenkamas `add.py` |
-| `examples/` | 42 pavyzdinės programos su komentarais ir `add.py` kopija |
-| `tests/` | 89 vienetiniai testai, add.py 1.2 suderinamumo testas ir dokumentacijos pavyzdžių paleidiklis |
+| `examples/` | 43 pavyzdinės programos su komentarais ir `add.py` kopija |
+| `tests/` | 90 vienetiniai testai, add.py 1.2 suderinamumo testas ir dokumentacijos pavyzdžių paleidiklis |
 | `tools/` | `preview.py` (peržiūra), `make_docs.py`, `coverage.py` |
 | `docs/` | dokumentacijos svetainė (EN/LT) ir paveikslėliai |
 | `slides/` | paskaitos skaidrės (.pptx, .pdf ir generatorius) |
@@ -141,7 +144,7 @@ Jei abejojate, pirmiausia išbandykite `test.pypi.org`
 
 ```bash
 python3 build.py --check          # add.py ir examples/add.py atnaujinti
-python3 tests/test_add.py         # 89 passed, 0 failed
+python3 tests/test_add.py         # 90 passed, 0 failed
 python3 tests/test_legacy.py      # all legacy models reproduce
 python3 tests/test_docs.py        # 231 documentation examples ran
 python3 tools/coverage.py --strict

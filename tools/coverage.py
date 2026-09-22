@@ -21,8 +21,9 @@ EXAMPLES = os.path.join(ROOT, "examples")
 sys.path.insert(0, ROOT)
 import add                                                   # noqa: E402
 
-#: Values (not functions) that an example does not have to touch.
-OPTIONAL = {"EPS", "BOOL_EPS", "DEFAULT_COLOR", "vertices", "faces", "Mesh"}
+#: Values (not functions) and classes -- reached through ``layer`` /
+#: ``stream`` -- that an example does not have to name itself.
+OPTIONAL = {"EPS", "BOOL_EPS", "DEFAULT_COLOR", "vertices", "faces", "Mesh", "Stream"}
 
 
 def example_files():

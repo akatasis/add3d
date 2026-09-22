@@ -1220,6 +1220,46 @@ def test_transparency_and_textures():
     assert add.stats(few)["transparent_faces"] == 6
 
 
+def test_stream():
+    """A model written part by part is the same model as one saved at once."""
+    with tempfile.TemporaryDirectory() as folder:
+        png = os.path.join(folder, "dots.png")
+        add.write_png(png, [["red" if (x + y) % 2 else "white" for x in range(4)] for y in range(4)])
+        parts = [add.make(add.box, [0, 0, 0], 1, "red"),
+                 add.texture(add.make(add.cuboid, [3, 0, 0], [2, 1, 1]), "dots.png", "box"),
+                 add.opacity(add.make(add.sphere, [6, 0, 0], 1, 8, "sky"), 0.4)]
+        whole = add.merge(parts)
+        for ext in (".obj", ".off"):
+            path = os.path.join(folder, "s" + ext)
+            with add.stream(path) as out:
+                assert isinstance(out, add.Stream)
+                add.clear()
+                add.mesh(parts[0])
+                n = out.add()                             # the scene, then cleared
+                assert n == 6 and add.layer().polygons == 0
+                out.add(parts[1])
+                out.add(parts[2])
+            assert out.faces == whole.polygons and out.vertices == len(whole.V)
+            assert 0 < out.bytes <= os.path.getsize(path)
+            back = add.load(path)
+            assert back.polygons == whole.polygons and len(back.V) == len(whole.V)
+            assert abs(add.volume(back) - add.volume(whole)) < 1e-6
+            if ext == ".obj":
+                assert len(out.materials) == 3 and add.stats(back)["textures"] == ["dots.png"]
+                assert add.stats(back)["transparent_faces"] == parts[2].polygons
+                mtl = open(os.path.join(folder, "s.mtl")).read()
+                assert "map_Kd dots.png" in mtl and "d 0.400" in mtl
+            else:
+                assert add.stats(back)["colors"] == 3
+                header = open(path).read().split("\n")[1].split()
+                assert int(header[0]) == len(whole.V) and int(header[1]) == whole.polygons
+        try:
+            out.add(parts[0])                             # closed
+            assert False, "writing to a closed stream must fail"
+        except ValueError:
+            pass
+
+
 def test_make_and_every_public_name():
     ball = add.make(add.sphere, [0, 0, 0], 1, 5, "red")
     assert ball.polygons == 320 and len(add.faces) == 0

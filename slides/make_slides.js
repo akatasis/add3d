@@ -1024,6 +1024,24 @@ function build(lang) {
     ], { y: 4.4, h: 1.75, perRow: 3 });
   }
 
+  // =========================================================== 27g. the castle
+  {
+    const s = sheet(T("The castle: a model bigger than memory", "Pilis: modelis, didesnis už atmintį"),
+                    T("46_castle.py, stream()", "46_castle.py, stream()"));
+    picture(s, "castle.png", { x: M, y: 1.45, w: 5.3, h: 3.4,
+      caption: T("26 MB and 48 materials for Sketchfab; --full 180 MB; --ultra over 1 GB",
+                 "26 MB ir 48 medžiagos Sketchfab; --full 180 MB; --ultra daugiau nei 1 GB") });
+    picture(s, "castle_hall.png", { x: 5.85, y: 1.45, w: 3.55, h: 1.55,
+      caption: T("the throne hall and the feast", "sosto menė ir puota") });
+    picture(s, "castle_treasury.png", { x: 5.85, y: 3.3, w: 3.55, h: 1.55,
+      caption: T("the dragon on the treasure", "drakonas ant lobio") });
+    code(s, [
+      "out = add.stream(\"castle.obj\")   # parts go to disk at once",
+      "wall_of_bricks(); out.add()      # scene written, then cleared",
+      "out.close()                      # writes castle.mtl",
+    ], { x: M, y: 5.55, w: 9.1, h: 1.05, fontSize: 11 });
+  }
+
   // =========================================================== 28. export
   {
     const s = sheet(T("Saving and sharing a model", "Modelio išsaugojimas ir viešinimas"), T("files", "failai"));

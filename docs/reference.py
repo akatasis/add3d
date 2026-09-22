@@ -653,6 +653,14 @@ EXPLAIN_LT.update({
             "galima transformuoti ir įdėti į sceną.",
     "write_png": "Įrašo paveikslėlį – eilučių sąrašą, kurio kiekviena eilutė "
                  "yra spalvų sąrašas – kaip .png failą tekstūrai (žr. texture).",
+    "stream": "Atidaro srautinį rašymą į .obj ar .off failą: modelis rašomas "
+              "dalimis, todėl gali būti daug didesnis už kompiuterio atmintį "
+              "(pilis su kiekviena plyta – ir gigabaitas). Grąžina Stream: "
+              "out.add() įrašo sceną ir ją išvalo, out.add(M) įrašo modelį, "
+              "out.close() užbaigia failą (.mtl arba OFF antraštę).",
+    "Stream": "Srautinio rašymo objektas, kurį grąžina stream(kelias): metodai "
+              "add(M=None) ir close(), skaitikliai faces, vertices, bytes ir "
+              "materials. Veikia ir kaip with blokas.",
     "load_font": "Įkelia visą raidžių ar skaitmenų modelių aplanką į žodyną "
                  "{„A“: tinklas, ...}.",
     "typeset": "Išdėsto jau įkeltų raidžių tinklus (iš load_font) į eilutę ir "
@@ -737,6 +745,9 @@ EXAMPLES.update({
     "obj_size": 'M = add.make(add.sphere, [0, 0, 0], 1, 30, "red")\nprint(add.obj_size(M) / 1e6, "MB")',
     "load": 'add.box([0, 0, 0], 2, "red")\nadd.save("part.off")\npart = add.load("part.off")\nadd.mesh(add.move(part, [3, 0, 0]))',
     "write_png": 'rows = [[add.hsv(x / 64.0, 1, 1 - y / 128.0) for x in range(64)] for y in range(64)]\nadd.write_png("rainbow.png", rows)\nadd.mesh(add.texture(add.make(add.box, [0, 0, 0], 2), "rainbow.png", "box", scale=2))',
+    "stream": 'out = add.stream("big.obj")\nfor i in range(20):\n    add.bricks([0, 0, i * 2], 10, 2, [1, 0.5, 0.5], "brown", seed=i)\n    out.add()                            # written now, scene cleared\nout.add(add.make(add.tree, [12, 0, 0], 5))\nout.close()                              # writes big.mtl too\nprint(out.faces, "faces,", out.bytes, "bytes,", len(out.materials), "materials")',
+    "Stream": 'with add.Stream("parts.off") as out:\n    for i in range(5):\n        add.sphere([i * 3, 0, 0], 1, 10, add.hsv(i / 5.0))\n        out.add()\nprint(out.faces, out.vertices)',
+
     "load_font": 'import os\nos.mkdir("letters")\nfor ch in "AB":\n    add.text(ch, [0, 0, 0], 1, color="navy")\n    add.save("letters/%s.off" % ch)\nfont = add.load_font("letters")\nprint(sorted(font))                    # ["A", "B"]',
     "typeset": 'import os\nos.mkdir("glyphs")\nfor ch in "ADD":\n    add.text(ch, [0, 0, 0], 1, color="navy")\n    add.save("glyphs/%s.off" % ch)\nfont = add.load_font("glyphs")\nadd.mesh(add.typeset("ADD", font, [0, 0, 0], 2, color="gold"))',
     "text_width": 'w = add.text_width("LABAS", 1.0)\nadd.text("LABAS", [-w / 2, 0, 0], 1.0, color="navy")   # centred by hand',

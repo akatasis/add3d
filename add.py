@@ -6431,6 +6431,180 @@ def _write_stl(path, M):
         f.write("endsolid addpy\n")
 
 
+class Stream(object):
+    """Write a model part by part, straight to disk, so that a model far
+    bigger than the computer's memory can still be built.
+
+    ``add.stream(path)`` returns one of these.  Every :meth:`add` writes a
+    mesh (or the current scene, which is then cleared) to the file at once
+    and forgets it; :meth:`close` finishes the file.  Works for ``.obj``
+    (materials, opacity and textures included; the ``.mtl`` is written on
+    close) and ``.off`` (the counts in the header are filled in on close).
+    Use it as a context manager or call ``close()`` yourself::
+
+        with add.stream("castle.obj") as out:
+            for i in range(100):
+                add.sphere([i, 0, 0], 0.4, 20, "red")
+                out.add()                    # the scene, then cleared
+            out.add(add.make(add.box, [0, 5, 0], 2, "gold"))
+        print(out.faces, "faces,", out.bytes / 1e6, "MB")
+    """
+
+    def __init__(self, path):
+        self.path = path
+        self.faces = 0
+        self.vertices = 0
+        self.bytes = 0
+        self.materials = {}                    # colour tuple -> material name
+        self._kind = "obj" if path.lower().endswith(".obj") else "off"
+        self._vt = 0
+        self._file = open(path, "w")
+        if self._kind == "obj":
+            mtl = path[:-4] + ".mtl"
+            self._mtl = mtl
+            self._file.write("# written by add.py %s\n" % __version__)
+            self._file.write("mtllib %s\n" % mtl.replace("\\", "/").rsplit("/", 1)[-1])
+            self._file.write("o model\n")
+        else:
+            self._file.write("OFF\n")
+            self._header_at = self._file.tell()
+            self._file.write("%12d %12d 0\n" % (0, 0))
+            self._offV, self._offF = [], []
+        self._current = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+        return False
+
+    def add(self, M=None):
+        """Write a mesh to the file now.  Without a mesh the current scene is
+        written and then cleared.  Returns the number of faces written."""
+        if M is None:
+            M = _scene
+            clear_after = True
+        else:
+            M = as_mesh(M)
+            clear_after = False
+        if self._file is None:
+            raise ValueError("stream is closed")
+        f = self._file
+        base = self.vertices
+        out = []
+        if self._kind == "obj":
+            for p in M.V:
+                out.append("v %s %s %s\n" % (_num(p[0]), _num(p[1]), _num(p[2])))
+            vt_index = {}
+            if M.UV is not None:
+                for k, c in enumerate(M.C):
+                    uv = M.UV[k]
+                    if uv is None or len(c) < 5:
+                        continue
+                    for t in uv:
+                        key = (round(t[0], 6), round(t[1], 6))
+                        if key not in vt_index:
+                            self._vt += 1
+                            vt_index[key] = self._vt
+                            out.append("vt %s %s\n" % (_num(key[0]), _num(key[1])))
+            by_color = {}
+            order = []
+            for k, c in enumerate(M.C):
+                if c not in by_color:
+                    by_color[c] = []
+                    order.append(c)
+                by_color[c].append(k)
+            for c in order:
+                name = self.materials.get(c)
+                if name is None:
+                    name = self.materials[c] = _material_name(c)
+                if c != self._current:
+                    out.append("usemtl %s\n" % name)
+                    self._current = c
+                textured = len(c) > 4 and M.UV is not None
+                for k in by_color[c]:
+                    face = M.F[k]
+                    uv = M.UV[k] if textured else None
+                    if uv is None:
+                        out.append("f %s\n" % " ".join(str(i + base + 1) for i in face))
+                    else:
+                        out.append("f %s\n" % " ".join(
+                            "%d/%d" % (i + base + 1,
+                                       vt_index[(round(t[0], 6), round(t[1], 6))])
+                            for i, t in zip(face, uv)))
+            text = "".join(out)
+        else:
+            # OFF wants every vertex before every face, so the two lists are
+            # kept as text and written on close (that is why .obj is the
+            # format for really big models).
+            for p in M.V:
+                self._offV.append("%s %s %s\n" % (_num(p[0]), _num(p[1]), _num(p[2])))
+            for face, c in zip(M.F, M.C):
+                self._offF.append("%d %s %d %d %d\n" % (
+                    len(face), " ".join(str(i + base) for i in face), c[0], c[1], c[2]))
+            text = ""
+        if text:
+            f.write(text)
+            self.bytes += len(text)
+        self.vertices += len(M.V)
+        self.faces += len(M.F)
+        if clear_after:
+            clear()
+        return len(M.F)
+
+    def close(self):
+        """Finish the file (the ``.mtl``, or the OFF header)."""
+        if self._file is None:
+            return self.path
+        if self._kind == "obj":
+            with open(self._mtl, "w") as m:
+                m.write("# written by add.py %s\n" % __version__)
+                for c, name in self.materials.items():
+                    r, g, b, alpha, image = _material(c)
+                    m.write("newmtl %s\n" % name)
+                    m.write("Kd %.6f %.6f %.6f\n" % (r / 255.0, g / 255.0, b / 255.0))
+                    m.write("Ka 0.100000 0.100000 0.100000\n")
+                    m.write("Ks 0.000000 0.000000 0.000000\n")
+                    m.write("d %.3f\n" % alpha)
+                    m.write("illum 1\n")
+                    if image:
+                        m.write("map_Kd %s\n" % image.replace("\\", "/").rsplit("/", 1)[-1])
+                    m.write("\n")
+        else:
+            text = "".join(self._offV) + "".join(self._offF)
+            self._file.write(text)
+            self.bytes += len(text)
+            self._file.seek(self._header_at)
+            self._file.write("%12d %12d 0\n" % (self.vertices, self.faces))
+        self._file.close()
+        self._file = None
+        return self.path
+
+
+def stream(path):
+    """Open a :class:`Stream`: a model written to ``path`` part by part,
+    without ever holding all of it in memory.
+
+    The ordinary :func:`save` keeps the whole model in memory, which is fine
+    up to a few million faces.  For a model of hundreds of megabytes -- a
+    castle with every brick -- build it in parts and hand each part to the
+    stream as soon as it is finished::
+
+        out = add.stream("castle.obj")
+        add.bricks([0, 0, 0], 40, 6, [0.5, 0.25, 0.5], "brown", seed=1)
+        out.add()                       # writes the scene and clears it
+        out.add(add.make(add.tree, [10, 0, 0], 5))
+        out.close()                     # writes castle.mtl
+        print(out.faces, out.bytes)
+
+    For ``.off`` the vertices and faces are kept as text until ``close()``
+    (the format wants all vertices before all faces), so ``.obj`` is the
+    one to use for really big models.
+    """
+    return Stream(path)
+
+
 def load(path, color=None):
     """Read a model from an ``.off``, ``.obj`` or ``.ply`` file.
 

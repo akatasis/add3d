@@ -11,6 +11,8 @@ From the command line::
 
     python3 tools/preview.py model.off                 # -> model.png
     python3 tools/preview.py model.off shot.png --size 1200 900 --turn 35
+    python3 tools/preview.py castle.obj hall.png --at 0 18 -34 --radius 12
+    python3 tools/preview.py castle.obj in.png --eye 0 17 -22 --at 0 17 -44 --fov 40
 
 From Python::
 
@@ -122,13 +124,19 @@ def read_png(path):
 
 def render(model, path="preview.png", size=(900, 700), turn=35.0, tilt=22.0,
            zoom=1.0, background=(250, 250, 250), light=(-0.4, 0.8, 0.6),
-           ambient=0.28, ground=True, outline=False):
+           ambient=0.28, ground=True, outline=False, at=None, radius=None,
+           eye=None, fov=26.0, folder=None):
     """Render a mesh (or a model file) to a PNG and return the path.
 
     ``turn`` and ``tilt`` are the camera angles in degrees, ``zoom`` scales the
-    framing, ``light`` is the direction the light comes from.
+    framing, ``light`` is the direction the light comes from.  By default the
+    whole model is framed; ``at`` (a point) and ``radius`` frame a part of it
+    instead, and ``eye`` puts the camera at an exact point looking at ``at``
+    (for a view from inside a building).  ``fov`` is the half angle of view
+    in degrees.  ``folder`` is where the texture pictures of a mesh given
+    in memory live (for a file name it is the file's folder).
     """
-    folder = ""
+    folder = folder or ""
     if isinstance(model, str):
         folder = os.path.dirname(os.path.abspath(model))
         model = add.load(model)
@@ -148,14 +156,19 @@ def render(model, path="preview.png", size=(900, 700), turn=35.0, tilt=22.0,
 
     width, height = int(size[0]), int(size[1])
     lo, hi = add.bbox(M)
-    centre = [(lo[a] + hi[a]) / 2.0 for a in range(3)]
-    radius = max(1e-6, max(hi[a] - lo[a] for a in range(3))) * 0.5
+    centre = [(lo[a] + hi[a]) / 2.0 for a in range(3)] if at is None else list(at)
+    if radius is None:
+        radius = max(1e-6, max(hi[a] - lo[a] for a in range(3))) * 0.5
 
     # Camera basis.
-    ta, ti = math.radians(turn), math.radians(tilt)
-    eye_dir = (math.cos(ti) * math.sin(ta), math.sin(ti), math.cos(ti) * math.cos(ta))
-    distance = radius * 3.2 / max(0.05, zoom)
-    eye = [centre[a] + eye_dir[a] * distance for a in range(3)]
+    if eye is None:
+        ta, ti = math.radians(turn), math.radians(tilt)
+        eye_dir = (math.cos(ti) * math.sin(ta), math.sin(ti), math.cos(ti) * math.cos(ta))
+        distance = radius * 3.2 / max(0.05, zoom)
+        eye = [centre[a] + eye_dir[a] * distance for a in range(3)]
+    else:
+        eye = list(eye)
+        eye_dir = _unit(_sub(eye, centre))
     forward = [-eye_dir[a] for a in range(3)]
     up0 = (0.0, 1.0, 0.0)
     right = _unit(_cross(forward, up0))
@@ -163,7 +176,7 @@ def render(model, path="preview.png", size=(900, 700), turn=35.0, tilt=22.0,
         right = (1.0, 0.0, 0.0)
     up = _cross(right, forward)
 
-    focal = 0.5 * height / math.tan(math.radians(26.0))
+    focal = 0.5 * height / math.tan(math.radians(fov))
 
     # Transform every vertex into camera space once.
     cam = []
@@ -214,19 +227,25 @@ def render(model, path="preview.png", size=(900, 700), turn=35.0, tilt=22.0,
             col = (min(255, int(colour[0] * shade)),
                    min(255, int(colour[1] * shade)),
                    min(255, int(colour[2] * shade)))
-            pa, pb, pc = (project(cam[f[0]]), project(cam[f[t]]),
-                          project(cam[f[t + 1]]))
-            if pa is None or pb is None or pc is None:
-                continue
-            tex = None
-            if uv is not None:
-                tex = (image, uv[0], uv[t], uv[t + 1], shade)
-            if alpha < 1.0:
-                see_through.append(((pa[2] + pb[2] + pc[2]) / 3.0, pa, pb, pc,
-                                    col, alpha, tex))
-                continue
-            triangles += _raster(pixels, depth, width, height, pa, pb, pc, col,
-                                 1.0, tex)
+            corners = [(cam[f[0]], uv[0] if uv else None),
+                       (cam[f[t]], uv[t] if uv else None),
+                       (cam[f[t + 1]], uv[t + 1] if uv else None)]
+            # Corners behind the camera are clipped off at the near plane, so
+            # a big floor or wall the camera stands on is still drawn.
+            for clipped in _clip_near(corners, NEAR):
+                pa, pb, pc = (project(clipped[0][0]), project(clipped[1][0]),
+                              project(clipped[2][0]))
+                if pa is None or pb is None or pc is None:
+                    continue
+                tex = None
+                if uv is not None:
+                    tex = (image, clipped[0][1], clipped[1][1], clipped[2][1], shade)
+                if alpha < 1.0:
+                    see_through.append(((pa[2] + pb[2] + pc[2]) / 3.0, pa, pb, pc,
+                                        col, alpha, tex))
+                    continue
+                triangles += _raster(pixels, depth, width, height, pa, pb, pc, col,
+                                     1.0, tex)
     see_through.sort(key=lambda item: -item[0])
     for z, pa, pb, pc, col, alpha, tex in see_through:
         triangles += _raster(pixels, depth, width, height, pa, pb, pc, col,
@@ -234,6 +253,37 @@ def render(model, path="preview.png", size=(900, 700), turn=35.0, tilt=22.0,
 
     write_png(path, width, height, pixels)
     return path
+
+
+NEAR = 0.05                                 # camera-space clipping distance
+
+
+def _clip_near(corners, near):
+    """Clip a camera-space triangle against the plane z = near.
+
+    ``corners`` are ``(point, uv)`` pairs; the result is a list of triangles
+    (each again three ``(point, uv)`` pairs), empty when the whole triangle
+    is behind the camera."""
+    inside = [c for c in corners if c[0][2] >= near]
+    if len(inside) == 3:
+        return [corners]
+    if not inside:
+        return []
+    poly = []
+    n = len(corners)
+    for i in range(n):
+        p, q = corners[i], corners[(i + 1) % n]
+        pin, qin = p[0][2] >= near, q[0][2] >= near
+        if pin:
+            poly.append(p)
+        if pin != qin:
+            t = (near - p[0][2]) / (q[0][2] - p[0][2])
+            point = tuple(p[0][k] + (q[0][k] - p[0][k]) * t for k in range(3))
+            uv = None
+            if p[1] is not None and q[1] is not None:
+                uv = (p[1][0] + (q[1][0] - p[1][0]) * t, p[1][1] + (q[1][1] - p[1][1]) * t)
+            poly.append((point, uv))
+    return [(poly[0], poly[i], poly[i + 1]) for i in range(1, len(poly) - 1)]
 
 
 def _raster(pixels, depth, width, height, a, b, c, col, alpha=1.0, tex=None):
@@ -255,6 +305,9 @@ def _raster(pixels, depth, width, height, a, b, c, col, alpha=1.0, tex=None):
         return 0
     inv = 1.0 / det
     r, g, bl = col
+    # Depth (and texture coordinates) are interpolated as 1/z, so that big
+    # triangles close to the camera get the right depth at every pixel.
+    ia, ib, ic = 1.0 / a[2], 1.0 / b[2], 1.0 / c[2]
     for y in range(miny, maxy + 1):
         py = y + 0.5
         row = y * width
@@ -267,7 +320,8 @@ def _raster(pixels, depth, width, height, a, b, c, col, alpha=1.0, tex=None):
             if w1 < 0.0 or w0 + w1 > 1.0:
                 continue
             w2 = 1.0 - w0 - w1
-            z = w0 * a[2] + w1 * b[2] + w2 * c[2]
+            iz = w0 * ia + w1 * ib + w2 * ic
+            z = 1.0 / iz
             i = row + x
             if z >= depth[i]:
                 continue
@@ -275,8 +329,8 @@ def _raster(pixels, depth, width, height, a, b, c, col, alpha=1.0, tex=None):
             if tex is not None:
                 image, ua, ub, uc, shade = tex
                 tw, th, rows = image
-                u = w0 * ua[0] + w1 * ub[0] + w2 * uc[0]
-                v = w0 * ua[1] + w1 * ub[1] + w2 * uc[1]
+                u = (w0 * ua[0] * ia + w1 * ub[0] * ib + w2 * uc[0] * ic) * z
+                v = (w0 * ua[1] * ia + w1 * ub[1] * ib + w2 * uc[1] * ic) * z
                 texel = rows[int((1.0 - v) * th) % th][int(u * tw) % tw]
                 r = min(255, int(texel[0] * shade))
                 g = min(255, int(texel[1] * shade))
@@ -329,11 +383,25 @@ def main(argv):
         else os.path.splitext(src)[0] + ".png"
     size = (900, 700)
     turn, tilt, zoom = 35.0, 22.0, 1.0
+    at = radius = eye = None
+    fov = 26.0
     i = 2
     while i < len(argv):
         if argv[i] == "--size":
             size = (int(argv[i + 1]), int(argv[i + 2]))
             i += 3
+        elif argv[i] == "--at":
+            at = [float(v) for v in argv[i + 1:i + 4]]
+            i += 4
+        elif argv[i] == "--eye":
+            eye = [float(v) for v in argv[i + 1:i + 4]]
+            i += 4
+        elif argv[i] == "--radius":
+            radius = float(argv[i + 1])
+            i += 2
+        elif argv[i] == "--fov":
+            fov = float(argv[i + 1])
+            i += 2
         elif argv[i] == "--turn":
             turn = float(argv[i + 1])
             i += 2
@@ -345,7 +413,8 @@ def main(argv):
             i += 2
         else:
             i += 1
-    print(render(src, out, size, turn, tilt, zoom))
+    print(render(src, out, size, turn, tilt, zoom, at=at, radius=radius,
+                 eye=eye, fov=fov))
     return 0
 
 

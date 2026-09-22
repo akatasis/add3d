@@ -21,6 +21,11 @@ add.save("first_model.off")      # or .obj (+ .mtl), .ply, .stl
 ```
 
 <p align="center">
+  <img src="docs/images/castle.png" width="98%" alt="The castle: an island in a transparent lake, walls of stone blocks, a gatehouse with a drawbridge, a palace with glass windows">
+  <img src="docs/images/castle_hall.png" width="49%" alt="Inside the castle: the throne hall and the feast">
+  <img src="docs/images/castle_treasury.png" width="49%" alt="The treasury with a dragon asleep on the gold">
+  <img src="docs/images/castle_gate.png" width="49%" alt="The gatehouse from the drawbridge: portcullis, chains, guards">
+  <img src="docs/images/castle_yard.png" width="49%" alt="The courtyard from above the gate">
   <img src="docs/images/lighthouse.png" width="49%" alt="A lighthouse island">
   <img src="docs/images/football.png" width="49%" alt="A football from an icosahedron">
   <img src="docs/images/glass_and_textures.png" width="49%" alt="Glass and textures">
@@ -83,7 +88,7 @@ registered by someone else -- see [PUBLISHING.md](PUBLISHING.md).)
 | **Repair** | `clean` (weld, dedupe, remove buried walls), `heal`, `fix_normals`, `triangulate` |
 | **Colour** | named colours, hex, HSV, gradients, `color_by` for a colour that depends on position, `limit_colors` for a Sketchfab-sized palette |
 | **Glass and pictures** | `transparent` / `opacity` for see-through surfaces and `texture` for image textures, both written to the `.mtl` file; `write_png` for pictures you compute yourself |
-| **Files** | write `.off`, `.obj` + `.mtl`, `.ply`, `.stl`; read `.off`, `.obj`, `.ply`; `obj_size` before writing |
+| **Files** | write `.off`, `.obj` + `.mtl`, `.ply`, `.stl`; read `.off`, `.obj`, `.ply`; `obj_size` before writing; `stream` writes a model part by part, so it can be bigger than the memory of the computer |
 | **Checking** | `stats()` and `check()` — polygon count, colours, watertightness, volume, and the Sketchfab limits (50 MB, 50 materials) |
 | **Looking** | `tools/preview.py`, a software renderer that also has no dependencies |
 
@@ -169,8 +174,21 @@ duals, truncations and smooth versions, [smoothing](examples/39_smooth_shapes.py
 of pulled boxes and prisms, [vertex tools](examples/40_vertex_tools.py), a
 [Sketchfab-ready](examples/41_sketchfab_ready.py) colourful model, [pillow
 letters](examples/42_pillow_letters.py), a [planet](examples/43_planet.py),
-a [geodesic dome](examples/44_geodesic_dome.py) house and [glass and
-textures](examples/45_glass_and_textures.py).
+a [geodesic dome](examples/44_geodesic_dome.py) house, [glass and
+textures](examples/45_glass_and_textures.py) -- and the
+[castle](examples/46_castle.py): an island in a transparent lake with fish
+and a sunken boat, an octagonal wall of individual stone blocks with eight
+towers, a gatehouse with a portcullis and a drawbridge hanging on real
+chains, a palace with glass windows, balconies, dormers and a roof of
+single tiles, a chapel with stained glass, a courtyard with a well, a
+fountain, a smithy, a market, a stable, a trebuchet, cannons, carts,
+barrels, crates, weapon racks, guards in armour, horses, chickens and a
+dog -- and, inside, two easter eggs: the great hall with the king's throne
+and a feast on the long tables, and the treasury with a dragon asleep on
+the gold. `python3 46_castle.py` writes a 26 MB Sketchfab-ready `.obj`
+(48 materials), `--full` every cobblestone and grass tuft (180 MB),
+`--ultra` more than a gigabyte -- written streaming, so memory is never
+the limit.
 `python3 tools/coverage.py` lists which example uses which function; every
 public function is used by at least one, and every model fits the Sketchfab
 limits (`examples/build_all.py` checks).
@@ -181,7 +199,7 @@ limits (`examples/build_all.py` checks).
 add.py               the library — this is the only file you need
 _src/                the sections add.py is assembled from
 build.py             concatenates _src/*.py into add.py
-examples/            42 commented example programs (studies and complete models)
+examples/            43 commented example programs (studies and complete models)
   add.py             a copy of the library, so the examples run as they are
   build_all.py       runs them all, checks the Sketchfab limits, renders the pictures
 tools/
@@ -189,7 +207,7 @@ tools/
   make_docs.py       builds docs/index.html from the docstrings + docs/reference.py
   coverage.py        which example uses which function
 tests/
-  test_add.py        89 unit tests
+  test_add.py        90 unit tests
   test_legacy.py     runs the add.py 1.2 models and checks the face counts
   test_docs.py       runs the example of every documented function
   legacy/            those models, unedited
@@ -207,7 +225,7 @@ the repository so that a student only ever needs one file.
 ## Running the tests
 
 ```bash
-python3 tests/test_add.py        # 89 unit tests
+python3 tests/test_add.py        # 90 unit tests
 python3 tests/test_legacy.py     # the add.py 1.2 models
 python3 tests/test_docs.py       # the 231 documentation examples
 python3 examples/build_all.py    # every example, the Sketchfab check, pictures

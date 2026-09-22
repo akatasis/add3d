@@ -635,6 +635,29 @@ add.save("house.obj")                                          # + house.mtl
 ```
 
 !glass_and_textures.png|A fish tank, a brick house with glass windows and a textured globe.
+
+## My model is bigger than the memory of the computer
+
+`save` keeps the whole model in memory, which is fine up to a few million
+faces. A model with every brick, cobblestone and roof tile as its own
+piece can run to a gigabyte -- so build it in parts and hand each part to
+a *stream* as soon as it is finished: `stream("castle.obj")` returns a
+`Stream`, `out.add()` writes the scene and clears it, `out.close()` writes
+the `.mtl` (or fills in the OFF header). `out.faces`, `out.bytes` and
+`out.materials` count as you go, so the Sketchfab limits can be checked
+before the file is complete.
+
+```
+out = add.stream("castle.obj")
+for k in range(8):
+    wall_segment(k)                    # thousands of bricks
+    out.add()                          # written now, memory freed
+out.add(add.make(add.tree, [0, 0, 0], 5))
+out.close()
+print(out.faces, "faces,", out.bytes / 1e6, "MB,", len(out.materials), "materials")
+```
+
+!castle.png|The castle of example 46, written streaming: 26 MB for Sketchfab, 180 MB with every cobblestone, over a gigabyte with `--ultra`.
 """),
 "lt": ("""# Receptai
 
@@ -940,6 +963,29 @@ add.save("namas.obj")                                          # + namas.mtl
 ```
 
 !glass_and_textures.png|Akvariumas, plytų namas su stiklo langais ir tekstūruotas gaublys.
+
+## Mano modelis didesnis už kompiuterio atmintį
+
+`save` laiko visą modelį atmintyje -- to užtenka iki kelių milijonų sienų.
+Modelis, kuriame kiekviena plyta, grindinio akmuo ir stogo čerpė yra
+atskira detalė, gali siekti gigabaitą, todėl jį reikia kurti dalimis ir
+kiekvieną baigtą dalį iš karto atiduoti *srautui*: `stream("pilis.obj")`
+grąžina `Stream`, `out.add()` įrašo sceną ir ją išvalo, `out.close()`
+įrašo `.mtl` (arba užpildo OFF antraštę). `out.faces`, `out.bytes` ir
+`out.materials` skaičiuoja rašant, todėl Sketchfab ribas galima tikrinti
+dar nebaigus failo.
+
+```
+out = add.stream("pilis.obj")
+for k in range(8):
+    siena(k)                           # tūkstančiai plytų
+    out.add()                          # įrašyta dabar, atmintis laisva
+out.add(add.make(add.tree, [0, 0, 0], 5))
+out.close()
+print(out.faces, "sienų,", out.bytes / 1e6, "MB,", len(out.materials), "medžiagų")
+```
+
+!castle.png|46 pavyzdžio pilis, rašyta srautu: 26 MB Sketchfab variantas, 180 MB su kiekvienu grindinio akmeniu, daugiau nei gigabaitas su `--ultra`.
 """),
 }),
 
@@ -992,6 +1038,7 @@ vocabulary.
   colors=50)`, and `check()` reports the size and colour limits.
 * **Glass and pictures**: `transparent`, `opacity`, `texture`, `write_png`
   -- written to the `.mtl` file of an `.obj` model.
+* **Streaming output** for models bigger than memory: `stream`, `Stream`.
 * **Colour functions** on `parametric`, `revolve`, `sweep`, `curve`,
   `polyline` and `grid`.
 * **Parts**: `beam`, `rounded_box`, `hemisphere`, `arch`, `stairs`, `gear`,
@@ -1068,6 +1115,7 @@ sąrašai, o `layer()` grąžina tai, ką galima indeksuoti `M[0]` ir `M[1]`.
   colors=50)`, o `check()` praneša dydžio ir spalvų ribas.
 * **Stiklas ir paveikslėliai**: `transparent`, `opacity`, `texture`,
   `write_png` -- įrašomi į `.obj` modelio `.mtl` failą.
+* **Srautinis rašymas** už atmintį didesniems modeliams: `stream`, `Stream`.
 * **Spalvų funkcijos** funkcijoms `parametric`, `revolve`, `sweep`, `curve`,
   `polyline` ir `grid`.
 * **Detalės**: `beam`, `rounded_box`, `hemisphere`, `arch`, `stairs`, `gear`,
@@ -1363,6 +1411,29 @@ GALLERY = [
      "textured globe (rendered from the .obj).",
      "Stiklas ir paveikslėliai: akvariumas, plytų namas su langais ir "
      "tekstūruotas gaublys (atvaizduota iš .obj)."),
+    ("castle.png", "46_castle.py",
+     "The castle: an island in a transparent lake, a wall of stone blocks "
+     "with eight towers, a gatehouse with a portcullis and a drawbridge on "
+     "chains, a palace with glass windows and a tiled roof, a chapel with "
+     "stained glass, a courtyard full of barrels, carts, weapons and "
+     "animals -- and, inside, a throne hall with a feast and a dragon on "
+     "its treasure. Written streaming; over a gigabyte with --ultra.",
+     "Pilis: sala permatomame ežere, akmens blokų siena su aštuoniais "
+     "bokštais, vartai su pakeliamomis grotomis ir tiltu ant grandinių, "
+     "rūmai su stiklo langais ir čerpių stogu, koplyčia su vitražais, "
+     "kiemas pilnas statinių, vežimų, ginklų ir gyvūnų -- o viduje sosto "
+     "menė su puota ir drakonas ant lobio. Rašyta srautu; su --ultra "
+     "daugiau nei gigabaitas."),
+    ("castle_hall.png", "46_castle.py",
+     "Inside the castle: the great hall with the king's throne, the feast "
+     "on the long tables and the chandeliers (a view from the .obj).",
+     "Pilies viduje: didžioji menė su karaliaus sostu, puota ant ilgųjų "
+     "stalų ir sietynai (vaizdas iš .obj)."),
+    ("castle_treasury.png", "46_castle.py",
+     "The second easter egg: the treasury in the big tower, with a dragon "
+     "asleep on the gold.",
+     "Antrasis siurprizas: lobynas didžiajame bokšte su drakonu, miegančiu "
+     "ant aukso."),
 ]
 
 # --------------------------------------------------------------------------

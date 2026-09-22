@@ -65,12 +65,33 @@ VIEWS = {
     "planet": (20, 25, 1.3, (20, 20, 40)),
     "geodesic_dome": (25, 22, 1.3),
     "glass_and_textures": (25, 22, 1.35),
+    "castle": dict(turn=28, tilt=34, at=(0, 20, 8), radius=58, size=(1100, 760)),
     "example1": (30, 22, 1.0), "example2": (30, 22, 1.0),
     "example3": (30, 28, 1.0), "example4": (20, 12, 1.0),
     "example5": (30, 22, 1.0), "example6": (30, 22, 1.0),
     "example7": (30, 22, 1.0), "example8": (30, 22, 1.0),
     "demo": (32, 24, 1.05),
 }
+
+#: more pictures of one model: stem -> [(picture stem, render options)]
+EXTRA_VIEWS = {
+    "castle": [
+        ("castle_gate", dict(eye=(0, 19, 60), at=(0, 17, 30), fov=34, size=(880, 620))),
+        ("castle_yard", dict(eye=(6, 42, 44), at=(-4, 16, 8), fov=38, size=(1100, 760))),
+        ("castle_hall", dict(eye=(2, 19.5, -5), at=(0, 17.5, -27), fov=36, size=(1100, 760))),
+        ("castle_treasury", dict(eye=(-28, 18.5, -36.5), at=(-24, 15.2, -32.5), fov=45, size=(880, 620))),
+    ],
+}
+
+
+def model_files():
+    """The models in ``examples/out``: every .off, plus any .obj that has
+    no .off twin (models written streaming, like the castle)."""
+    names = sorted(os.listdir(OUT))
+    offs = [n for n in names if n.endswith(".off")]
+    stems = set(n[:-4] for n in offs)
+    objs = [n for n in names if n.endswith(".obj") and n[:-4] not in stems]
+    return sorted(offs + objs)
 
 
 def main():
@@ -96,24 +117,34 @@ def main():
         return 1 if problems else 0
 
     from tools import preview
-    for model in sorted(os.listdir(OUT)):
-        if not model.endswith(".off"):
-            continue
+    for model in model_files():
         stem = model[:-4]
         view = VIEWS.get(stem, (30, 26, 1.1))
-        turn, tilt, zoom = view[:3]
-        background = view[3] if len(view) > 3 else (250, 250, 250)
-        t = time.time()
+        if isinstance(view, dict):
+            options = dict(view)
+        else:
+            options = dict(turn=view[0], tilt=view[1], zoom=view[2])
+            if len(view) > 3:
+                options["background"] = view[3]
+        options.setdefault("size", (880, 620))
         source = os.path.join(OUT, model)
         if os.path.exists(source[:-4] + ".obj"):      # textures and glass
             source = source[:-4] + ".obj"
-        preview.render(source,
-                       os.path.join(IMAGES, stem + ".png"),
-                       size=(880, 620), turn=turn, tilt=tilt, zoom=zoom,
-                       background=background)
-        print("%-34s -> docs/images/%s.png  %5.1fs" % (model, stem,
-                                                       time.time() - t))
+        t = time.time()
+        loaded = add_load(source)
+        preview.render(loaded, os.path.join(IMAGES, stem + ".png"), folder=OUT, **options)
+        print("%-34s -> docs/images/%s.png  %5.1fs" % (model, stem, time.time() - t))
+        for extra, more in EXTRA_VIEWS.get(stem, ()):
+            t = time.time()
+            preview.render(loaded, os.path.join(IMAGES, extra + ".png"), folder=OUT, **more)
+            print("%-34s -> docs/images/%s.png  %5.1fs" % ("", extra, time.time() - t))
     return 1 if problems else 0
+
+
+def add_load(source):
+    """Load a model once (the castle is big) so several views can share it."""
+    import add
+    return add.load(source)
 
 
 #: Sketchfab: the course wants .obj files under 50 MB with at most 50 colours.
@@ -128,9 +159,7 @@ def sketchfab_table():
     print()
     print("%-28s %9s %7s %9s  %s" % ("model", "polygons", "colours", ".obj MB",
                                       "Sketchfab"))
-    for model in sorted(os.listdir(OUT)):
-        if not model.endswith(".off"):
-            continue
+    for model in model_files():
         M = add.load(os.path.join(OUT, model))
         s = add.stats(M)
         mb = s["obj_bytes"] / 1e6
