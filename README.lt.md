@@ -5,8 +5,8 @@
 Vienas failas. Tik `math` ir `random`. Jokios modeliavimo programos, jokios
 geometrijos bibliotekos, nieko diegti nereikia.
 
-[Dokumentacija](https://martynas-sabaliauskas.github.io/add3d/) &middot;
-[Galerija](https://martynas-sabaliauskas.github.io/add3d/#gallery) &middot;
+[Dokumentacija](https://akatasis.github.io/add3d/) &middot;
+[Galerija](https://akatasis.github.io/add3d/#gallery) &middot;
 [In English](README.md)
 
 ```python
@@ -63,7 +63,7 @@ math` nebūtinas: `math` ir `random` eksportuojami iš paties modulio, todėl
 veikia `add.sin`, `add.pi`, `add.randint` ir `add.seed`.
 
 ```bash
-curl -O https://raw.githubusercontent.com/martynas-sabaliauskas/add3d/main/add.py
+curl -O https://raw.githubusercontent.com/akatasis/add3d/main/add.py
 ```
 
 Arba klonuokite repozitoriją – tada gausite ir pavyzdžius, ir testus, ir

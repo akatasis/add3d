@@ -14,8 +14,8 @@ VERSION = "2.0"
 
 #: Where the project lives.  The module is ``add.py``; the repository and the
 #: distribution are called ``add3d`` because plain "add" is taken on PyPI.
-REPO_URL = "https://github.com/martynas-sabaliauskas/add3d"
-DOCS_URL = "https://martynas-sabaliauskas.github.io/add3d/"
+REPO_URL = "https://github.com/akatasis/add3d"
+DOCS_URL = "https://akatasis.github.io/add3d/"
 
 UI = {
     "title": {"en": "add.py", "lt": "add.py"},

@@ -29,8 +29,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/martynas-sabaliauskas/add3d"
-Documentation = "https://martynas-sabaliauskas.github.io/add3d/"
+Homepage = "https://github.com/akatasis/add3d"
+Documentation = "https://akatasis.github.io/add3d/"
 
 [tool.setuptools]
 py-modules = ["add"]

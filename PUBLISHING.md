@@ -67,11 +67,12 @@ Actions**. The workflow in `.github/workflows/pages.yml` builds
 `docs/index.html` from the docstrings and publishes it at
 `https://YOUR_NAME.github.io/add3d/`.
 
-**Fix the links.** The files use the placeholder account name
-`martynas-sabaliauskas`. Replace it with the real GitHub name in one go:
+**The links.** The files point to `github.com/akatasis/add3d` and
+`akatasis.github.io/add3d`. In a copy published under another account,
+replace the name in one go:
 
 ```bash
-grep -rl "martynas-sabaliauskas" . | xargs sed -i "s/martynas-sabaliauskas/YOUR_NAME/g"
+grep -rl "akatasis" . | xargs sed -i "s/akatasis/YOUR_NAME/g"
 python3 tools/make_docs.py
 ```
 

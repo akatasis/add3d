@@ -67,11 +67,12 @@ git push -u origin main
 Actions**. Veiksmas `.github/workflows/pages.yml` sukuria `docs/index.html`
 iš kodo aprašymų ir paskelbia adresu `https://JUSU_VARDAS.github.io/add3d/`.
 
-**Pataisykite nuorodas.** Failuose naudojamas laikinas paskyros vardas
-`martynas-sabaliauskas`. Pakeiskite jį tikruoju GitHub vardu vienu ypu:
+**Nuorodos.** Failuose nurodyta `github.com/akatasis/add3d` ir
+`akatasis.github.io/add3d`. Jei kopiją skelbiate kita paskyra, pakeiskite
+vardą vienu ypu:
 
 ```bash
-grep -rl "martynas-sabaliauskas" . | xargs sed -i "s/martynas-sabaliauskas/JUSU_VARDAS/g"
+grep -rl "akatasis" . | xargs sed -i "s/akatasis/JUSU_VARDAS/g"
 python3 tools/make_docs.py
 ```
 

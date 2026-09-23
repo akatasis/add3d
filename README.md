@@ -5,8 +5,8 @@
 One file. Only `math` and `random`. No modelling program, no mesh library,
 nothing to install.
 
-[Documentation](https://martynas-sabaliauskas.github.io/add3d/) &middot;
-[Gallery](https://martynas-sabaliauskas.github.io/add3d/#gallery) &middot;
+[Documentation](https://akatasis.github.io/add3d/) &middot;
+[Gallery](https://akatasis.github.io/add3d/#gallery) &middot;
 [Lietuviškai](README.lt.md)
 
 ```python
@@ -63,7 +63,7 @@ even `import math`: `math` and `random` are re-exported, so `add.sin`,
 `add.pi`, `add.randint` and `add.seed` are all there.
 
 ```bash
-curl -O https://raw.githubusercontent.com/martynas-sabaliauskas/add3d/main/add.py
+curl -O https://raw.githubusercontent.com/akatasis/add3d/main/add.py
 ```
 
 Or clone the repository to get the examples, the tests and the documentation
@@ -149,7 +149,7 @@ geodesic sphere of triangles, so a model with spheres has different faces;
 `cube2` → `frame`, `cylinder2` → `tube`, `cylinder3` → `cup`,
 `cone2` → `cone_open`, `spin3D` → `revolve`, `off` → `save`.
 
-See the [upgrade notes](https://martynas-sabaliauskas.github.io/add3d/#upgrade).
+See the [upgrade notes](https://akatasis.github.io/add3d/#upgrade).
 
 ## Complete models
 
