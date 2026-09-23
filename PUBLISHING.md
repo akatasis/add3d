@@ -135,7 +135,7 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
 | `add.py` | the library -- the only file students need |
 | `_src/` + `build.py` | the sections `add.py` is assembled from |
 | `examples/` | 43 commented example programs and a copy of `add.py` |
-| `tests/` | 92 unit tests, the add.py 1.2 compatibility fixture and the documentation-example runner |
+| `tests/` | 93 unit tests, the add.py 1.2 compatibility fixture and the documentation-example runner |
 | `tools/` | `preview.py` (renderer), `make_docs.py`, `coverage.py` |
 | `docs/` | the documentation site (EN/LT) and its pictures |
 | `slides/` | the lecture slides (.pptx, .pdf and the generator) |
@@ -146,7 +146,7 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
 
 ```bash
 python3 build.py --check          # add.py and examples/add.py are up to date
-python3 tests/test_add.py         # 92 passed, 0 failed
+python3 tests/test_add.py         # 93 passed, 0 failed
 python3 tests/test_legacy.py      # all legacy models reproduce
 python3 tests/test_docs.py        # 235 documentation examples ran
 python3 tools/coverage.py --strict

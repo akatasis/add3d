@@ -1281,6 +1281,37 @@ def test_concave_faces():
     assert add.clean(add.make(add.cuboid, [0, 0, 0], [1, 2, 3], "blue")).polygons == 6
 
 
+def test_off_small_faces():
+    """An .off file gets faces of at most four corners and an exact header,
+    from save() and from a stream alike: a face of five or more corners is
+    cut into quadrilaterals and triangles that cover it exactly and keep
+    the model closed (MeshLab can crash on bigger OFF faces)."""
+    add.clear()
+    add.cylinder([0, 0, 0], [0, 1, 0], 0.5, 12, "red")         # two twelve-sided lids
+    add.cuboid([3, 0.5, 0], [4, 1, 2], "blue")                 # a box with two boxes on it: mending the
+    add.cuboid([2, 1.5, 0], [1, 1, 1], "gold")                 # T-junctions gives its top face extra
+    add.cuboid([4, 1.5, 0.5], [1.5, 1, 1], "gold")             # corners on straight sides
+    M = add.clean(add.union(add.layer()))
+    assert max(len(f) for f in M.F) > 4
+    with tempfile.TemporaryDirectory() as folder:
+        for how in ("save", "stream"):
+            path = os.path.join(folder, how + ".off")
+            if how == "save":
+                add.save(path, M)
+            else:
+                with add.stream(path) as out:
+                    out.add(M)
+            assert not [n for n in os.listdir(folder) if n.endswith("~")]      # no temporary files left
+            lines = open(path).read().split("\n")
+            assert lines[0] == "OFF" and lines[1] == " ".join(lines[1].split())  # no padding in the counts
+            nv, nf = int(lines[1].split()[0]), int(lines[1].split()[1])
+            assert len([x for x in lines[2 + nv:] if x.strip()]) == nf
+            back = add.load(path)
+            assert max(len(f) for f in back.F) <= 4 and back.polygons == nf
+            assert abs(add.area(back) - add.area(M)) < 1e-9 and abs(add.volume(back) - add.volume(M)) < 1e-9
+            assert add.stats(back)["closed"]
+
+
 def test_overlaps_and_pinched_faces():
     """clean() cuts back coplanar overlapping faces (the cause of flicker),
     splits faces pinched at a vertex, and save() does the same on the way

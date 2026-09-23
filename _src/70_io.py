@@ -21,9 +21,12 @@ def save(path, M=None, clear_scene=None, colors=None, clean=True):
     are welded, faces without area go, so do the walls buried where two
     solids touch, and a face overlapping a bigger one in the same plane is
     cut back so that nothing flickers in a viewer (see :func:`clean`).
-    ``clean=False`` writes the model exactly as it is.  Lines end with
-    ``\n`` on every system, so a program writes the same bytes on Windows,
-    macOS and Linux.
+    ``clean=False`` writes the model exactly as it is.  An ``.off`` file
+    gets faces of at most four corners: a bigger one is written as
+    quadrilaterals and a triangle or two (MeshLab can crash on bigger OFF
+    faces), while an ``.obj`` keeps it whole.  Lines end with ``\n`` on
+    every system, so a program writes the same bytes on Windows, macOS
+    and Linux.
     """
     if clear_scene is None:
         clear_scene = M is None
@@ -95,23 +98,135 @@ def _writable(M):
     return out
 
 
+def _off_straight(a, b, c):
+    """Is corner ``b`` of a 2D outline (with neighbours ``a`` and ``c``) no
+    corner at all -- a point on a straight side, less than 0.01 mm off the
+    line from ``a`` to ``c``?"""
+    dx, dy = c[0] - a[0], c[1] - a[1]
+    cross = dx * (b[1] - a[1]) - dy * (b[0] - a[0])
+    return abs(cross) <= 1e-5 * math.sqrt(dx * dx + dy * dy)
+
+
+def _off_turn(a, b, c):
+    """Twice the signed area of the triangle a b c: positive when the outline
+    turns left (counter-clockwise) at ``b``."""
+    return (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0])
+
+
+def _off_convex(pts, ring):
+    """Do the 2D points ``ring`` (indices into ``pts``) make a convex outline
+    that turns left at every corner, with no corner a straight one?"""
+    k = len(ring)
+    for i in range(k):
+        a, b, c = pts[ring[i - 1]], pts[ring[i]], pts[ring[(i + 1) % k]]
+        if _off_turn(a, b, c) <= 0 or _off_straight(a, b, c):
+            return False
+    return True
+
+
+def _off_pieces(M, f):
+    """The face ``f`` as an OFF file carries it: a triangle or a
+    quadrilateral as it is; a face of five and more corners cut into
+    quadrilaterals and at most a triangle or two -- MeshLab, for one, can
+    crash on bigger OFF faces.  The pieces cover the face exactly, turn the
+    same way and use all its corners, also the ones in the middle of a
+    straight side (where a T-junction was mended), so the model stays
+    closed; none is a sliver: a convex face is cut into a fan of
+    quadrilaterals, any other is cut into triangles at real corners only
+    (ear clipping in the face's plane) and neighbouring triangles are
+    paired into convex quadrilaterals again."""
+    k = len(f)
+    if k <= 4:
+        return [f]
+    u, v, w = _frame(_face_normal(M, f))
+    pts = [(_dot(M.V[i], u), _dot(M.V[i], v)) for i in f]
+    flip = _poly_area2(pts) < 0
+    if flip:                                            # work counter-clockwise
+        pts = pts[::-1]
+    ring = list(range(k))
+    if _off_convex(pts, ring):
+        pieces = [[0, i, i + 1, i + 2] for i in range(1, k - 2, 2)]
+        if k % 2:
+            pieces.append([0, k - 2, k - 1])
+    else:
+        tris = []
+        while len(ring) > 3:
+            n = len(ring)
+            for j in range(n):
+                i0, i1, i2 = ring[j - 1], ring[j], ring[(j + 1) % n]
+                a, b, c = pts[i0], pts[i1], pts[i2]
+                if _off_turn(a, b, c) <= 0 or _off_straight(a, b, c):
+                    continue                            # a reflex or a straight corner is no ear
+                if any(_off_turn(a, b, pts[q]) >= 0 and _off_turn(b, c, pts[q]) >= 0 and
+                       _off_turn(c, a, pts[q]) >= 0 for q in ring if q not in (i0, i1, i2)):
+                    continue                            # another corner inside: cutting here would overlap
+                tris.append((i0, i1, i2))
+                del ring[j]
+                break
+            else:                                       # no ear (an outline that crosses itself):
+                tris.extend((ring[0], ring[j], ring[j + 1]) for j in range(1, len(ring) - 1))
+                ring = []                               # the rest as a fan, as a viewer would draw it
+                break
+        if ring:
+            tris.append(tuple(ring))
+        edge = {}
+        for t, tri in enumerate(tris):
+            for j in range(3):
+                edge[(tri[j], tri[(j + 1) % 3])] = t
+        used = [False] * len(tris)
+        pieces = []
+        for t, tri in enumerate(tris):
+            if used[t]:
+                continue
+            used[t] = True
+            piece = list(tri)
+            for j in range(3):                          # a neighbour across one of its sides, together convex?
+                p, q, r = tri[j], tri[(j + 1) % 3], tri[(j + 2) % 3]
+                s2 = edge.get((q, p))
+                if s2 is None or used[s2]:
+                    continue
+                d = [x for x in tris[s2] if x != p and x != q][0]
+                quad = [q, r, p, d]
+                if _off_convex(pts, quad):
+                    used[s2] = True
+                    piece = quad
+                    break
+            pieces.append(piece)
+    out = []
+    for piece in pieces:
+        face = [f[k - 1 - i] if flip else f[i] for i in piece]
+        if flip:
+            face.reverse()
+        out.append(face)
+    return out
+
+
+def _off_face_lines(M, base=0):
+    """The face lines of an OFF file for mesh ``M`` (vertex numbers moved
+    on by ``base``): every face cut to at most four corners, each piece in
+    the face's colour (with the opacity as a fourth number when it is
+    see-through)."""
+    lines = []
+    for face, c in zip(M.F, M.C):
+        if len(c) > 3 and c[3] < 1.0:                   # see-through: r g b a
+            tail = " %d %d %d %d\n" % (c[0], c[1], c[2], int(round(c[3] * 255)))
+        else:
+            tail = " %d %d %d\n" % (c[0], c[1], c[2])
+        for piece in _off_pieces(M, face):
+            lines.append("%d %s%s" % (len(piece), " ".join(str(i + base) for i in piece), tail))
+    return lines
+
+
 def _write_off(path, M):
     M = _writable(M)
+    faces = _off_face_lines(M)
     with open(path, "w", newline="\n") as f:
-        f.write("OFF\n%d %d 0\n" % (len(M.V), len(M.F)))
+        f.write("OFF\n%d %d 0\n" % (len(M.V), len(faces)))
         out = []
         for p in M.V:
             out.append("%s %s %s\n" % (_num(p[0]), _num(p[1]), _num(p[2])))
         f.write("".join(out))
-        out = []
-        for face, c in zip(M.F, M.C):
-            if len(c) > 3 and c[3] < 1.0:              # see-through: r g b a
-                out.append("%d %s %d %d %d %d\n" % (len(face), " ".join(str(i) for i in face),
-                                                    c[0], c[1], c[2], int(round(c[3] * 255))))
-            else:
-                out.append("%d %s %d %d %d\n" % (len(face), " ".join(str(i) for i in face),
-                                                 c[0], c[1], c[2]))
-        f.write("".join(out))
+        f.write("".join(faces))
 
 
 def _material_name(c):
@@ -286,7 +401,9 @@ class Stream(object):
     mesh (or the current scene, which is then cleared) to the file at once
     and forgets it; :meth:`close` finishes the file.  Works for ``.obj``
     (materials, opacity and textures included; the ``.mtl`` is written on
-    close) and ``.off`` (the counts in the header are filled in on close).
+    close) and ``.off`` (vertices and faces wait in two temporary files,
+    and on close the file is put together under an exact header; a face
+    of five or more corners is written as quadrilaterals and triangles).
     Use it as a context manager or call ``close()`` yourself::
 
         with add.stream("castle.obj") as out:
@@ -327,11 +444,12 @@ class Stream(object):
             self._file.write("mtllib %s\n" % mtl.replace("\\", "/").rsplit("/", 1)[-1])
             self._file.write("o model\n")
         else:
-            # OFF wants every vertex before every face, so the faces go to a
-            # second file for the time being and are appended on close.
-            self._file.write("OFF\n")
-            self._header_at = self._file.tell()
-            self._file.write("%12d %12d 0\n" % (0, 0))
+            # OFF wants the counts first and every vertex before every face:
+            # the vertices and the faces wait in two files of their own and
+            # the OFF file is put together on close, with an exact header.
+            self._file.close()
+            self._vertices_path = path + ".vertices~"
+            self._file = open(self._vertices_path, "w", newline="\n")
             self._faces_path = path + ".faces~"
             self._faces = open(self._faces_path, "w", newline="\n")
         self._current = None
@@ -419,18 +537,10 @@ class Stream(object):
         else:
             for p in M.V:
                 out.append("%s %s %s\n" % (num(p[0]), num(p[1]), num(p[2])))
-            faces = []
-            for face, c in zip(M.F, M.C):
-                if len(c) > 3 and c[3] < 1.0:          # see-through: r g b a
-                    faces.append("%d %s %d %d %d %d\n" % (
-                        len(face), " ".join(str(i + base) for i in face),
-                        c[0], c[1], c[2], int(round(c[3] * 255))))
-                else:
-                    faces.append("%d %s %d %d %d\n" % (
-                        len(face), " ".join(str(i + base) for i in face), c[0], c[1], c[2]))
-            faces = "".join(faces)
-            self._faces.write(faces)
-            self.bytes += len(faces)
+            faces = _off_face_lines(M, base)           # at most four corners a face
+            self._faces.write("".join(faces))
+            self.bytes += sum(len(x) for x in faces)
+            self.faces += len(faces) - len(M.F)         # (the pieces are what the file counts)
             text = "".join(out)
         if text:
             f.write(text)
@@ -460,17 +570,24 @@ class Stream(object):
                         m.write("map_Kd %s\n" % image.replace("\\", "/").rsplit("/", 1)[-1])
                     m.write("\n")
         else:
+            self._file.close()
             self._faces.close()
-            with open(self._faces_path) as faces:
-                while True:
-                    chunk = faces.read(1 << 22)
-                    if not chunk:
-                        break
-                    self._file.write(chunk)
+            with open(self.path, "w", newline="\n") as out:
+                header = "OFF\n%d %d 0\n" % (self.vertices, self.faces)
+                out.write(header)
+                self.bytes += len(header)
+                for part in (self._vertices_path, self._faces_path):
+                    with open(part) as src:
+                        while True:
+                            chunk = src.read(1 << 22)
+                            if not chunk:
+                                break
+                            out.write(chunk)
             import os
-            os.remove(self._faces_path)                # the only file system call add.py makes
-            self._file.seek(self._header_at)
-            self._file.write("%12d %12d 0\n" % (self.vertices, self.faces))
+            os.remove(self._vertices_path)             # the only file system calls add.py makes
+            os.remove(self._faces_path)
+            self._file = None
+            return self.path
         self._file.close()
         self._file = None
         return self.path

@@ -11,8 +11,10 @@ The test runs every one of them against the current add.py and checks that the
 mesh it produces still has exactly the same number of faces.  Vertex counts
 are allowed to fall, because 2.0 welds the seams inside a primitive, and file
 sizes are allowed to fall, because numbers are written more compactly.  The
-one deliberate change is ``sphere``, which is now geodesic (triangles) --
-the expected count of the model that uses it is adjusted below.
+deliberate changes are ``sphere``, which is now geodesic (triangles), and
+the .off writer, which cuts a face of five or more corners into
+quadrilaterals and triangles -- the expected counts of the models they
+touch are adjusted below.
 
     python3 tests/test_legacy.py
 """
@@ -36,9 +38,15 @@ EXPECTED = {
     "modelis3.py": {"modelis3.off": 99456},
     "modelis4.py": {"modelis4.off": 78000},
     "checkers_v1.py": {"checkers1.off": None},    # contains axes()
-    "checkers_v2.py": {"checkers2.off": 60857},
-    "checkers.py": {"checkers7.off": 60857},
-    "Laikrodis.py": {"laikrodis.off": 912},
+    # The draughts board has 60 857 faces, as in 1.2; mending its T-junctions
+    # gives thirty of them five or six corners, and since 2.0 an .off file
+    # carries such a face as quadrilaterals and triangles (MeshLab can crash
+    # on bigger OFF faces), so the file counts 48 faces more.
+    "checkers_v2.py": {"checkers2.off": 60905},
+    "checkers.py": {"checkers7.off": 60905},
+    # The clock: 912 faces as in 1.2; mending leaves 36 of them with five or
+    # six corners, which the .off file carries as 84 smaller ones.
+    "Laikrodis.py": {"laikrodis.off": 960},
     "testing_add.py": {"cube.off": None},         # contains axes()
     "Sierpinski_tetrahedrons.py": {"tetra2.off": 65536},
     # The two rose scripts write to the same file names, so each script gets a
