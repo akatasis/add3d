@@ -643,17 +643,22 @@ colour does; `opacity(M, alpha)` makes a finished part see-through. Both go
 into the `.mtl` file (`d`). `texture(M, "picture.png", mapping)` wraps an
 image around a part (`map_Kd`), with box, planar, spherical or cylindrical
 mapping; `write_png` writes a picture you computed yourself. `.off` files
-keep plain colours, so old models are unchanged.
+keep plain colours, so old models are unchanged. A window is an opening
+with glass in it: cut the hole right through the wall first and put the
+texture on afterwards (a boolean rebuilds the faces and drops a texture),
+then set the pane in the opening -- what is behind it shows through.
 
 ```
 glass = add.transparent("sky", 0.35)
-add.cuboid([0, 1.5, 2], [2, 1.2, 0.05], glass)                 # a window
 wall = add.make(add.cuboid, [0, 1.5, 0], [6, 3, 0.3])
-add.mesh(add.texture(wall, "bricks.png", "box", scale=1.5))
+hole = add.make(add.cuboid, [0, 1.6, 0], [2, 1.2, 1])          # right through the wall
+wall = add.difference(wall, hole)                              # cut first ...
+add.mesh(add.texture(wall, "bricks.png", "box", scale=1.5))    # ... then the bricks
+add.cuboid([0, 1.6, 0], [2, 1.2, 0.03], glass)                 # the pane, in the opening
 add.save("house.obj")                                          # + house.mtl
 ```
 
-!glass_and_textures.png|A fish tank, a brick house with glass windows and a textured globe.
+!glass_and_textures.png|A fish tank, a textured globe and a brick house whose windows are openings with glass: the room inside shows through them.
 
 ## My model is bigger than the memory of the computer
 
@@ -993,17 +998,22 @@ Abu įrašomi į `.mtl` failą (`d`). `texture(M, "paveikslas.png",
 mapping)` apvynioja detalę paveikslėliu (`map_Kd`) -- dėžės, plokštumos,
 sferos ar cilindro atvaizdžiu; `write_png` įrašo patį paskaičiuotą
 paveikslėlį. `.off` failuose lieka paprastos spalvos, todėl seni modeliai
-nesikeičia.
+nesikeičia. Langas -- tai anga su stiklu: pirma išpjaukite angą kiaurai
+per sieną ir tik tada uždėkite tekstūrą (loginė operacija sienas perkuria
+ir tekstūrą numeta), o stiklą įstatykite į angą -- pro jį matyti, kas
+už jo.
 
 ```
 glass = add.transparent("sky", 0.35)
-add.cuboid([0, 1.5, 2], [2, 1.2, 0.05], glass)                 # langas
 wall = add.make(add.cuboid, [0, 1.5, 0], [6, 3, 0.3])
-add.mesh(add.texture(wall, "bricks.png", "box", scale=1.5))
+hole = add.make(add.cuboid, [0, 1.6, 0], [2, 1.2, 1])          # kiaurai per sieną
+wall = add.difference(wall, hole)                              # pirma išpjauti ...
+add.mesh(add.texture(wall, "bricks.png", "box", scale=1.5))    # ... tada plytos
+add.cuboid([0, 1.6, 0], [2, 1.2, 0.03], glass)                 # stiklas angoje
 add.save("namas.obj")                                          # + namas.mtl
 ```
 
-!glass_and_textures.png|Akvariumas, plytų namas su stiklo langais ir tekstūruotas gaublys.
+!glass_and_textures.png|Akvariumas, tekstūruotas gaublys ir plytų namas, kurio langai -- angos su stiklu: pro jas matyti kambarys.
 
 ## Mano modelis didesnis už kompiuterio atmintį
 
@@ -1461,16 +1471,18 @@ GALLERY = [
      "A geodesic dome house: panels, struts, hubs and a door.",
      "Geodezinio kupolo namas: skydai, statramsčiai, mazgai ir durys."),
     ("glass_and_textures.png", "45_glass_and_textures.py",
-     "Glass and pictures: a fish tank, a brick house with windows and a "
-     "textured globe (rendered from the .obj).",
-     "Stiklas ir paveikslėliai: akvariumas, plytų namas su langais ir "
-     "tekstūruotas gaublys (atvaizduota iš .obj)."),
+     "Glass and pictures: a fish tank, a textured globe and a brick house "
+     "with glass in its window openings and a furnished room behind them "
+     "(rendered from the .obj).",
+     "Stiklas ir paveikslėliai: akvariumas, tekstūruotas gaublys ir plytų "
+     "namas su stiklu langų angose ir apstatytu kambariu už jų "
+     "(atvaizduota iš .obj)."),
     ("castle.png", "46_castle.py",
      "The castle: an island in a transparent lake, a wall of stone blocks "
      "with eight hollow towers (spiral stairs inside), a gatehouse with a "
      "portcullis and a drawbridge on chains, a palace with glass windows "
      "and a tiled roof, a chapel with stained glass, a courtyard full of "
-     "barrels, carts, weapons and animals -- and, inside, the king in his "
+     "knights, archers, townsfolk, carts and animals -- and, inside, the king in his "
      "throne hall with a feast, a dormitory, an attic and a dragon on its "
      "treasure. No textures: every stone, tile and coat of arms is "
      "geometry. Written streaming: a 400 MB .off, an .obj under 100 MB "
@@ -1478,8 +1490,8 @@ GALLERY = [
      "Pilis: sala permatomame ežere, akmens blokų siena su aštuoniais "
      "tuščiaviduriais bokštais (viduje sraigtiniai laiptai), vartai su "
      "pakeliamomis grotomis ir tiltu ant grandinių, rūmai su stiklo langais "
-     "ir čerpių stogu, koplyčia su vitražais, kiemas pilnas statinių, "
-     "vežimų, ginklų ir gyvūnų -- o viduje karalius sosto menėje su puota, "
+     "ir čerpių stogu, koplyčia su vitražais, kiemas pilnas riterių, "
+     "lankininkų, miestiečių, vežimų ir gyvūnų -- o viduje karalius sosto menėje su puota, "
      "miegamasis, palėpė ir drakonas ant lobio. Be tekstūrų: kiekvienas "
      "akmuo, čerpė ir herbas -- daugiakampiai. Rašyta srautu: 400 MB .off, "
      ".obj suglaudintas mažiau nei 100 MB."),
@@ -1489,10 +1501,10 @@ GALLERY = [
      "Pilies viduje: didžioji menė su karaliaus sostu, puota ant ilgųjų "
      "stalų ir sietynai (vaizdas iš .obj)."),
     ("castle_treasury.png", "46_castle.py",
-     "The second easter egg: the treasury in the big tower, with a dragon "
-     "asleep on the gold.",
-     "Antrasis siurprizas: lobynas didžiajame bokšte su drakonu, miegančiu "
-     "ant aukso."),
+     "The second easter egg: the treasury in the big tower, with a winged "
+     "dragon breathing fire over the gold.",
+     "Antrasis siurprizas: lobynas didžiajame bokšte su sparnuotu drakonu, "
+     "ugnimi saugančiu auksą."),
 ]
 
 # --------------------------------------------------------------------------

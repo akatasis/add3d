@@ -23,7 +23,7 @@ add.save("first_model.off")      # or .obj (+ .mtl), .ply, .stl
 <p align="center">
   <img src="docs/images/castle.png" width="98%" alt="The castle: an island in a transparent lake, walls of stone blocks, a gatehouse with a drawbridge, a palace with glass windows">
   <img src="docs/images/castle_hall.png" width="49%" alt="Inside the castle: the throne hall and the feast">
-  <img src="docs/images/castle_treasury.png" width="49%" alt="The treasury with a dragon asleep on the gold">
+  <img src="docs/images/castle_treasury.png" width="49%" alt="The treasury with a winged dragon guarding the gold">
   <img src="docs/images/castle_gate.png" width="49%" alt="The gatehouse from the drawbridge: portcullis, chains, guards">
   <img src="docs/images/castle_yard.png" width="49%" alt="The courtyard from above the gate">
   <img src="docs/images/lighthouse.png" width="49%" alt="A lighthouse island">
@@ -182,12 +182,14 @@ hollow towers -- spiral stairs, doors onto the wall walk, lookouts on top
 -- a gatehouse with a portcullis and a drawbridge hanging on real chains,
 a palace with glass windows, balconies, dormers and a roof of single
 tiles, a chapel with stained glass and an altar, a courtyard with a well,
-a fountain, a smithy, a market, a stable, a trebuchet, cannons, carts,
-barrels, crates, weapon racks, guards in armour, horses, chickens and a
-dog -- and, inside, the easter eggs: the great hall with the king on his
+a fountain, a smithy, a kitchen with a bread oven, a storehouse, a market,
+a stable, gardens, archery butts, a trebuchet, cannons, carts, barrels,
+crates, weapon racks, knights in armour, archers, townsfolk, horses,
+chickens and a dog, fishermen on the jetty -- and, inside, the easter eggs: the great hall with the king on his
 throne, a feast on the long tables and a chess study ("White to play and
-win"), the soldiers' dormitory upstairs, an attic full of old things, and
-in the big tower the treasury with a dragon asleep on the gold, the
+win"), the soldiers' dormitory upstairs, an attic full of old things, the
+chapel's attic with the vestments and the chalice, and in the big tower
+the treasury with a winged dragon breathing fire over the gold, the
 armoury and the lord's chamber above it. There are no textures: every
 stone block, roof tile, cobblestone, pane of stained glass and coat of
 arms is geometry. `python3 46_castle.py` streams the model to
@@ -214,7 +216,7 @@ tools/
   make_docs.py       builds docs/index.html from the docstrings + docs/reference.py
   coverage.py        which example uses which function
 tests/
-  test_add.py        92 unit tests
+  test_add.py        93 unit tests
   test_legacy.py     runs the add.py 1.2 models and checks the face counts
   test_docs.py       runs the example of every documented function
   legacy/            those models, unedited
@@ -232,7 +234,7 @@ the repository so that a student only ever needs one file.
 ## Running the tests
 
 ```bash
-python3 tests/test_add.py        # 92 unit tests
+python3 tests/test_add.py        # 93 unit tests
 python3 tests/test_legacy.py     # the add.py 1.2 models
 python3 tests/test_docs.py       # the 235 documentation examples
 python3 examples/build_all.py    # every example, the Sketchfab check, pictures

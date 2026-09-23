@@ -1004,16 +1004,20 @@ function build(lang) {
     const s = sheet(T("Glass, pictures and the Sketchfab limits", "Stiklas, paveikslėliai ir Sketchfab ribos"),
                     T(".obj + .mtl", ".obj + .mtl"));
     code(s, [
-      "glass = add.transparent(\"sky\", 0.35)  # 0..1",
-      "add.cuboid([0, 1.5, 2], [2, 1.2, 0.1], glass)",
-      "wall = add.make(add.cuboid, [0, 1.5, 0], [6, 3, 1])",
-      "add.mesh(add.texture(wall, \"bricks.png\", \"box\"))",
+      "glass = add.transparent(\"sky\", 0.35)     # 0..1",
+      "wall = add.make(add.cuboid, [0, 1.5, 0], [6, 3, 0.3])",
+      "hole = add.make(add.cuboid, [0, 1.6, 0], [2, 1.2, 1])",
+      T("wall = add.difference(wall, hole)  # cut first,", "wall = add.difference(wall, hole)  # pirma anga,"),
+      T("add.mesh(add.texture(wall, \"bricks.png\"))  # then", "add.mesh(add.texture(wall, \"bricks.png\"))  # tada"),
+      T("# the pane, in the opening", "# stiklas angoje"),
+      "add.cuboid([0, 1.6, 0], [2, 1.2, 0.03], glass)",
       "",
       "add.check()     # <= 50 MB, <= 50 colours",
       "add.save(\"house.obj\", colors=50)   # .mtl",
-    ], { x: M, y: 1.6, w: 5.15, h: 2.35, fontSize: 11.5 });
+    ], { x: M, y: 1.6, w: 5.15, h: 2.35, fontSize: 10.5 });
     picture(s, "glass_and_textures.png", { x: 5.95, y: 1.6, w: 3.43, h: 2.35,
-      caption: T("45_glass_and_textures.py", "45_glass_and_textures.py") });
+      caption: T("45_glass_and_textures.py -- a room behind the glass",
+                 "45_glass_and_textures.py – pro stiklą matyti kambarys") });
     cards(s, [
       [T("Optional", "Neprivaloma"), T("Without transparent/texture everything is exactly as before; .off files keep plain colours.",
                                       "Be transparent/texture viskas lygiai kaip anksčiau; .off failuose lieka paprastos spalvos.")],

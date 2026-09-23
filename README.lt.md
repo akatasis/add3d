@@ -23,7 +23,7 @@ add.save("pirmas_modelis.off")   # arba .obj (+ .mtl), .ply, .stl
 <p align="center">
   <img src="docs/images/castle.png" width="98%" alt="Pilis: sala permatomame ežere, akmens blokų sienos, vartai su pakeliamu tiltu, rūmai su stiklo langais">
   <img src="docs/images/castle_hall.png" width="49%" alt="Pilies viduje: sosto menė ir puota">
-  <img src="docs/images/castle_treasury.png" width="49%" alt="Lobynas su drakonu, miegančiu ant aukso">
+  <img src="docs/images/castle_treasury.png" width="49%" alt="Lobynas su sparnuotu drakonu ant aukso">
   <img src="docs/images/castle_gate.png" width="49%" alt="Vartai nuo pakeliamo tilto: grotos, grandinės, sargybiniai">
   <img src="docs/images/castle_yard.png" width="49%" alt="Kiemas iš viršaus nuo vartų">
   <img src="docs/images/lighthouse.png" width="49%" alt="Švyturio sala">
@@ -177,13 +177,16 @@ aštuoniais tuščiaviduriais bokštais -- sraigtiniai laiptai, durys į sienos
 taką, apžvalgos aikštelės viršuje -- vartai su pakeliamomis grotomis ir
 tiltu, kabančiu ant tikrų grandinių, rūmai su stiklo langais, balkonais,
 stoglangiais ir stogu iš atskirų čerpių, koplyčia su vitražais ir
-altoriumi, kiemas su šuliniu, fontanu, kalve, turgumi, arklide, katapulta,
-patrankomis, vežimais, statinėmis, dėžėmis, ginklų stovais, sargybiniais
-šarvuose, arkliais, vištomis ir šunimi -- o viduje siurprizai: didžioji
+altoriumi, kiemas su šuliniu, fontanu, kalve, virtuve su duonkepe krosnimi,
+sandėliu, turgumi, arklide, sodais, šaudymo taikiniais, katapulta,
+patrankomis, vežimais, statinėmis, dėžėmis, ginklų stovais, riteriais
+šarvuose, lankininkais, miestiečiais, arkliais, vištomis ir šunimi,
+žvejais ant liepto -- o viduje siurprizai: didžioji
 menė su karaliumi soste, puota ant ilgųjų stalų ir šachmatų etiudu
 („Baltieji pradeda ir laimi"), kareivių miegamasis antrame aukšte, palėpė
-pilna senų daiktų, o didžiajame bokšte -- lobynas su drakonu, miegančiu
-ant aukso, virš jo ginklinė ir valdovo kambarys. Tekstūrų nėra: kiekvienas
+pilna senų daiktų, koplyčios pastogė su kunigo rūbais ir taure, o
+didžiajame bokšte -- lobynas su sparnuotu drakonu, ugnimi saugančiu
+auksą, virš jo ginklinė ir valdovo kambarys. Tekstūrų nėra: kiekvienas
 akmens blokas, čerpė, grindinio akmuo, vitražo stiklelis ir herbas --
 daugiakampiai. `python3 46_castle.py` rašo modelį srautu iš karto į
 `castle.off` (apie 400 MB) ir `castle.obj`, pakeliui sutvarkydamas
@@ -210,7 +213,7 @@ tools/
   make_docs.py       sukuria docs/index.html iš kodo aprašymų ir docs/reference.py
   coverage.py        kuris pavyzdys kurią funkciją naudoja
 tests/
-  test_add.py        92 vienetiniai testai
+  test_add.py        93 vienetiniai testai
   test_legacy.py     paleidžia add.py 1.2 modelius ir tikrina sienų skaičių
   test_docs.py       paleidžia kiekvienos aprašytos funkcijos pavyzdį
   legacy/            tie modeliai, nepakeisti
@@ -229,7 +232,7 @@ vieno failo.
 ## Testai
 
 ```bash
-python3 tests/test_add.py        # 92 vienetiniai testai
+python3 tests/test_add.py        # 93 vienetiniai testai
 python3 tests/test_legacy.py     # add.py 1.2 modeliai
 python3 tests/test_docs.py       # 235 dokumentacijos pavyzdžiai
 python3 examples/build_all.py    # visi pavyzdžiai, Sketchfab patikra, paveikslėliai

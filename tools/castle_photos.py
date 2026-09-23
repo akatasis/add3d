@@ -49,7 +49,7 @@ PHOTOS = [
     ("26_koplycios_vidus", (28, 17.2, -9.6), (28, 16.5, -21), 45),        # inside the chapel
     ("27_kareiviu_miegamasis", (0, 26.3, -8), (0, 25.4, -20), 42),        # the soldiers' dormitory
     ("28_pastoge", (-6, 31.5, -16), (4, 30.3, -24), 45),                  # the attic and its junk
-    ("29_lobynas_ir_drakonas", (-28, 18.5, -36.5), (-24, 15.2, -32.5), 45),  # the treasury and the dragon
+    ("29_lobynas_ir_drakonas", (-26.8, 17.7, -28.8), (-24.5, 16.6, -33.2), 44),  # the treasury and the dragon
     ("30_valdovo_kambarys", (-21.5, 34.6, -29.5), (-27, 34, -33.5), 50),  # the lord's chamber
 ]
 
