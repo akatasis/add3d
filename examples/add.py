@@ -6639,7 +6639,9 @@ def save(path, M=None, clear_scene=None, colors=None, clean=True):
     are welded, faces without area go, so do the walls buried where two
     solids touch, and a face overlapping a bigger one in the same plane is
     cut back so that nothing flickers in a viewer (see :func:`clean`).
-    ``clean=False`` writes the model exactly as it is.
+    ``clean=False`` writes the model exactly as it is.  Lines end with
+    ``\n`` on every system, so a program writes the same bytes on Windows,
+    macOS and Linux.
     """
     if clear_scene is None:
         clear_scene = M is None
@@ -6713,7 +6715,7 @@ def _writable(M):
 
 def _write_off(path, M):
     M = _writable(M)
-    with open(path, "w") as f:
+    with open(path, "w", newline="\n") as f:
         f.write("OFF\n%d %d 0\n" % (len(M.V), len(M.F)))
         out = []
         for p in M.V:
@@ -6757,7 +6759,7 @@ def _write_obj(path, M, mtl_path=None):
             seen[c] = _material_name(c)
             palette.append(c)
 
-    with open(path, "w") as f:
+    with open(path, "w", newline="\n") as f:
         f.write("# written by add.py %s\n" % __version__)
         f.write("mtllib %s\n" % mtl_name)
         f.write("o model\n")
@@ -6798,7 +6800,7 @@ def _write_obj(path, M, mtl_path=None):
                         for i, t in zip(face, uv)))
             f.write("".join(out))
 
-    with open(mtl_path, "w") as f:
+    with open(mtl_path, "w", newline="\n") as f:
         f.write("# written by add.py %s\n" % __version__)
         for c in palette:
             r, g, b, alpha, image = _material(c)
@@ -6850,7 +6852,7 @@ def obj_size(M=None):
 
 def _write_ply(path, M):
     M = _writable(M)
-    with open(path, "w") as f:
+    with open(path, "w", newline="\n") as f:
         f.write("ply\nformat ascii 1.0\ncomment add.py %s\n" % __version__)
         f.write("element vertex %d\n" % len(M.V))
         f.write("property float x\nproperty float y\nproperty float z\n")
@@ -6868,7 +6870,7 @@ def _write_ply(path, M):
 
 def _write_stl(path, M):
     """ASCII STL -- the 3D printing format.  STL has no colours."""
-    with open(path, "w") as f:
+    with open(path, "w", newline="\n") as f:
         f.write("solid addpy\n")
         for face in M.F:
             for t in range(1, len(face) - 1):
@@ -6935,7 +6937,7 @@ class Stream(object):
         self.materials = {}                    # colour tuple -> material name
         self._kind = "obj" if path.lower().endswith(".obj") else "off"
         self._vt = 0
-        self._file = open(path, "w")
+        self._file = open(path, "w", newline="\n")
         if self._kind == "obj":
             mtl = path[:-4] + ".mtl"
             self._mtl = mtl
@@ -6949,7 +6951,7 @@ class Stream(object):
             self._header_at = self._file.tell()
             self._file.write("%12d %12d 0\n" % (0, 0))
             self._faces_path = path + ".faces~"
-            self._faces = open(self._faces_path, "w")
+            self._faces = open(self._faces_path, "w", newline="\n")
         self._current = None
 
     def __enter__(self):
@@ -7061,7 +7063,7 @@ class Stream(object):
         if self._file is None:
             return self.path
         if self._kind == "obj":
-            with open(self._mtl, "w") as m:
+            with open(self._mtl, "w", newline="\n") as m:
                 m.write("# written by add.py %s\n" % __version__)
                 for c, name in self.materials.items():
                     r, g, b, alpha, image = _material(c)
