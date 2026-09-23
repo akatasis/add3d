@@ -78,7 +78,7 @@ P = {
     "meat": [150, 78, 52], "apple": [190, 40, 40], "grape": [110, 50, 130],
     "orange": [230, 140, 40], "pig": [226, 168, 150], "cushion": [150, 24, 40],
     "blue": [40, 70, 160], "purple": [96, 40, 140], "flame_core": [255, 230, 120],
-    "bone": [226, 220, 200], "dragon": [56, 120, 70], "dragon_belly": [180, 190, 120],
+    "bone": [226, 220, 200], "dragon": [56, 120, 70], "dragon_belly": [180, 190, 120], "dragon_wing": [38, 88, 52],
     "glass_frame": [60, 60, 66], "skin": [222, 186, 150], "linen": [214, 206, 186],
 }
 P["spire"] = [150, 72, 54]                              # the reddish-brown of the palace spires
@@ -308,27 +308,78 @@ def brick_box(centre, size, name="brick"):
         add.mesh(add.move(add.rotateY(M, face * add.pi / 2), centre))
 
 
-def plank_floor(x0, x1, z0, z1, y, thick=0.04, width=0.3, length=3.0, name="wood", along="z", avoid=None):
+def rect_minus(p, h):
+    """The rectangle p = (x0, x1, z0, z1) with the rectangle h taken away,
+    as up to four rectangles."""
+    px0, px1, pz0, pz1 = p
+    hx0, hx1, hz0, hz1 = h
+    if px1 <= hx0 or px0 >= hx1 or pz1 <= hz0 or pz0 >= hz1:
+        return [p]
+    out = []
+    if hx0 > px0:
+        out.append((px0, hx0, pz0, pz1))
+    if hx1 < px1:
+        out.append((hx1, px1, pz0, pz1))
+    mx0, mx1 = max(px0, hx0), min(px1, hx1)
+    if hz0 > pz0:
+        out.append((mx0, mx1, pz0, hz0))
+    if hz1 < pz1:
+        out.append((mx0, mx1, hz1, pz1))
+    return out
+
+
+def board_minus_circle(p, circle, along):
+    """A board p = (x0, x1, z0, z1) running ``along`` "x" or "z", sawn off
+    square where it meets the circle (cx, cz, r): the cut clears the circle
+    over the whole width of the board."""
+    px0, px1, pz0, pz1 = p
+    cx, cz, r = circle
+    if along == "x":
+        d = min(max(cz, pz0), pz1) - cz
+        if d * d >= r * r:
+            return [p]
+        half = add.sqrt(r * r - d * d)
+        return [q for q in ((px0, min(px1, cx - half), pz0, pz1), (max(px0, cx + half), px1, pz0, pz1)) if q[1] > q[0]]
+    d = min(max(cx, px0), px1) - cx
+    if d * d >= r * r:
+        return [p]
+    half = add.sqrt(r * r - d * d)
+    return [q for q in ((px0, px1, pz0, min(pz1, cz - half)), (px0, px1, max(pz0, cz + half), pz1)) if q[3] > q[2]]
+
+
+def plank_floor(x0, x1, z0, z1, y, thick=0.04, width=0.3, length=3.0, name="wood", along="z", avoid=None,
+                holes=(), rounds=()):
     """A floor of separate boards (staggered, three shades) whose top is at
-    ``y``; ``avoid(x, z)`` says where to leave boards out."""
+    ``y``.  Where the floor is open the boards are sawn off at the edge --
+    ``holes`` are rectangles (x0, x1, z0, z1), a stairwell; ``rounds`` are
+    circles (cx, cz, r), a tower passing through -- rather than left lying
+    across the opening or taken out whole; a board running along an edge is
+    cut lengthwise.  ``avoid(x, z)`` still leaves out whole boards."""
     rows = int((x1 - x0) / width) if along == "z" else int((z1 - z0) / width)
+    span = (z1 - z0) if along == "z" else (x1 - x0)
     for i in range(rows):
         offset = (i % 3) * length / 3.0
         t = -offset
-        while t < ((z1 - z0) if along == "z" else (x1 - x0)):
-            t0, t1 = max(t, 0.0), min(t + length, (z1 - z0) if along == "z" else (x1 - x0))
+        while t < span:
+            t0, t1 = max(t, 0.0), min(t + length, span)
             t += length
             if t1 - t0 < 0.15:
                 continue
-            if along == "z":
-                cx, cz = x0 + (i + 0.5) * width, z0 + (t0 + t1) / 2
-                size = [width - 0.02, thick, t1 - t0 - 0.02]
+            if along == "z":                                         # the board, 1 cm in from its neighbours
+                board = (x0 + i * width + 0.01, x0 + (i + 1) * width - 0.01, z0 + t0 + 0.01, z0 + t1 - 0.01)
             else:
-                cx, cz = x0 + (t0 + t1) / 2, z0 + (i + 0.5) * width
-                size = [t1 - t0 - 0.02, thick, width - 0.02]
-            if avoid and avoid(cx, cz):
+                board = (x0 + t0 + 0.01, x0 + t1 - 0.01, z0 + i * width + 0.01, z0 + (i + 1) * width - 0.01)
+            if avoid and avoid((board[0] + board[1]) / 2, (board[2] + board[3]) / 2):
                 continue
-            add.cuboid([cx, y - thick / 2, cz], size, shade_of(name, int(hash2(i, int(t0 * 10)) * 3)))
+            pieces = [board]
+            for hole in holes:
+                pieces = [q for piece in pieces for q in rect_minus(piece, hole)]
+            for circle in rounds:
+                pieces = [q for piece in pieces for q in board_minus_circle(piece, circle, along)]
+            shade = shade_of(name, int(hash2(i, int(t0 * 10)) * 3))
+            for bx0, bx1, bz0, bz1 in pieces:
+                if bx1 - bx0 > 0.05 and bz1 - bz0 > 0.05:          # no slivers
+                    add.cuboid([(bx0 + bx1) / 2, y - thick / 2, (bz0 + bz1) / 2], [bx1 - bx0, thick, bz1 - bz0], shade)
 
 
 def arms(w, h, thick=0.04, field=None):
@@ -657,7 +708,7 @@ def rook_top(cx, cz, r, r_in, y1, k, name="stone"):
         ring_block(cx, cz, r + 0.1, r + 0.7, a - add.pi / m * 0.5, a + add.pi / m * 0.5, y1 + 0.35, y1 + 1.55, pick(name, i, 1))
 
 
-HEADROOM = 7 * 0.36                                    # the platform stays open over the last 7 steps (2 m of headroom)
+HEADROOM = 9 * 0.36                                    # the platform stays open over the last 9 steps: 9 x 0.28 - 0.35 = 2.17 m of headroom
 
 
 def stair_tower(cx, cz, y_floor, r_out, stops, y_top, start=0.0, rise=0.28, color="stone_dark", r_of=None):
@@ -690,20 +741,61 @@ def stair_tower(cx, cz, y_floor, r_out, stops, y_top, start=0.0, rise=0.28, colo
     return a
 
 
+def guard_wall(cx, cz, a, r0, r1, y, side=-1, h=1.0, t=0.35, name="stone"):
+    """A low stone wall where a floor ends in a drop into a stairwell:
+    along the radius at angle ``a`` from ``r0`` to ``r1``, standing on
+    ``y``, on the ``side`` of that radius where the floor is (-1: towards
+    smaller angles).  Two courses of blocks round a mortar core under a
+    coping of dark stone -- the tower's own masonry, hip-high."""
+    dx, dz = add.cos(a), add.sin(a)
+    lx, lz = -dz * side, dx * side                                         # across the wall, into the floor
+
+    def block(u0, u1, w0, w1, y0, y1, color):
+        add.mesh(solid([(cx + dx * u + lx * w, cz + dz * u + lz * w) for u, w in ((u0, w0), (u1, w0), (u1, w1), (u0, w1))],
+                       y0, y1, color))
+    block(r0, r1, 0.02, t - 0.02, y, y + h - 0.1, P["mortar"])             # the core ...
+    bh = (h - 0.12) / 2
+    for j in range(2):                                                     # ... two courses of blocks, the joints staggered ...
+        u, i = r0 - (BLOCK[0] / 2 if j else 0.0), 0
+        while u < r1:
+            u0, u1 = max(u, r0), min(u + BLOCK[0], r1)
+            if u1 - u0 >= 0.15:
+                block(u0 + 0.02, u1 - 0.02, 0.0, t, y + j * bh + 0.02, y + (j + 1) * bh - 0.02, pick(name, i, j))
+            u += BLOCK[0]
+            i += 1
+    block(r0, r1, -0.04, t + 0.04, y + h - 0.12, y + h, P["stone_dark"])   # ... and the coping
+
+
+def guard_arc(cx, cz, r0, r1, a0, a1, y, h=1.0, name="stone"):
+    """The same low wall bent round the centre: the ring r0..r1 from angle
+    ``a0`` to ``a1`` -- along the inner edge of a stairwell that hugs the wall."""
+    r = (r0 + r1) / 2
+    arcs = max(2, int((a1 - a0) * r1 / 0.3))
+    ring_block(cx, cz, r0 + 0.02, r1 - 0.02, a0, a1, y, y + h - 0.1, P["mortar"], arcs)
+    bh = (h - 0.12) / 2
+    n = max(1, int(round((a1 - a0) * r / BLOCK[0])))
+    step = (a1 - a0) / n
+    for j in range(2):
+        for i in range(n + 1):
+            b0, b1 = max(a0, a0 + (i - 0.5 * j) * step), min(a1, a0 + (i + 1 - 0.5 * j) * step)
+            if (b1 - b0) * r >= 0.15:
+                ring_block(cx, cz, r0, r1, b0 + 0.02 / r, b1 - 0.02 / r, y + j * bh + 0.02, y + (j + 1) * bh - 0.02,
+                           pick(name, i, j), max(1, int((b1 - b0) * r1 / 0.3)))
+    ring_block(cx, cz, r0 - 0.04, r1 + 0.04, a0, a1, y + h - 0.12, y + h, P["stone_dark"], arcs)
+
+
 def platform(cx, cz, r, y, thick, hole_from, hole_to, color=None, r_of=None):
     """A platform -- round, or of the outline ``r_of`` -- with a sector left
-    open where a stair arrives, and a railing round the opening."""
+    open where a stair arrives.  The top step is flush with the platform at
+    ``hole_to``: that is the way out, and it stays open.  At ``hole_from``
+    the stair runs two metres below the edge: a low stone wall guards it."""
     color = color or P["stone_dark"]
     pts = [(cx, cz)]
     for a in outline_angles(hole_to, hole_to + 2 * add.pi - (hole_to - hole_from), 40, r_of):
         rr = r_of(a) if r_of else r
         pts.append((cx + rr * add.cos(a), cz + rr * add.sin(a)))
     add.mesh(solid(pts, y - thick, y, color))
-    for a in (hole_from, hole_to):                                            # rail posts
-        r_edge = (r_of(a) if r_of else r) - 0.3
-        for rr in (0.6, r_edge):
-            add.cylinder([cx + rr * add.cos(a), y, cz + rr * add.sin(a)], [cx + rr * add.cos(a), y + 1.0, cz + rr * add.sin(a)], 0.05, 6, P["iron"])
-        add.cylinder([cx + 0.6 * add.cos(a), y + 1.0, cz + 0.6 * add.sin(a)], [cx + r_edge * add.cos(a), y + 1.0, cz + r_edge * add.sin(a)], 0.04, 6, P["iron"])
+    guard_wall(cx, cz, hole_from, 0.0, (r_of(hole_from) if r_of else r) + 0.15, y)    # from the newel to the parapet ring
 
 
 def round_tower(centre, y0, y1, r, doors, walk=None, y_floor=None, roof_h=8.0, roof_color=None,
@@ -818,12 +910,25 @@ def square_tower(centre, y0, y1, w, doors, walk_stops, roof_h, name="stone", win
     add.cuboid([cx, base + 2.9, cz], [w + 0.8, 0.25, w + 0.8], P["wood_dark"])
     e = w + 0.6
     add.pyramid([cx, base + 3.0 + e / 2, cz], e, roof_h, P["slate"])
-    apex = [cx, base + 3.0 + roof_h, cz]
+    top = base + 3.0 + roof_h
+    apex = [cx, top, cz]
+    f = 1 - 0.55 / roof_h                                                       # the slates stop under the cap: each face's are lifted
+    hip = add.sqrt(2) * e / 2                                                   # off it along its own normal, so their tips would not
+    m = [roof_h / add.sqrt(roof_h ** 2 + hip ** 2), hip / add.sqrt(roof_h ** 2 + hip ** 2)]    # meet at the apex
     for i in range(4):                                                          # slates on the four faces
         a0, a1 = i * add.pi / 2, (i + 1) * add.pi / 2
         c0 = [cx + e / 2 * add.sqrt(2) * add.cos(a0 + add.pi / 4), base + 3.0, cz + e / 2 * add.sqrt(2) * add.sin(a0 + add.pi / 4)]
         c1 = [cx + e / 2 * add.sqrt(2) * add.cos(a1 + add.pi / 4), base + 3.0, cz + e / 2 * add.sqrt(2) * add.sin(a1 + add.pi / 4)]
-        tile_face(c1, c0, apex, apex, size=(0.45, 0.4), colours="slate")
+        u0 = [c0[k] + (apex[k] - c0[k]) * f for k in range(3)]
+        u1 = [c1[k] + (apex[k] - c1[k]) * f for k in range(3)]
+        tile_face(c1, c0, u0, u1, size=(0.45, 0.4), colours="slate")
+        ca, sa = add.cos(a0 + add.pi / 4), add.sin(a0 + add.pi / 4)             # a lead roll over the hip, where the
+        lift = [m[0] * ca * 0.07, m[1] * 0.07, m[0] * sa * 0.07]                # slates of two faces meet
+        tip = [c0[k] + (apex[k] - c0[k]) * 0.95 for k in range(3)]
+        add.cylinder([c0[k] + lift[k] for k in range(3)], [tip[k] + lift[k] for k in range(3)], 0.09, 6, P["iron"])
+    add.pyramid([cx, top - 0.1, cz], 1.2, 1.2, P["iron"])                       # a lead cap over the apex, and a finial
+    add.cylinder([cx, top + 0.4, cz], [cx, top + 1.5, cz], 0.05, 8, P["iron"])
+    add.sphere([cx, top + 1.55, cz], 0.14, 8, P["gold"])
     return arrive
 
 
@@ -1707,7 +1812,8 @@ for i in range(int((KX1 - KX0 - 2 * WT) / 2)):
 # the floor between the storeys, its beams below, and the attic floor with a hatch
 slab = add.make(add.cuboid, [0, KY + HALL_H + SLAB / 2 - 0.02, (KZ0 + KZ1) / 2], [KX1 - KX0 - 0.4, SLAB - 0.04, KZ1 - KZ0 - 0.4], P["wood_dark"])
 add.mesh(add.difference(slab, *CUT))
-plank_floor(KX0 + 0.2, KX1 - 0.2, KZ0 + 0.2, KZ1 - 0.2, KY + HALL_H + SLAB, avoid=lambda x, z: near_tower(x, z, 0.2))
+TOWER_ROUNDS = [(cx, cz, r + 0.05) for cx, cz, r in CYLS]         # where the towers pass through the floors
+plank_floor(KX0 + 0.2, KX1 - 0.2, KZ0 + 0.2, KZ1 - 0.2, KY + HALL_H + SLAB, rounds=TOWER_ROUNDS)
 for i in range(int((KZ1 - KZ0) / 3)):
     z = KZ0 + WT + 1.5 + i * 3
     x0, x1 = KX0 + WT - 0.3, KX1 - WT + 0.3
@@ -1721,13 +1827,12 @@ attic = add.make(add.cuboid, [0, EAVE - 0.22, (KZ0 + KZ1) / 2], [KX1 - KX0 - 0.4
 HOLE = (HATCH[0] - 1.1, HATCH[0] + 1.1, HATCH[1] - 0.6, HATCH[1] + 4.6)          # the stairwell in the attic floor
 attic = add.difference(attic, add.make(add.cuboid, [HATCH[0], EAVE - 0.2, (HOLE[2] + HOLE[3]) / 2], [2.2, 1, HOLE[3] - HOLE[2]]), *CUT)
 add.mesh(attic)
-plank_floor(KX0 + 0.2, KX1 - 0.2, KZ0 + 0.2, KZ1 - 0.2, EAVE, along="x",
-            avoid=lambda x, z: near_tower(x, z, 0.2) or (HOLE[0] - 0.15 < x < HOLE[1] + 0.15 and HOLE[2] - 0.15 < z < HOLE[3] + 0.15))
-for x in (HOLE[0] - 0.1, HOLE[1] + 0.1):                                        # a rail round the stairwell
-    for z in (HOLE[2] - 0.1, (HOLE[2] + HOLE[3]) / 2, HOLE[3] + 0.1):
-        add.cuboid([x, EAVE + 0.45, z], [0.08, 0.9, 0.08], P["wood_dark"])
-    add.cuboid([x, EAVE + 0.9, (HOLE[2] + HOLE[3]) / 2], [0.06, 0.06, HOLE[3] - HOLE[2] + 0.3], P["wood_dark"])
-add.cuboid([HATCH[0], EAVE + 0.9, HOLE[2] - 0.1], [HOLE[1] - HOLE[0] + 0.3, 0.06, 0.06], P["wood_dark"])
+plank_floor(KX0 + 0.2, KX1 - 0.2, KZ0 + 0.2, KZ1 - 0.2, EAVE, along="x", holes=[HOLE], rounds=TOWER_ROUNDS)   # sawn round the stairwell
+for x in (HOLE[0] - 0.1, HOLE[1] + 0.1):                                        # a rail round the stairwell: along both
+    for z in (HOLE[2] - 0.1, (HOLE[2] + HOLE[3]) / 2, HOLE[3] + 0.1):           # sides and across the far end, where the
+        add.cuboid([x, EAVE + 0.45, z], [0.08, 0.9, 0.08], P["wood_dark"])     # stair is deep below; the near end, where
+    add.cuboid([x, EAVE + 0.9, (HOLE[2] + HOLE[3]) / 2], [0.06, 0.06, HOLE[3] - HOLE[2] + 0.3], P["wood_dark"])   # the top
+add.cuboid([HATCH[0], EAVE + 0.9, HOLE[3] + 0.1], [HOLE[1] - HOLE[0] + 0.3, 0.06, 0.06], P["wood_dark"])    # step is, is the way in
 flush("palace: floors")
 
 # the three corner towers: a door to the courtyard, doors into the hall
@@ -1753,8 +1858,8 @@ def disc_with_hole(cx, cz, r, y, thick, r_hole, a_from, a_to, color):
         a = a_to + (2 * add.pi - (a_to - a_from)) * j / n
         pts.append((cx + r * add.cos(a), cz + r * add.sin(a)))
     m = 8
-    for j in range(m + 1):                                             # back along the inner rim
-        a = a_from + (a_to - a_from) * (1 - j / float(m))
+    for j in range(m + 1):                                             # then along the inner rim, past the stairwell
+        a = a_from + (a_to - a_from) * j / float(m)
         pts.append((cx + r_hole * add.cos(a), cz + r_hole * add.sin(a)))
     add.mesh(solid(pts, y - thick, y, color))
 
@@ -1807,13 +1912,15 @@ add.cylinder([DON[0], G - 0.5, DON[1]], [DON[0], G + 0.1, DON[1]], DON_IN + 0.2,
 a = wall_stair(DON[0], DON[1], G + 0.1, KY, DON_IN - 1.7, DON_IN - 0.05, add.pi * 1.35)       # up to the hall door ...
 add.mesh(solid([(DON[0] + rr * add.cos(aa), DON[1] + rr * add.sin(aa)) for rr, aa in                 # ... a landing there ...
                 ((DON_IN - 1.7, a), (DON_IN - 0.05, a), (DON_IN - 0.05, a + 0.5), (DON_IN - 1.7, a + 0.5))], KY - 0.24, KY, P["stone_dark"]))
-WALL_HEAD = 8 * (0.3 / (DON_IN - 0.875))                                                        # 8 steps of the wall stair: 2 m of headroom
+WALL_HEAD = 10 * (0.3 / (DON_IN - 0.875))                                                       # 10 steps of the wall stair: 10 x 0.24 - 0.4 = 2 m of headroom
 a = wall_stair(DON[0], DON[1], KY, F1, DON_IN - 1.7, DON_IN - 0.05, a + 0.5)                   # ... and on to the armoury
 disc_with_hole(DON[0], DON[1], DON_IN + 0.2, F1, 0.4, DON_IN - 1.7, a - WALL_HEAD, a, P["wood"])
 a = wall_stair(DON[0], DON[1], F1, F2, DON_IN - 1.7, DON_IN - 0.05, a + 0.1)
 disc_with_hole(DON[0], DON[1], DON_IN + 0.2, F2, 0.4, DON_IN - 1.7, a - WALL_HEAD, a, P["wood"])
 a = wall_stair(DON[0], DON[1], F2, DON_TOP, DON_IN - 1.7, DON_IN - 0.05, a + 0.1)
 disc_with_hole(DON[0], DON[1], DON_IN + 0.2, DON_TOP, 0.4, DON_IN - 1.7, a - WALL_HEAD, a, P["stone_dark"])
+guard_wall(DON[0], DON[1], a - WALL_HEAD, DON_IN - 2.05, DON_IN + 0.35, DON_TOP)                # the lookout's stairwell: a low stone
+guard_arc(DON[0], DON[1], DON_IN - 2.05, DON_IN - 1.7, a - WALL_HEAD, a - 0.15, DON_TOP)        # wall round the drop, open where one arrives
 kk = k_(28)
 rook_top(DON[0], DON[1], DON_R, DON_IN + 0.2, DON_TOP, kk)                                     # corbels and merlons, then the lantern and spire
 for i in range(10):                                                                   # the lantern: stout posts and braces
@@ -2628,7 +2735,7 @@ for x in (-16.5, 16.5):
     torch([x, FLOOR2 + 2.6, DZ1 - 0.24], add.pi)
 # the wooden stair up to the attic hatch (the hatch is in the attic floor at HATCH)
 STAIR_STEPS = 14
-STAIR_FOOT = HATCH[1] + 0.2 + STAIR_STEPS * 0.5                       # the top step ends inside the stairwell
+STAIR_FOOT = HOLE[2] + STAIR_STEPS * 0.5                              # the top step ends where the attic floor begins
 add.stairs([HATCH[0], FLOOR2, STAIR_FOOT], STAIR_STEPS, 1.8, UPPER_H / STAIR_STEPS, 0.5, P["wood"], direction=(0, 0, -1))
 for s in (-1, 1):                                                     # a handrail on posts
     rail = [[HATCH[0] + s * 0.95, FLOOR2 + 1.0 + UPPER_H * t, STAIR_FOOT - STAIR_STEPS * 0.5 * t] for t in (0.0, 0.5, 1.0)]
@@ -2731,7 +2838,9 @@ for i in range(4):
     a = 1.1 + i * 1.5
     x, z = HEAP[0] + 2.1 * add.cos(a), HEAP[2] + 2.1 * add.sin(a)
     goblet([x, heap_y(x, z), z])
-sword([HEAP[0] - 1.0, heap_y(HEAP[0] - 1.0, HEAP[2] + 1.0) + 0.02, HEAP[2] + 1.0], (0.2, 1, 0.1))
+SWORD_A = 4.5                                                                      # a sword stuck in the gold at the foot of
+sx, sz = HEAP[0] + 2.1 * add.cos(SWORD_A), HEAP[2] + 2.1 * add.sin(SWORD_A)       # the heap, leaning out -- a good metre
+sword([sx, heap_y(sx, sz) - 0.12, sz], (0.22 * add.cos(SWORD_A), 1, 0.22 * add.sin(SWORD_A)))   # clear of the dragon on top
 chest([TR[0] - 2.8, TR[1], TR[2] + 2.4], 0.6, open_lid=True)                       # an open chest, gold spilling out
 add.mesh(add.move(add.stretch(add.make(add.sphere, [0, 0, 0], 0.7, 8, P["gold"]), [1.0, 0.5, 0.7], (0, 0, 0)), [TR[0] - 2.8, TR[1] + 0.75, TR[2] + 2.4]))
 for i in range(12):
@@ -2767,6 +2876,33 @@ def dragon(at, facing=0.0, size=1.0):
         return P["dragon_belly"] if p[1] < s[1] - 0.12 else P["dragon"]
 
     add.mesh(add.color_by(body, belly))
+    fine = [spine(i / 200.0) for i in range(201)]                          # metres along the spine, to lay the wings
+    arc = [0.0]                                                            # back along the curled body
+    for i in range(200):
+        arc.append(arc[-1] + vlen(vsub(fine[i + 1], fine[i])))
+
+    def on_flank(side, u, d, w):
+        """A point of a wing folded against the flank: ``u`` metres back from
+        the shoulders along the spine, ``d`` metres down the side from the
+        wing's top edge, ``w`` off the skin.  The wing follows the curled
+        body round, so no part of it cuts through it."""
+        s = arc[24] + u                                                    # the shoulders: t = 0.12
+        i = min(199, max(0, [k for k in range(200) if arc[k] <= s][-1]))
+        t = (i + (s - arc[i]) / max(1e-9, arc[i + 1] - arc[i])) / 200.0
+        c, q0, q1 = spine(t), spine(max(0.0, t - 0.01)), spine(min(1.0, t + 0.01))
+        hx, hz = q1[0] - q0[0], q1[2] - q0[2]
+        L = add.sqrt(hx * hx + hz * hz) or 1.0
+        r = radius(t) + 0.05
+        phi = 1.05 - d / r                                                 # from high on the side downwards
+        return [c[0] + side * hz / L * (r + w) * add.cos(phi), c[1] + (r + w) * add.sin(phi),
+                c[2] - side * hx / L * (r + w) * add.cos(phi)]
+
+    for side in (-1, 1):                                                   # the wings, folded along both flanks
+        wing = add.make(add.parametric, lambda a, b, side=side: on_flank(side, 1.8 * a, b * (0.15 + 0.6 * add.sin(add.pi * a) ** 0.8)
+                                                                         * (1 - 0.15 * abs(add.sin(3 * add.pi * a))), 0.0),
+                        0, 1, 18, 0, 1, 4, P["dragon_wing"], thickness=0.03)          # darker, the edge in three scallops
+        add.mesh(add.fix_normals(wing))                                    # a closed shell, turned outwards
+        add.polyline([on_flank(side, 1.8 * j / 10.0, 0.0, 0.06) for j in range(11)], 0.05, 8, P["dragon_belly"])
     for i in range(0, 34, 2):                                               # spines along the back
         p = pts[i]
         r = radius(i / 40.0)
@@ -2785,11 +2921,6 @@ def dragon(at, facing=0.0, size=1.0):
         add.capsule([paw[0] - 0.6, paw[1] + 0.1, paw[2]], paw, 0.16, 12, P["dragon"])
         for j in range(3):
             add.cone([paw[0] + 0.1, paw[1] - 0.03, paw[2] - 0.12 + j * 0.12], [paw[0] + 0.4, paw[1] - 0.1, paw[2] - 0.15 + j * 0.15], 0.04, 5, P["bone"])
-        wing = add.make(add.prism, [[0, 0], [1.8, 0.3], [0.9, 1.1]], 0.05, P["dragon"], (0, 0, 0), (0, 0, 1))
-        wing.extend(add.make(add.polyline, [[0, 0, 0], [0.9, 1.1, 0], [1.8, 0.3, 0]], 0.05, 8, P["dragon_belly"]))
-        wing = add.rotateZ(wing, -1.25)                                       # folded down along the flank
-        wing = add.rotateY(wing, add.pi / 2 + (add.pi if s > 0 else 0))
-        add.mesh(add.move(wing, [pts[8][0], pts[8][1] + 0.35, pts[8][2] + s * 0.3]))
     M = add.pop()
     M = add.stretch(M, [size, size, size], (0, 0, 0))
     add.mesh(add.move(add.rotateY(M, facing), at))
@@ -3674,7 +3805,7 @@ armour([a[0] + d[0] * L * 0.6, WALK, a[2] + d[2] * L * 0.6], add.atan2(-d[0], -d
 lying_armour([a[0] + d[0] * L * 0.3, WALK, a[2] + d[2] * L * 0.3], add.atan2(d[0], d[2]))        # ... and one asleep on it
 for k, c in enumerate(CORNERS):                                                              # a crossbowman on every tower top,
     aa = PHI[k]                                                                              # at the parapet, facing out ...
-    if (aa - (ARRIVE[k] - HEADROOM)) % (2 * add.pi) < HEADROOM + 0.6:                        # ... clear of the stair opening
+    if (aa - (ARRIVE[k] - HEADROOM - 0.35)) % (2 * add.pi) < HEADROOM + 0.95:                # ... clear of the stairwell and its wall
         aa = ARRIVE[k] + 0.7
     armour([c[0] + 2.3 * add.cos(aa), TOWER_TOP, c[2] + 2.3 * add.sin(aa)], add.atan2(add.cos(aa), add.sin(aa)),
            weapon="crossbow", shield=False)
