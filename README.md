@@ -85,12 +85,12 @@ registered by someone else -- see [PUBLISHING.md](PUBLISHING.md).)
 | **Booleans** | `union`, `intersect`, `difference`, `symmetric_difference`, plus the cheaper `cut` with a plane |
 | **Smoothing** | `catmull_clark`, and `smooth` -- the generalised Catmull-Clark algorithm: any number of cells per control edge, every vertex on the limit surface |
 | **Vertex tools** | `set_vertex`, `neighbors`, `valence`, `mean_neighbor_distance`, `edges`, `vertex_normal`, `face_center`, `boundary_loops`, `dual`, `truncate`, `refine`, `spherify`, `inflate` |
-| **Repair** | `clean` (weld repeated vertices, remove repeated and buried faces, cut back faces that overlap in one plane so nothing flickers -- `save` and `stream` do this on the way to the file), `overlaps`, `heal`, `fix_normals`, `triangulate` |
+| **Repair** | `clean` (weld repeated vertices, remove repeated and buried faces, cut back faces that overlap in one plane so nothing flickers, and cut the patch where two solids stand on each other out of both, so the union stays watertight -- `save` and `stream` do this on the way to the file), `overlaps`, `heal`, `fix_normals`, `triangulate` |
 | **Colour** | named colours, hex, HSV, gradients, `color_by` for a colour that depends on position, `limit_colors` for a Sketchfab-sized palette |
 | **Glass and pictures** | `transparent` / `opacity` for see-through surfaces and `texture` for image textures, both written to the `.mtl` file; `write_png` for pictures you compute yourself |
 | **Files** | write `.off`, `.obj` + `.mtl`, `.ply`, `.stl`; read `.off`, `.obj`, `.ply`; `obj_size` before writing; `stream` writes a model part by part, so it can be bigger than the memory of the computer |
 | **Checking** | `stats()` and `check()` — polygon count, colours, watertightness, volume, and the Sketchfab limits (50 MB, 50 materials) |
-| **Looking** | `tools/preview.py`, a software renderer that also has no dependencies; it streams a file too big to load (the 600 MB castle) |
+| **Looking** | `tools/preview.py`, a software renderer that also has no dependencies; it streams a file too big to load (the 400 MB castle) |
 
 234 public names, every one documented in English and Lithuanian with a
 runnable example, in one 7600-line file you can read.
@@ -191,7 +191,7 @@ in the big tower the treasury with a dragon asleep on the gold, the
 armoury and the lord's chamber above it. There are no textures: every
 stone block, roof tile, cobblestone, pane of stained glass and coat of
 arms is geometry. `python3 46_castle.py` streams the model to
-`castle.off` (about 600 MB) and `castle.obj` at once, tidied on the way
+`castle.off` (about 400 MB) and `castle.obj` at once, tidied on the way
 (no repeated vertices, no repeated, buried or overlapping faces), under
 100 colours; compressed with 7-Zip the `.obj` is under 100 MB, which is
 what Sketchfab takes.

@@ -85,12 +85,12 @@ nes vardas `add` PyPI kataloge užimtas kito žmogaus tuščiu įrašu – žr.
 | **Loginės operacijos** | `union`, `intersect`, `difference`, `symmetric_difference` ir pigesnis `cut` plokštuma |
 | **Apvalinimas** | `catmull_clark` ir `smooth` – apibendrintas Catmull–Clark algoritmas: bet koks langelių skaičius ant kontrolinės briaunos, kiekviena viršūnė ant ribinio paviršiaus |
 | **Viršūnių įrankiai** | `set_vertex`, `neighbors`, `valence`, `mean_neighbor_distance`, `edges`, `vertex_normal`, `face_center`, `boundary_loops`, `dual`, `truncate`, `refine`, `spherify`, `inflate` |
-| **Taisymas** | `clean` (suklijuoja pasikartojančias viršūnes, pašalina pasikartojančias ir palaidotas sienas, apkerpa vienoje plokštumoje persidengiančias sienas, kad niekas nemirgėtų -- `save` ir `stream` tai daro rašydami failą), `overlaps`, `heal`, `fix_normals`, `triangulate` |
+| **Taisymas** | `clean` (suklijuoja pasikartojančias viršūnes, pašalina pasikartojančias ir palaidotas sienas, apkerpa vienoje plokštumoje persidengiančias sienas, kad niekas nemirgėtų, o lopą, kuriuo du kūnai stovi vienas ant kito, iškerpa iš abiejų, kad sąjunga liktų sandari -- `save` ir `stream` tai daro rašydami failą), `overlaps`, `heal`, `fix_normals`, `triangulate` |
 | **Spalvos** | vardinės spalvos, hex, HSV, perėjimai, `color_by` – spalva pagal padėtį, `limit_colors` – Sketchfab dydžio paletė |
 | **Stiklas ir paveikslėliai** | `transparent` / `opacity` permatomiems paviršiams ir `texture` paveikslėlių tekstūroms, abu įrašomi į `.mtl` failą; `write_png` patiems paskaičiuotiems paveikslėliams |
 | **Failai** | rašo `.off`, `.obj` + `.mtl`, `.ply`, `.stl`; skaito `.off`, `.obj`, `.ply`; `obj_size` dar prieš rašant; `stream` rašo modelį dalimis, todėl jis gali būti didesnis už kompiuterio atmintį |
 | **Tikrinimas** | `stats()` ir `check()` – daugiakampių skaičius, spalvos, uždarumas, tūris ir Sketchfab ribos (50 MB, 50 medžiagų) |
-| **Peržiūra** | `tools/preview.py` – atvaizdavimo įrankis, irgi be jokių priklausomybių; per didelį įkelti failą (600 MB pilį) jis skaito srautu |
+| **Peržiūra** | `tools/preview.py` – atvaizdavimo įrankis, irgi be jokių priklausomybių; per didelį įkelti failą (400 MB pilį) jis skaito srautu |
 
 234 viešų vardų, kiekvienas aprašytas angliškai ir lietuviškai su veikiančiu
 pavyzdžiu, viename 7600 eilučių faile, kurį galima perskaityti.
@@ -186,7 +186,7 @@ pilna senų daiktų, o didžiajame bokšte -- lobynas su drakonu, miegančiu
 ant aukso, virš jo ginklinė ir valdovo kambarys. Tekstūrų nėra: kiekvienas
 akmens blokas, čerpė, grindinio akmuo, vitražo stiklelis ir herbas --
 daugiakampiai. `python3 46_castle.py` rašo modelį srautu iš karto į
-`castle.off` (apie 600 MB) ir `castle.obj`, pakeliui sutvarkydamas
+`castle.off` (apie 400 MB) ir `castle.obj`, pakeliui sutvarkydamas
 (jokių pasikartojančių viršūnių, pasikartojančių, palaidotų ar
 persidengiančių sienų), mažiau nei 100 spalvų; `.obj`, suglaudintas 7-Zip,
 telpa į 100 MB, kuriuos priima Sketchfab.

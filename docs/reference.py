@@ -483,9 +483,10 @@ EXPLAIN_LT.update({
              "pačioje plokštumoje persidengiančių sienų apkerpa (overlaps=True), "
              "kad modelis peržiūroje nemirgėtų. normals=True dar ir atsuka "
              "sienas į išorę. save() tai daro pats (clean=True).",
-    "overlaps": "Kiek sienų guli vienoje plokštumoje su didesne siena, žiūri ta "
-                "pačia kryptimi ir su ja persidengia – tokios sienos peržiūroje "
-                "mirga. clean() (ir save()) jas apkerpa; check() apie jas praneša.",
+    "overlaps": "Kiek sienų guli vienoje plokštumoje su didesne siena ir su ja "
+                "persidengia – žiūrinčios ta pačia kryptimi peržiūroje mirga, o "
+                "nugaromis viena į kitą (kūnas ant kūno) slepia nematomą lopą. "
+                "clean() (ir save()) jas apkerpa; check() apie jas praneša.",
     "stats": "Žodynas apie modelį: viršūnių, sienų, spalvų skaičius, matmenys, "
              "plotas, tūris, sandarumas, .obj dydis, permatomos sienos, "
              "tekstūros.",

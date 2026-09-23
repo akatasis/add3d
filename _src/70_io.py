@@ -362,7 +362,11 @@ class Stream(object):
             self.removed += _drop_degenerate(M)
             self.removed += _drop_internal(M)
             self.removed += _dedup_faces(M)
-            self.cut += _cut_overlaps(M)
+            cut = _cut_overlaps(M)
+            if cut:
+                _weld(M, 1e-6)
+                M = heal(M, 1e-6)
+            self.cut += cut
             _drop_unused(M)
         f = self._file
         base = self.vertices

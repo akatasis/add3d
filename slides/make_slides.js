@@ -1029,8 +1029,8 @@ function build(lang) {
     const s = sheet(T("The castle: a model bigger than memory", "Pilis: modelis, didesnis už atmintį"),
                     T("46_castle.py, stream()", "46_castle.py, stream()"));
     picture(s, "castle.png", { x: M, y: 1.45, w: 5.3, h: 3.4,
-      caption: T("no textures, every stone a polygon: a 600 MB .off and an .obj that 7-Zip brings under 100 MB for Sketchfab",
-                 "be tekstūrų, kiekvienas akmuo – daugiakampis: 600 MB .off ir .obj, kurį 7-Zip suglaudina iki 100 MB Sketchfab") });
+      caption: T("no textures, every stone a polygon: a 400 MB .off and an .obj that 7-Zip brings under 100 MB for Sketchfab",
+                 "be tekstūrų, kiekvienas akmuo – daugiakampis: 400 MB .off ir .obj, kurį 7-Zip suglaudina iki 100 MB Sketchfab") });
     picture(s, "castle_hall.png", { x: 5.85, y: 1.45, w: 3.55, h: 1.55,
       caption: T("the throne hall and the feast", "sosto menė ir puota") });
     picture(s, "castle_treasury.png", { x: 5.85, y: 3.3, w: 3.55, h: 1.55,

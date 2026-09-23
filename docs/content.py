@@ -395,9 +395,14 @@ repeated vertices, repeated or overlapping faces, and repeated edges --
 and repairs them: `check()` reports them, `clean()` welds vertices on one
 spot, removes repeated and buried faces, and cuts the smaller of two
 overlapping faces back so that the larger one alone covers the shared
-patch. `save()` and `stream()` do the same on the way to the file, so a
-model needs nothing extra; `add.save("x.obj", clean=False)` writes it
-exactly as drawn.
+patch. Where two solids stand on each other (a chest on a floor) the
+patch they share is cut out of both, as a union would, and the model
+stays watertight. `save()` and `stream()` do the same on the way to the
+file, so a model needs nothing extra; `add.save("x.obj", clean=False)`
+writes it exactly as drawn. The repair works on what it is given: a
+model written in parts with `stream()` is repaired part by part, so two
+parts that share a plane -- a floor laid in one part under a roof drawn
+in another -- must be kept apart by the model itself.
 
 ```
 add.check()                              # "!! overlapping faces  146"
@@ -674,7 +679,7 @@ out.close()
 print(out.faces, "faces,", out.bytes / 1e6, "MB,", len(out.materials), "colours")
 ```
 
-!castle.png|The castle of example 46, written streaming to castle.off (about 600 MB) and castle.obj: no textures, every stone a polygon; the .obj is under 100 MB once 7-Zip has compressed it.
+!castle.png|The castle of example 46, written streaming to castle.off (about 400 MB) and castle.obj: no textures, every stone a polygon; the .obj is under 100 MB once 7-Zip has compressed it.
 """),
 "lt": ("""# Receptai
 
@@ -739,9 +744,14 @@ viršūnių, pasikartojančių ar persidengiančių sienų ir pasikartojančių
 briaunų -- ir jas taiso: `check()` apie jas praneša, `clean()` suklijuoja
 viename taške esančias viršūnes, pašalina pasikartojančias ir palaidotas
 sienas, o mažesnę iš dviejų persidengiančių apkerpa, kad bendrą lopą dengtų
-tik didesnioji. `save()` ir `stream()` tą patį padaro rašydami failą, todėl
+tik didesnioji. Kur du kūnai stovi vienas ant kito (skrynia ant grindų),
+bendras lopas iškerpamas iš abiejų, kaip padarytų sąjunga, ir modelis
+lieka sandarus. `save()` ir `stream()` tą patį padaro rašydami failą, todėl
 modeliui nieko papildomo nereikia; `add.save("x.obj", clean=False)` įrašo
-lygiai taip, kaip nupiešta.
+lygiai taip, kaip nupiešta. Taisoma tai, kas paduota: dalimis per
+`stream()` rašomas modelis taisomas dalis po dalies, tad dvi dalys toje
+pačioje plokštumoje -- grindys vienoje dalyje po stogu iš kitos -- turi
+būti atskirtos paties modelio.
 
 ```
 add.check()                              # "!! overlapping faces  146"
@@ -1019,7 +1029,7 @@ out.close()
 print(out.faces, "sienų,", out.bytes / 1e6, "MB,", len(out.materials), "spalvų")
 ```
 
-!castle.png|46 pavyzdžio pilis, rašyta srautu į castle.off (apie 600 MB) ir castle.obj: be tekstūrų, kiekvienas akmuo -- daugiakampis; .obj, suglaudintas 7-Zip, telpa į 100 MB.
+!castle.png|46 pavyzdžio pilis, rašyta srautu į castle.off (apie 400 MB) ir castle.obj: be tekstūrų, kiekvienas akmuo -- daugiakampis; .obj, suglaudintas 7-Zip, telpa į 100 MB.
 """),
 }),
 
@@ -1075,7 +1085,9 @@ vocabulary.
 * **Streaming output** for models bigger than memory: `stream`, `Stream`.
 * **No flicker**: `clean`, `save` and `stream` weld repeated vertices,
   remove repeated and buried faces and cut back faces that overlap in one
-  plane; `check` reports them, `overlaps` counts them.
+  plane -- the smaller of two looking the same way, and the patch where
+  two solids stand on each other out of both; `check` reports them,
+  `overlaps` counts them.
 * **Colour functions** on `parametric`, `revolve`, `sweep`, `curve`,
   `polyline` and `grid`.
 * **Parts**: `beam`, `rounded_box`, `hemisphere`, `arch`, `stairs`, `gear`,
@@ -1155,8 +1167,9 @@ sąrašai, o `layer()` grąžina tai, ką galima indeksuoti `M[0]` ir `M[1]`.
 * **Srautinis rašymas** už atmintį didesniems modeliams: `stream`, `Stream`.
 * **Jokio mirgėjimo**: `clean`, `save` ir `stream` suklijuoja pasikartojančias
   viršūnes, pašalina pasikartojančias ir palaidotas sienas, apkerpa vienoje
-  plokštumoje persidengiančias sienas; `check` apie jas praneša, `overlaps`
-  suskaičiuoja.
+  plokštumoje persidengiančias sienas -- mažesnę iš dviejų, žiūrinčių ta
+  pačia kryptimi, o lopą, kuriuo du kūnai stovi vienas ant kito, iš abiejų;
+  `check` apie jas praneša, `overlaps` suskaičiuoja.
 * **Spalvų funkcijos** funkcijoms `parametric`, `revolve`, `sweep`, `curve`,
   `polyline` ir `grid`.
 * **Detalės**: `beam`, `rounded_box`, `hemisphere`, `arch`, `stairs`, `gear`,
@@ -1460,7 +1473,7 @@ GALLERY = [
      "barrels, carts, weapons and animals -- and, inside, the king in his "
      "throne hall with a feast, a dormitory, an attic and a dragon on its "
      "treasure. No textures: every stone, tile and coat of arms is "
-     "geometry. Written streaming: a 600 MB .off, an .obj under 100 MB "
+     "geometry. Written streaming: a 400 MB .off, an .obj under 100 MB "
      "compressed.",
      "Pilis: sala permatomame ežere, akmens blokų siena su aštuoniais "
      "tuščiaviduriais bokštais (viduje sraigtiniai laiptai), vartai su "
@@ -1468,7 +1481,7 @@ GALLERY = [
      "ir čerpių stogu, koplyčia su vitražais, kiemas pilnas statinių, "
      "vežimų, ginklų ir gyvūnų -- o viduje karalius sosto menėje su puota, "
      "miegamasis, palėpė ir drakonas ant lobio. Be tekstūrų: kiekvienas "
-     "akmuo, čerpė ir herbas -- daugiakampiai. Rašyta srautu: 600 MB .off, "
+     "akmuo, čerpė ir herbas -- daugiakampiai. Rašyta srautu: 400 MB .off, "
      ".obj suglaudintas mažiau nei 100 MB."),
     ("castle_hall.png", "46_castle.py",
      "Inside the castle: the great hall with the king's throne, the feast "

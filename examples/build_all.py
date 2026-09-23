@@ -10,7 +10,7 @@ The check fails (exit code 1) when a model could not be uploaded to
 Sketchfab as an .obj: more than 50 MB or more than 50 colours (materials).
 Big "fine" variants (``--fine`` in the example) are not built here, and the
 castle (46) is built at a tenth of its density (``CASTLE_DENSITY=0.1``) --
-the full castle is a 600 MB .off (and an .obj meant to be uploaded
+the full castle is a 400 MB .off (and an .obj meant to be uploaded
 compressed with 7-Zip).
 """
 import os
@@ -107,7 +107,7 @@ def main():
                      if n.endswith(".py") and n[0].isdigit())
     os.chdir(OUT)
     env = dict(os.environ)
-    env["CASTLE_DENSITY"] = env.get("CASTLE_DENSITY", "0.1")   # the full castle is ~600 MB; the docs get a lighter one
+    env["CASTLE_DENSITY"] = env.get("CASTLE_DENSITY", "0.1")   # the full castle is ~400 MB; the docs get a lighter one
     for name in scripts:
         t = time.time()
         p = subprocess.run([sys.executable, os.path.join(HERE, name)],

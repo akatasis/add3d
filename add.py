@@ -4022,8 +4022,11 @@ def _convex_pieces(pts):
 
 
 def _overlap_groups(M, tol):
-    """Faces grouped by their plane and orientation, each as 2D polygons:
-    ``{key: (u, v, n, [(area, index, pts2d, bbox), ...])}``."""
+    """Faces grouped by their plane -- whichever way they face: a slab
+    standing on a floor overlaps it just as a tile laid on it does -- each
+    as a counter-clockwise 2D polygon in the plane's frame:
+    ``{key: (u, v, n, [(area, index, pts2d, bbox, flipped), ...])}``, where
+    ``flipped`` says the face looks the other way than the frame's normal."""
     groups = {}
     for i, f in enumerate(M.F):
         if len(f) < 3:
@@ -4040,7 +4043,10 @@ def _overlap_groups(M, tol):
             c[1] += p[1]
             c[2] += p[2]
         d = _dot(n, c) / len(f)
-        key = (round(n[0], 3), round(n[1], 3), round(n[2], 3), round(d / tol) * tol)
+        nk = (round(n[0], 3), round(n[1], 3), round(n[2], 3))
+        if nk < (0.0, 0.0, 0.0) or nk == (0.0, 0.0, 0.0) and n[2] < 0:   # one key for both sides of a plane
+            nk, d = (-nk[0] + 0.0, -nk[1] + 0.0, -nk[2] + 0.0), -d
+        key = nk + (round(d / tol) * tol,)
         groups.setdefault(key, []).append(i)
     out = {}
     for key, idx in groups.items():
@@ -4052,25 +4058,55 @@ def _overlap_groups(M, tol):
         for i in idx:
             pts = [(_dot(M.V[k], u), _dot(M.V[k], v)) for k in M.F[i]]
             area2 = _poly_area2(pts)
-            if area2 < 0:
+            flipped = area2 < 0
+            if flipped:
                 pts = pts[::-1]
                 area2 = -area2
             xs = [p[0] for p in pts]
             ys = [p[1] for p in pts]
-            polys.append((area2 / 2.0, i, pts, (min(xs), min(ys), max(xs), max(ys))))
+            polys.append((area2 / 2.0, i, pts, (min(xs), min(ys), max(xs), max(ys)), flipped))
         out[key] = (u, v, n, polys)
     return out
 
 
+def _convex_overlap2(A, B):
+    """Twice the area of the intersection of two convex counter-clockwise polygons."""
+    inside = A
+    for i in range(len(B)):
+        inside = _clip_half(inside, B[i], B[(i + 1) % len(B)], True)
+        if len(inside) < 3:
+            return 0.0
+    return abs(_poly_area2(inside))
+
+
+def _minus_all(pieces, others, eps, limit=64):
+    """``pieces`` (convex polygons) with every polygon of ``others`` taken
+    away; stops early, returning None, when the result would shatter into
+    more than ``limit`` pieces."""
+    for other in others:
+        pieces = [q for part in pieces for q in _convex_minus(part, other, eps)]
+        if len(pieces) > limit:
+            return None
+    return pieces
+
+
 def _overlap_scan(M, tol, cut):
     """The engine behind :func:`overlaps` and :func:`_cut_overlaps`: walk
-    every plane group largest face first, find the kept faces each one
+    every plane group largest face first and find the kept faces each one
     overlaps (a grid of cells makes this fast for thousands of faces in one
-    plane, such as a floor of tiles), and either count the offenders or
-    replace them by the convex pieces left outside the bigger faces.
+    plane, such as a floor of tiles).
+
+    Faces looking the same way: the smaller one is cut back to the pieces
+    outside the bigger (the bigger wins, the flicker goes).  Faces looking
+    opposite ways -- two solids touching, a box on a floor -- meet on a
+    patch nobody can see: it is cut out of both, which is what a union of
+    the two solids would leave.  A face that would shatter into more than
+    64 pieces (a floor under a thousand boxes) is left whole, and so are
+    the faces touching it.
+
     Returns ``(count, replaced)``; ``replaced`` maps a face index to
-    ``(pieces, u, v, n, d)``."""
-    count = 0
+    ``(pieces, u, v, n, d, flipped)``."""
+    touched = set()
     replaced = {}
     for key, (u, v, n, polys) in _overlap_groups(M, tol).items():
         polys.sort(key=lambda t: -t[0])
@@ -4079,13 +4115,16 @@ def _overlap_scan(M, tol, cut):
         cell = max(1e-6, math.sqrt(max(1e-12, polys[len(polys) // 2][0])) * 2.0)
         grid = {}
         big = []                                     # a few big faces: checked against everyone
+        drawn = {}                                   # face -> its convex pieces as drawn
+        current = {}                                 # face -> its pieces now
+        flip = {}
+        contacts = {}                                # bigger face -> smaller faces lying on its back
 
         def cells(bb):
             return (int(math.floor(bb[0] / cell)), int(math.floor(bb[1] / cell)),
                     int(math.floor(bb[2] / cell)), int(math.floor(bb[3] / cell)))
 
-        def keep(pieces, bb):
-            entry = (pieces, bb)
+        def keep(entry, bb):
             x0, y0, x1, y1 = cells(bb)
             if (x1 - x0 + 1) * (y1 - y0 + 1) > 400:
                 big.append(entry)
@@ -4094,7 +4133,7 @@ def _overlap_scan(M, tol, cut):
                 for cy in range(y0, y1 + 1):
                     grid.setdefault((cx, cy), []).append(entry)
 
-        for area, i, pts, bb in polys:
+        for area, i, pts, bb, flipped in polys:
             x0, y0, x1, y1 = cells(bb)
             seen = set()
             candidates = list(big)
@@ -4107,8 +4146,13 @@ def _overlap_scan(M, tol, cut):
             own = _convex_pieces(pts)                # the face as it was drawn
             pieces = own
             changed = False
-            for kpieces, kbb in candidates:
+            for k, kbb in candidates:
                 if bb[0] >= kbb[2] or bb[2] <= kbb[0] or bb[1] >= kbb[3] or bb[3] <= kbb[1]:
+                    continue
+                kpieces = drawn[k]
+                if flip[k] != flipped:               # back to back: remember the contact
+                    if any(_convex_overlap2(a, b) > eps for a in pieces for b in kpieces):
+                        contacts.setdefault(k, []).append(i)
                     continue
                 new_pieces = []
                 for piece in pieces:
@@ -4122,34 +4166,57 @@ def _overlap_scan(M, tol, cut):
                 if changed and (not cut or len(pieces) > 64):
                     break
             if changed:
-                count += 1
+                touched.add(i)
                 if cut and len(pieces) <= 64:
-                    replaced[i] = (pieces, u, v, n, key[3])
+                    replaced[i] = (pieces, u, v, n, key[3], flipped)
             # later, smaller faces are cut against the face as drawn: the same
             # result as against its pieces, with far less to compare
-            keep(own, bb)
-    return count, replaced
+            drawn[i] = own
+            current[i] = pieces if (cut and len(pieces) <= 64) else own
+            flip[i] = flipped
+            keep((i, bb), bb)
+        for k, small in contacts.items():            # the patches where solids touch
+            if not cut:
+                touched.add(k)
+                touched.update(small)
+                continue
+            rest = _minus_all(current[k], [q for i in small for q in current[i]], eps)
+            if rest is None:
+                continue                             # the bigger face would shatter: leave the contact
+            replaced[k] = (rest, u, v, n, key[3], flip[k])
+            current[k] = rest
+            touched.add(k)
+            for i in small:
+                left = _minus_all(current[i], drawn[k], eps)
+                if left is not None:
+                    replaced[i] = (left, u, v, n, key[3], flip[i])
+                    current[i] = left
+                    touched.add(i)
+    return len(touched), replaced
 
 
 def overlaps(M=None, tol=1e-3):
-    """How many faces lie in the same plane, face the same way and overlap
-    a bigger face -- the faces that flicker in a viewer.  :func:`clean`
-    (and :func:`save`) cut them back; see also :func:`check`."""
+    """How many faces lie in the same plane as a bigger face and overlap it,
+    facing the same way (they flicker in a viewer) or the opposite way (a
+    box standing on a floor: its bottom flickers through the floor in a
+    viewer that draws both sides).  :func:`clean` (and :func:`save`) cut
+    them back; see also :func:`check`."""
     return _overlap_scan(as_mesh(M), tol, False)[0]
 
 
 def _cut_overlaps(M, tol=1e-3):
-    """Where two faces lie in one plane, face the same way and overlap,
-    cut the smaller one back so that only the larger covers the shared
-    patch (in place).  This is what stops the flicker between, say, the
-    side of a beam and the face of the wall it runs into.  Returns how
-    many faces were cut."""
+    """Where two faces lie in one plane and overlap -- facing the same way
+    or opposite ways -- cut the smaller one back so that only the larger
+    covers the shared patch (in place).  This is what stops the flicker
+    between the side of a beam and the face of the wall it runs into, and
+    takes the bottom off a chest standing on a floor.  Returns how many
+    faces were cut."""
     count, replaced = _overlap_scan(M, tol, True)
     if not replaced:
         return 0
     keep_idx = [i for i in range(len(M.F)) if i not in replaced]
     new_F, new_C, new_UV = [], [], []
-    for i, (pieces, u, v, n, d) in replaced.items():
+    for i, (pieces, u, v, n, d, flipped) in replaced.items():
         f = M.F[i]
         base = [n[0] * d, n[1] * d, n[2] * d]        # a point of the plane
         # texture coordinates: the affine map of the original corners, if any
@@ -4179,6 +4246,10 @@ def _cut_overlaps(M, tol=1e-3):
                     l2 = ((b[0] - a[0]) * (t_ - a[1]) - (s_ - a[0]) * (b[1] - a[1])) / det
                     piece_uv.append((ua[0] + l1 * (ub[0] - ua[0]) + l2 * (uc[0] - ua[0]),
                                      ua[1] + l1 * (ub[1] - ua[1]) + l2 * (uc[1] - ua[1])))
+            if flipped:                              # the face looked the other way: keep it so
+                idx.reverse()
+                if piece_uv:
+                    piece_uv.reverse()
             new_F.append(idx)
             new_C.append(M.C[i])
             new_UV.append(piece_uv)
@@ -4268,9 +4339,10 @@ def clean(M=None, tol=1e-7, weld=True, degenerate=True, duplicates=True,
 
     By default it welds coincident vertices, throws away zero-area faces
     (and splits faces pinched at a vertex), removes repeated faces, removes
-    the walls buried where two solids touch, and cuts back the smaller of
-    two faces that lie in one plane, face the same way and overlap -- the
-    faces that flicker in a viewer (``overlaps``; see :func:`overlaps`).
+    the walls buried where two solids touch, and cuts back faces that lie
+    in one plane and overlap: the smaller of two looking the same way (the
+    faces that flicker in a viewer), and the patch where two solids stand
+    on each other, out of both (``overlaps``; see :func:`overlaps`).
     Pass ``normals=True`` to also make every face point outward, and
     ``report=True`` to get ``(mesh, report_dict)`` instead of just the mesh::
 
@@ -4289,6 +4361,9 @@ def clean(M=None, tol=1e-7, weld=True, degenerate=True, duplicates=True,
         info["faces_removed"] += _dedup_faces(M)
     if overlaps:
         info["faces_cut"] += _cut_overlaps(M)
+        if info["faces_cut"] and weld:
+            _weld(M, tol)                            # the new corners meet their neighbours ...
+            M = heal(M, tol)                         # ... and the neighbours' long edges learn of them
     if normals:
         M = fix_normals(M)
     if unused:
@@ -4406,7 +4481,7 @@ def check(M=None, min_faces=10000, min_colors=3, quiet=False,
                   " add.clean() removes them)" % s["back_to_back_faces"])
         flicker = overlaps(M)
         if flicker:
-            print("!! overlapping faces   %d   (in one plane, facing the same way:"
+            print("!! overlapping faces   %d   (lying on a bigger face in the same plane:"
                   " they flicker in a viewer -- add.clean() cuts them)" % flicker)
         if s["closed"]:
             print("   volume              %.3f" % s["volume"])
@@ -6905,7 +6980,11 @@ class Stream(object):
             self.removed += _drop_degenerate(M)
             self.removed += _drop_internal(M)
             self.removed += _dedup_faces(M)
-            self.cut += _cut_overlaps(M)
+            cut = _cut_overlaps(M)
+            if cut:
+                _weld(M, 1e-6)
+                M = heal(M, 1e-6)
+            self.cut += cut
             _drop_unused(M)
         f = self._file
         base = self.vertices

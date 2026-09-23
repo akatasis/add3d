@@ -1276,6 +1276,17 @@ def test_overlaps_and_pinched_faces():
     assert abs(add.area(C) - (add.area(M) - 2 * 2 * 1)) < 1e-9      # minus the two hidden 2x1 patches
     # a face that is not overlapped is left exactly as it was
     assert add.clean(tall).polygons == 6
+    # a box standing on a floor: the patch they share is cut out of both and
+    # the union is watertight; a floor under many boxes is left alone
+    floor = add.make(add.cuboid, [0, 0, 0], [10, 1, 10], "grey")
+    box = add.make(add.cuboid, [2, 1, 2], [2, 1, 2], "red")
+    assert add.overlaps(add.merge([floor, box])) == 2
+    U, info = add.clean(add.merge([floor, box]), report=True)
+    assert info["faces_cut"] == 2 and add.stats(U)["closed"] and abs(add.volume(U) - 104) < 1e-9
+    crowd = [floor] + [add.make(add.cuboid, [-4.5 + i * 0.8, 0.75, -4.5 + j * 0.8], [0.5, 0.5, 0.5], "red")
+                       for i in range(12) for j in range(12)]
+    U, info = add.clean(add.merge(crowd), report=True)
+    assert info["faces_cut"] == 0 and add.stats(U)["closed"]
     # a face pinched at a vertex (a bow tie) is split into its two loops
     P = add.Mesh()
     for q in ([0, 0, 0], [1, 0, 0], [1, 1, 0], [-1, 0, 0], [-1, -1, 0]):

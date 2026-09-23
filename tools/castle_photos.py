@@ -25,7 +25,7 @@ PHOTOS = [
     ("02_priesaisrys_nuo_kranto", (14, 3.5, 150), (0, 24, 30), 32),       # from the far shore: lake, jetty, road, gate
     ("03_vartai_ir_pakeliamas_tiltas", (0, 19, 76), (0, 17, 48), 36),     # the gatehouse and the drawbridge
     ("04_grandines_ir_grioviai", (-10, 17, 63), (0, 16.5, 52), 40),       # chains, moat and the gate arch
-    ("05_griovys_is_sono", (31, 17, 67), (0, 15, 57), 40),                # the moat and the bridge from the side
+    ("05_griovys_is_sono", (22, 21, 78), (-6, 15, 56), 30),               # the moat and the bridge from the side
     ("06_siena_virs_skardzio", (-98, 30, -42), (-40, 22, -20), 40),       # the curtain wall on the cliff side
     ("07_stogai_is_paukscio_skrydzio", (24, 72, 34), (0, 25, -14), 40),   # the palace roofs from above
     ("08_donzonas", (-36, 17.5, -6), (-26, 33, -33), 40),                 # the donjon from the west side of the yard
@@ -36,7 +36,7 @@ PHOTOS = [
     ("13_turgus", (-3, 17.5, 37), (-12, 15.8, 30), 45),                   # the market
     ("14_kalve", (-25, 17, 11), (-34, 15.8, 6), 45),                      # the smithy
     ("15_arklides", (17, 17, -32), (10, 15.5, -40), 45),                  # the stable and the horses
-    ("16_patrankos_prie_vartu", (1, 17.5, 31), (8, 15.5, 41), 45),        # the cannons inside the gate
+    ("16_patrankos_prie_vartu", (15, 17.8, 33), (7.5, 15.6, 41), 40),     # the cannons inside the gate
     ("17_katapulta", (19, 17.5, 27), (28, 16, 18), 45),                   # the trebuchet
     ("18_sienos_takas", (34.9, 28.6, 34.9), (14, 26.8, 49), 45),          # along the wall walk to the gate towers
     ("19_bokstas_su_zibintu", (-6, 19, 28), (-20.7, 32, 50), 26),          # a tower top: parapet, lantern, flag

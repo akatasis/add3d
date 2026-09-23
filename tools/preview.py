@@ -16,7 +16,7 @@ From the command line::
 
 A file bigger than 150 MB is not loaded but streamed (``render_big``): the
 vertices go into a flat array, the faces are drawn as they are read, so the
-600 MB castle renders in a few hundred megabytes of memory.
+400 MB castle renders in a few hundred megabytes of memory.
 
 From Python::
 
@@ -388,7 +388,7 @@ def render_big(path, out="preview.png", size=(900, 700), turn=35.0, tilt=22.0, z
                at=None, radius=None, eye=None, fov=26.0):
     """Render a model file too big to load: the vertices are read into a
     flat array and turned into camera space, then the faces are streamed
-    from the file and drawn one by one -- a 600 MB castle in a few hundred
+    from the file and drawn one by one -- a 400 MB castle in a few hundred
     megabytes of memory.  Colours and opacity come from the .mtl (for
     .obj) or the face lines (for .off); textures are ignored."""
     V, lo, hi, faces = _big_faces(path)
