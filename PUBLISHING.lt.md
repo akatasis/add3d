@@ -135,7 +135,7 @@ Jei abejojate, pirmiausia išbandykite `test.pypi.org`
 | `add.py` | pati biblioteka – vienintelis failas, kurio reikia studentams |
 | `_src/` + `build.py` | dalys, iš kurių surenkamas `add.py` |
 | `examples/` | 43 pavyzdinės programos su komentarais ir `add.py` kopija |
-| `tests/` | 91 vienetiniai testai, add.py 1.2 suderinamumo testas ir dokumentacijos pavyzdžių paleidiklis |
+| `tests/` | 92 vienetiniai testai, add.py 1.2 suderinamumo testas ir dokumentacijos pavyzdžių paleidiklis |
 | `tools/` | `preview.py` (peržiūra), `make_docs.py`, `coverage.py` |
 | `docs/` | dokumentacijos svetainė (EN/LT) ir paveikslėliai |
 | `slides/` | paskaitos skaidrės (.pptx, .pdf ir generatorius) |
@@ -146,9 +146,9 @@ Jei abejojate, pirmiausia išbandykite `test.pypi.org`
 
 ```bash
 python3 build.py --check          # add.py ir examples/add.py atnaujinti
-python3 tests/test_add.py         # 91 passed, 0 failed
+python3 tests/test_add.py         # 92 passed, 0 failed
 python3 tests/test_legacy.py      # all legacy models reproduce
-python3 tests/test_docs.py        # 231 documentation examples ran
+python3 tests/test_docs.py        # 235 documentation examples ran
 python3 tools/coverage.py --strict
 python3 tools/make_docs.py        # docs/index.html
 python3 examples/build_all.py --models   # visi pavyzdžiai telpa į Sketchfab ribas

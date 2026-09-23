@@ -481,12 +481,17 @@ EXPLAIN_LT.update({
              "išmeta nulinio ploto ir pasikartojančias sienas bei sienas, "
              "paslėptas ten, kur du kūnai liečiasi, o mažesnę iš dviejų toje "
              "pačioje plokštumoje persidengiančių sienų apkerpa (overlaps=True), "
-             "kad modelis peržiūroje nemirgėtų. normals=True dar ir atsuka "
+             "kad modelis peržiūroje nemirgėtų; neiškilas sienas supjausto "
+             "trikampiais (convex=True). normals=True dar ir atsuka "
              "sienas į išorę. save() tai daro pats (clean=True).",
     "overlaps": "Kiek sienų guli vienoje plokštumoje su didesne siena ir su ja "
                 "persidengia – žiūrinčios ta pačia kryptimi peržiūroje mirga, o "
                 "nugaromis viena į kitą (kūnas ant kūno) slepia nematomą lopą. "
                 "clean() (ir save()) jas apkerpa; check() apie jas praneša.",
+    "concave_faces": "Kiek sienų nėra iškilos. Peržiūros programa daugiakampį piešia "
+                     "kaip trikampių vėduoklę iš pirmojo kampo, todėl neiškilos sienos "
+                     "įdubą (pvz., laiptų angą grindyse) uždengia. clean() (ir save()) "
+                     "tokias sienas supjausto trikampiais; check() apie jas praneša.",
     "stats": "Žodynas apie modelį: viršūnių, sienų, spalvų skaičius, matmenys, "
              "plotas, tūris, sandarumas, .obj dydis, permatomos sienos, "
              "tekstūros.",
@@ -546,6 +551,7 @@ EXAMPLES.update({
     "fix_normals": 'M = add.make(add.box, [0, 0, 0], 2, "red")\nM.F[0].reverse()                     # spoil one face\nprint(add.volume(M), add.volume(add.fix_normals(M)))',
     "clean": 'add.box([0, 0, 0], 2, "red")\nadd.box([2, 0, 0], 2, "red")          # touches the first one\nadd.cuboid([1, 0, 0], [6, 0.5, 2], "blue")   # runs through both: overlapping faces\nmodel, report = add.clean(add.layer(), report=True)\nprint(report)                         # hidden walls gone, overlaps cut\nadd.mesh(model)',
     "overlaps": 'add.cuboid([0, 0, 0], [2, 6, 1], "red")\nadd.cuboid([0, 0, 0], [5, 1, 1], "blue")   # the front faces share a plane\nprint(add.overlaps())                     # 2 -- they would flicker\nadd.mesh(add.clean(add.layer()))\nprint(add.overlaps())                     # 0',
+    "concave_faces": 'add.polygon([[0, 0, 0], [0, 0, 3], [1, 0, 3], [1, 0, 1], [4, 0, 1], [4, 0, 0]], "red")   # an L\nprint(add.concave_faces())                # 1 -- a viewer would fan it over the notch\nadd.mesh(add.clean(add.layer()))\nprint(add.concave_faces())                # 0 -- cut into triangles',
     "stats": 'M = add.make(add.torus, [0, 0, 0], 3, 1)\ns = add.stats(M)\nprint(s["faces"], s["closed"], round(s["volume"], 2), s["obj_bytes"])',
     "check": 'add.sphere([0, 0, 0], 2, 30, "red")\nadd.box([3, 0, 0], 1, "blue")\nadd.cone([0, 3, 0], [0, 5, 0], 1, 12, "gold")\nok = add.check()\nprint(ok)',
 })

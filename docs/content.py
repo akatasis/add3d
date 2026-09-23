@@ -1612,8 +1612,10 @@ SHORT = {
 "array_mirror": "Modelis kartu su savo veidrodiniu atvaizdu.",
 # -- repair
 "clean": "Sutvarko modelį: suklijuoja viršūnes, pašalina dublikatus ir "
-         "vidines sienas, apkerpa persidengiančias (mirgančias) sienas.",
+         "vidines sienas, apkerpa persidengiančias (mirgančias) sienas, "
+         "neiškilas supjausto trikampiais.",
 "overlaps": "Kiek sienų persidengia vienoje plokštumoje (mirga peržiūroje).",
+"concave_faces": "Kiek sienų neiškilos (peržiūroje jų įdubą uždengtų trikampis).",
 "weld": "Tas pats, kas clean.",
 "heal": "Uždaro plyšelius ten, kur briauna praeina pro svetimą viršūnę.",
 "triangulate": "Kopija, kurioje visos sienos -- trikampiai.",

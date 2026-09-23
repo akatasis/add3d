@@ -4021,6 +4021,118 @@ def _convex_pieces(pts):
     return [pts]
 
 
+def _ear_triangles(pts):
+    """Ear clipping of a simple counter-clockwise 2D polygon: the triangles
+    as index triples, or None when no ear can be found (an outline that
+    crosses itself)."""
+    idx = list(range(len(pts)))
+    tris = []
+    while len(idx) > 3:
+        n = len(idx)
+        for k in range(n):
+            i0, i1, i2 = idx[k - 1], idx[k], idx[(k + 1) % n]
+            a, b, c = pts[i0], pts[i1], pts[i2]
+            if (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]) <= 0:
+                continue                             # a reflex (or straight) corner is no ear
+            blocked = False
+            for j in idx:
+                if j == i0 or j == i1 or j == i2:
+                    continue
+                q = pts[j]
+                if ((b[0] - a[0]) * (q[1] - a[1]) - (b[1] - a[1]) * (q[0] - a[0]) >= 0 and
+                        (c[0] - b[0]) * (q[1] - b[1]) - (c[1] - b[1]) * (q[0] - b[0]) >= 0 and
+                        (a[0] - c[0]) * (q[1] - c[1]) - (a[1] - c[1]) * (q[0] - c[0]) >= 0):
+                    blocked = True                   # another corner inside: cutting here would overlap
+                    break
+            if not blocked:
+                tris.append((i0, i1, i2))
+                del idx[k]
+                break
+        else:
+            return None
+    tris.append((idx[0], idx[1], idx[2]))
+    return tris
+
+
+def _is_concave(M, f, n=None):
+    """Does face ``f`` turn the wrong way anywhere along its outline?  A
+    convex polygon turns the same way as its normal at every corner."""
+    k = len(f)
+    if k < 4:
+        return False
+    n = n or _face_normal(M, f)
+    ln = math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2])
+    if ln < 1e-12:
+        return False
+    nx, ny, nz = n[0] / ln, n[1] / ln, n[2] / ln
+    P = [M.V[i] for i in f]
+    for i in range(k):
+        a, b, c = P[i - 1], P[i], P[(i + 1) % k]
+        e1x, e1y, e1z = b[0] - a[0], b[1] - a[1], b[2] - a[2]
+        e2x, e2y, e2z = c[0] - b[0], c[1] - b[1], c[2] - b[2]
+        turn = ((e1y * e2z - e1z * e2y) * nx + (e1z * e2x - e1x * e2z) * ny + (e1x * e2y - e1y * e2x) * nz)
+        if turn < -1e-9 * (e1x * e1x + e1y * e1y + e1z * e1z + e2x * e2x + e2y * e2y + e2z * e2z):
+            return True
+    return False
+
+
+def _split_concave(M):
+    """Cut every face that is not convex into triangles (in place).
+
+    A viewer draws a polygon as a fan of triangles from its first corner,
+    which is right for a convex outline and wrong for any other: the fan
+    covers the notch -- the stair hole in a floor, the inside corner of an
+    L-shaped slab.  Ear clipping in the face's own plane gives triangles
+    that cover exactly the polygon, turning the same way as the face.
+    Convex faces are left as they are.  Returns how many faces were cut."""
+    newF, newC, newUV = [], [], []
+    count = 0
+    for k, f in enumerate(M.F):
+        tris = None
+        if len(f) > 3:
+            n = _face_normal(M, f)
+            if _is_concave(M, f, n):
+                u, v, w = _frame(n)
+                pts = [(_dot(M.V[i], u), _dot(M.V[i], v)) for i in f]
+                order = list(range(len(f)))
+                flip = _poly_area2(pts) < 0
+                if flip:
+                    order.reverse()
+                    pts = pts[::-1]
+                ears = _ear_triangles(pts)
+                if ears is not None:
+                    tris = []
+                    for a, b, c in ears:
+                        t = [order[a], order[b], order[c]]
+                        if flip:
+                            t.reverse()
+                        tris.append(t)
+        uv = M.UV[k] if M.UV is not None else None
+        if tris is None:
+            newF.append(f)
+            newC.append(M.C[k])
+            newUV.append(uv)
+            continue
+        count += 1
+        for t in tris:
+            newF.append([f[i] for i in t])
+            newC.append(M.C[k])
+            newUV.append(None if uv is None else [uv[i] for i in t])
+    if count:
+        M.F, M.C = newF, newC
+        if M.UV is not None:
+            M.UV = newUV
+    return count
+
+
+def concave_faces(M=None):
+    """How many faces are not convex.  A viewer draws a polygon as a fan
+    from its first corner, so such a face shows wrongly -- the fan covers
+    its notch.  :func:`clean` (and :func:`save`) cut them into triangles."""
+    M = as_mesh(M)
+    return sum(1 for f in M.F if len(f) > 3 and _is_concave(M, f))
+
+
 def _overlap_groups(M, tol):
     """Faces grouped by their plane -- whichever way they face: a slab
     standing on a floor overlaps it just as a tile laid on it does -- each
@@ -4334,7 +4446,7 @@ def fix_normals(M=None, outward=True):
 
 
 def clean(M=None, tol=1e-7, weld=True, degenerate=True, duplicates=True,
-          internal=True, unused=True, normals=False, report=False, overlaps=True):
+          internal=True, unused=True, normals=False, report=False, overlaps=True, convex=True):
     """Repair a model and return the tidy copy.
 
     By default it welds coincident vertices, throws away zero-area faces
@@ -4343,6 +4455,8 @@ def clean(M=None, tol=1e-7, weld=True, degenerate=True, duplicates=True,
     in one plane and overlap: the smaller of two looking the same way (the
     faces that flicker in a viewer), and the patch where two solids stand
     on each other, out of both (``overlaps``; see :func:`overlaps`).
+    Finally a face that is not convex is cut into triangles (``convex``;
+    see :func:`concave_faces`), because a viewer would fan it over its notch.
     Pass ``normals=True`` to also make every face point outward, and
     ``report=True`` to get ``(mesh, report_dict)`` instead of just the mesh::
 
@@ -4350,7 +4464,7 @@ def clean(M=None, tol=1e-7, weld=True, degenerate=True, duplicates=True,
         add.mesh(model)
     """
     M = as_mesh(M).copy()
-    info = {"vertices_removed": 0, "faces_removed": 0, "faces_cut": 0}
+    info = {"vertices_removed": 0, "faces_removed": 0, "faces_cut": 0, "faces_split": 0}
     if weld:
         info["vertices_removed"] += _weld(M, tol)
     if degenerate:
@@ -4364,6 +4478,8 @@ def clean(M=None, tol=1e-7, weld=True, degenerate=True, duplicates=True,
         if info["faces_cut"] and weld:
             _weld(M, tol)                            # the new corners meet their neighbours ...
             M = heal(M, tol)                         # ... and the neighbours' long edges learn of them
+    if convex:
+        info["faces_split"] += _split_concave(M)
     if normals:
         M = fix_normals(M)
     if unused:
@@ -4483,6 +4599,10 @@ def check(M=None, min_faces=10000, min_colors=3, quiet=False,
         if flicker:
             print("!! overlapping faces   %d   (lying on a bigger face in the same plane:"
                   " they flicker in a viewer -- add.clean() cuts them)" % flicker)
+        notched = concave_faces(M)
+        if notched:
+            print("!! non-convex faces    %d   (a viewer draws a polygon as a fan and"
+                  " covers its notch -- add.clean() cuts them into triangles)" % notched)
         if s["closed"]:
             print("   volume              %.3f" % s["volume"])
         if s["transparent_faces"]:
@@ -6987,6 +7107,7 @@ class Stream(object):
                 _weld(M, 1e-6)
                 M = heal(M, 1e-6)
             self.cut += cut
+            _split_concave(M)
             _drop_unused(M)
         f = self._file
         base = self.vertices

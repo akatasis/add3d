@@ -1260,6 +1260,27 @@ def test_stream():
             pass
 
 
+def test_concave_faces():
+    """A face that is not convex is cut into triangles that cover exactly
+    the polygon (a viewer's fan would cover its notch); convex faces stay."""
+    L = [(0, 0), (4, 0), (4, 1), (1, 1), (1, 3), (0, 3)]
+    M = add.Mesh()
+    top = [M.add_vertex([x, 1.0, z]) for x, z in L]
+    bot = [M.add_vertex([x, 0.0, z]) for x, z in L]
+    M.add_face(top, "red")
+    M.add_face(bot[::-1], "red")
+    for i in range(6):
+        j = (i + 1) % 6
+        M.add_face([bot[i], bot[j], top[j], top[i]], "red")
+    M = add.fix_normals(M)
+    assert add.concave_faces(M) == 2
+    C, info = add.clean(M, report=True)
+    assert info["faces_split"] == 2 and add.concave_faces(C) == 0
+    assert abs(add.area(C) - 26.0) < 1e-9                  # 2 x 6 (the L) + 14 (its sides)
+    assert abs(add.volume(C) - 6.0) < 1e-9 and add.stats(C)["closed"]
+    assert add.clean(add.make(add.cuboid, [0, 0, 0], [1, 2, 3], "blue")).polygons == 6
+
+
 def test_overlaps_and_pinched_faces():
     """clean() cuts back coplanar overlapping faces (the cause of flicker),
     splits faces pinched at a vertex, and save() does the same on the way

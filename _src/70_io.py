@@ -369,6 +369,7 @@ class Stream(object):
                 _weld(M, 1e-6)
                 M = heal(M, 1e-6)
             self.cut += cut
+            _split_concave(M)
             _drop_unused(M)
         f = self._file
         base = self.vertices

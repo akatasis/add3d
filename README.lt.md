@@ -92,8 +92,8 @@ nes vardas `add` PyPI kataloge užimtas kito žmogaus tuščiu įrašu – žr.
 | **Tikrinimas** | `stats()` ir `check()` – daugiakampių skaičius, spalvos, uždarumas, tūris ir Sketchfab ribos (50 MB, 50 medžiagų) |
 | **Peržiūra** | `tools/preview.py` – atvaizdavimo įrankis, irgi be jokių priklausomybių; per didelį įkelti failą (400 MB pilį) jis skaito srautu |
 
-234 viešų vardų, kiekvienas aprašytas angliškai ir lietuviškai su veikiančiu
-pavyzdžiu, viename 7600 eilučių faile, kurį galima perskaityti.
+235 viešų vardų, kiekvienas aprašytas angliškai ir lietuviškai su veikiančiu
+pavyzdžiu, viename 7800 eilučių faile, kurį galima perskaityti.
 
 ## Loginės operacijos, parašytos nuo nulio
 
@@ -210,7 +210,7 @@ tools/
   make_docs.py       sukuria docs/index.html iš kodo aprašymų ir docs/reference.py
   coverage.py        kuris pavyzdys kurią funkciją naudoja
 tests/
-  test_add.py        91 vienetiniai testai
+  test_add.py        92 vienetiniai testai
   test_legacy.py     paleidžia add.py 1.2 modelius ir tikrina sienų skaičių
   test_docs.py       paleidžia kiekvienos aprašytos funkcijos pavyzdį
   legacy/            tie modeliai, nepakeisti
@@ -229,9 +229,9 @@ vieno failo.
 ## Testai
 
 ```bash
-python3 tests/test_add.py        # 91 vienetiniai testai
+python3 tests/test_add.py        # 92 vienetiniai testai
 python3 tests/test_legacy.py     # add.py 1.2 modeliai
-python3 tests/test_docs.py       # 231 dokumentacijos pavyzdys
+python3 tests/test_docs.py       # 235 dokumentacijos pavyzdžiai
 python3 examples/build_all.py    # visi pavyzdžiai, Sketchfab patikra, paveikslėliai
 ```
 

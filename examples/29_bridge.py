@@ -143,6 +143,7 @@ add.mesh(add.move(add.rotateY(boat, 0.4), [3.0, -1.0, ZB + 4.0]))
 
 bridge = add.limit_colors(add.layer(), 50)    # at most 50 colours, so the .obj suits Sketchfab
 print("faces lying on other faces:", add.overlaps(bridge), "-- the cause of flicker; save() cuts them")
+print("faces that are not convex:", add.concave_faces(bridge), "-- a viewer would fan them; save() cuts them")
 add.mesh(bridge)
 add.check()
 add.save("bridge.off")

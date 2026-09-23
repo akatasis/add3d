@@ -92,8 +92,8 @@ registered by someone else -- see [PUBLISHING.md](PUBLISHING.md).)
 | **Checking** | `stats()` and `check()` — polygon count, colours, watertightness, volume, and the Sketchfab limits (50 MB, 50 materials) |
 | **Looking** | `tools/preview.py`, a software renderer that also has no dependencies; it streams a file too big to load (the 400 MB castle) |
 
-234 public names, every one documented in English and Lithuanian with a
-runnable example, in one 7600-line file you can read.
+235 public names, every one documented in English and Lithuanian with a
+runnable example, in one 7800-line file you can read.
 
 ## Boolean operations, from scratch
 
@@ -214,7 +214,7 @@ tools/
   make_docs.py       builds docs/index.html from the docstrings + docs/reference.py
   coverage.py        which example uses which function
 tests/
-  test_add.py        91 unit tests
+  test_add.py        92 unit tests
   test_legacy.py     runs the add.py 1.2 models and checks the face counts
   test_docs.py       runs the example of every documented function
   legacy/            those models, unedited
@@ -232,9 +232,9 @@ the repository so that a student only ever needs one file.
 ## Running the tests
 
 ```bash
-python3 tests/test_add.py        # 91 unit tests
+python3 tests/test_add.py        # 92 unit tests
 python3 tests/test_legacy.py     # the add.py 1.2 models
-python3 tests/test_docs.py       # the 231 documentation examples
+python3 tests/test_docs.py       # the 235 documentation examples
 python3 examples/build_all.py    # every example, the Sketchfab check, pictures
 ```
 
