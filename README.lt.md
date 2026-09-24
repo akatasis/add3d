@@ -175,17 +175,19 @@ tekstūromis](examples/45_glass_and_textures.py) -- ir
 nuskendusia valtimi, aštuonkampė siena iš atskirų akmens blokų su
 aštuoniais tuščiaviduriais bokštais -- sraigtiniai laiptai, durys į sienos
 taką, apžvalgos aikštelės viršuje -- vartai su pakeliamomis grotomis ir
-tiltu, kabančiu ant tikrų grandinių, per griovį, lauko akmenimis grįstas
-kelias nuo tilto palei griovį ir švelniai žemyn aplink kalvą į uostą, kur
+tiltu, kabančiu ant tikrų grandinių, per akmenimis grįstą tvenkinį iki pat
+sienų, kuriame plaukioja piranijos, patrankos ant bokštų ir virš vartų su
+patrankininkais, lauko akmenimis grįstas kelias nuo tilto palei tvenkinį ir
+švelniai žemyn aplink kalvą į uostą, kur
 prie krantinės prišvartuoti du dideli laivai, o aplink salą pririštos
 valtys, rūmai su stiklo langais, portiku ant kolonų,
 balkonais, stoglangiais ir stogu iš atskirų čerpių, koplyčia su vitražais
 ir altoriumi, kiemas su šuliniu, fontanu, kalve, virtuve su židiniu ir
 duonkepe krosnimi, rąstiniais nameliais su šienaujomis ir trobele (visi
-įrengti viduje), sandėliu, turgumi, arklide, sodais, šaudymo taikiniais,
-katapulta, patrankomis, vežimais, statinėmis, dėžėmis, ginklų stovais,
-riteriais šarvuose, lankininkais, miestiečiais, arkliais, vištomis ir
-šunimi, žvejais ant krantinės, eglėmis, pušimis, beržais, ąžuolais,
+įrengti viduje), sandėliu, turgumi, arklide, sodais, rugių lauku, šaudymo
+taikiniais, katapulta, patrankomis, vežimais, statinėmis, dėžėmis, ginklų
+stovais, riteriais šarvuose, lankininkais, miestiečiais, arkliais, vištomis
+ir šunimi, žvejais ant krantinės, eglėmis, pušimis, beržais, ąžuolais,
 guobomis ir liepomis šlaituose, kirais virš ežero -- o viduje siurprizai:
 didžioji menė su karaliumi soste, jo patarėju, juokdariu ir muzikantais,
 puota trisdešimt dviem svečiams, šachmatų etiudas („Baltieji pradeda ir
@@ -193,16 +195,15 @@ laimi") ir laiptai žemyn į vyno rūsį, kareivių miegamasis antrame aukšte,
 palėpė, kur tarp senų daiktų miega svečiai, koplyčios pastogė su kunigo
 rūbais ir taure, o didžiajame bokšte -- lobynas su sparnuotu drakonu,
 ugnimi saugančiu auksą, virš jo ginklinė ir valdovo kambarys; kiekvienas
-pilies gyventojas turi lovą. Tekstūrų nėra: kiekvienas
-akmens blokas, čerpė, grindinio akmuo, vitražo stiklelis ir herbas --
-daugiakampiai. `python3 46_castle.py` rašo modelį srautu iš karto į
-`castle.off` (apie 400 MB) ir `castle.obj`, pakeliui sutvarkydamas
-(jokių pasikartojančių viršūnių, pasikartojančių, palaidotų ar
-persidengiančių sienų), mažiau nei 100 spalvų; `.obj`, suglaudintas 7-Zip,
-telpa į 100 MB, kuriuos priima Sketchfab.
-`python3 tools/coverage.py`
-parodo, kuris pavyzdys kurią funkciją naudoja; kiekviena vieša funkcija
-panaudota bent viename, o kiekvienas modelis telpa į Sketchfab ribas (tikrina
+pilies gyventojas turi lovą. Tekstūrų nėra: kiekvienas akmens blokas,
+čerpė, grindinio akmuo, vitražo stiklelis ir herbas -- daugiakampiai.
+`python3 46_castle.py` rašo modelį srautu iš karto į `castle.off` (apie 400
+MB) ir `castle.obj`, pakeliui sutvarkydamas (jokių pasikartojančių
+viršūnių, pasikartojančių, palaidotų ar persidengiančių sienų), mažiau nei
+100 spalvų; `.obj`, suglaudintas 7-Zip, telpa į 100 MB, kuriuos priima
+Sketchfab. `python3 tools/coverage.py` parodo, kuris pavyzdys kurią
+funkciją naudoja; kiekviena vieša funkcija panaudota bent viename, o
+kiekvienas modelis telpa į Sketchfab ribas (tikrina
 `examples/build_all.py`).
 
 ## Repozitorijos sandara

@@ -26,7 +26,7 @@ PHOTOS = [
     ("02_priesaisrys_nuo_kranto", (48, 4, 150), (28, 11, 45), 32),           # from the far shore: the island, the road, the harbour
     ("03_vartai_ir_pakeliamas_tiltas", (0, 14.5, 76), (0, 12.5, 48), 36),     # the gatehouse and the drawbridge
     ("04_grandines_ir_grioviai", (-10, 12.5, 63), (0, 12, 52), 40),       # chains, moat and the gate arch
-    ("05_griovys_is_sono", (-22, 16.5, 78), (6, 10.5, 56), 30),               # the moat and the bridge from the side
+    ("05_piranijos_tvenkinyje", (-8.3, 10.8, 63.3), (-8.6, 9.3, 57.8), 40),    # piranhas in the moat, leaping by the gate towers
     ("06_siena_virs_skardzio", (-98, 25.5, -42), (-40, 17.5, -20), 40),       # the curtain wall on the cliff side
     ("07_stogai_is_paukscio_skrydzio", (24, 67.5, 34), (0, 20.5, -14), 40),   # the palace roofs from above
     ("08_donzonas", (-36, 13, -6), (-26, 28.5, -33), 40),                 # the donjon from the west side of the yard
@@ -37,10 +37,10 @@ PHOTOS = [
     ("13_turgus", (-3, 13, 37), (-12, 11.3, 30), 45),                   # the market
     ("14_kalve", (-25, 12.5, 11), (-34, 11.3, 6), 45),                      # the smithy
     ("15_arklides", (17, 12.5, -32), (10, 11, -40), 45),                  # the stable and the horses
-    ("16_patrankos_prie_vartu", (15, 13.3, 33), (7.5, 11.1, 41), 40),     # the cannons inside the gate
+    ("16_patrankos_virs_vartu", (-2.2, 27.6, 58.5), (-0.4, 23.4, 50.3), 50),   # the guns on the roof over the gate, the moat below
     ("17_katapulta", (36, 13, 25), (28, 11.5, 18), 45),                   # the trebuchet
     ("18_sienos_takas", (34.9, 24.1, 34.9), (14, 22.3, 49), 45),          # along the wall walk to the gate towers
-    ("19_bokstas_su_zibintu", (-6, 14.5, 28), (-20.7, 27.5, 50), 26),          # a tower top: parapet, lantern, flag
+    ("19_patranka_bokste", (22.6, 29.2, 48.7), (20.4, 26.8, 54.6), 60),      # a tower top: its gun, the gunner, two shooters
     ("20_vartu_praejimas", (0, 12, 39), (0, 13, 53), 45),             # the gate passage and the portcullis
     ("21_didzioji_sale", (2, 15, -5), (0, 13, -27), 36),              # the great hall towards the throne
     ("22_karalius", (1.5, 12.8, -21), (0, 12.1, -27.5), 28),              # the king on his throne

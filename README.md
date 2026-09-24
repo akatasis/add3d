@@ -180,33 +180,34 @@ textures](examples/45_glass_and_textures.py) -- and the
 and a sunken boat, an octagonal wall of individual stone blocks with eight
 hollow towers -- spiral stairs, doors onto the wall walk, lookouts on top
 -- a gatehouse with a portcullis and a drawbridge hanging on real chains
-over the moat, a road paved with fieldstones from the bridge along the moat
-and gently down round the hill to a harbour where two great ships lie
+over a moat lined with stone that comes right up to the walls, piranhas in
+it, guns on the towers and over the gate with their gunners, a road paved
+with fieldstones from the bridge along the moat and gently down round the
+hill to a harbour where two great ships lie
 moored at a wharf and rowing boats are tied up all round the shore, a palace with glass windows, a porch on columns,
 balconies, dormers and a roof of single tiles, a chapel with stained glass
 and an altar, a courtyard with a well, a fountain, a smithy, a kitchen with
 a hearth and a bread oven, log houses with hay lofts and a cottage, all
-furnished, a storehouse, a market, a stable, gardens, archery butts, a
-trebuchet, cannons, carts, barrels, crates, weapon racks, knights in
-armour, archers, townsfolk, horses, chickens and a dog, fishermen on the
-wharf, spruces, pines, birches, oaks, elms and limes on the slopes, gulls
-over the lake -- and, inside, the easter eggs: the great hall with the king
-on his throne, his counsellor, his fool and musicians, a feast for
-thirty-two guests, a chess study ("White to play and win") and a stair down
-to the wine cellar, the soldiers' dormitory upstairs, an attic where the
-guests sleep among old things, the chapel's attic with the vestments and
-the chalice, and in the big tower the treasury with a winged dragon
-breathing fire over the gold, the armoury and the lord's chamber above it;
-everyone who lives in the castle has a bed. There are no textures: every
-stone block, roof tile, cobblestone, pane of stained glass and coat of
-arms is geometry. `python3 46_castle.py` streams the model to
-`castle.off` (about 400 MB) and `castle.obj` at once, tidied on the way
-(no repeated vertices, no repeated, buried or overlapping faces), under
-100 colours; compressed with 7-Zip the `.obj` is under 100 MB, which is
-what Sketchfab takes.
-`python3 tools/coverage.py` lists which example uses which function; every
-public function is used by at least one, and every model fits the Sketchfab
-limits (`examples/build_all.py` checks).
+furnished, a storehouse, a market, a stable, gardens, a field of rye,
+archery butts, a trebuchet, cannons, carts, barrels, crates, weapon racks,
+knights in armour, archers, townsfolk, horses, chickens and a dog,
+fishermen on the wharf, spruces, pines, birches, oaks, elms and limes on
+the slopes, gulls over the lake -- and, inside, the easter eggs: the great
+hall with the king on his throne, his counsellor, his fool and musicians, a
+feast for thirty-two guests, a chess study ("White to play and win") and a
+stair down to the wine cellar, the soldiers' dormitory upstairs, an attic
+where the guests sleep among old things, the chapel's attic with the
+vestments and the chalice, and in the big tower the treasury with a winged
+dragon breathing fire over the gold, the armoury and the lord's chamber
+above it; everyone who lives in the castle has a bed. There are no
+textures: every stone block, roof tile, cobblestone, pane of stained glass
+and coat of arms is geometry. `python3 46_castle.py` streams the model to
+`castle.off` (about 400 MB) and `castle.obj` at once, tidied on the way (no
+repeated vertices, no repeated, buried or overlapping faces), under 100
+colours; compressed with 7-Zip the `.obj` is under 100 MB, which is what
+Sketchfab takes. `python3 tools/coverage.py` lists which example uses which
+function; every public function is used by at least one, and every model
+fits the Sketchfab limits (`examples/build_all.py` checks).
 
 ## Repository layout
 

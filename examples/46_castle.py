@@ -3,26 +3,30 @@
 
 A castle on a hill in a transparent lake, with everything a castle needs:
 an octagonal curtain wall of individual stone blocks, eight hollow round
-towers with spiral stairs, doors and lookout platforms, a gatehouse with a
-portcullis and a drawbridge hanging on real chains, its beams let into the
-low kerbs of the moat; from the end of the bridge a road paved with
-fieldstones runs along the moat and on down round the hill, gently and
-level across, with a low stone wall on its outer side, to the harbour: a
-wharf on piles where two great ships are moored, the king's with a ramp
+towers with spiral stairs, doors and lookout platforms, a gatehouse -- its
+passage vaulted in stone and lit by torches, a portcullis running in its
+grooves -- and a drawbridge on a long iron hinge, hanging on real chains
+over the moat -- a pond of natural outline lined with rough stone blocks,
+its water right up to the walls and towers on both sides of the gate, so
+that the only dry way in is over the bridge onto the landing where the
+guards stand; piranhas circle in it, and leap; guns on the towers and over
+the gate, each with its gunner; from the end of the bridge a road paved
+with fieldstones runs along the moat and on down round the hill, gently
+and level across, with a low stone wall on its outer side, to the harbour:
+a wharf on piles where two great ships are moored, the king's with a ramp
 down from its side for a knight to lead his horse ashore, and a
-merchant's; rowing boats are tied up all round the shore.  Inside: a
-palace with glass windows, a porch on
-columns, balconies, dormers, a roof of single tiles and copper spires, a
-chapel with stained glass and an altar, and a courtyard full of life: a
-well, a fountain, a smithy, the kitchen and bakehouse with its hearth,
-table and beds, log houses for the castle's folk with hay lofts to sleep
-in, a half-timbered cottage, a storehouse, a market, a stable, gardens,
-archery butts, a trebuchet, cannons, carts, barrels, crates, planks,
-bricks, weapon racks, knights in armour with the castle's arms, archers and
-crossbowmen in mail, townsfolk, horses, chickens, a dog.  Spruces, pines,
-birches, oaks, elms and limes grow on the slopes; gulls wheel over the
-lake.  The lake is transparent, so the fish, the pebbles and the sunken
-boat can be seen through the water.
+merchant's; rowing boats are tied up all round the shore. Inside: a palace
+with glass windows, a porch on columns, balconies, dormers, a roof of
+single tiles and copper spires, a chapel with stained glass and an altar,
+and a courtyard full of life: a well, a fountain, a smithy, the kitchen
+and bakehouse with its hearth, table and beds, log houses for the castle's
+folk with hay lofts to sleep in, a half-timbered cottage, a storehouse, a
+market, a stable, gardens, a field of rye, archery butts, a trebuchet,
+cannons, carts, barrels, crates, planks, bricks, weapon racks, knights in
+armour with the castle's arms, archers and crossbowmen in mail, townsfolk,
+horses, chickens, a dog. Spruces, pines, birches, oaks, elms and limes
+grow on the slopes; gulls wheel over the lake. The lake is transparent, so
+the fish, the pebbles and the sunken boat can be seen through the water.
 
 Easter eggs, for anyone who walks inside: the great hall with the king on
 his throne, his counsellor and his fool, musicians, a feast on the long
@@ -631,15 +635,16 @@ def flagstones(x0, x1, z0, z1, y, size=0.9, thick=0.06, name="stone_dark", avoid
             add.cuboid([cx, y - thick / 2, cz], [sx - 0.05, thick, sz - 0.05], shade_of(name, int(hash2(i, j, 4) * 3)))
 
 
-def wall_segment(a, b, y0, y1, t=2.4, walk=True):
+def wall_segment(a, b, y0, y1, t=2.4, walk=True, inner=True):
     """A piece of curtain wall from ``a`` to ``b``: a core, faces of stone
-    blocks on both sides, a walk on top with a crenellated parapet outside
-    and a low one inside."""
+    blocks on both sides (``inner=False``: outside only -- a foundation), a
+    walk on top with a crenellated parapet outside and a low one inside."""
     L, d, n = outward(a, b)
     add.push()
     add.cuboid([L / 2, (y0 + y1) / 2, 0], [L, y1 - y0, t], P["mortar"])
-    stone_face(L, y0, y1, t / 2, 0.22, "stone", seed=int(a[0] + a[2]))
-    stone_face(L, y0, y1, -t / 2, -0.22, "stone_dark", seed=int(a[0] - a[2]))
+    stone_face(L, y0, y1, t / 2, 0.22, "stone", seed=int(a[0] + a[2]) + (0 if inner else 3))
+    if inner:
+        stone_face(L, y0, y1, -t / 2, -0.22, "stone_dark", seed=int(a[0] - a[2]))
     if walk:
         add.cuboid([L / 2, y1 + 0.15, 0], [L, 0.3, t + 0.5], P["mortar"])
         flagstones(0, L, -t / 2 - 0.25, t / 2 + 0.25, y1 + 0.3)
@@ -754,19 +759,22 @@ def ring_block(cx, cz, r0, r1, a0, a1, y0, y1, color, arcs=2):
     add.mesh(solid(pts, y0, y1, color))
 
 
-def stone_ring(cx, cz, r, y0, y1, name="stone", skip=()):
+def stone_ring(cx, cz, r, y0, y1, name="stone", skip=(), arc=None):
     """Courses of stone blocks round a drum of radius ``r``, every block a
-    piece of the ring.  ``skip`` lists the openings as ``(angle,
-    half_width_angle, y_bottom, y_top[, arch_radius])``: the blocks are
-    fitted round them -- cut short at the jambs, a sliver over the sill
-    and under the head, and stepped round an arched head -- rather than
-    left out, the way a mason closes up to a window."""
+    piece of the ring (or only the blocks between the angles ``arc``).
+    ``skip`` lists the openings as ``(angle, half_width_angle, y_bottom,
+    y_top[, arch_radius])``: the blocks are fitted round them -- cut short
+    at the jambs, a sliver over the sill and under the head, and stepped
+    round an arched head -- rather than left out, the way a mason closes up
+    to a window."""
     bl, bh = BLOCK
     rows = int((y1 - y0) / bh)
     for j in range(rows):
         n = max(8, int(2 * add.pi * r / bl))
         for i in range(n):
             a = 2 * add.pi * (i + (0.5 if j % 2 else 0)) / n
+            if arc and (a - arc[0]) % (2 * add.pi) > (arc[1] - arc[0]) % (2 * add.pi):
+                continue
             y = y0 + (j + 0.5) * bh
             half = add.pi / n
             spans = [(a - half + 0.03 / r, a + half - 0.03 / r, y - bh / 2 + 0.03, y + bh / 2 - 0.03)]
@@ -1073,7 +1081,7 @@ def octagon_outline(apothem):
 WATER_Y = 1.5
 WORLD = 300.0                                          # the lake is this wide
 BOTTOM = -6.0                                          # the underside of the land
-MOAT = (-20, 20, 56, 64)                               # x0, x1, z0, z1 (on grid lines)
+MOAT = (-20, 20, 56, 64)                               # where the bridge crosses the moat: x0, x1 and its two banks
 MOAT_Y = G - 5.0                                       # the floor of the moat
 CELLAR_STAIR = (9.3, 15.3, -28.7, -26.7)               # the wine cellar under the great hall: the stair's opening in the
 CELLAR_ROOM = (10.0, 16.0, -28.6, -20.0)               # hall floor (x0, x1, z0, z1), the cellar itself,
@@ -1183,6 +1191,115 @@ def by_terrace(x, z, margin=0.0):
     return TERRACE[0] - margin < x < TERRACE[1] + margin and TERRACE[2] - 8 - margin < z < TERRACE[3] + margin
 
 
+# the moat is a pond of natural outline before the south front: from the south-west corner tower round to the
+# south-east one, its water comes right up to the curtain wall, the corner towers and the two gate towers, which go
+# down to its floor -- nobody can walk round it to the gate.  The only dry way in is the drawbridge, onto the landing
+# before the gate where the guards stand.  Its bank is lined with rough stone blocks (see "the moat's stonework").
+GATE_X = 10.5                                          # the gatehouse takes the middle of the south wall
+GATE_W = 7.0
+GATE_Z0, GATE_Z1 = 47.0, 53.0                          # the gate passage, from the courtyard out to the landing
+BRIDGE_X = 2.45                                        # half the width of the drawbridge's bed on its two seats,
+BRIDGE_Z0, BRIDGE_Z1 = MOAT[2] - 1.0, MOAT[3] + 1.0    # and its two ends: the landing's edge, the far bank
+DECK, HINGE_R = 2.3, 0.07                              # half the width of its deck, and the radius of the knuckles
+                                                       # of the hinge it turns on, under the ends of its planks
+WALL_FACE = 50.0 + 1.2 + 0.22                          # the outer face of the south curtain wall, its stones and all,
+GATE_FRONT = 50.0 + GATE_W / 2 + 0.22                  # of the two gate towers,
+TOWER_FACE = TOWER_R + 0.24                            # and of the corner towers
+
+
+def _on_tower(c, deg):
+    """The point on the stones of the corner tower ``c`` in the direction ``deg`` (degrees, in XZ)."""
+    return (c[0] + TOWER_FACE * add.cos(deg * add.pi / 180), c[2] + TOWER_FACE * add.sin(deg * add.pi / 180))
+
+
+def spline(points, step):
+    """A smooth curve through ``points`` (in XZ; Catmull-Rom) as a polyline with points about ``step`` apart."""
+    out = [points[0]]
+    for k in range(len(points) - 1):
+        p0, p1, p2, p3 = points[max(0, k - 1)], points[k], points[k + 1], points[min(len(points) - 1, k + 2)]
+        n = max(1, int(add.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2) / step + 0.5))
+        for i in range(1, n + 1):
+            t = i / float(n)
+            out.append(tuple(0.5 * (2 * p1[j] + (p2[j] - p0[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t * t
+                                    + (3 * p1[j] - p0[j] - 3 * p2[j] + p3[j]) * t * t * t) for j in range(2)))
+    return out
+
+
+MOAT_EDGE = spline([_on_tower(CORNERS[2], 94), (-21.3, 56.6), (-21.35, 58.8), (-20.85, 61.0), (-19.5, 62.75),
+                    (-17.3, 63.65), (-14.2, 63.85), (-10.8, 63.45), (-7.4, 63.35), (-4.6, 63.8), (-3.2, 64.0),
+                    (0.0, 64.0), (3.2, 64.0), (4.7, 63.75), (7.9, 63.3), (11.6, 63.55), (15.0, 63.9), (17.9, 63.5),
+                    (19.9, 62.3), (21.0, 60.4), (21.35, 58.0), (21.25, 56.2), _on_tower(CORNERS[1], 86)], 0.25)
+MOAT_OUTLINE = MOAT_EDGE + [(CORNERS[1][0], 50.0), (CORNERS[2][0], 50.0)]   # closed through the towers and the wall
+LANDING = [(-6.6, GATE_Z1), (6.6, GATE_Z1), (6.6, 53.8), (5.2, 55.35), (4.95, 55.72), (4.6, 55.95), (4.3, 56.0),
+           (-4.3, 56.0), (-4.6, 55.95), (-4.95, 55.72), (-5.2, 55.35), (-6.6, 53.8)]  # the landing: stone, before the gate
+_moat_cells = {}                                       # a grid of 1 m cells: the pieces of the moat's edge near each
+for k in range(len(MOAT_EDGE) - 1):
+    (x0, z0), (x1, z1) = MOAT_EDGE[k], MOAT_EDGE[k + 1]
+    for i in range(int((min(x0, x1) - 1.5) // 1), int((max(x0, x1) + 1.5) // 1) + 1):
+        for j in range(int((min(z0, z1) - 1.5) // 1), int((max(z0, z1) + 1.5) // 1) + 1):
+            _moat_cells.setdefault((i, j), []).append(k)
+
+
+def bank_gap(x, z):
+    """How far (x, z) is from the edge of the moat's water at ground level (up to 1.5 m: farther, 1.5)."""
+    best = 1.5
+    for k in _moat_cells.get((int(x // 1), int(z // 1)), ()):
+        (x0, z0), (x1, z1) = MOAT_EDGE[k], MOAT_EDGE[k + 1]
+        dx, dz = x1 - x0, z1 - z0
+        t = add.clamp(((x - x0) * dx + (z - z0) * dz) / (dx * dx + dz * dz))
+        best = min(best, add.sqrt((x - x0 - t * dx) ** 2 + (z - z0 - t * dz) ** 2))
+    return best
+
+
+def in_moat_outline(x, z):
+    """Inside the edge of the moat, closed along the south front?"""
+    inside = False
+    for k in range(len(MOAT_OUTLINE)):
+        (x0, z0), (x1, z1) = MOAT_OUTLINE[k], MOAT_OUTLINE[k - 1]
+        if (z0 > z) != (z1 > z) and x < x0 + (x1 - x0) * (z - z0) / (z1 - z0):
+            inside = not inside
+    return inside
+
+
+def castle_depth(x, z):
+    """How far (x, z) lies inside the south front -- the curtain wall, the corner towers, the gate towers (their
+    stones and all) and the gate passage, up to the landing; negative outside."""
+    d = WALL_FACE - z
+    for c in (CORNERS[1], CORNERS[2]):
+        d = max(d, TOWER_FACE - add.sqrt((x - c[0]) ** 2 + (z - c[2]) ** 2))
+    if abs(x) < GATE_W / 2:
+        return max(d, GATE_Z1 - z)
+    return max(d, min(GATE_FRONT - z, GATE_X + 0.22 - abs(x)))
+
+
+def landing_depth(x, z, back=True):
+    """How far (x, z) lies inside the landing (a convex outline) -- from its
+    kerbs only, with ``back=False``, not from the gate; negative outside."""
+    d = 1e9
+    for k in range(len(LANDING)):
+        if k == 1 and not back:                        # the edge from LANDING[0] to LANDING[1]: the foot of the gate
+            continue
+        (x0, z0), (x1, z1) = LANDING[k - 1], LANDING[k]
+        L = add.sqrt((x1 - x0) ** 2 + (z1 - z0) ** 2)
+        d = min(d, ((z - z0) * (x1 - x0) - (x - x0) * (z1 - z0)) / L)
+    return d
+
+
+def moat_dug(x, z):
+    """Is the land dug out for the moat at (x, z)?  Under its water, 0.3 m in under the stones of its bank, and 0.6 m
+    into the walls that stand in it (which go down to its floor); under the landing, a pier of solid masonry."""
+    if not (-22.0 < x < 22.0 and 50.5 < z < 64.5):
+        return False
+    return (in_moat_outline(x, z) or bank_gap(x, z) < 0.3) and castle_depth(x, z) < 0.6
+
+
+def in_moat(x, z, margin=0.0):
+    """On the moat's water, or on its stone bank (with the coping: 1 m) plus ``margin``?"""
+    if not (-23.5 - margin < x < 23.5 + margin and 50.0 < z < 66.0 + margin):
+        return False
+    return (in_moat_outline(x, z) or bank_gap(x, z) < 1.0 + margin) and castle_depth(x, z) < 0.0
+
+
 def ground(x, z):
     """Height of the land: the hill, with the terrace round the moat, the
     road cut into its side and the harbour dug out of the lake bed."""
@@ -1197,10 +1314,16 @@ def ground(x, z):
     if u > DOCK_U0 + 5 and abs(v) < 34:
         w = add.clamp((u - DOCK_U0 - 5) / 12) * add.clamp((34 - abs(v)) / 18)
         y = min(y, y + (HARBOUR_Y - y) * w * w * (3 - 2 * w))
+    if moat_dug(x, z):                                                    # the moat, down to its floor
+        return MOAT_Y
+    if abs(x) < BRIDGE_X - 0.05 and MOAT[3] <= z < BRIDGE_Z1 + 0.1:       # under the seat of the drawbridge's far end
+        return min(y, G - 0.4)
     return y
 
 
 def ground_color(x, z):
+    if moat_dug(x, z):
+        return P["lakebed"]                            # the moat's floor
     y = ground(x, z)
     slope = abs(ground(x + 1, z) - y) + abs(ground(x, z + 1) - y)
     if y < WATER_Y + 0.4:
@@ -1227,10 +1350,8 @@ cell = WORLD / N_GROUND
 for i in range(N_GROUND):
     for j in range(N_GROUND):
         x, z = -WORLD / 2 + (i + 0.5) * cell, -WORLD / 2 + (j + 0.5) * cell
-        if MOAT[0] < x < MOAT[1] and MOAT[2] < z < MOAT[3]:
-            continue                                   # the moat is dug out here
         if CELLAR_STAIR[0] - 0.2 < x < CELLAR_STAIR[1] + 0.2 and CELLAR_STAIR[2] - 0.2 < z < CELLAR_STAIR[3] + 0.2:
-            continue                                   # and the stair down to the wine cellar
+            continue                                   # the stair down to the wine cellar
         land.add_face([land_vertex(i, j), land_vertex(i, j + 1),
                        land_vertex(i + 1, j + 1), land_vertex(i + 1, j)], ground_color(x, z))
 # the land is a closed block: four sides down to BOTTOM, and an underside
@@ -1247,16 +1368,6 @@ land.add_polygon([[-WORLD / 2, BOTTOM, -WORLD / 2], [-WORLD / 2, BOTTOM, WORLD /
                   [WORLD / 2, BOTTOM, WORLD / 2], [WORLD / 2, BOTTOM, -WORLD / 2]], P["sand"])
 add.mesh(add.fix_normals(land))
 land, index = None, None                               # free the memory
-# the moat: a stone-lined pit with a low kerb -- a hand high, notched where the bridge's beams rest on it -- and a
-# floor of rock
-BRIDGE_X = 2.45                                        # half the width of the drawbridge's bed in the kerbs
-for x0, x1, z0, z1, top in ((MOAT[0] - 1, MOAT[0], MOAT[2] - 1, MOAT[3] + 1, PLATEAU + 0.15),
-                            (MOAT[1], MOAT[1] + 1, MOAT[2] - 1, MOAT[3] + 1, PLATEAU + 0.15),
-                            (MOAT[0], -BRIDGE_X, MOAT[2] - 1, MOAT[2], PLATEAU + 0.15), (-BRIDGE_X, BRIDGE_X, MOAT[2] - 1, MOAT[2], PLATEAU - 0.28),
-                            (BRIDGE_X, MOAT[1], MOAT[2] - 1, MOAT[2], PLATEAU + 0.15), (MOAT[0], -BRIDGE_X, MOAT[3], MOAT[3] + 1, PLATEAU + 0.15),
-                            (-BRIDGE_X, BRIDGE_X, MOAT[3], MOAT[3] + 1, PLATEAU - 0.28), (BRIDGE_X, MOAT[1], MOAT[3], MOAT[3] + 1, PLATEAU + 0.15)):
-    add.cuboid([(x0 + x1) / 2, (MOAT_Y - 0.5 + top) / 2, (z0 + z1) / 2], [x1 - x0, top - MOAT_Y + 0.5, z1 - z0], P["stone_dark"])
-add.cuboid([0, MOAT_Y - 0.25, (MOAT[2] + MOAT[3]) / 2], [MOAT[1] - MOAT[0], 0.5, MOAT[3] - MOAT[2]], P["rock"])
 flush("hill, lake bed and moat")
 
 
@@ -1293,9 +1404,36 @@ for links in edges:
 water.add_polygon([[-W_EDGE, W_BOTTOM, -W_EDGE], [-W_EDGE, W_BOTTOM, W_EDGE],
                    [W_EDGE, W_BOTTOM, W_EDGE], [W_EDGE, W_BOTTOM, -W_EDGE]], WATER)
 add.mesh(add.fix_normals(water))
-water, windex = None, None
-add.cuboid([0, (MOAT_Y + G - 0.75) / 2, (MOAT[2] + MOAT[3]) / 2],
-           [MOAT[1] - MOAT[0], G - 0.75 - MOAT_Y, MOAT[3] - MOAT[2]], WATER)   # the moat, its water a step below the kerb
+# the moat's water, a step below its bank: a closed block over the cells of the land's grid that it covers, down
+# below its floor -- its ragged sides go into the stones of the bank, the walls and the landing, out of sight
+MOAT_WATER = G - 0.75
+wet = set()
+for i in range(int((WORLD / 2 - 23.0) / cell), int((WORLD / 2 + 23.0) / cell) + 1):
+    for j in range(int((WORLD / 2 + 50.5) / cell), int((WORLD / 2 + 65.0) / cell) + 1):
+        x, z = -WORLD / 2 + (i + 0.5) * cell, -WORLD / 2 + (j + 0.5) * cell
+        if (in_moat_outline(x, z) or bank_gap(x, z) < 0.25) and castle_depth(x, z) < 0.3 and landing_depth(x, z) < 0.3:
+            wet.add((i, j))
+water = add.Mesh()
+windex = {}
+
+
+def moat_vertex(i, j, y):
+    if (i, j, y) not in windex:
+        windex[(i, j, y)] = water.add_vertex([-WORLD / 2 + i * cell, y, -WORLD / 2 + j * cell])
+    return windex[(i, j, y)]
+
+
+for i, j in sorted(wet):
+    top, bot = MOAT_WATER, MOAT_Y - 0.25
+    water.add_face([moat_vertex(i, j, top), moat_vertex(i, j + 1, top), moat_vertex(i + 1, j + 1, top), moat_vertex(i + 1, j, top)], WATER)
+    water.add_face([moat_vertex(i, j, bot), moat_vertex(i + 1, j, bot), moat_vertex(i + 1, j + 1, bot), moat_vertex(i, j + 1, bot)], WATER)
+    for (di, dj), (a, b) in (((-1, 0), ((i, j), (i, j + 1))), ((1, 0), ((i + 1, j + 1), (i + 1, j))),
+                             ((0, -1), ((i + 1, j), (i, j))), ((0, 1), ((i, j + 1), (i + 1, j + 1)))):
+        if (i + di, j + dj) not in wet:                # a side where the water ends
+            water.add_face([moat_vertex(a[0], a[1], bot), moat_vertex(b[0], b[1], bot),
+                            moat_vertex(b[0], b[1], top), moat_vertex(a[0], a[1], top)], WATER)
+add.mesh(add.fix_normals(water))
+water, windex, wet = None, None, None
 flush("water")
 
 
@@ -1413,13 +1551,13 @@ while i < N_PEBBLES:                                   # stones lie on the whole
         flush("pebbles (%d)" % i, clean=False)
 flush("pebbles", clean=False)
 i = 0
-while i < count(900):                                  # fish wherever the water is deep enough
+while i < count(900):                                  # fish wherever the water is deep enough, 0.6 to 1.3 m long
     x, z = add.uniform(-W_EDGE + 2, W_EDGE - 2), add.uniform(-W_EDGE + 2, W_EDGE - 2)
     floor = ground(x, z)
     if floor > WATER_Y - 1.4:
         continue
     fish([x, add.uniform(floor + 0.5, WATER_Y - 0.5), z], add.atan2(x, z) + add.pi / 2 + add.uniform(-0.7, 0.7),
-         add.choice([P["orange"], P["steel"], P["gold"], P["blue"]]), add.uniform(0.6, 1.3))
+         add.choice([P["orange"], P["steel"], P["gold"], P["blue"]]), 0.45 * add.uniform(0.6, 1.3))
     i += 1
 flush("fish", clean=False)
 lo, hi = 0.0, 1.0                                      # how far down the slope of ground() the water starts
@@ -1566,7 +1704,7 @@ def along(v, s0, step):
 
 for k, q in enumerate(along(0.5 - (ROAD_W - 0.2) / (2 * ROAD_W), ROAD_LEN[4] + 0.5, 0.4)):   # the kerb on the hill side:
     fieldstone([q[0], q[1] - 0.04, q[2]], 0.17 + 0.03 * hash2(k, 5, 82), k, 0.75)            # a row of stones half sunk
-pts = along(0.5 + (ROAD_W - 0.27) / (2 * ROAD_W), 2.0, 0.6)      # on the side where the hill falls away, a parapet: a low
+pts = along(0.5 + (ROAD_W - 0.27) / (2 * ROAD_W), 0.3, 0.6)      # on the side where the hill falls away, a parapet: a low
 for k in range(len(pts) - 1):                                     # wall of fieldstones set in mortar, knee high
     A, B = pts[k], pts[k + 1]
     d = vunit([B[0] - A[0], 0.0, B[2] - A[2]])
@@ -1578,6 +1716,254 @@ for k in range(len(pts) - 1):                                     # wall of fiel
             fieldstone([c[0] + sd * d[2] * 0.25, c[1] + 0.22, c[2] - sd * d[0] * 0.25], 0.15 + 0.03 * hash2(k, sd, 84),
                        k * 8 + int(f * 4) + sd + 3, 0.7)
 flush("the road to the harbour (%d cobbles)" % n)
+
+
+# the moat's stonework.  Its bank: rough blocks of fieldstone laid in courses along the edge of the water from below
+# its floor, each course set back a little, under big flat coping stones a hand over the grass.  Under each end of
+# the drawbridge a seat of dressed stones that its planks rest on.  The landing before the gate: a pier of masonry
+# with walls of the same blocks and a kerb round its edge.
+COURSES = 9
+COURSE_H = (G - 0.28 - (MOAT_Y - 0.2)) / COURSES        # from under the floor up to the seats of the bridge
+
+
+def _crossing(a, b, keep):
+    """The point between ``a`` (where ``keep`` fails) and ``b`` (where it holds) where it starts to hold."""
+    for i in range(30):
+        m = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+        a, b = (a, m) if keep(*m) else (m, b)
+    return b
+
+
+def runs(points, keep):
+    """The runs of the polyline ``points`` where ``keep(x, z)`` holds, cut off where it stops or starts to hold."""
+    out, run = [], []
+    for k, p in enumerate(points):
+        if keep(*p):
+            if not run and k > 0:
+                run.append(_crossing(points[k - 1], p, keep))
+            run.append(p)
+        elif run:
+            out.append(run + [_crossing(p, points[k - 1], keep)])
+            run = []
+    return out + ([run] if run else [])
+
+
+def course(points, y0, y1, front, depth, seed, colours, lengths=(0.55, 1.05), gap=0.05, rough=0.03, stagger=False):
+    """A course of stone blocks from ``y0`` to ``y1`` along the polyline ``points`` (in XZ), end to end with joints of
+    ``gap``: their faces ``front`` out from the line to its left -- the water's side -- and ``depth`` deep, a little
+    rough (in and out, up and down by ``rough``)."""
+    acc = [0.0]
+    for k in range(1, len(points)):
+        acc.append(acc[-1] + add.sqrt((points[k][0] - points[k - 1][0]) ** 2 + (points[k][1] - points[k - 1][1]) ** 2))
+
+    def at(s):
+        k = max(0, min(len(points) - 2, next((i for i in range(len(points) - 1) if acc[i + 1] >= s), len(points) - 2)))
+        t = (s - acc[k]) / max(1e-9, acc[k + 1] - acc[k])
+        return (points[k][0] + (points[k + 1][0] - points[k][0]) * t, points[k][1] + (points[k + 1][1] - points[k][1]) * t)
+
+    s, k = (-(lengths[0] + lengths[1]) / 4 if stagger else 0.0), 0
+    while s < acc[-1] - 0.15:
+        L = lengths[0] + (lengths[1] - lengths[0]) * hash2(seed, k, 91)
+        a, b = max(s, 0.0), min(s + L - gap, acc[-1])
+        if b - a >= 0.15:
+            A, B = at(a), at(b)
+            d = add.sqrt((B[0] - A[0]) ** 2 + (B[1] - A[1]) ** 2)
+            nx, nz = (B[1] - A[1]) / d, -(B[0] - A[0]) / d                   # towards the water
+            f = front + (hash2(seed, k, 92) - 0.5) * 2 * rough
+            quad = [(A[0] + nx * f, A[1] + nz * f), (B[0] + nx * f, B[1] + nz * f),
+                    (B[0] + nx * (f - depth), B[1] + nz * (f - depth)), (A[0] + nx * (f - depth), A[1] + nz * (f - depth))]
+            add.mesh(solid(quad, y0 + gap / 2 + (hash2(seed, k, 93) - 0.5) * rough, y1 - gap / 2 + (hash2(seed, k, 94) - 0.5) * rough,
+                           colours[int(hash2(seed, k, 95) * len(colours)) % len(colours)]))
+        s += L
+        k += 1
+
+
+def inset(poly, d, keep=()):
+    """The convex outline ``poly`` (counter-clockwise in XZ) with its edges moved in by ``d`` -- all but the ones
+    numbered in ``keep``."""
+    out = list(poly)
+    for k in range(len(poly)):
+        if k not in keep:
+            (x0, z0), (x1, z1) = poly[k], poly[(k + 1) % len(poly)]
+            L = add.sqrt((x1 - x0) ** 2 + (z1 - z0) ** 2)
+            a, b = (z1 - z0) / L, -(x1 - x0) / L                                  # its outward normal
+            out = clip_half(out, a, b, a * x0 + b * z0 - d)
+    return out
+
+
+BANK_STONE = FIELD[:6] + [P["granite"], shade_of("stone", 1)]
+COPING = [shade_of("stone_dark", 0), shade_of("stone_dark", 1), shade_of("stone_dark", 2), P["rock"], P["granite"]]
+not_seat = lambda x, z: not (abs(x) < BRIDGE_X and z > 62.0)                     # the far bank but for the bridge's seat
+for j in range(COURSES):                                                          # the bank, battered 1 in 14
+    y0 = MOAT_Y - 0.2 + j * COURSE_H
+    for r, piece in enumerate(runs(MOAT_EDGE, not_seat) if j == COURSES - 1 else [MOAT_EDGE]):
+        course(piece, y0, y0 + COURSE_H, (COURSES - 1 - j) * 0.035, 0.6, 100 * j + r, BANK_STONE, stagger=j % 2 == 1)
+for r, piece in enumerate(runs(MOAT_EDGE, lambda x, z: not (abs(x) < BRIDGE_X + 0.05 and z > 62.0))):
+    course(piece, G - 0.28, G + 0.15, 0.03, 0.9, 1000 + r, COPING, lengths=(0.8, 1.3), gap=0.04, rough=0.02)
+QUAY = [(6.6, 53.6)] + LANDING[2:-1] + [LANDING[-1], (-6.6, 53.6)]              # round the landing, from the gate tower
+QUAY = [(a[0] + (b[0] - a[0]) * t / 10.0, a[1] + (b[1] - a[1]) * t / 10.0)        # (every 10th of a side a point, where the
+        for a, b in zip(QUAY, QUAY[1:]) for t in range(10)] + [QUAY[-1]]           # courses are cut for the bridge's seat)
+not_notch = lambda x, z: not (abs(x) < BRIDGE_X and z > BRIDGE_Z0 + 0.5)          # on the east to the one on the west
+for j in range(COURSES):                                                          # the landing's walls, upright
+    y0 = MOAT_Y - 0.2 + j * COURSE_H
+    for r, piece in enumerate(runs(QUAY, not_notch) if j == COURSES - 1 else [QUAY]):
+        course(piece, y0, y0 + COURSE_H, 0.0, 0.6, 2000 + 100 * j + r, BANK_STONE, stagger=j % 2 == 1)
+for r, piece in enumerate(runs(QUAY, lambda x, z: not (abs(x) < BRIDGE_X + 0.05 and z > BRIDGE_Z0 + 0.5))):
+    course(piece, G - 0.28, G + 0.15, 0.02, 0.55, 3000 + r, COPING, lengths=(0.7, 1.1), gap=0.04, rough=0.02)
+CORE = inset(LANDING, 0.3, keep=(0,))                                             # the pier's core, and its top: the
+add.mesh(solid(CORE, MOAT_Y - 0.25, G - 0.28, P["mortar"]))                       # bed of the paving, up to the hinge
+HINGE_GAP = BRIDGE_Z0 - HINGE_R - 0.005                                           # of the bridge and beside its deck
+add.mesh(solid(clip_half(CORE, 0, 1, HINGE_GAP), G - 0.28, G + 0.02, P["mortar"]))
+for sx in (-1, 1):
+    add.mesh(solid(clip_half(clip_half(CORE, 0, -1, -HINGE_GAP), -sx, 0, -DECK - 0.005), G - 0.28, G + 0.02, P["mortar"]))
+for z0, z1, top in ((BRIDGE_Z0 + HINGE_R + 0.005, 56.0, G - 0.052),                # the seats: three dressed stones each,
+                    (MOAT[3], BRIDGE_Z1 + 0.05, G - 0.08)):                        # right up under the bridge -- under the
+    y0 = G - 0.28 - (COURSE_H - 0.025)                                            # leaf of its hinge, and under the iron
+    for i in range(3):                                                            # bar across its far end
+        x0 = -BRIDGE_X + i * 2 * BRIDGE_X / 3
+        add.cuboid([x0 + BRIDGE_X / 3, (y0 + top) / 2, (z0 + z1) / 2], [2 * BRIDGE_X / 3 - 0.04, top - y0, z1 - z0],
+                   shade_of("stone", i + (z0 > 60)))
+flush("the moat's stonework")
+
+
+PIRANHA = [(-0.62, 0.035, 0.075, -0.065), (-0.58, 0.04, 0.08, -0.07), (-0.5, 0.06, 0.12, -0.11), (-0.4, 0.1, 0.22, -0.21),
+           (-0.28, 0.135, 0.33, -0.32), (-0.14, 0.16, 0.41, -0.4), (0.0, 0.17, 0.44, -0.42), (0.14, 0.17, 0.43, -0.4),
+           (0.26, 0.16, 0.39, -0.32), (0.36, 0.14, 0.33, -0.2), (0.45, 0.115, 0.25, -0.12), (0.52, 0.09, 0.17, -0.09),
+           (0.58, 0.06, 0.09, -0.07), (0.62, 0.025, 0.02, -0.05)]   # (x, half-width, top, bottom): a piranha, tail to snout
+PIRANHA_JAW = [(0.28, 0.12, -0.08, -0.33), (0.36, 0.115, -0.085, -0.27), (0.44, 0.1, -0.09, -0.22), (0.52, 0.08, -0.095, -0.17),
+               (0.58, 0.055, -0.1, -0.14), (0.64, 0.025, -0.105, -0.125)]          # and its lower jaw, hinge to chin
+
+
+def section(table, x):
+    """(half-width, top, bottom) of a table of sections at ``x``, between its rows."""
+    for (x0, *a), (x1, *b) in zip(table, table[1:]):
+        if x <= x1:
+            t = add.clamp((x - x0) / (x1 - x0))
+            return [a[k] + (b[k] - a[k]) * t for k in range(3)]
+    return list(table[-1][1:])
+
+
+def fish_loft(table, n, m, e=1.0):
+    """A body lofted through the sections of ``table``: ``n`` rings of ``m``
+    points, each a rounded oval (exponent ``e``: 1 an ellipse, less a box)."""
+    rings = []
+    for i in range(n):
+        x = table[0][0] + (table[-1][0] - table[0][0]) * i / (n - 1.0)
+        w, top, bot = section(table, x)
+        c, h = (top + bot) / 2, (top - bot) / 2
+        rings.append([[x, c + h * abs(add.cos(2 * add.pi * j / m)) ** e * (1 if add.cos(2 * add.pi * j / m) >= 0 else -1),
+                       w * abs(add.sin(2 * add.pi * j / m)) ** e * (1 if add.sin(2 * add.pi * j / m) >= 0 else -1)] for j in range(m)])
+    return add.make(add.loft, rings, P["steel"])
+
+
+def on_side(table, x, y, out=0.0):
+    """How far out to the side the surface of a fish of ``table`` is at (x, y), plus ``out``."""
+    w, top, bot = section(table, x)
+    c, h = (top + bot) / 2, (top - bot) / 2
+    return w * add.sqrt(max(0.0, 1 - ((y - c) / h) ** 2)) + out
+
+
+def tooth_row(cx, rx, rz, a_max, n, h, colour, rim_y):
+    """A row of ``n`` sharp teeth set edge to edge round the arc of a jaw
+    (centre ``cx``, radii ``rx`` forwards and ``rz`` across, between the
+    angles -a_max and a_max), standing on the rim at the height
+    ``rim_y(x, z)``: each a thin triangular blade, its point ``h`` up
+    (h < 0: down) and leaning a little into the mouth."""
+    rim = lambda a: [cx + rx * add.cos(a), 0.0, rz * add.sin(a)]
+    for i in range(n):
+        a0, a1 = -a_max + 2 * a_max * i / n, -a_max + 2 * a_max * (i + 1) / n
+        p, q, m = rim(a0), rim(a1), rim((a0 + a1) / 2)
+        for v in (p, q, m):
+            v[1] = rim_y(v[0], v[2])
+        nx, nz = rz * add.cos((a0 + a1) / 2), rx * add.sin((a0 + a1) / 2)      # the rim's outward normal
+        L = add.sqrt(nx * nx + nz * nz)
+        nx, nz = nx / L, nz / L
+        tip = [m[0] - 0.012 * nx, m[1] + h, m[2] - 0.012 * nz]
+        front = [[v[0] + 0.005 * nx, v[1], v[2] + 0.005 * nz] for v in (p, q, tip)]
+        back = [[v[0] - 0.005 * nx, v[1], v[2] - 0.005 * nz] for v in (p, q, tip)]
+        M = add.Mesh()
+        M.add_polygon(front, colour)
+        M.add_polygon(back[::-1], colour)
+        for j in range(3):
+            M.add_polygon([back[j], back[(j + 1) % 3], front[(j + 1) % 3], front[j]], colour)
+        add.mesh(add.fix_normals(M))
+
+
+def piranha(at, facing, s=1.0, pitch=0.0, gape=0.3):
+    """A red-bellied piranha: the deep, flat body of its kind, lofted
+    through its sections -- a blunt head, the back rising to the dorsal
+    fin, a deep belly, a slender tail stalk -- dark grey along the back,
+    silver on the flanks, red on the belly and throat;
+    the edge of the gill cover, big golden eyes with a glint, nostrils.
+    The lower jaw, hinged down by ``gape``, reaches a little past the
+    upper; round the rims of both a close row of small, sharp, triangular
+    teeth, edge to edge like a saw -- the upper ones longer, pointing
+    down, the lower ones up -- round the dark red mouth.  Dorsal and
+    adipose fins, red anal, pelvic and pectoral fins, a forked tail dark
+    at its base.  It swims towards +x, its nose ``pitch`` up; ``s`` = 1 is
+    1.5 m long."""
+    add.push()
+
+    def skin(q):
+        w, top, bot = section(PIRANHA, q[0])
+        t = (q[1] - (top + bot) / 2) / ((top - bot) / 2)                        # -1 the belly .. 1 the back
+        if t < -0.3 - 0.3 * add.clamp((q[0] - 0.25) / 0.2):                     # red below, up to the throat,
+            return P["red"]
+        return P["iron"] if t > 0.55 else P["mail"] if t > 0.3 else P["steel"]   # silver sides, the back dark
+
+    add.mesh(add.color_by(fish_loft(PIRANHA, 56, 36), skin))
+    add.ellipsoid([0.46, -0.1, 0], [0.11, 0.045, 0.06], 6, P["meat"])                       # the mouth, dark red inside
+    tooth_row(0.5, 0.11, 0.055, 1.35, 13, -0.075, P["bone"],                                # the upper teeth
+              lambda x, z: (section(PIRANHA, x)[1] + section(PIRANHA, x)[2]) / 2 + 0.008
+              - (section(PIRANHA, x)[1] - section(PIRANHA, x)[2]) / 2 * add.sqrt(max(0.0, 1 - (z / section(PIRANHA, x)[0]) ** 2)))
+    add.push()                                                                               # the lower jaw and its teeth
+    add.mesh(add.color_by(fish_loft(PIRANHA_JAW, 12, 20, 0.7), lambda q: P["iron"] if q[1] > section(PIRANHA_JAW, q[0])[1] - 0.012 else P["red"]))
+    tooth_row(0.5, 0.12, 0.06, 1.35, 13, 0.05, P["bone"], lambda x, z: section(PIRANHA_JAW, x)[1] - 0.006)
+    add.mesh(add.rotateZ(add.pop(), -gape, (0.3, -0.09, 0)))
+    for sz in (-1, 1):
+        ez = on_side(PIRANHA, 0.4, 0.12)
+        add.sphere([0.4, 0.12, sz * (ez - 0.018)], 0.052, 5, P["gold"])                     # big golden eyes,
+        add.sphere([0.412, 0.12, sz * (ez + 0.022)], 0.027, 4, P["black"])                  # black pupils,
+        add.sphere([0.418, 0.134, sz * (ez + 0.038)], 0.007, 2, P["white"])                 # a glint
+        add.sphere([0.54, 0.1, sz * on_side(PIRANHA, 0.54, 0.1)], 0.011, 2, P["black"])      # the nostrils
+        gill = [(0.27, 0.3), (0.22, 0.16), (0.2, 0.0), (0.21, -0.15), (0.26, -0.28)]         # the edge of the gill cover
+        add.polyline([[x, y, sz * on_side(PIRANHA, x, y, 0.004)] for x, y in gill], 0.007, 5, P["iron"])
+        for profile, z0, colour in (([[0.2, -0.17], [0.03, -0.3], [0.09, -0.15]], on_side(PIRANHA, 0.12, -0.2, 0.008), P["orange"]),   # pectoral
+                                    ([[0.08, -0.37], [-0.08, -0.5], [0.0, -0.36]], 0.05, P["orange"])):                               # pelvic
+            add.mesh(add.make(add.prism, profile, 0.015, colour, (0, 0, sz * z0), (0, 0, 1)))
+    for profile, colour, t in (([[0.08, 0.4], [-0.04, 0.63], [-0.16, 0.62], [-0.2, 0.38]], P["iron"], 0.02),      # dorsal fin,
+                               ([[-0.44, 0.17], [-0.47, 0.25], [-0.53, 0.24], [-0.52, 0.13]], P["iron"], 0.02),   # adipose fin,
+                               ([[-0.1, -0.38], [-0.42, -0.19], [-0.44, -0.3], [-0.2, -0.52]], P["red"], 0.02),   # anal fin
+                               ([[-0.58, 0.07], [-0.72, 0.01], [-0.9, 0.36]], P["iron"], 0.03),                   # and the two
+                               ([[-0.58, -0.07], [-0.9, -0.36], [-0.72, -0.01]], P["iron"], 0.03),                # lobes of the
+                               ([[-0.6, -0.12], [-0.64, -0.13], [-0.64, 0.13], [-0.6, 0.12]], P["black"], 0.045)): # tail, dark at its base
+        add.mesh(add.make(add.prism, profile, t, colour, (0, 0, 0), (0, 0, 1)))
+    M = add.rotateZ(add.stretch(add.pop(), [s] * 3, (0, 0, 0)), pitch)
+    add.mesh(add.move(add.rotateY(M, facing), at))
+
+
+shoal = []                                             # piranhas in the moat, a shoal of them circling before the gate
+k = 0                                                  # just under the surface, jaws open, none touching
+while len(shoal) < count(30) and k < 5000:
+    x, z = -11.0 + 22.0 * hash2(k, 1, 131), 54.5 + 9.5 * hash2(k, 2, 131)
+    y, size = MOAT_WATER - 0.45 - 0.8 * hash2(k, 3, 131), 0.6 + 0.15 * hash2(k, 4, 131)
+    k += 1
+    if not in_moat_outline(x, z) or castle_depth(x, z) > -0.9 or landing_depth(x, z) > -0.8 or bank_gap(x, z) < 1.1:
+        continue
+    if any((x - q[0]) ** 2 + (y - q[1]) ** 2 + (z - q[2]) ** 2 < 1.1 ** 2 for q in shoal):
+        continue
+    d = add.atan2(z - 59.8, x) + add.pi / 2 + (hash2(k, 5, 131) - 0.5) * 1.2                  # round and round
+    piranha([x, y, z], -d, size, (hash2(k, 6, 131) - 0.5) * 0.4, 0.18 + 0.15 * hash2(k, 7, 131))
+    shoal.append((x, y, z))
+for x, z, d, pitch in ((-3.7, 58.4, 0.3, 0.8), (3.9, 60.2, 2.7, -0.5), (6.8, 57.6, -2.2, 0.6),    # and six of them
+                       (-9.6, 57.2, 1.75, 0.5), (-6.9, 58.8, 1.4, 0.35), (-11.4, 59.8, 2.0, 0.6)):  # leaping out of the
+    y = MOAT_WATER + (0.6 if pitch > 0 else 0.4)                                                # water, jaws agape,
+    piranha([x, y, z], -d, 0.75, pitch, 0.4)                                                    # rings where they
+    add.torus([x - 0.45 * add.cos(d), MOAT_WATER + 0.01, z - 0.45 * add.sin(d)], 0.5, 0.035, 16, 4, P["white"])   # broke
+    for j in range(6):                                                                          # the surface and
+        a = j * 1.05 + d                                                                        # drops flying
+        add.sphere([x + 0.55 * add.cos(a), MOAT_WATER + 0.12 + 0.15 * (j % 3), z + 0.55 * add.sin(a)], 0.04, 2, P["white"])
+flush("piranhas in the moat (%d)" % len(shoal))
 
 
 # the forest on the slopes: low-poly trees of the northern woods, each species by its shape -- spruces in drooping
@@ -1738,7 +2124,7 @@ while n < count(150000):
     x, z = r * add.cos(a), r * add.sin(a)
     y = ground(x, z)
     if y < WATER_Y + 1.0 or octagon_r(x, z) < 51.5 or on_road(x, z) or near_corner(x, z, 0.3) \
-            or (MOAT[0] - 1 < x < MOAT[1] + 1 and MOAT[2] - 1 < z < MOAT[3] + 1) or by_jetty(x, z, 0.0):
+            or in_moat(x, z) or by_jetty(x, z, 0.0):
         continue
     for j in range(3):
         b = a + j * 2.1 + hash2(n, j)
@@ -1757,8 +2143,6 @@ flush("grass", clean=False)
 WALL_TOP = G + 12
 WALK = WALL_TOP + 0.3                                  # the wall walk surface
 TOWER_TOP = G + 17
-GATE_X = 10.5                                          # the gatehouse takes the middle of the south wall
-GATE_W = 7.0
 
 
 def along(a, b, s):
@@ -1769,9 +2153,10 @@ def along(a, b, s):
 
 for k in range(8):
     a, b = CORNERS[k], CORNERS[(k + 1) % 8]
-    if k == 1:                                         # the south wall, in two halves, to the gate towers
-        wall_segment(along(a, b, TOWER_R - 0.5), [GATE_X - 0.5, 0, 50.0], G - 1, WALL_TOP)
-        wall_segment([-GATE_X + 0.5, 0, 50.0], along(b, a, TOWER_R - 0.5), G - 1, WALL_TOP)
+    if k == 1:                                         # the south wall, in two halves, to the gate towers -- standing
+        for y0, y1, top in ((MOAT_Y - 0.5, G - 1, False), (G - 1, WALL_TOP, True)):   # in the moat, from its floor
+            wall_segment(along(a, b, TOWER_R - 0.5), [GATE_X - 0.5, 0, 50.0], y0, y1, walk=top, inner=top)
+            wall_segment([-GATE_X + 0.5, 0, 50.0], along(b, a, TOWER_R - 0.5), y0, y1, walk=top, inner=top)
     else:
         wall_segment(along(a, b, TOWER_R - 0.5), along(b, a, TOWER_R - 0.5), G - 1, WALL_TOP)
     flush("curtain wall %d" % (k + 1))
@@ -1784,6 +2169,10 @@ for k, c in enumerate(CORNERS):
     walk = (WALK, to_next - 0.35, to_prev + 0.35)
     ARRIVE.append(round_tower(c, G - 1, TOWER_TOP, TOWER_R, doors=[(inward, G), (to_next, WALK), (to_prev, WALK)],
                               walk=walk, walls=(to_next, to_prev)))
+    if k in (1, 2):                                    # the two towers that stand in the moat go down to its floor,
+        add.pipe([c[0], MOAT_Y - 0.5, c[2]], [c[0], G - 1, c[2]], TOWER_R, TOWER_R - 1.0, k_(24), P["mortar"])
+        arc = (80, 200) if k == 1 else (-20, 100)      # with stones on the side of the water
+        stone_ring(c[0], c[2], TOWER_R, MOAT_Y, G - 0.5, arc=(arc[0] * add.pi / 180, arc[1] * add.pi / 180))
     flush("tower %d" % (k + 1))
 
 
@@ -2242,8 +2631,7 @@ def flag(at, w=1.4, h=1.0, facing=0.0, phase=0.0):
     add.mesh(add.move(add.rotateY(M, facing), at))
 
 
-GATE_Z0, GATE_Z1 = 47.0, 53.0                          # the gate block, along the passage
-GATE_TOP = G + 13
+GATE_TOP = G + 13                                      # (the gate block runs from GATE_Z0 to GATE_Z1: see the moat)
 SPRING = G + 4.5                                       # the arch springs here; 2.5 more to the apex
 GATE_ROOF = GATE_TOP + 0.4
 GATE_ARRIVE = []                                       # where the stairs of the two gate towers reach their tops
@@ -2255,16 +2643,56 @@ for s in (-1, 1):
     GATE_ARRIVE.append(square_tower([s * 7, 0, 50], G - 1, G + 20, GATE_W, doors=[(3, G), (outer, WALK), (inner, GATE_ROOF)],
                        walk_stops=stops, roof_h=6, windows=[(1, G + 8, 0.9, 1.6), (1, G + 15, 0.9, 1.6), (3, G + 15, 0.9, 1.6)]))
     banner([s * 7, G + 17.5, 53.5 + 0.5])
-# the passage: jambs, the arch fill (textured), voussoirs on both faces
-for s in (-1, 1):
-    add.cuboid([s * 3.0, (G - 1 + SPRING) / 2, 50], [1.0, SPRING - G + 1, GATE_Z1 - GATE_Z0], P["mortar"])
-add.mesh(arch_fill(-3.5, 3.5, SPRING, GATE_TOP, GATE_Z0, GATE_Z1, 0, 2.5, P["mortar"]))
+# the passage: jambs, the arch fill, voussoirs on both faces.  Two metres in from the outer face, the portcullis's
+# way: a groove up either jamb, and over the springing a long slot across the vault, up into the gatehouse, which the
+# portcullis is drawn up into -- behind the windlass of the drawbridge, so that the chains never cross its way
+PORT_Z, SLOT, GROOVE = GATE_Z1 - 2.0, 0.1, 0.15        # the middle of the slot, half its width, how deep the grooves are
+LINING = 0.06                                          # the stones the passage is lined with: how thick
+for z0, z1 in ((GATE_Z0, PORT_Z - SLOT), (PORT_Z + SLOT, GATE_Z1)):
+    for s in (-1, 1):
+        add.cuboid([s * (3.5 + 2.5 + LINING) / 2, (G - 1 + SPRING) / 2, (z0 + z1) / 2], [1.0 - LINING, SPRING - G + 1, z1 - z0],
+                   P["mortar"])
+    add.mesh(arch_fill(-3.5, 3.5, SPRING, GATE_TOP, z0, z1, 0, 2.5 + LINING, P["mortar"]))
+    # the passage lined with blocks of stone laid in courses, the joints staggered: up the jambs, and round the vault
+    rows = int(round((SPRING - G - 0.02) / BLOCK[1]))
+    bh = (SPRING - G - 0.02) / rows
+    courses = 13                                       # round the vault as many as the voussoirs of the arch
+    for j in range(rows + courses):
+        za = z0 - (BLOCK[0] / 2 if j % 2 else 0.0)
+        while za < z1 - 0.15:
+            a, b = max(za, z0), min(za + BLOCK[0], z1)
+            za += BLOCK[0]
+            if b - a < 0.15:
+                continue
+            if j < rows:                               # a course up the jambs
+                y = G + 0.02 + j * bh
+                for s in (-1, 1):
+                    add.cuboid([s * (2.5 + LINING / 2), y + bh / 2, (a + b) / 2], [LINING, bh - 0.05, b - a - 0.05],
+                               pick("stone", a * 3 + s, j))
+            else:                                      # or round the vault
+                c = j - rows
+                a0, a1 = add.pi * c / courses + 0.01, add.pi * (c + 1) / courses - 0.01
+                vblock = [[r * add.cos(t), SPRING + r * add.sin(t)] for r, t in ((2.5, a0), (2.5 + LINING + 0.02, a0),
+                                                                                 (2.5 + LINING + 0.02, a1), (2.5, a1))]
+                add.prism(vblock, b - a - 0.05, pick("stone", a * 3, j), (0, 0, (a + b) / 2), (0, 0, 1))
+for s in (-1, 1):                                      # the masonry behind the grooves and beside the slot, and
+    add.cuboid([s * (3.5 + 2.5 + GROOVE) / 2, (G - 1 + GATE_TOP) / 2, PORT_Z], [1.0 - GROOVE, GATE_TOP - G + 1, 2 * SLOT],
+               P["black"])                             # the grooves' and the slot's sides, all dark in their shadow
+for z0 in (PORT_Z - SLOT, PORT_Z + SLOT - 0.01):
+    add.mesh(arch_fill(-2.5 - GROOVE, 2.5 + GROOVE, SPRING, GATE_TOP, z0, z0 + 0.01, 0, 2.5, P["black"]))
+    for s in (-1, 1):
+        add.cuboid([s * (2.5 + GROOVE / 2), (G + 0.02 + SPRING) / 2, z0 + 0.005], [GROOVE, SPRING - G - 0.02, 0.01], P["black"])
+add.cuboid([0, GATE_TOP - 0.05, PORT_Z], [2 * (2.5 + GROOVE), 0.1, 2 * SLOT], P["black"])
 for z, depth in ((GATE_Z1, 0.25), (GATE_Z0, -0.25)):                          # stone skins on both faces, round the arch
     add.push()
     stone_face(GATE_W, G - 1, GATE_TOP, 0, 0.22, "stone", seed=int(z),
                skip=[(GATE_W / 2 - 3.15, GATE_W / 2 + 3.15, G - 1, SPRING + 3.15, (GATE_W / 2, SPRING, 3.15))])
     add.mesh(add.move(add.pop() if depth > 0 else add.mirror(add.pop(), [0, 0, 0], [0, 0, 1]), [-GATE_W / 2, 0, z]))
     voussoirs(0, SPRING, 2.5, z, depth, 13, lambda i: shade_of("stone", i), width=0.6)
+    for s in (-1, 1):                                  # and below them dressed stones up both jambs, as wide as the
+        for j in range(int(round((SPRING - G + 1) / BLOCK[1]))):             # voussoirs, in the courses of the wall
+            add.cuboid([s * 2.8, G - 1 + (j + 0.5) * BLOCK[1], z + depth / 2], [0.6, BLOCK[1] - 0.06, abs(depth)],
+                       shade_of("stone", j + (s > 0)))
 add.cuboid([0, GATE_TOP + 0.2, 50], [GATE_W, 0.4, GATE_Z1 - GATE_Z0 + 0.6], P["stone_dark"])   # the gate roof
 add.mesh(add.move(add.make(merlons, GATE_W, 0.4, 0, 0.5), [-3.5, GATE_TOP, GATE_Z1]))
 add.mesh(add.move(add.make(merlons, GATE_W, 0.4, -0.5, 0), [-3.5, GATE_TOP, GATE_Z0]))
@@ -2277,27 +2705,36 @@ for y in (TABLET_Y - TABLET_H / 2 + 0.03, TABLET_Y + TABLET_H / 2 - 0.03):
 for x in (-TABLET_G / 2 + 0.03, TABLET_G / 2 - 0.03):
     add.cuboid([x, TABLET_Y, GATE_Z1 + 0.335], [0.06, TABLET_H, 0.03], P["gold"])
 add.text(GATE_TEXT, [0, TABLET_Y - GATE_H / 2, GATE_Z1 + 0.35], GATE_H, 0.06, P["gold"], align="center", k=8)
-for s in (-1, 1):                                      # a lamp on each side of the gate
-    add.cuboid([s * 3.9, G + 4.2, GATE_Z1 + 0.3], [0.3, 0.3, 0.6], P["iron"])
-    add.sphere([s * 3.9, G + 4.9, GATE_Z1 + 0.45], 0.28, 8, FLAME)
-# the paved landing between the gate and the moat, and the paved passage
+for s in (-1, 1):                                      # the gate towers stand in the moat, down to its floor, with
+    add.cuboid([s * 7, (MOAT_Y - 0.5 + G - 1) / 2, 50], [GATE_W, G - 1 - MOAT_Y + 0.5, GATE_W], P["mortar"])   # stones
+    for side in (1, 0 if s > 0 else 2):                                          # on the sides the water comes to
+        add.push()
+        stone_face(GATE_W, MOAT_Y, G - 0.5, GATE_W / 2, 0.22, "stone", seed=side + int(s * 7) + 30)
+        M = add.move(add.pop(), [-GATE_W / 2, 0, 0])
+        add.mesh(add.move(add.rotateY(M, add.pi / 2 - side * add.pi / 2), [s * 7, 0, 50]))
+# the paved passage, and the landing before the gate paved the same way (the landing's pier: see the moat's stonework)
 PAVE = G + 0.1                                         # top of the paving: level with the cobblestones
-add.cuboid([0, (G - 0.3 + G + 0.02) / 2, (GATE_Z1 + MOAT[2] - 1) / 2], [26, 0.32, MOAT[2] - 1 - GATE_Z1], P["mortar"])
 add.cuboid([0, (G - 0.3 + G + 0.02) / 2, (GATE_Z0 + GATE_Z1) / 2], [7.0, 0.32, GATE_Z1 - GATE_Z0], P["mortar"])
-cobble_area(lambda x, z: (z >= GATE_Z1 or abs(x) < 2.45) and hash2(int(x * 9), int(z * 9), 77) < max(DENSITY, 0.35),
-            -13, 13, GATE_Z0, MOAT[2] - 1, G + 0.02, step=0.44, scale=0.7, seed=5)      # cobbles: landing and passage
+cobble_area(lambda x, z: (abs(x) < 2.45 if z < GATE_Z1 else landing_depth(x, z, False) > 0.62 and (abs(x) < 3.3 or z > GATE_FRONT + 0.15)
+                          and (z < BRIDGE_Z0 - 0.2 or abs(x) > DECK + 0.16)) and hash2(int(x * 9), int(z * 9), 77) < max(DENSITY, 0.35),
+            -7, 7, GATE_Z0 + 0.075, BRIDGE_Z0 + 1.0, G + 0.02, step=0.44, scale=0.7, seed=5)   # cobbles: passage and landing,
+for i in range(1, 46, 2):                              # right up to the bridge's hinge: where the last row of the
+    x = -7 + i * 0.308                                 # cobbles leaves a gap before it, a smaller one
+    if abs(x) < DECK + 0.16 and hash2(i, 5, 79) < max(DENSITY, 0.35):
+        stone = add.stretch(COBBLES[int(hash2(i, 5, 80) * 6) % 6], [0.36, 0.36, 0.36], (0, 0, 0))
+        add.mesh(add.move(add.rotateY(stone, hash2(i, 5, 81) * 6.28), [x, G + 0.02, BRIDGE_Z0 - 0.153]))
 flush("gatehouse")
 
-# the portcullis, drawn up -- only its teeth show under the arch, high over a knight with his lance upright -- in a
-# slot just inside the outer face
-PORT_Z = GATE_Z1 - 0.7
-PORT_BOTTOM = SPRING + 1.1
-for i in range(8):
-    x = -2.1 + i * 0.6
-    add.cylinder([x, PORT_BOTTOM + 0.4, PORT_Z], [x, GATE_TOP - 0.2, PORT_Z], 0.07, 12, P["iron"])
-    add.cone([x, PORT_BOTTOM + 0.4, PORT_Z], [x, PORT_BOTTOM, PORT_Z], 0.07, 12, P["iron"])
-for y in (PORT_BOTTOM + 0.9, PORT_BOTTOM + 2.3, PORT_BOTTOM + 3.7, PORT_BOTTOM + 5.1):
-    add.cuboid([0, y, PORT_Z], [4.5, 0.12, 0.12], P["iron"])
+# the portcullis, drawn up to the springing of the arch -- a rider passes under its teeth -- into its slot: a square
+# mesh of iron bars 0.4 apart, the ends of its cross bars in the grooves of the jambs
+PORT_BOTTOM = SPRING + 0.1
+PORT_STEP = 0.4
+for i in range(13):
+    x = -2.4 + i * PORT_STEP
+    add.cylinder([x, PORT_BOTTOM + 0.3, PORT_Z], [x, GATE_TOP - 0.2, PORT_Z], 0.055, 12, P["iron"])
+    add.cone([x, PORT_BOTTOM + 0.3, PORT_Z], [x, PORT_BOTTOM, PORT_Z], 0.055, 12, P["iron"])
+for j in range(int((SPRING + 2.6 - PORT_BOTTOM - 0.3) / PORT_STEP) + 1):
+    add.cuboid([0, PORT_BOTTOM + 0.3 + j * PORT_STEP, PORT_Z], [2 * (2.5 + GROOVE - 0.03), 0.09, 0.1], P["iron"])
 # the wooden gate behind it: two leaves on hinges, both swung wide open;
 # their tops follow the arch, so that closed they fill it exactly
 for s, angle in ((-1, 1.3), (1, -1.3)):
@@ -2321,21 +2758,40 @@ for s, angle in ((-1, 1.3), (1, -1.3)):
     add.cylinder([s * 2.5, G, GATE_Z0 + 0.6], [s * 2.5, G + 5.2, GATE_Z0 + 0.6], 0.06, 8, P["iron"])   # the hinge pin
 flush("portcullis and gate")
 
-# the drawbridge: planks on two beams, spanning the moat from bank to bank, its beams let into the kerbs so that its
-# deck lies level with the paving before the gate and with the road on the far side
-BRIDGE_Z0, BRIDGE_Z1 = MOAT[2] - 1.0, MOAT[3] + 1.0
-for s in (-1, 1):
-    add.cuboid([s * 1.9, G - 0.155, (BRIDGE_Z0 + BRIDGE_Z1) / 2], [0.3, 0.25, BRIDGE_Z1 - BRIDGE_Z0], P["wood_dark"])
-planks = int(4.6 / 0.42)
+# the drawbridge: a deck of planks spanning the moat from the landing to the far bank, level with the paving before the
+# gate and with the road.  It turns on one long hinge of grey iron, like a piano's, just as long as the deck is wide,
+# between the cobbles of the landing and the ends of the planks, a little lower than they are: its knuckles, in turn from
+# a leaf let into the stone under the cobbles and from a leaf under the planks, on one long pin, and the planks' ends,
+# rebated underneath, lying over it.  Across its far end, under the planks, an iron bar.  The leaf and the bar rest on
+# seats of dressed stone, and every plank is nailed down to them from above
+HINGE_Y = G - 0.01                                      # the pin
+REBATE = (BRIDGE_Z0 + HINGE_R + 0.005, HINGE_Y + HINGE_R + 0.005)
+planks = 11
 for i in range(planks):
-    x = -2.3 + 0.21 + i * 0.42
-    add.cuboid([x, G + 0.045, (BRIDGE_Z0 + BRIDGE_Z1) / 2], [0.4, 0.15, BRIDGE_Z1 - BRIDGE_Z0], pick("wood", i, 9))
-for z in (BRIDGE_Z0 + 0.3, BRIDGE_Z1 - 0.3):               # iron straps at both ends
-    add.cuboid([0, G + 0.145, z], [4.7, 0.05, 0.2], P["iron"])
-add.cylinder([-2.5, G - 0.155, BRIDGE_Z0], [2.5, G - 0.155, BRIDGE_Z0], 0.08, 12, P["iron"])   # the hinge bar on the bank
+    x = (i - (planks - 1) / 2) * 0.42
+    add.prism([[G - 0.03, REBATE[0]], [REBATE[1], REBATE[0]], [REBATE[1], BRIDGE_Z0], [G + 0.12, BRIDGE_Z0],
+               [G + 0.12, BRIDGE_Z1], [G - 0.03, BRIDGE_Z1]], 0.4, pick("wood", i, 9), (x, 0, 0), (1, 0, 0))
+for i in range(18):                                                              # the hinge's knuckles,
+    x0 = -DECK + 2 * DECK * i / 18
+    add.cylinder([x0 + 0.005, HINGE_Y, BRIDGE_Z0], [x0 + 2 * DECK / 18 - 0.005, HINGE_Y, BRIDGE_Z0], HINGE_R, 16, P["mail"])
+add.cylinder([-DECK, HINGE_Y, BRIDGE_Z0], [DECK, HINGE_Y, BRIDGE_Z0], 0.025, 8, P["mail"])       # its pin,
+add.cuboid([0, G - 0.042, BRIDGE_Z0 + 0.24], [2 * DECK, 0.02, 0.44], P["mail"])                  # its leaf under the
+add.cuboid([0, G - 0.055, BRIDGE_Z1 - 0.4], [2 * DECK, 0.05, 0.18], P["iron"])                   # planks; the iron bar
+
+
+def nail(x, y, z):                                      # the head of a big nail, forged and hammered home
+    add.cylinder([x, y, z], [x, y + 0.012, z], 0.04, 8, P["mail"])
+    add.cone([x, y + 0.012, z], [x, y + 0.03, z], 0.04, 8, P["mail"])
+
+
+for i in range(planks):                                 # every plank nailed down with one nail at each end: into the
+    x = (i - (planks - 1) / 2) * 0.42                   # hinge's leaf, and into the iron bar
+    nail(x, G + 0.12, BRIDGE_Z0 + 0.25)
+    nail(x, G + 0.12, BRIDGE_Z1 - 0.4)
 # the chains run taut and parallel from the bridge's far end up into two round
 # holes in the gate's front, lined with iron: behind them, inside the gatehouse,
-# the windlass that winds them in and draws the bridge up against the gate
+# the windlass that winds them in and draws the bridge up against the gate -- in
+# front of the portcullis's slot, so that the chains never cross its way
 for s in (-1, 1):
     hole = [s * 2.0, G + 10.2, GATE_Z1 + 0.22]                                   # on the face of the stones
     add.cylinder([hole[0], hole[1], hole[2] - 0.02], [hole[0], hole[1], hole[2] + 0.05], 0.42, 16, P["iron"])     # the iron plate
@@ -3145,16 +3601,18 @@ flush("chapel")
 #  5. Props: furniture, food, vessels, weapons -- everything is built at
 #     the origin and then moved into place
 # --------------------------------------------------------------------------
-def goblet(at, color=None, wine=False):
-    """A goblet on a stem -- a real cup, hollow, with wine in it if poured."""
-    lathe([[0.0, 0], [0.13, 0], [0.13, 0.02], [0.04, 0.05], [0.04, 0.2], [0.07, 0.24], [0.15, 0.3],
-           [0.16, 0.45], [0.12, 0.45], [0.11, 0.3], [0.0, 0.28]], at, k_(8), color or P["gold"])
-    add.sphere([at[0], at[1] + 0.225, at[2]], 0.05, 3, color or P["gold"])                       # a knop on the stem
+def goblet(at, color=None, wine=False, s=LIFE):
+    """A goblet on a stem -- a real cup, hollow, with wine in it if poured
+    -- 20 cm high and 10 across, times ``s`` (the people's scale; the
+    treasure's chalices are bigger)."""
+    lathe([[0.0, 0.0], [0.045, 0.0], [0.045, 0.008], [0.014, 0.022], [0.012, 0.085], [0.024, 0.105], [0.048, 0.13],
+           [0.052, 0.2], [0.046, 0.2], [0.043, 0.135], [0.0, 0.125]], at, k_(8), color or P["gold"], s)
+    add.sphere([at[0], at[1] + 0.085 * s, at[2]], 0.02 * s, 3, color or P["gold"])              # a knop on the stem
     if wine:
-        add.cylinder([at[0], at[1] + 0.35, at[2]], [at[0], at[1] + 0.385, at[2]], 0.108, k_(8), P["cushion"])
+        add.cylinder([at[0], at[1] + 0.16 * s, at[2]], [at[0], at[1] + 0.175 * s, at[2]], 0.043 * s, k_(8), P["cushion"])
 
 
-def jug(at, color=None, s=1.0):
+def jug(at, color=None, s=0.55):
     color = color or P["brick"]
     lathe([[0.0, 0], [0.16, 0], [0.24, 0.15], [0.26, 0.35], [0.18, 0.5], [0.15, 0.6], [0.17, 0.66],
            [0.12, 0.66], [0.11, 0.55], [0.0, 0.5]], at, k_(8), color, s)
@@ -3346,7 +3804,6 @@ def place_setting(at, side):
     add.ellipsoid([at[0], at[1] + 0.07, at[2]], [0.06, 0.04, 0.05], 3, P["bread"])
     goblet([at[0] + side * 0.2, at[1], at[2] + 0.26], wine=True)
     add.cuboid([at[0] - side * 0.02, at[1] + 0.006, at[2] - 0.24], [0.2, 0.01, 0.022], P["steel"])
-    add.cylinder([at[0], at[1] + 2 * r - 0.02, at[2]], [at[0] + 0.02, at[1] + 2 * r + 0.06, at[2]], 0.01, 4, P["trunk"])
 
 
 PIG = [(0.55, 0.2, 0.07, 0.07), (0.49, 0.2, 0.18, 0.17), (0.37, 0.21, 0.25, 0.2), (0.15, 0.21, 0.27, 0.21), (-0.08, 0.21, 0.27, 0.21),
@@ -3485,14 +3942,32 @@ def shield(at, facing=0.0, r=0.5):
 
 
 def torch(at, facing=0.0):
-    """A wall torch: an iron bracket on the wall, a wooden shaft, a flame.
+    """A wall torch in its holder.  The holder: an iron strap nailed to the
+    wall, and an arm out of it ending in a ring.  The torch stands in the
+    ring leaning out from the wall, its foot against the strap: a wooden
+    shaft, an iron cup at its head with the burning tow, and the flame.
     ``at`` is the point on the wall, ``facing`` the direction out of it."""
     add.push()
-    add.cuboid([0, 0, 0.1], [0.1, 0.5, 0.2], P["iron"])
-    add.cylinder([0, -0.2, 0.3], [0, 0.6, 0.35], 0.05, 8, P["wood_dark"])
-    add.cylinder([0, 0.55, 0.35], [0, 0.75, 0.35], 0.09, 8, P["rope"])
-    add.sphere([0, 0.9, 0.35], 0.16, 8, FLAME)
-    add.sphere([0, 0.85, 0.35], 0.08, 6, P["flame_core"])
+    add.cuboid([0, -0.05, -0.025], [0.1, 0.6, 0.11], P["iron"])                     # the strap (let into the wall),
+    for y in (-0.3, 0.2):
+        add.cylinder([0, y, 0.03], [0, y, 0.042], 0.022, 6, P["iron"])              # its nails,
+    foot, head = [0, -0.34, 0.068], [0, 0.56, 0.3]                                  # the shaft: its foot on the strap
+    L = vlen(vsub(head, foot))
+    d = [(head[k] - foot[k]) / L for k in range(3)]
+    e = [0, -d[2], d[1]]                                                            # (across the shaft, away from the wall)
+    t = (0.18 - foot[1]) / (head[1] - foot[1])
+    ring = [foot[k] + (head[k] - foot[k]) * t for k in range(3)]
+    near = ring[2] - 0.058 * e[2]                                                   # the ring's side next to the wall
+    add.cuboid([0, ring[1] - 0.058 * e[1], (0.025 + near) / 2], [0.035, 0.035, near - 0.025], P["iron"])   # the arm,
+    add.torus(ring, 0.058, 0.014, 12, 6, P["iron"], axis=d)                         # the ring
+    add.cylinder(foot, head, 0.04, 8, P["wood_dark"])                               # and the torch in it:
+    at_d = lambda u: [head[k] + d[k] * u for k in range(3)]
+    add.frustum(head, at_d(0.14), 0.045, 0.085, 10, P["iron"])                      # the cup,
+    add.cylinder(at_d(0.09), at_d(0.18), 0.068, 8, P["rope"])                       # the tow,
+    add.ellipsoid(at_d(0.32), [0.1, 0.2, 0.1], 6, FLAME)                           # the flame, drawn up
+    add.cone([at_d(0.32)[0], at_d(0.32)[1] + 0.11, at_d(0.32)[2]], [at_d(0.32)[0], at_d(0.32)[1] + 0.35, at_d(0.32)[2]],
+             0.075, 8, FLAME)                                                       # to a point
+    add.ellipsoid(at_d(0.27), [0.045, 0.1, 0.045], 5, P["flame_core"])
     add.mesh(add.move(add.rotateY(add.pop(), facing), at))
 
 
@@ -4231,9 +4706,9 @@ flush("hall: throne")
 # under the hall -- barrels lying on their stillages along the walls, a great tun, racks of bottles, a table for
 # tasting with a candle, a jug and cups
 X0, X1, Z0, Z1 = CELLAR_ROOM
-CY, SPRING, CROWN = CELLAR_Y, CELLAR_Y + 2.2, CELLAR_Y + 2.9
+CY, C_SPRING, CROWN = CELLAR_Y, CELLAR_Y + 2.2, CELLAR_Y + 2.9
 W = X1 - X0
-R_V = (W * W / 4 + (CROWN - SPRING) ** 2) / (2 * (CROWN - SPRING))                    # the vault: a flat arch across the cellar
+R_V = (W * W / 4 + (CROWN - C_SPRING) ** 2) / (2 * (CROWN - C_SPRING))                    # the vault: a flat arch across the cellar
 add.cuboid([(X0 + X1) / 2, CY - 0.1, (Z0 + Z1) / 2], [W + 1.0, 0.2, Z1 - Z0 + 1.0], P["stone_dark"])       # the floor
 flags = add.Mesh()
 for i in range(int(W / 0.8)):
@@ -4313,7 +4788,7 @@ for tx in (-6.0, 6.0):
             add.cuboid([tx + sx, KY + 0.25, z], [0.4, 0.5, 0.12], P["wood_dark"])
     top = KY + 1.08
     DISHES = (chicken_roast, fish_platter, pie, lambda at: (bread([at[0] - 0.12, at[1], at[2] - 0.2], 2), jug([at[0] + 0.2, at[1], at[2] + 0.3])),
-              ham, lambda at: (bowl([at[0], at[1], at[2] - 0.1], 0.4, P["wood_light"], (P["apple"], P["orange"], P["apple"], P["cheese"])),
+              ham, lambda at: (bowl([at[0], at[1], at[2] - 0.1], 0.2, P["wood_light"], (P["apple"], P["orange"], P["apple"], P["cheese"])),
                                grapes([at[0] + 0.25, at[1], at[2] + 0.38])),
               sausages, lambda at: (candelabra(at), jug([at[0] + 0.25, at[1], at[2] + 0.25], P["blue"])),
               cake, lambda at: cheese([at[0] - 0.15, at[1], at[2]]), tureen)
@@ -4322,6 +4797,15 @@ for tx in (-6.0, 6.0):
         if tx < 0 and abs(z - zc) < 1.2:                                         # the pig's stretch
             continue
         DISHES[(k + (0 if tx < 0 else 5)) % len(DISHES)]([tx, top, z])
+    MORE = (pie, lambda at: bowl(at, 0.2, P["wood_light"], (P["apple"], P["orange"], P["apple"], P["cheese"])), sausages,
+            lambda at: (grapes([at[0], at[1], at[2] - 0.22]), bowl([at[0], at[1], at[2] + 0.2], 0.15, P["gold"], (P["orange"], P["apple"]))),
+            cake, lambda at: bread([at[0] - 0.05, at[1], at[2]], 1), tureen,
+            lambda at: bowl(at, 0.2, P["wood_light"], (P["grape"], P["apple"], P["cheese"])))
+    for k in range(8):                                                           # and as many again between the guests
+        z = TABLE_Z0 + 1.0 + k * 1.65                                            # facing each other: sixteen of them now
+        if tx < 0 and abs(z - zc) < 1.3:
+            continue
+        MORE[(k + (0 if tx < 0 else 3)) % len(MORE)]([tx, top, z])
     for side in (-1, 1):                                                         # eight guests a side, each at a place laid
         for k in range(8):
             z = TABLE_Z0 + 1.0 + k * 1.65
@@ -4445,9 +4929,10 @@ for j, (x, z, facing) in enumerate(beds):
     for k in range(2):                                                 # boots by the bed
         add.cuboid([x - 0.7 + k * 0.28, FLOOR2 + 0.12, z + (0.4 if facing == 0 else -0.4)], [0.22, 0.24, 0.5], P["black"])
 for row, (z, facing) in enumerate(((DZ0 + 6.4, 0.0), (DZ0 + 9.6, add.pi))):   # and bunks for the rest of the garrison, two
-    for i, x in enumerate((4.5, 6.7, 8.9, 11.1, 13.3, 15.5, 17.7)):    # rows back to back, west and east of the attic stair
-        for sx in (-1, 1):
-            k = row * 14 + i * 2 + (sx + 1) // 2
+    for i, x in enumerate((4.5, 6.7, 8.9, 11.1, 13.3, 15.5, 17.7, 19.9)):   # rows back to back, west and east of the attic
+        for sx in (-1, 1):                                             # stair (the last four for the gunners)
+            k = row * 14 + i * 2 + (sx + 1) // 2 if i < 7 else 28 + row * 2 + (sx + 1) // 2
+            assert not near_tower(sx * x, z, 1.7)
             bunk([sx * x, FLOOR2, z], facing, (k % 7 == 3, k % 11 == 5),
                  ((P["blue"], P["red"], P["leaf_dark"], P["wood_light"])[k % 4], (P["red"], P["slate"], P["blue"])[k % 3]))
 MESS = HALL_MID + 4.0                                                  # where the soldiers eat
@@ -4669,7 +5154,7 @@ for i in range(count(60)):                                                      
 for i in range(4):
     a = 1.1 + i * 1.5
     x, z = HEAP[0] + 2.1 * add.cos(a), HEAP[2] + 2.1 * add.sin(a)
-    goblet([x, heap_y(x, z), z])
+    goblet([x, heap_y(x, z), z], s=1.8)
 SWORD_A = 4.5                                                                      # a sword stuck in the gold at the foot of
 sx, sz = HEAP[0] + 2.1 * add.cos(SWORD_A), HEAP[2] + 2.1 * add.sin(SWORD_A)       # the heap, leaning out -- a good metre
 sword([sx, heap_y(sx, sz) - 0.12, sz], (0.22 * add.cos(SWORD_A), 1, 0.22 * add.sin(SWORD_A)))   # clear of the dragon on top
@@ -4687,51 +5172,103 @@ flush("treasury")
 
 
 def dragon_head(fire=True):
-    """The dragon's head, built looking along +x with +y up, the base of the
-    skull at the origin: a skull with brows and amber eyes (slit pupils),
-    a long snout with nostrils, the lower jaw dropped open on rows of teeth,
-    a dark mouth and a forked tongue, horns swept back, red spikes on the
-    cheeks and the crown -- and a jet of fire out of the open jaws."""
+    """The dragon's head, built looking along +x with +y up, the back of the
+    skull at the origin: a long wedge of skull and snout under heavy brows,
+    glowing eyes with slit pupils, a ridged nose with flared nostrils and a
+    horn on it; the lower jaw dropped wide open on rows of fangs, the long
+    canines top and bottom, a dark red mouth and a forked tongue; a pair of
+    great horns swept back and a smaller pair under them, spikes along the
+    crown, frills of spines behind the jaws; scales in two greens, a pale
+    throat -- and a jet of fire out of the open jaws."""
     add.push()
-    G_, D_, B_ = P["dragon"], P["dragon_wing"], P["bone"]
-    add.mesh(add.move(add.stretch(add.make(add.sphere, [0, 0, 0], 1.0, 14, G_), [0.34, 0.26, 0.27], (0, 0, 0)), [0.22, 0.06, 0]))   # the skull
-    snout = add.stretch(add.make(add.hemisphere, [0, 0, 0], 1.0, 14, G_), [0.46, 0.2, 0.2], (0, 0, 0))
-    add.mesh(add.move(snout, [0.74, -0.06, 0]))                                     # the upper jaw: flat underneath
+    G_, D_, B_, M_ = P["dragon"], P["dragon_wing"], P["bone"], P["cushion"]
+
+    def sgnpow(v, e):
+        return abs(v) ** e * (1 if v >= 0 else -1)
+
+    def ring(x, w, top, bot, n=20):
+        """A cross-section: a rounded box ``w`` either side, from ``bot`` up to ``top``."""
+        c, h = (top + bot) / 2, (top - bot) / 2
+        return [[x, c + h * sgnpow(add.cos(2 * add.pi * j / n), 0.7), w * sgnpow(add.sin(2 * add.pi * j / n), 0.7)] for j in range(n)]
+
+    def at(table, x, k):
+        """Column ``k`` of a table of sections, at ``x`` (between its rows)."""
+        for (x0, *a), (x1, *b) in zip(table, table[1:]):
+            if x <= x1:
+                t = add.clamp((x - x0) / (x1 - x0))
+                return a[k - 1] + (b[k - 1] - a[k - 1]) * t
+        return table[-1][k]
+
+    def scales(q, pale):
+        """Two greens in patches like scales; ``pale`` parts in plates."""
+        if pale(q):
+            return P["dragon_belly"] if int(q[0] * 11) % 2 else P["grass_dry"]
+        return D_ if hash2(int(q[0] * 16), int(q[2] * 16 + q[1] * 11 + 40), 23) < 0.3 else G_
+
+    SKULL = [(-0.1, 0.19, 0.21, -0.17), (0.05, 0.27, 0.31, -0.19), (0.25, 0.29, 0.35, -0.15), (0.45, 0.23, 0.29, -0.06),
+             (0.62, 0.17, 0.19, -0.05), (0.85, 0.15, 0.14, -0.05), (1.05, 0.14, 0.12, -0.05), (1.18, 0.13, 0.14, -0.045),
+             (1.28, 0.1, 0.11, -0.04), (1.34, 0.04, 0.06, -0.03)]          # (x, half-width, top, bottom): the skull and snout
+    head = add.make(add.loft, [ring(*r) for r in SKULL], G_)
+    add.mesh(add.color_by(head, lambda q: M_ if q[0] > 0.45 and q[1] < -0.035 else scales(q, lambda q: q[1] < -0.1)))   # palate red,
+                                                                                              # the throat pale
     for s in (-1, 1):
-        add.mesh(add.move(add.stretch(add.make(add.sphere, [0, 0, 0], 1.0, 8, D_), [0.15, 0.05, 0.07], (0, 0, 0)), [0.36, 0.2, s * 0.15]))
-        add.sphere([0.37, 0.13, s * 0.2], 0.066, 10, P["cheese"])                   # the eyes, amber,
-        add.cuboid([0.395, 0.13, s * 0.262], [0.018, 0.095, 0.012], P["black"])     # with slit pupils
-        add.sphere([1.1, 0.07, s * 0.07], 0.03, 6, P["black"])                      # nostrils
-        horn = [[0.05, 0.22, s * 0.13], [-0.2, 0.36, s * 0.2], [-0.45, 0.43, s * 0.26], [-0.66, 0.42, s * 0.3]]
-        add.polyline(horn, lambda t: 0.065 * (1 - 0.8 * t), 8, B_, smooth=2)       # horns swept back
-        for j in range(3):                                                          # red spikes on the cheeks
-            add.cone([0.12 - 0.1 * j, -0.04 + 0.03 * j, s * 0.22], [-0.08 - 0.12 * j, -0.02 + 0.05 * j, s * (0.36 - 0.02 * j)], 0.035, 6, P["red"])
-        for i in range(6):                                                          # the upper teeth, a fang among them
-            x = 0.43 + 0.11 * i
-            w = 0.2 * add.sqrt(max(0.0, 1 - ((x - 0.74) / 0.46) ** 2)) - 0.035
-            add.cone([x, -0.055, s * w], [x + 0.01, -0.06 - (0.14 if i == 3 else 0.075), s * w], 0.022, 6, P["white"])
-    for j in range(4):                                                              # the crest begins on the crown
-        add.cone([0.3 - 0.13 * j, 0.3 - 0.01 * j, 0], [0.26 - 0.13 * j, 0.42 + 0.02 * j, 0], 0.04, 6, P["red"])
-    add.push()                                                                      # the lower jaw, hinged under the ears
-    add.mesh(add.move(add.stretch(add.rotateX(add.make(add.hemisphere, [0, 0, 0], 1.0, 14, G_), add.pi), [0.44, 0.12, 0.17], (0, 0, 0)), [0.72, -0.08, 0]))
-    add.mesh(add.move(add.stretch(add.make(add.sphere, [0, 0, 0], 1.0, 10, P["cushion"]), [0.36, 0.035, 0.13], (0, 0, 0)), [0.66, -0.07, 0]))   # the mouth
-    add.mesh(add.move(add.stretch(add.make(add.sphere, [0, 0, 0], 1.0, 8, P["red"]), [0.28, 0.02, 0.06], (0, 0, 0)), [0.72, -0.05, 0]))        # the tongue,
+        brow = add.make(add.ellipsoid, [0, 0, 0], [0.25, 0.07, 0.09], 4, D_)                     # the heavy brows,
+        add.mesh(add.move(add.rotateZ(brow, -0.4), [0.37, 0.3, s * 0.18]))                       # frowning over the eyes
+        add.cone([0.2, 0.35, s * 0.21], [-0.02, 0.44, s * 0.29], 0.045, 6, B_)                   # a spine back from each brow
+        add.ellipsoid([0.1, 0.03, s * 0.25], [0.2, 0.1, 0.07], 4, D_)                            # the cheek over the jaw
+        add.ellipsoid([0.425, 0.21, s * 0.19], [0.1, 0.06, 0.04], 4, P["black"])                 # the eyes, glowing deep
+        add.ellipsoid([0.435, 0.21, s * 0.205], [0.085, 0.048, 0.04], 4, P["orange"])            # in their sockets,
+        add.ellipsoid([0.45, 0.21, s * 0.243], [0.01, 0.042, 0.007], 3, P["black"])              # with slit pupils
+        ridge = add.make(add.ellipsoid, [0, 0, 0], [0.26, 0.03, 0.035], 4, D_)                  # the ridges of the nose,
+        add.mesh(add.move(add.rotateZ(ridge, -0.05), [0.95, 0.13, s * 0.075]))
+        nostril = add.make(add.ellipsoid, [0, 0, 0], [0.04, 0.022, 0.026], 4, P["black"])        # the nostrils, flared
+        add.mesh(add.move(add.rotateY(nostril, s * 0.5), [1.255, 0.085, s * 0.058]))
+        add.torus([1.25, 0.09, s * 0.06], 0.03, 0.012, 8, 4, D_, axis=(0.5, 0.3, s * 0.8))
+        horn = [[0.02, 0.27, s * 0.15], [-0.18, 0.42, s * 0.21], [-0.4, 0.55, s * 0.27], [-0.66, 0.58, s * 0.31],
+                [-0.86, 0.5, s * 0.33], [-0.97, 0.38, s * 0.33]]
+        add.polyline(horn, lambda t: 0.1 * (1 - 0.93 * t), 10, B_, smooth=2)                     # the great horns
+        for j in range(4):                                                                        # ridged at the root
+            c = [horn[0][k] + (horn[1][k] - horn[0][k]) * (0.3 + 0.35 * j) for k in range(3)]
+            d = vunit(vsub(horn[1], horn[0]))
+            add.torus(c, 0.093 - 0.009 * j, 0.013, 10, 4, P["linen"], axis=d)
+        add.polyline([[-0.02, 0.1, s * 0.22], [-0.23, 0.16, s * 0.32], [-0.45, 0.16, s * 0.4], [-0.6, 0.1, s * 0.44]],
+                     lambda t: 0.065 * (1 - 0.9 * t), 8, B_, smooth=2)                              # and a smaller pair
+        for j in range(4):                                                                        # a frill of spines behind
+            b = [0.0 - 0.08 * j, -0.05 - 0.035 * j, s * (0.22 - 0.01 * j)]                       # each jaw
+            add.cone(b, [b[0] - 0.17 - 0.03 * j, b[1] - 0.03 - 0.02 * j, b[2] + s * (0.1 + 0.03 * j)], 0.045, 6, B_)
+        for i in range(9):                                                                        # the upper teeth, fangs
+            x = 0.5 + 0.09 * i                                                                   # among them
+            w, y = 0.86 * at(SKULL, x, 1), at(SKULL, x, 3) + 0.01
+            L, r = (0.24, 0.035) if i == 6 else (0.08 + 0.03 * (i % 2), 0.024)
+            add.cone([x, y, s * w], [x - 0.02, y - L, s * (w - 0.015)], r, 6, B_)
+        add.cone([1.29, -0.035, s * 0.03], [1.28, -0.09, s * 0.03], 0.015, 5, B_)
+    add.cone([1.12, 0.13, 0], [1.21, 0.27, 0], 0.035, 6, B_)                                     # the horn on the nose
+    for j in range(5):                                                                            # spikes along the crown
+        x = 0.52 - 0.14 * j
+        y = at(SKULL, x, 2) - 0.01
+        add.cone([x, y, 0], [x - 0.05, y + 0.07 + 0.025 * j, 0], 0.035 + 0.006 * j, 6, P["red"])
+    add.push()                                                                                    # the lower jaw, hinged
+    JAW = [(0.27, 0.2, -0.03, -0.16), (0.45, 0.17, -0.035, -0.17), (0.7, 0.14, -0.035, -0.14),        # under the eyes
+           (0.95, 0.125, -0.035, -0.12), (1.12, 0.105, -0.035, -0.12), (1.22, 0.075, -0.04, -0.11), (1.28, 0.03, -0.05, -0.085)]
+    jaw = add.make(add.loft, [ring(*r, n=16) for r in JAW], G_)
+    add.mesh(add.color_by(jaw, lambda q: M_ if q[1] > -0.05 and q[0] > 0.3 else scales(q, lambda q: q[1] < -0.1)))
+    add.ellipsoid([0.66, -0.03, 0], [0.34, 0.022, 0.07], 4, P["red"])                            # the tongue,
     for s in (-1, 1):
-        add.cone([0.98, -0.05, s * 0.01], [1.1, -0.04, s * 0.06], 0.02, 5, P["red"])                                                             # forked
-        for i in range(5):                                                          # the lower teeth
-            x = 0.45 + 0.11 * i
-            w = 0.17 * add.sqrt(max(0.0, 1 - ((x - 0.72) / 0.44) ** 2)) - 0.03
-            add.cone([x, -0.085, s * w], [x - 0.01, -0.085 + (0.12 if i == 3 else 0.065), s * w], 0.02, 6, P["white"])
-    add.mesh(add.rotateZ(add.pop(), -0.42, (0.28, -0.08, 0)))                      # dropped open
-    if fire:                                                                        # fire: a widening jet, a hot core,
-        mouth = [1.08, -0.16, 0]                                                    # billows at its end, and sparks
-        end = [1.75, -0.45, 0]
-        add.cone(end, mouth, 0.25, 14, FLAME)
-        add.cone([1.5, -0.34, 0], mouth, 0.1, 10, P["flame_core"])
-        for i, (dx, dy, dz, r) in enumerate(((0.0, 0.0, 0.0, 0.25), (0.1, 0.08, 0.13, 0.17), (0.08, -0.07, -0.14, 0.18), (0.2, 0.04, 0.02, 0.13))):
+        add.cone([0.97, -0.028, s * 0.012], [1.1, -0.018, s * 0.065], 0.02, 5, P["red"])           # forked
+        for i in range(8):                                                                        # the lower teeth
+            x = 0.48 + 0.1 * i
+            w = 0.84 * at(JAW, x, 1)
+            L, r = (0.17, 0.03) if i == 6 else (0.07 + 0.025 * (i % 2), 0.021)
+            add.cone([x, -0.04, s * w], [x + 0.015, -0.04 + L, s * (w - 0.012)], r, 6, B_)
+    add.mesh(add.rotateZ(add.pop(), -0.55, (0.32, -0.08, 0)))                                     # dropped wide open
+    if fire:                                                                                      # fire: a widening jet,
+        mouth, end = [0.8, -0.18, 0], [1.9, -0.5, 0]                                              # a hot core, billows at
+        add.cone(end, mouth, 0.27, 14, FLAME)                                                     # its end, and sparks
+        add.cone([1.55, -0.4, 0], mouth, 0.11, 10, P["flame_core"])
+        for i, (dx, dy, dz, r) in enumerate(((0.0, 0.0, 0.0, 0.27), (0.1, 0.08, 0.14, 0.18), (0.08, -0.07, -0.15, 0.19), (0.2, 0.04, 0.02, 0.14))):
             add.sphere([end[0] + dx, end[1] + dy, end[2] + dz], r, 8, FLAME)
         for i in range(6):
-            add.sphere([1.25 + 0.11 * i, -0.2 - 0.06 * i + 0.1 * add.sin(i * 2.3), 0.17 * add.cos(i * 1.7)], 0.022, 4, P["flame_core"])
+            add.sphere([1.3 + 0.11 * i, -0.28 - 0.05 * i + 0.1 * add.sin(i * 2.3), 0.17 * add.cos(i * 1.7)], 0.022, 4, P["flame_core"])
     return add.pop()
 
 
@@ -4810,10 +5347,10 @@ def dragon(at, facing=0.0, size=1.0):
     U = vunit(vcross(vcross(F, [0, 1, 0]), F))                             # the head, placed on the neck
     S = vcross(F, U)
     base = [nape[k] - F[k] * 0.14 for k in range(3)]
-    head = add.stretch(dragon_head(), [1.15, 1.15, 1.15], (0, 0, 0))
+    head = add.stretch(dragon_head(), [1.3, 1.3, 1.3], (0, 0, 0))
     add.mesh(add.transform(head, [[F[0], U[0], S[0], base[0]], [F[1], U[1], S[1], base[1]], [F[2], U[2], S[2], base[2]]]))
     for i in range(3):                                                     # a wisp of smoke from the nostrils
-        add.sphere([base[k] + F[k] * 1.2 + U[k] * (0.22 + 0.27 * i) for k in range(3)], 0.08 + 0.05 * i, 6, SMOKE)
+        add.sphere([base[k] + F[k] * (1.63 - 0.05 * i) + U[k] * (0.28 + 0.27 * i) for k in range(3)], 0.08 + 0.05 * i, 6, SMOKE)
 
     def claws(tip, fwd, spread):
         """Three toes ending in claws, from ``tip`` along ``fwd``."""
@@ -5109,10 +5646,11 @@ def in_yard(x, z, margin=1.5, road=True):
 # chapel, the stable
 PLAZA = (-25.0, 36.5, KZ1 + PL + 0.2, 12.0)             # x0, x1, z0, z1 of the cobbled square
 ROAD_X = 2.5
+RYE = (-15.0, -7.0, 16.0, 25.0)                        # x0, x1, z0, z1 of the little field of rye west of the road
 FOOTPRINTS = [(10, 10, 2.75), (12, 24, 1.7), (2.8, 1.2, 0.6), (-2.8, 1.2, 0.6), (-12, 30, 2.6), (-34, 6, 4.0), (-33, 22, 4.5), (10, -40, 5.2),
               (28, 18, 5.0), (30, 31, 2.4), (33.5, 23, 2.6), (32, 6, 5.0), (-27.8, -18, 5.4), (-6, -40, 1.2),
               (-22, 14, 3.2), (-30, 35, 2.0), (-23, 38, 2.8), (17, 42, 2.8), (8, 41, 2.6), (-8, 41, 2.6),
-              (-19, 20, 1.2), (14, 27, 0.6), (-10, 22, 0.6), (20, 36, 0.6), (9, 20, 0.9), (-20, 26, 0.9),
+              (-19, 20, 1.2), (14, 27, 0.6), (-5.6, 21.5, 0.6), (20, 36, 0.6), (9, 20, 0.9), (-20, 26, 0.9),
               (-40, 14, 0.4), (-38, 22, 0.4), (-5, 39, 0.5), (14, -38, 1.6),
               (-44.2, -8.5, 6.0), (-43.2, -15.2, 1.5), (-40.0, -4.5, 1.2), (-41.0, -15.2, 0.5),     # the kitchen, its oven,
               (46.2, -5.2, 4.9), (46.2, 8.5, 0.9), (46.2, 12.3, 0.9), (37.0, 9.5, 0.5), (37.5, 12.8, 0.5),   # the stores, the butts,
@@ -5121,6 +5659,8 @@ FOOTPRINTS = [(10, 10, 2.75), (12, 24, 1.7), (2.8, 1.2, 0.6), (-2.8, 1.2, 0.6), 
 
 def on_footprint(x, z):
     if abs(x) < 3.7 and -1.4 < z < 1.4:                # the steps up to the palace door
+        return True
+    if RYE[0] - 0.3 < x < RYE[1] + 0.3 and RYE[2] - 0.3 < z < RYE[3] + 0.3:           # the field
         return True
     return any((x - fx) ** 2 + (z - fz) ** 2 < r * r for fx, fz, r in FOOTPRINTS)
 
@@ -5283,9 +5823,11 @@ def well(at):
     add.cylinder([-1.4, 2.2, 0], [1.4, 2.2, 0], 0.16, k_(10), P["wood"])                         # the windlass
     add.helix([0, 2.2, 0], 0.17, 0.05, 6, 40, 0.02, 6, P["rope"], axis=(1, 0, 0))
     add.polyline([[1.55, 2.2, 0], [1.75, 2.2, 0], [1.75, 2.6, 0], [1.95, 2.6, 0]], 0.04, 8, P["iron"])   # the crank
-    add.cylinder([0, 2.2, 0], [0, 1.4, 0], 0.015, 6, P["rope"])
-    lathe([[0.16, 0], [0.18, 0], [0.22, 0.3], [0.2, 0.3], [0.16, 0.02]], [0, 1.1, 0], k_(10), P["wood_dark"])
-    add.arch([-0.2, 1.4, 0], [0.2, 1.4, 0], 0.25, 0.015, P["iron"], 8, 6)
+    add.cylinder([0, 2.2, 0.175], [0, 1.69, 0.175], 0.015, 6, P["rope"])                          # the rope, off the drum,
+    add.torus([0, 1.66, 0.175], 0.028, 0.011, 8, 4, P["rope"], axis=(1, 0, 0))                   # knotted round the top
+    add.sphere([0, 1.7, 0.175], 0.024, 4, P["rope"])                                              # of the bucket's handle
+    lathe([[0.16, 0], [0.18, 0], [0.22, 0.3], [0.2, 0.3], [0.16, 0.02]], [0, 1.1, 0.175], k_(10), P["wood_dark"])
+    add.arch([-0.2, 1.4, 0.175], [0.2, 1.4, 0.175], 0.25, 0.015, P["iron"], 8, 6)
     add.roof([0, 2.8, 0], [3.6, 2.2], 1.0, P["slate"], 0.2)
     add.mesh(add.move(add.pop(), at))
 
@@ -5417,11 +5959,13 @@ def trebuchet(at, facing=0.0):
     add.mesh(add.move(add.rotateY(add.pop(), facing), at))
 
 
-def cannon(at, facing=0.0):
+def cannon(at, facing=0.0, balls=True, s=1.0):
     """An iron cannon on a wheeled carriage: the barrel is a real tube at
     the muzzle -- a round bore you can look into -- with reinforcing rings
     and a cascabel at the breech; the pyramid of cannon balls stands beside
-    the carriage, clear of the wheels."""
+    the carriage, clear of the wheels (``balls=False``: none -- a gun on the
+    walls, its balls stacked elsewhere).  ``s`` scales it: 0.75 is a lighter
+    gun for a tower top."""
     add.push()
     IRON, RING = P["iron"], P["steel"]
     for sz in (-0.35, 0.35):                                                  # the carriage cheeks
@@ -5443,11 +5987,19 @@ def cannon(at, facing=0.0):
         add.cylinder([0.0, y, sz * 0.8], [0.0, y, sz], 0.08, 10, IRON)
     add.cylinder([-0.95, 0.5, 0.25], [-0.95, 0.5, 0.65], 0.02, 6, P["wood"])   # a ramrod leaning on the carriage
     add.cylinder([-0.95, 0.5, 0.65], [1.6, 0.3, 0.9], 0.02, 6, P["wood"])
-    for j in range(3):                                                        # a pyramid of cannon balls, beside the carriage
+    if balls:
+        ball_pile([-0.9, 0, 1.8])                                             # a pyramid of cannon balls, beside the carriage
+    add.mesh(add.move(add.rotateY(add.stretch(add.pop(), [s] * 3, (0, 0, 0)), facing), at))
+
+
+def ball_pile(at, facing=0.0):
+    """A pyramid of fourteen cannon balls on a wooden board."""
+    add.push()
+    for j in range(3):
         for i in range(3 - j):
             for k in range(3 - j):
-                add.sphere([-1.4 + (i + 0.5 * j) * 0.5, 0.25 + j * 0.42, 1.3 + (k + 0.5 * j) * 0.5], 0.25, 10, IRON)
-    add.cuboid([-0.9, 0.05, 1.8], [1.8, 0.1, 1.8], P["wood"])                  # ... on a wooden board
+                add.sphere([-0.5 + (i + 0.5 * j) * 0.5, 0.25 + j * 0.42, -0.5 + (k + 0.5 * j) * 0.5], 0.25, 10, P["iron"])
+    add.cuboid([0, 0.05, 0], [1.8, 0.1, 1.8], P["wood"])
     add.mesh(add.move(add.rotateY(add.pop(), facing), at))
 
 
@@ -5913,8 +6465,8 @@ def market(at, facing=0.0):
         x = -2.0 + i * 0.5 + 0.25
         add.mesh(slab([[x - 0.25, 2.9, -1.1], [x + 0.25, 2.9, -1.1], [x + 0.25, 2.1, 1.2], [x - 0.25, 2.1, 1.2]], 0.03,
                       P["red"] if i % 2 else P["white"]))
-    bowl([-1.4, 1.0, 0.2], 0.4, P["wood_light"], (P["apple"], P["apple"], P["cheese"]))
-    bowl([-0.6, 1.0, -0.3], 0.4, P["wood_light"], (P["orange"], P["orange"]))
+    bowl([-1.4, 1.0, 0.2], 0.22, P["wood_light"], (P["apple"], P["apple"], P["cheese"]))
+    bowl([-0.6, 1.0, -0.3], 0.22, P["wood_light"], (P["orange"], P["orange"]))
     bread([0.2, 1.0, 0.2], 3)
     cheese([1.0, 1.0, -0.3])
     for i in range(3):                                                                   # fish, laid on their sides
@@ -6540,7 +7092,7 @@ dog([9, Y, 20], 2.5)
 dog([-20, Y, 26], -1.0, P["trunk"])
 ladder_on_wall(7, 0.62)
 ladder_on_wall(3, 0.4)                                                                   # (clear of the kitchen)
-standing_man([-10, Y, 22], 1.0, P["red"])                                                 # people about the yard
+standing_man([-5.6, Y, 21.5], -add.pi / 2, P["red"])                                     # people about the yard
 standing_man([14, Y, 27], -2.0, P["blue"], hat=True)
 standing_man([20, Y, 36], 2.6, P["leaf"])
 add.seed(31)
@@ -6553,6 +7105,39 @@ for i in range(count(14)):                                          # gulls over
     gull([rad * add.cos(a), y, rad * add.sin(a)], heading, way * add.uniform(0.1, 0.5), add.uniform(-0.1, 0.2),
          0.2 + 0.4 * add.sin(beat), -0.35 + 0.3 * add.cos(beat), add.uniform(0.85, 1.15), add.uniform(0.15, 0.4))
 flush("courtyard")
+# the field of rye: a strip of ploughed earth sown in rows, the rye ripe and nodding in the wind, a scarecrow in it
+FX, FZ = (RYE[0] + RYE[1]) / 2, (RYE[2] + RYE[3]) / 2
+add.cuboid([FX, G + 0.03, FZ], [RYE[1] - RYE[0], 0.06, RYE[3] - RYE[2]], P["earth_dark"])
+EAR = add.make(add.ellipsoid, [0, 0, 0], [0.02, 0.065, 0.02], 3, P["bread"])
+n = 0
+for i in range(int((RYE[1] - RYE[0]) / 0.32)):                     # rows 0.32 apart, a tuft of three stalks every 0.14
+    for j in range(int((RYE[3] - RYE[2]) / 0.14)):
+        x = RYE[0] + 0.16 + 0.32 * i + (hash2(i, j, 92) - 0.5) * 0.1
+        z = RYE[2] + 0.07 + 0.14 * j + (hash2(i, j, 93) - 0.5) * 0.06
+        if hash2(i, j, 91) > max(DENSITY, 0.25) or (x - FX) ** 2 + (z - FZ) ** 2 < 0.5 ** 2:
+            continue
+        for k in range(3):
+            h = 0.95 + 0.25 * hash2(i, j, 94 + k)
+            a = 2.1 * k + 6.28 * hash2(i, j, 97)
+            lean = 0.06 + 0.08 * hash2(i, j, 98 + k)                      # all a little the same way, in the wind
+            top = [x + 0.03 * add.cos(a) + lean, G + 0.06 + h, z + 0.03 * add.sin(a)]
+            sheet([[x - 0.012 * add.sin(a), G + 0.05, z + 0.012 * add.cos(a)], [x + 0.012 * add.sin(a), G + 0.05, z - 0.012 * add.cos(a)],
+                   top], P["straw"], 0.008, hinge=True)
+            tilt = add.atan2(lean, h) + 0.25 + 0.3 * hash2(i, j, 101 + k)  # the ear nods
+            add.mesh(add.move(add.rotateZ(EAR, -tilt), [top[0] + 0.05 * add.sin(tilt), top[1] + 0.05 * add.cos(tilt), top[2]]))
+        n += 1
+add.cylinder([FX, G, FZ], [FX, G + 2.2, FZ], 0.05, 8, P["wood_dark"])                     # the scarecrow: a pole,
+add.cylinder([FX, G + 1.7, FZ - 0.75], [FX, G + 1.7, FZ + 0.75], 0.035, 6, P["wood_dark"])   # a crossbar,
+for sz in (-1, 1):                                                                       # an old coat on it,
+    add.cylinder([FX, G + 1.7, FZ + sz * 0.1], [FX, G + 1.66, FZ + sz * 0.62], 0.085, 8, P["wood_light"])
+    add.cone([FX, G + 1.66, FZ + sz * 0.62], [FX, G + 1.55, FZ + sz * 0.8], 0.05, 5, P["straw"])   # straw out of the sleeves
+add.cuboid([FX, G + 1.35, FZ], [0.26, 0.75, 0.5], P["wood_light"])
+add.cuboid([FX, G + 1.05, FZ + 0.12], [0.27, 0.2, 0.18], P["brick"])                       # a patch
+add.cone([FX, G + 0.98, FZ], [FX, G + 0.8, FZ], 0.12, 6, P["straw"])
+add.sphere([FX, G + 2.02, FZ], 0.17, 8, P["straw"])                                        # a head of straw
+add.cylinder([FX, G + 2.12, FZ], [FX, G + 2.15, FZ], 0.3, 12, P["wood"])                   # and a hat
+add.cone([FX, G + 2.15, FZ], [FX, G + 2.42, FZ], 0.17, 12, P["wood"])
+flush("the field of rye (%d tufts)" % n, clean=False)
 
 
 def ship(at, forward, L=24.0, B=7.2, seed=0, crew=(), band=None, shields=False, gangway=None):
@@ -6985,6 +7570,11 @@ for k in range(8):
             continue
         p = [a[0] + d[0] * L * t - n[0] * 1.45, G + 3.5, a[2] + d[2] * L * t - n[2] * 1.45]
         torch(p, add.atan2(-n[0], -n[2]))
+for z in (PORT_Z + 1.0, PORT_Z - 1.0):                 # four in the gate passage, one on either side of it before the
+    for s in (-1, 1):                                  # portcullis and one behind it, and one on each gate tower
+        torch([s * 2.5, G + 2.3, z], -s * add.pi / 2)  # beside the gate
+for s in (-1, 1):
+    torch([s * 4.3, G + 3.3, GATE_FRONT], 0.0)
 for k, c in enumerate(CORNERS):
     top = TOWER_TOP + 0.35 + 3.0 + 8.0
     add.cylinder([c[0], top, c[2]], [c[0], top + 3.5, c[2]], 0.06, 8, P["iron"])
@@ -6997,10 +7587,11 @@ a, b = CORNERS[4], CORNERS[5]
 L, d, n = outward(a, b)
 armour([a[0] + d[0] * L * 0.6, WALK, a[2] + d[2] * L * 0.6], add.atan2(-d[0], -d[2]), weapon="sword")
 lying_armour([a[0] + d[0] * L * 0.3, WALK, a[2] + d[2] * L * 0.3], add.atan2(d[0], d[2]))        # ... and one asleep on it
-for k, c in enumerate(CORNERS):                                                              # a crossbowman on every tower top,
-    aa = PHI[k]                                                                              # at the parapet, facing out ...
-    if (aa - (ARRIVE[k] - HEADROOM - 0.35)) % (2 * add.pi) < HEADROOM + 0.95:                # ... clear of the stairwell and its wall
-        aa = ARRIVE[k] + 0.7
+GUN_A = [PHI[k] + (add.pi / 8 if k % 2 else -add.pi / 8) for k in range(8)]                 # every tower top has a gun (see
+XBOW_A = [PHI[k] + (-0.7 if k % 2 else 0.7) for k in range(8)]                               # "the guns on the walls"), and
+for k, c in enumerate(CORNERS):                                                              # a crossbowman at the parapet,
+    aa = XBOW_A[k]                                                                           # facing out on the other side of
+    assert (aa - (ARRIVE[k] - HEADROOM - 0.35)) % (2 * add.pi) >= HEADROOM + 0.95            # it, clear of the stairwell and its wall
     bowman([c[0] + 2.3 * add.cos(aa), TOWER_TOP, c[2] + 2.3 * add.sin(aa)], add.atan2(add.cos(aa), add.sin(aa)), "crossbow")
 for k in (2, 3, 4, 5, 6):                                                                    # archers on the wall walk, each at an
     a, b = CORNERS[k], CORNERS[(k + 1) % 8]                                                  # embrasure between two merlons
@@ -7046,9 +7637,8 @@ def along_clear(arrive, head, t):
 
 
 for k, c in enumerate(CORNERS):                                     # a second man on every tower of the wall: an archer,
-    aa = PHI[k] if clear_of_stair(ARRIVE[k], PHI[k], HEADROOM) else ARRIVE[k] + 0.7   # as far round from the
-    ends = [along_clear(ARRIVE[k], HEADROOM, t) for t in (0.12, 0.88)]              # crossbowman as the stairwell allows
-    ang = max(ends, key=lambda e: abs((e - aa + add.pi) % (2 * add.pi) - add.pi))
+    ang = along_clear(ARRIVE[k], HEADROOM, 0.96 if k % 2 else 0.12)  # at the end of the free part of the top beyond the
+    assert clear_of_stair(ARRIVE[k], ang, HEADROOM)                  # gun, away from the crossbowman
     bowman([c[0] + 2.6 * add.cos(ang), TOWER_TOP, c[2] + 2.6 * add.sin(ang)], add.atan2(add.cos(ang), add.sin(ang)), "bow")
 tops = [((s * 7, 50), G + 20, GATE_ARRIVE[i], 1.65) for i, s in enumerate((-1, 1))]                 # two on each gate tower
 tops += [(PALACE_TOWERS[i], EAVE + 4, PT_ARRIVE[i], 2.3) for i in range(len(PALACE_TOWERS))]       # and each palace tower
@@ -7063,6 +7653,47 @@ for da in (1.3, -1.3, 2.2, -2.2):                                   # and a cros
         bowman([DON[0] + 4.3 * add.cos(ang), DON_TOP, DON[1] + 4.3 * add.sin(ang)], add.atan2(add.cos(ang), add.sin(ang)), "crossbow")
         break
 flush("the donjon's lookout, shooters on the towers")
+
+
+# the guns on the walls, ready for the enemy, and their gunners -- the newest trade in the garrison.  Over the gate,
+# on the roof between the gate towers, two heavy guns point out over the drawbridge through the embrasures, with a
+# pile of balls and a keg of powder behind them; on every tower of the wall a lighter gun points out between two
+# posts of its lantern.  By each gun its gunner, the linstock in his hand and its match alight.
+def gunner(at, facing=0.0):
+    """A gunner: a coat of buff leather over red hose, a steel cap, a powder
+    horn at his hip, and in his right hand the linstock -- its butt on the
+    ground, the slow match smouldering in the fork at its head."""
+    M = person("stand", P["bread"], hat="steel", hose=P["red"],
+               arms=(([-0.26, 1.0, 0.17], [0, 0, 1], [-0.4, 0, -1]), ([0.245, 0.86, 0.03], [0, -1, 0.1], [0, 0, -1])))
+    add.push()
+    butt, head = [-0.29, 0.02, 0.24], [-0.255, 1.62, 0.18]                  # the linstock, up through his fist
+    add.cylinder(butt, head, 0.018, 6, P["wood"])
+    add.cone(butt, [butt[0], butt[1] - 0.02, butt[2]], 0.02, 6, P["iron"])  # its shoe
+    for sx in (-1, 1):                                                      # the fork at its head, the match wound round
+        tip = [head[0] + sx * 0.05, head[1] + 0.1, head[2]]                 # one prong, its end alight
+        add.cylinder(head, tip, 0.008, 4, P["iron"])
+        add.cylinder([tip[0], tip[1] - 0.05, tip[2]], [tip[0], tip[1] - 0.01, tip[2]], 0.014, 6, P["rope"])
+    add.sphere([head[0] + 0.05, head[1] + 0.115, head[2]], 0.017, 3, P["orange"])
+    add.sphere([head[0] + 0.06, head[1] + 0.2, head[2]], 0.035, 3, SMOKE)
+    add.cone([0.215, 1.0, -0.07], [0.245, 0.84, 0.05], 0.035, 8, P["bone"])  # the powder horn
+    add.cylinder([0.215, 1.0, -0.07], [0.212, 1.02, -0.085], 0.035, 8, P["wood_dark"])
+    M.extend(add.pop())
+    add.mesh(add.move(add.rotateY(add.stretch(M, [LIFE] * 3, (0, 0, 0)), facing), at))
+
+
+GUN_Z = GATE_Z1 + 0.35 - 1.95                          # the gate's guns: their muzzles in the embrasures
+for x in (-1.65, 0.65):
+    cannon([x, GATE_ROOF, GUN_Z], -add.pi / 2, balls=False)
+gunner([-0.5, GATE_ROOF, GUN_Z - 1.8], 0.0)
+gunner([1.75, GATE_ROOF, GUN_Z - 1.8], 0.0)
+ball_pile([-2.2, GATE_ROOF, GATE_Z0 + 0.95])
+barrel([2.35, GATE_ROOF, GATE_Z0 + 0.95], 0.4, 0.95)
+for k, c in enumerate(CORNERS):                        # the towers' guns, the gunner beside the breech on the side of
+    a, side = GUN_A[k], (-1 if k % 2 else 1)           # the crossbowman
+    cannon([c[0] + 2.5 * add.cos(a), TOWER_TOP, c[2] + 2.5 * add.sin(a)], -a, balls=False, s=0.75)
+    gx, gz = c[0] + 1.79 * add.cos(a) - side * 1.05 * add.sin(a), c[2] + 1.79 * add.sin(a) + side * 1.05 * add.cos(a)
+    gunner([gx, TOWER_TOP, gz], add.pi / 2 - a)
+flush("the guns on the walls and their gunners")
 
 
 # --------------------------------------------------------------------------
