@@ -1480,21 +1480,23 @@ GALLERY = [
     ("castle.png", "46_castle.py",
      "The castle: an island in a transparent lake, a wall of stone blocks "
      "with eight hollow towers (spiral stairs inside), a gatehouse with a "
-     "portcullis and a drawbridge on chains, a palace with glass windows "
-     "and a tiled roof, a chapel with stained glass, a courtyard full of "
-     "knights, archers, townsfolk, carts and animals -- and, inside, the king in his "
-     "throne hall with a feast, a dormitory, an attic and a dragon on its "
-     "treasure. No textures: every stone, tile and coat of arms is "
+     "portcullis and a drawbridge on chains, a road down to a harbour with "
+     "two moored ships, a palace with glass windows and a tiled roof, a "
+     "chapel with stained glass, a courtyard full of knights, archers, "
+     "townsfolk, log houses, carts and animals -- and, inside, the king in "
+     "his throne hall with a feast, beds for everyone, an attic and a dragon "
+     "on its treasure. No textures: every stone, tile and coat of arms is "
      "geometry. Written streaming: a 400 MB .off, an .obj under 100 MB "
      "compressed.",
      "Pilis: sala permatomame ežere, akmens blokų siena su aštuoniais "
      "tuščiaviduriais bokštais (viduje sraigtiniai laiptai), vartai su "
-     "pakeliamomis grotomis ir tiltu ant grandinių, rūmai su stiklo langais "
-     "ir čerpių stogu, koplyčia su vitražais, kiemas pilnas riterių, "
-     "lankininkų, miestiečių, vežimų ir gyvūnų -- o viduje karalius sosto menėje su puota, "
-     "miegamasis, palėpė ir drakonas ant lobio. Be tekstūrų: kiekvienas "
-     "akmuo, čerpė ir herbas -- daugiakampiai. Rašyta srautu: 400 MB .off, "
-     ".obj suglaudintas mažiau nei 100 MB."),
+     "pakeliamomis grotomis ir tiltu ant grandinių, kelias žemyn į uostą su "
+     "dviem prišvartuotais laivais, rūmai su stiklo langais ir čerpių stogu, "
+     "koplyčia su vitražais, kiemas pilnas riterių, lankininkų, miestiečių, "
+     "rąstinių namelių, vežimų ir gyvūnų -- o viduje karalius sosto menėje "
+     "su puota, lovos visiems, palėpė ir drakonas ant lobio. Be tekstūrų: "
+     "kiekvienas akmuo, čerpė ir herbas -- daugiakampiai. Rašyta srautu: "
+     "400 MB .off, .obj suglaudintas mažiau nei 100 MB."),
     ("castle_hall.png", "46_castle.py",
      "Inside the castle: the great hall with the king's throne, the feast "
      "on the long tables and the chandeliers (a view from the .obj).",

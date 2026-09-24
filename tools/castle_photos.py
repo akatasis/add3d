@@ -1,10 +1,11 @@
 """
-castle_photos.py -- thirty photographs of the castle (examples/46_castle.py).
+castle_photos.py -- thirty-six photographs of the castle (examples/46_castle.py).
 
-Thirty camera positions chosen the way a photographer would walk round the
-finished model: the approach over the lake, the gatehouse, the walls, the
-courtyard and its trades, the palace inside and out, the donjon with the
-treasury, the chapel, the roofs.  Each is rendered with tools/preview.py
+Thirty-six camera positions chosen the way a photographer would walk round
+the finished model: the approach over the lake, the gatehouse, the walls,
+the courtyard and its trades, the palace inside and out, the donjon with the
+treasury, the chapel, the roofs, the harbour with its ships, the road up the
+hill, the log houses and the kitchen inside.  Each is rendered with tools/preview.py
 (the big model is streamed) to ``<folder>/NN_name.png``.
 
     python3 tools/castle_photos.py examples/out/castle_full/castle.obj photos
@@ -22,10 +23,10 @@ import preview
 # name, eye, at, fov (half angle, degrees); y is up, the gate is at +z
 PHOTOS = [
     ("01_pilis_nuo_ezero", (72, 36, 98), (0, 18, 5), 33),                 # the castle on its hill, from the south-east
-    ("02_priesaisrys_nuo_kranto", (14, 3.5, 150), (0, 24, 30), 32),       # from the far shore: lake, jetty, road, gate
+    ("02_priesaisrys_nuo_kranto", (14, 3.5, 150), (0, 24, 30), 32),       # from the far shore: lake, terrace, gate
     ("03_vartai_ir_pakeliamas_tiltas", (0, 19, 76), (0, 17, 48), 36),     # the gatehouse and the drawbridge
     ("04_grandines_ir_grioviai", (-10, 17, 63), (0, 16.5, 52), 40),       # chains, moat and the gate arch
-    ("05_griovys_is_sono", (22, 21, 78), (-6, 15, 56), 30),               # the moat and the bridge from the side
+    ("05_griovys_is_sono", (-22, 21, 78), (6, 15, 56), 30),               # the moat and the bridge from the side
     ("06_siena_virs_skardzio", (-98, 30, -42), (-40, 22, -20), 40),       # the curtain wall on the cliff side
     ("07_stogai_is_paukscio_skrydzio", (24, 72, 34), (0, 25, -14), 40),   # the palace roofs from above
     ("08_donzonas", (-36, 17.5, -6), (-26, 33, -33), 40),                 # the donjon from the west side of the yard
@@ -37,7 +38,7 @@ PHOTOS = [
     ("14_kalve", (-25, 17, 11), (-34, 15.8, 6), 45),                      # the smithy
     ("15_arklides", (17, 17, -32), (10, 15.5, -40), 45),                  # the stable and the horses
     ("16_patrankos_prie_vartu", (15, 17.8, 33), (7.5, 15.6, 41), 40),     # the cannons inside the gate
-    ("17_katapulta", (19, 17.5, 27), (28, 16, 18), 45),                   # the trebuchet
+    ("17_katapulta", (36, 17.5, 25), (28, 16, 18), 45),                   # the trebuchet
     ("18_sienos_takas", (34.9, 28.6, 34.9), (14, 26.8, 49), 45),          # along the wall walk to the gate towers
     ("19_bokstas_su_zibintu", (-6, 19, 28), (-20.7, 32, 50), 26),          # a tower top: parapet, lantern, flag
     ("20_vartu_praejimas", (0, 16.5, 39), (0, 17.5, 53), 45),             # the gate passage and the portcullis
@@ -51,6 +52,12 @@ PHOTOS = [
     ("28_pastoge", (-6, 31.5, -16), (4, 30.3, -24), 45),                  # the attic and its junk
     ("29_lobynas_ir_drakonas", (-26.8, 17.7, -28.8), (-24.5, 16.6, -33.2), 44),  # the treasury and the dragon
     ("30_valdovo_kambarys", (-21.5, 34.6, -29.5), (-27, 34, -33.5), 50),  # the lord's chamber
+    ("31_uostas_ir_laivai", (142, 13, 84), (96, 8, 32), 30),              # the harbour: the wharf and the two ships
+    ("32_karaliaus_laivas", (94.0, 4.3, 34.0), (104, 5.5, 43.5), 40),     # the king's ship, from the wharf
+    ("33_kelias_i_pili", (86, 7, 18), (38, 13, 56), 34),                  # the road up the hill to the terrace and the gate
+    ("34_rastiniai_nameliai", (3, 16.3, -44), (-8, 15.4, -36), 40),       # log houses behind the palace
+    ("35_namelio_vidus", (-0.6, 16.1, -36.8), (-3.0, 15.2, -34.7), 50),   # inside a log house: beds, the table
+    ("36_virtuves_vidus", (-42.2, 15.8, -7.7), (-44.5, 15.1, -11.1), 50), # inside the kitchen: the hearth, the cook
 ]
 
 

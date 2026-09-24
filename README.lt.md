@@ -175,18 +175,24 @@ tekstūromis](examples/45_glass_and_textures.py) -- ir
 nuskendusia valtimi, aštuonkampė siena iš atskirų akmens blokų su
 aštuoniais tuščiaviduriais bokštais -- sraigtiniai laiptai, durys į sienos
 taką, apžvalgos aikštelės viršuje -- vartai su pakeliamomis grotomis ir
-tiltu, kabančiu ant tikrų grandinių, rūmai su stiklo langais, balkonais,
-stoglangiais ir stogu iš atskirų čerpių, koplyčia su vitražais ir
-altoriumi, kiemas su šuliniu, fontanu, kalve, virtuve su duonkepe krosnimi,
-sandėliu, turgumi, arklide, sodais, šaudymo taikiniais, katapulta,
-patrankomis, vežimais, statinėmis, dėžėmis, ginklų stovais, riteriais
-šarvuose, lankininkais, miestiečiais, arkliais, vištomis ir šunimi,
-žvejais ant liepto -- o viduje siurprizai: didžioji
-menė su karaliumi soste, puota ant ilgųjų stalų ir šachmatų etiudu
-(„Baltieji pradeda ir laimi"), kareivių miegamasis antrame aukšte, palėpė
-pilna senų daiktų, koplyčios pastogė su kunigo rūbais ir taure, o
-didžiajame bokšte -- lobynas su sparnuotu drakonu, ugnimi saugančiu
-auksą, virš jo ginklinė ir valdovo kambarys. Tekstūrų nėra: kiekvienas
+tiltu, kabančiu ant tikrų grandinių, per griovį į terasą, į kalvą įkirstas
+kelias žemyn į uostą, kur prie krantinės prišvartuoti du dideli laivai, o
+aplink salą pririštos valtys, rūmai su stiklo langais, portiku ant kolonų,
+balkonais, stoglangiais ir stogu iš atskirų čerpių, koplyčia su vitražais
+ir altoriumi, kiemas su šuliniu, fontanu, kalve, virtuve su židiniu ir
+duonkepe krosnimi, rąstiniais nameliais su šienaujomis ir trobele (visi
+įrengti viduje), sandėliu, turgumi, arklide, sodais, šaudymo taikiniais,
+katapulta, patrankomis, vežimais, statinėmis, dėžėmis, ginklų stovais,
+riteriais šarvuose, lankininkais, miestiečiais, arkliais, vištomis ir
+šunimi, žvejais ant krantinės, eglėmis, pušimis, beržais, ąžuolais,
+guobomis ir liepomis šlaituose, kirais virš ežero -- o viduje siurprizai:
+didžioji menė su karaliumi soste, jo patarėju, juokdariu ir muzikantais,
+puota trisdešimt dviem svečiams, šachmatų etiudas („Baltieji pradeda ir
+laimi") ir laiptai žemyn į vyno rūsį, kareivių miegamasis antrame aukšte,
+palėpė, kur tarp senų daiktų miega svečiai, koplyčios pastogė su kunigo
+rūbais ir taure, o didžiajame bokšte -- lobynas su sparnuotu drakonu,
+ugnimi saugančiu auksą, virš jo ginklinė ir valdovo kambarys; kiekvienas
+pilies gyventojas turi lovą. Tekstūrų nėra: kiekvienas
 akmens blokas, čerpė, grindinio akmuo, vitražo stiklelis ir herbas --
 daugiakampiai. `python3 46_castle.py` rašo modelį srautu iš karto į
 `castle.off` (apie 400 MB) ir `castle.obj`, pakeliui sutvarkydamas
@@ -209,7 +215,7 @@ examples/            43 pavyzdinės programos su komentarais (studijos ir pilni 
   build_all.py       paleidžia visas, tikrina Sketchfab ribas, sugeneruoja paveikslėlius
 tools/
   preview.py         atvaizdavimo įrankis be priklausomybių
-  castle_photos.py   trisdešimt pilies nuotraukų, darytų su preview.py
+  castle_photos.py   trisdešimt šešios pilies nuotraukos, darytos su preview.py
   make_docs.py       sukuria docs/index.html iš kodo aprašymų ir docs/reference.py
   coverage.py        kuris pavyzdys kurią funkciją naudoja
 tests/
