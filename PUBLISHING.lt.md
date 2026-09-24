@@ -135,7 +135,7 @@ Jei abejojate, pirmiausia išbandykite `test.pypi.org`
 | `add.py` | pati biblioteka – vienintelis failas, kurio reikia studentams |
 | `_src/` + `build.py` | dalys, iš kurių surenkamas `add.py` |
 | `examples/` | 43 pavyzdinės programos su komentarais ir `add.py` kopija |
-| `tests/` | 93 vienetiniai testai, add.py 1.2 suderinamumo testas ir dokumentacijos pavyzdžių paleidiklis |
+| `tests/` | 94 vienetiniai testai, add.py 1.2 suderinamumo testas ir dokumentacijos pavyzdžių paleidiklis |
 | `tools/` | `preview.py` (peržiūra), `make_docs.py`, `coverage.py` |
 | `docs/` | dokumentacijos svetainė (EN/LT) ir paveikslėliai |
 | `slides/` | paskaitos skaidrės (.pptx, .pdf ir generatorius) |

@@ -69,6 +69,33 @@ def _keep_faces(M, keep):
     return removed
 
 
+def _not_finite(M):
+    """The vertices with a coordinate that is not a finite number (NaN or
+    infinite -- a division by zero somewhere).  Quick when there are none."""
+    finite = math.isfinite
+    if finite(sum(p[0] + p[1] + p[2] for p in M.V)):
+        return set()
+    return set(i for i, p in enumerate(M.V) if not (finite(p[0]) and finite(p[1]) and finite(p[2])))
+
+
+def _drop_not_finite(M):
+    """Delete the vertices that are not finite numbers, and the faces that
+    use them (in place).  Returns how many faces went."""
+    bad = _not_finite(M)
+    if not bad:
+        return 0
+    removed = _keep_faces(M, [k for k, f in enumerate(M.F) if bad.isdisjoint(f)])
+    remap, newV = {}, []
+    for i, p in enumerate(M.V):
+        if i not in bad:
+            remap[i] = len(newV)
+            newV.append(p)
+    M.V = newV
+    for f in M.F:
+        f[:] = [remap[i] for i in f]
+    return removed
+
+
 def _split_repeats(f, uv):
     """Cut a face that visits a vertex twice into loops that do not.
 
@@ -871,6 +898,9 @@ def clean(M=None, tol=1e-7, weld=True, degenerate=True, duplicates=True,
     """
     M = as_mesh(M).copy()
     info = {"vertices_removed": 0, "faces_removed": 0, "faces_cut": 0, "faces_split": 0}
+    n = len(M.V)
+    info["faces_removed"] += _drop_not_finite(M)     # a vertex that is not a number cannot be mended
+    info["vertices_removed"] += n - len(M.V)
     if weld:
         info["vertices_removed"] += _weld(M, tol)
     if degenerate:
@@ -884,6 +914,10 @@ def clean(M=None, tol=1e-7, weld=True, degenerate=True, duplicates=True,
         if info["faces_cut"] and weld:
             _weld(M, tol)                            # the new corners meet their neighbours ...
             M = heal(M, tol)                         # ... and the neighbours' long edges learn of them
+            if degenerate:                           # a corner welded onto its neighbour can leave a face
+                info["faces_removed"] += _drop_degenerate(M)   # visiting a vertex twice, or without area
+            if duplicates:
+                info["faces_removed"] += _dedup_faces(M)
     if convex:
         info["faces_split"] += _split_concave(M)
     if normals:

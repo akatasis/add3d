@@ -135,7 +135,7 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
 | `add.py` | the library -- the only file students need |
 | `_src/` + `build.py` | the sections `add.py` is assembled from |
 | `examples/` | 43 commented example programs and a copy of `add.py` |
-| `tests/` | 93 unit tests, the add.py 1.2 compatibility fixture and the documentation-example runner |
+| `tests/` | 94 unit tests, the add.py 1.2 compatibility fixture and the documentation-example runner |
 | `tools/` | `preview.py` (renderer), `make_docs.py`, `coverage.py` |
 | `docs/` | the documentation site (EN/LT) and its pictures |
 | `slides/` | the lecture slides (.pptx, .pdf and the generator) |

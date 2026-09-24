@@ -3663,6 +3663,33 @@ def _keep_faces(M, keep):
     return removed
 
 
+def _not_finite(M):
+    """The vertices with a coordinate that is not a finite number (NaN or
+    infinite -- a division by zero somewhere).  Quick when there are none."""
+    finite = math.isfinite
+    if finite(sum(p[0] + p[1] + p[2] for p in M.V)):
+        return set()
+    return set(i for i, p in enumerate(M.V) if not (finite(p[0]) and finite(p[1]) and finite(p[2])))
+
+
+def _drop_not_finite(M):
+    """Delete the vertices that are not finite numbers, and the faces that
+    use them (in place).  Returns how many faces went."""
+    bad = _not_finite(M)
+    if not bad:
+        return 0
+    removed = _keep_faces(M, [k for k, f in enumerate(M.F) if bad.isdisjoint(f)])
+    remap, newV = {}, []
+    for i, p in enumerate(M.V):
+        if i not in bad:
+            remap[i] = len(newV)
+            newV.append(p)
+    M.V = newV
+    for f in M.F:
+        f[:] = [remap[i] for i in f]
+    return removed
+
+
 def _split_repeats(f, uv):
     """Cut a face that visits a vertex twice into loops that do not.
 
@@ -4465,6 +4492,9 @@ def clean(M=None, tol=1e-7, weld=True, degenerate=True, duplicates=True,
     """
     M = as_mesh(M).copy()
     info = {"vertices_removed": 0, "faces_removed": 0, "faces_cut": 0, "faces_split": 0}
+    n = len(M.V)
+    info["faces_removed"] += _drop_not_finite(M)     # a vertex that is not a number cannot be mended
+    info["vertices_removed"] += n - len(M.V)
     if weld:
         info["vertices_removed"] += _weld(M, tol)
     if degenerate:
@@ -4478,6 +4508,10 @@ def clean(M=None, tol=1e-7, weld=True, degenerate=True, duplicates=True,
         if info["faces_cut"] and weld:
             _weld(M, tol)                            # the new corners meet their neighbours ...
             M = heal(M, tol)                         # ... and the neighbours' long edges learn of them
+            if degenerate:                           # a corner welded onto its neighbour can leave a face
+                info["faces_removed"] += _drop_degenerate(M)   # visiting a vertex twice, or without area
+            if duplicates:
+                info["faces_removed"] += _dedup_faces(M)
     if convex:
         info["faces_split"] += _split_concave(M)
     if normals:
@@ -6759,7 +6793,11 @@ def save(path, M=None, clear_scene=None, colors=None, clean=True):
     are welded, faces without area go, so do the walls buried where two
     solids touch, and a face overlapping a bigger one in the same plane is
     cut back so that nothing flickers in a viewer (see :func:`clean`).
-    ``clean=False`` writes the model exactly as it is.  An ``.off`` file
+    ``clean=False`` writes the model exactly as it is -- except that, either
+    way, no face in the file visits a vertex twice (it is split, and a
+    leftover of fewer than three corners goes) and no coordinate is "not a
+    number": MeshLab would report those as "degenerated faces" and "vertices
+    with NAN coords" when it opens the file.  An ``.off`` file
     gets faces of at most four corners: a bigger one is written as
     quadrilaterals and a triangle or two (MeshLab can crash on bigger OFF
     faces), while an ``.obj`` keeps it whole.  Lines end with ``\n`` on
@@ -6823,16 +6861,24 @@ def _safe_faces(M):
 
 
 def _writable(M):
-    """The mesh itself, or a copy with pinched faces split (rare: a boolean
-    cut can leave a polygon that touches itself at one vertex)."""
-    if all(len(set(f)) == len(f) for f in M.F):
+    """The mesh itself, or a copy that is fit to be written: a face that
+    visits a vertex twice is split into loops that do not, and a loop of
+    fewer than three corners goes (a boolean cut or a weld can leave such
+    a face); a vertex with a coordinate that is not a finite number goes,
+    with its faces.  MeshLab reports both when it opens a file ("degenerated
+    faces", "vertices with NAN coords") and deletes them -- add.py never
+    writes them."""
+    bad = _not_finite(M)
+    if not bad and all(len(set(f)) == len(f) for f in M.F):
         return M
-    out = Mesh(M.V, [], [], [] if M.UV is not None else None)
+    out = Mesh(list(M.V), [], [], [] if M.UV is not None else None)
     for face, c, uv in _safe_faces(M):
         out.F.append(list(face))
         out.C.append(c)
         if out.UV is not None:
             out.UV.append(uv)
+    if bad:
+        _drop_not_finite(out)                       # its faces go, and it is not written either
     return out
 
 
@@ -7105,6 +7151,7 @@ def _write_ply(path, M):
 
 def _write_stl(path, M):
     """ASCII STL -- the 3D printing format.  STL has no colours."""
+    M = _writable(M)
     with open(path, "w", newline="\n") as f:
         f.write("solid addpy\n")
         for face in M.F:
@@ -7159,6 +7206,9 @@ class Stream(object):
     removed or split, the walls buried where two solids touch go, and a
     face that overlaps a bigger one in the same plane is cut back -- so
     viewers get a file without flicker or "identical vertex" warnings.
+    Tidied or not, no face in the file visits a vertex twice and every
+    coordinate is a finite number, so MeshLab opens it without reporting
+    "degenerated faces".
     """
 
     def __init__(self, path, clean=True, precision=None):
@@ -7214,19 +7264,10 @@ class Stream(object):
         if self._file is None:
             raise ValueError("stream is closed")
         if self.clean if clean is None else clean:
-            if not clear_after:
-                M = M.copy()
-            _weld(M, 1e-6)
-            self.removed += _drop_degenerate(M)
-            self.removed += _drop_internal(M)
-            self.removed += _dedup_faces(M)
-            cut = _cut_overlaps(M)
-            if cut:
-                _weld(M, 1e-6)
-                M = heal(M, 1e-6)
-            self.cut += cut
-            _split_concave(M)
-            _drop_unused(M)
+            M, info = globals()["clean"](M, tol=1e-6, report=True)
+            self.removed += info["faces_removed"]
+            self.cut += info["faces_cut"]
+        M = _writable(M)                               # tidied or not: no face visits a vertex twice
         f = self._file
         base = self.vertices
         out = []

@@ -213,7 +213,7 @@ tools/
   make_docs.py       sukuria docs/index.html iš kodo aprašymų ir docs/reference.py
   coverage.py        kuris pavyzdys kurią funkciją naudoja
 tests/
-  test_add.py        93 vienetiniai testai
+  test_add.py        94 vienetiniai testai
   test_legacy.py     paleidžia add.py 1.2 modelius ir tikrina sienų skaičių
   test_docs.py       paleidžia kiekvienos aprašytos funkcijos pavyzdį
   legacy/            tie modeliai, nepakeisti
@@ -232,7 +232,7 @@ vieno failo.
 ## Testai
 
 ```bash
-python3 tests/test_add.py        # 93 vienetiniai testai
+python3 tests/test_add.py        # 94 vienetiniai testai
 python3 tests/test_legacy.py     # add.py 1.2 modeliai
 python3 tests/test_docs.py       # 235 dokumentacijos pavyzdžiai
 python3 examples/build_all.py    # visi pavyzdžiai, Sketchfab patikra, paveikslėliai

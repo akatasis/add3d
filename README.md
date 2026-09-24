@@ -216,7 +216,7 @@ tools/
   make_docs.py       builds docs/index.html from the docstrings + docs/reference.py
   coverage.py        which example uses which function
 tests/
-  test_add.py        93 unit tests
+  test_add.py        94 unit tests
   test_legacy.py     runs the add.py 1.2 models and checks the face counts
   test_docs.py       runs the example of every documented function
   legacy/            those models, unedited
@@ -234,7 +234,7 @@ the repository so that a student only ever needs one file.
 ## Running the tests
 
 ```bash
-python3 tests/test_add.py        # 93 unit tests
+python3 tests/test_add.py        # 94 unit tests
 python3 tests/test_legacy.py     # the add.py 1.2 models
 python3 tests/test_docs.py       # the 235 documentation examples
 python3 examples/build_all.py    # every example, the Sketchfab check, pictures

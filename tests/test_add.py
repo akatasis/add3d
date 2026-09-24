@@ -1369,6 +1369,52 @@ def test_overlaps_and_pinched_faces():
     assert "overlapping faces   2" in text.getvalue()
 
 
+def test_no_degenerate_faces():
+    """MeshLab reports "degenerated faces" (a face that visits a vertex
+    twice) and "vertices with NAN coords" when it opens a file.  clean()
+    leaves neither -- also where cutting the patch two solids share out of
+    both welds a new corner onto its neighbour -- and no file add.py writes
+    has them, from save() or a stream, tidied or not."""
+    floor = add.make(add.cuboid, [0, 0, 0], [2, 0.2, 2], "brown")
+    for seg in (8, 12, 16):                                         # a cylinder standing on a box
+        cyl = add.make(add.cylinder, [0.3, 0.1, 0.2], [0.3, 0.5, 0.2], 0.12, seg, "red")
+        M = add.merge([floor, cyl])
+        C = add.clean(M)
+        assert all(len(set(f)) == len(f) for f in C.F)
+        assert add.stats(C)["closed"] and abs(add.volume(C) - add.volume(M)) < 1e-9
+    B = add.Mesh()
+    for q in ([0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [2, 0, 0], [2, 1, 0], [5, 5, 5], [float("nan"), 0, 0]):
+        B.add_vertex(q)
+    B.add_face([0, 1, 1, 2], "red")             # a corner twice in a row: a triangle
+    B.add_face([2, 3, 0, 0], "red")             # likewise, the other half of the square
+    B.add_face([1, 4, 1, 5], "blue")            # a bow tie without area: goes
+    B.add_face([6, 6, 6], "blue")               # a face shrunk to a point: goes
+    B.add_face([2, 5, 7], "gold")               # a corner that is not a number: goes
+    C = add.clean(B)
+    assert C.polygons == 2 and len(C.V) == 4 and abs(add.area(C) - 1.0) < 1e-12
+    with tempfile.TemporaryDirectory() as folder:
+        written = []
+        for tidy in (True, False):
+            for ext in ("off", "obj", "ply", "stl"):
+                path = os.path.join(folder, "%s_%s.%s" % (tidy, "save", ext))
+                add.save(path, B, clean=tidy)
+                written.append(path)
+            for ext in ("off", "obj"):
+                path = os.path.join(folder, "%s_%s.%s" % (tidy, "stream", ext))
+                with add.stream(path, clean=tidy) as out:
+                    out.add(B)
+                written.append(path)
+        for path in written:
+            text = open(path).read()
+            assert "nan" not in text.lower() and "inf" not in text.lower()
+            if path.endswith(".stl"):
+                assert text.count("facet normal") == 2
+                continue
+            back = add.load(path)
+            assert back.polygons == 2 and abs(add.area(back) - 1.0) < 1e-12
+            assert all(len(set(f)) == len(f) for f in back.F)
+
+
 def test_make_and_every_public_name():
     ball = add.make(add.sphere, [0, 0, 0], 1, 5, "red")
     assert ball.polygons == 320 and len(add.faces) == 0
