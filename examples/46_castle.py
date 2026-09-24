@@ -5,10 +5,13 @@ A castle on a hill in a transparent lake, with everything a castle needs:
 an octagonal curtain wall of individual stone blocks, eight hollow round
 towers with spiral stairs, doors and lookout platforms, a gatehouse with a
 portcullis and a drawbridge hanging on real chains, its beams let into the
-low kerbs of the moat before a level terrace; from the terrace a road cut
-into the hill winds down to the harbour, a wharf on piles where two great
-ships are moored, the king's and a merchant's, and rowing boats are tied up
-all round the shore.  Inside: a palace with glass windows, a porch on
+low kerbs of the moat; from the end of the bridge a road paved with
+fieldstones runs along the moat and on down round the hill, gently and
+level across, with a low stone wall on its outer side, to the harbour: a
+wharf on piles where two great ships are moored, the king's with a ramp
+down from its side for a knight to lead his horse ashore, and a
+merchant's; rowing boats are tied up all round the shore.  Inside: a
+palace with glass windows, a porch on
 columns, balconies, dormers, a roof of single tiles and copper spires, a
 chapel with stained glass and an altar, and a courtyard full of life: a
 well, a fountain, a smithy, the kitchen and bakehouse with its hearth,
@@ -107,6 +110,7 @@ P["birch_leaf"] = [132, 178, 74]                         # the light leaves of t
 P["needles"] = [36, 80, 56]                              # the blue-green needles of pines and spruces,
 P["oak_leaf"] = [70, 106, 38]                            # the dark leaves of oaks
 P["bark_red"] = [168, 98, 64]                            # and the red upper bark of pines
+P["granite"] = [168, 130, 118]                          # the pinkish granite of fieldstones: the road to the harbour
 GLASS = add.transparent([170, 210, 245], 0.35)
 WATER = add.transparent([50, 120, 200], 0.5)
 FLAME = add.transparent([255, 150, 40], 0.65)
@@ -1045,7 +1049,7 @@ def square_tower(centre, y0, y1, w, doors, walk_stops, roof_h, name="stone", win
 # --------------------------------------------------------------------------
 #  1. The hill, the lake and the moat
 # --------------------------------------------------------------------------
-G = 14.0                                               # the plateau: ground level inside the walls
+G = 9.5                                                # the plateau: ground level inside the walls, 8 m over the lake
 PLATEAU = G
 R_OCT = 50.0 / add.cos(add.pi / 8)                     # the curtain wall: an octagon, apothem 50, corner radius R_OCT
 PHI = [add.pi / 8 + k * add.pi / 4 for k in range(8)]
@@ -1070,13 +1074,13 @@ WATER_Y = 1.5
 WORLD = 300.0                                          # the lake is this wide
 BOTTOM = -6.0                                          # the underside of the land
 MOAT = (-20, 20, 56, 64)                               # x0, x1, z0, z1 (on grid lines)
-MOAT_Y = 9.0
+MOAT_Y = G - 5.0                                       # the floor of the moat
 CELLAR_STAIR = (9.3, 15.3, -28.7, -26.7)               # the wine cellar under the great hall: the stair's opening in the
 CELLAR_ROOM = (10.0, 16.0, -28.6, -20.0)               # hall floor (x0, x1, z0, z1), the cellar itself,
 CELLAR_Y = G - 3.1                                     # and its floor
 
 
-TERRACE = (-23.0, 23.0, 52.0, 67.5)                    # level ground before the moat, where the bridge comes down,
+TERRACE = (-23.0, 23.0, 52.0, 67.5)                    # level ground round the moat, where the bridge comes down,
 BANK = 0.55                                            # its sides banked down to the hill at this slope
 
 
@@ -1088,17 +1092,20 @@ def hill(x, z):
     cliff = add.clamp((-x / max(r, 1) - 0.55) / 0.3)      # the west side is a cliff
     run = add.lerp(36.0, 14.0, cliff)
     t = add.clamp((r - 58) / run)
-    y = PLATEAU - 13.0 * t * t * (3 - 2 * t)
+    y = PLATEAU - (PLATEAU - 1.0) * t * t * (3 - 2 * t)
     if r > 58 + run:                                    # the shore and the lake bed
         y = 1.0 - 0.18 * (r - 58 - run)
     return max(y, -4.5) + 0.35 * add.sin(x / 7.0) * add.cos(z / 9.0) * (1 if r > 58 else 0)
 
 
-# the road down to the harbour: from the east end of the terrace it winds round the hill, always at the same gentle
-# grade, along the slope -- where the hill falls away faster it keeps the grade by swinging out -- and ends on the
-# shore at the wharf.  ROAD is its centre line, a point a metre, cut into the hill (and banked up at the terrace)
-ROAD_GRADE, ROAD_W, ROAD_SH = 0.17, 2.2, 3.0           # the grade, half the width, the verges blending into the hill
-DOCK_Y = WATER_Y + 1.0                                 # the top of the wharf, where the road ends
+# the road from the gate down to the harbour: from the end of the drawbridge it turns east and runs along the moat,
+# only just going down (the moat's kerb a low wall beside it); past the moat it goes on down round the south-east
+# side of the hill at a gentle grade, keeping to the slope -- cut into the hill on one side and banked up on the
+# other, so that it is always level across -- and near the water it turns out onto the wharf.  ROAD is its centre
+# line, a point a metre
+ROAD_GRADE, ROAD_W, ROAD_BANK = 0.09, 2.5, 0.5         # the grade (1 in 11), half the width, the slope of its banks
+DOCK_Y = WATER_Y + 1.0                                 # the top of the wharf's deck: the road comes down level with it
+ROAD_Z = MOAT[3] + 1.0 + ROAD_W + 0.5                  # the road along the moat, clear of its kerb
 
 
 def _hill_r(y):
@@ -1110,30 +1117,56 @@ def _hill_r(y):
     return (lo + hi) / 2
 
 
-ROAD = [(23.5, 59.5, PLATEAU)]
-while ROAD[-1][2] > DOCK_Y:
-    x, z, y = ROAD[-1]
+def _kerb_gap(x, z):
+    """How far (x, z) is from the kerb round the moat."""
+    dx, dz = max(MOAT[0] - 1.0 - x, 0.0, x - MOAT[1] - 1.0), max(MOAT[2] - 1.0 - z, 0.0, z - MOAT[3] - 1.0)
+    return add.sqrt(dx * dx + dz * dz)
+
+
+ROAD = [(0.0, MOAT[3] + 1.0, PLATEAU)]                 # at the end of the drawbridge,
+for k in range(1, 5):                                  # a quarter turn to the east,
+    a = add.pi / 8 * k
+    ROAD.append(((ROAD_Z - MOAT[3] - 1.0) * (1 - add.cos(a)), MOAT[3] + 1.0 + (ROAD_Z - MOAT[3] - 1.0) * add.sin(a), PLATEAU))
+y = PLATEAU
+while ROAD[-1][0] < TERRACE[1] - 5.0:                  # along the moat, 1 in 33,
+    y -= 0.03 * add.clamp((ROAD[-1][0] - ROAD[4][0]) / 4.0)
+    ROAD.append((ROAD[-1][0] + 1.0, ROAD_Z, y))
+x, z, y = ROAD[-1]
+head, grade = 0.0, 0.03                                # (the way it is going, as an angle in XZ; how steeply)
+while y > DOCK_Y - 0.12:                               # and down round the hill,
+    grade = min(ROAD_GRADE, grade + 0.01)                                         # easing into its grade
+    y = max(DOCK_Y - 0.12, y - grade)
     r, a = add.sqrt(x * x + z * z), add.atan2(z, x)
-    y -= ROAD_GRADE
-    dr = add.clamp(_hill_r(y) - r, 0.0, 0.7)                  # out from the hill as far as the grade needs
-    ahead = add.sqrt(1 - dr * dr)
-    ROAD.append((x + add.sin(a) * ahead + add.cos(a) * dr, z - add.cos(a) * ahead + add.sin(a) * dr, y))
-ROAD[-1] = (ROAD[-1][0], ROAD[-1][1], DOCK_Y)
-DOCK_A = add.atan2(ROAD[-1][1], ROAD[-1][0])           # the wharf runs straight out from there into the lake
+    if y > DOCK_Y + 0.7:                                                          # keeping to where the hill is as high
+        swing = add.clamp((_hill_r(y) - r) * 0.35, -0.6, 0.6)                     # as the road, round and in or out,
+        want = add.atan2(-add.cos(a) + add.sin(a) * swing, add.sin(a) + add.cos(a) * swing)
+    else:                                                                         # till near the water it turns out
+        want = a                                                                  # towards the lake
+    turn = (want - head + add.pi) % (2 * add.pi) - add.pi
+    new = head + add.clamp(turn, -0.12, 0.12)                                     # on curves no tighter than 8 m
+    while _kerb_gap(x + add.cos(new), z + add.sin(new)) < ROAD_W + 0.6 and new < head + 0.5:
+        new += 0.02                                                               # (not cutting the moat's corner)
+    head = new
+    x, z = x + add.cos(head), z + add.sin(head)
+    ROAD.append((x, z, y))
+a = add.atan2(z, x)                                    # the last metre straight out, onto the wharf
+ROAD.append((x + add.cos(a), z + add.sin(a), y))
+DOCK_A = a                                             # the wharf runs on straight out into the lake
 DOCK_C, DOCK_S = add.cos(DOCK_A), add.sin(DOCK_A)
-DOCK_U0, DOCK_U1, DOCK_W = add.sqrt(ROAD[-1][0] ** 2 + ROAD[-1][1] ** 2) - 1.0, 127.0, 4.0   # from, to, half its width
+DOCK_U0 = add.sqrt(ROAD[-1][0] ** 2 + ROAD[-1][1] ** 2)
+DOCK_U1, DOCK_W = DOCK_U0 + 40.0, 4.0                  # from where the road ends, to; half its width
 HARBOUR_Y = -4.6                                       # the lake bed dredged deep round the wharf, for the ships
 _road_cells = {}                                       # a grid of 4 m cells: the pieces of the road near each
 for k in range(len(ROAD) - 1):
     (x0, z0, y0), (x1, z1, y1) = ROAD[k], ROAD[k + 1]
-    for i in range(int((min(x0, x1) - 7.5) // 4), int((max(x0, x1) + 7.5) // 4) + 1):
-        for j in range(int((min(z0, z1) - 7.5) // 4), int((max(z0, z1) + 7.5) // 4) + 1):
+    for i in range(int((min(x0, x1) - 20.0) // 4), int((max(x0, x1) + 20.0) // 4) + 1):
+        for j in range(int((min(z0, z1) - 20.0) // 4), int((max(z0, z1) + 20.0) // 4) + 1):
             _road_cells.setdefault((i, j), []).append(k)
 
 
 def road_at(x, z):
     """(how far (x, z) is from the road's centre line, the road's height
-    there) -- or None, more than 7.5 m away."""
+    there) -- or None, more than 20 m away."""
     best = None
     for k in _road_cells.get((int(x // 4), int(z // 4)), ()):
         (x0, z0, y0), (x1, z1, y1) = ROAD[k], ROAD[k + 1]
@@ -1142,7 +1175,7 @@ def road_at(x, z):
         d = add.sqrt((x - x0 - t * dx) ** 2 + (z - z0 - t * dz) ** 2)
         if best is None or d < best[0]:
             best = (d, y0 + t * (y1 - y0))
-    return best if best and best[0] < 7.5 else None
+    return best if best and best[0] < 20.0 else None
 
 
 def by_terrace(x, z, margin=0.0):
@@ -1151,15 +1184,15 @@ def by_terrace(x, z, margin=0.0):
 
 
 def ground(x, z):
-    """Height of the land: the hill, with the terrace before the moat, the
+    """Height of the land: the hill, with the terrace round the moat, the
     road cut into its side and the harbour dug out of the lake bed."""
     y = hill(x, z)
     dx, dz = max(TERRACE[0] - x, 0.0, x - TERRACE[1]), max(TERRACE[2] - z, 0.0, z - TERRACE[3])
     y = max(y, PLATEAU - BANK * add.sqrt(dx * dx + dz * dz))
     q = road_at(x, z)
-    if q and q[0] < ROAD_W + ROAD_SH:
-        w = add.clamp((q[0] - ROAD_W) / ROAD_SH)
-        y = q[1] + (y - q[1]) * w * w * (3 - 2 * w)
+    if q:                                                                 # level across under the road and a verge
+        d = max(0.0, q[0] - ROAD_W - 0.4)                                 # each side, then banked up to it or cut
+        y = min(max(y, q[1] - ROAD_BANK * d), q[1] + ROAD_BANK * d)       # down to it at an even slope
     u, v = x * DOCK_C + z * DOCK_S, -x * DOCK_S + z * DOCK_C
     if u > DOCK_U0 + 5 and abs(v) < 34:
         w = add.clamp((u - DOCK_U0 - 5) / 12) * add.clamp((34 - abs(v)) / 18)
@@ -1261,8 +1294,8 @@ water.add_polygon([[-W_EDGE, W_BOTTOM, -W_EDGE], [-W_EDGE, W_BOTTOM, W_EDGE],
                    [W_EDGE, W_BOTTOM, W_EDGE], [W_EDGE, W_BOTTOM, -W_EDGE]], WATER)
 add.mesh(add.fix_normals(water))
 water, windex = None, None
-add.cuboid([0, (MOAT_Y + 12.5) / 2, (MOAT[2] + MOAT[3]) / 2],
-           [MOAT[1] - MOAT[0], 12.5 - MOAT_Y, MOAT[3] - MOAT[2]], WATER)   # the moat
+add.cuboid([0, (MOAT_Y + G - 0.75) / 2, (MOAT[2] + MOAT[3]) / 2],
+           [MOAT[1] - MOAT[0], G - 0.75 - MOAT_Y, MOAT[3] - MOAT[2]], WATER)   # the moat, its water a step below the kerb
 flush("water")
 
 
@@ -1392,13 +1425,13 @@ flush("fish", clean=False)
 lo, hi = 0.0, 1.0                                      # how far down the slope of ground() the water starts
 for k in range(40):
     T_SHORE = (lo + hi) / 2
-    lo, hi = (T_SHORE, hi) if PLATEAU - 13.0 * T_SHORE * T_SHORE * (3 - 2 * T_SHORE) > WATER_Y else (lo, T_SHORE)
+    lo, hi = (T_SHORE, hi) if PLATEAU - (PLATEAU - 1.0) * T_SHORE * T_SHORE * (3 - 2 * T_SHORE) > WATER_Y else (lo, T_SHORE)
 
 
 def shore_r(a):
     """How far out from the centre the shore is in the direction ``a`` --
-    where the slope of ground() goes under the water: 89.8 on the gentle
-    side, 70.3 under the cliff."""
+    where the slope of ground() goes under the water: 88.7 on the gentle
+    side, 69.9 under the cliff."""
     return 58 + T_SHORE * add.lerp(36.0, 14.0, add.clamp((-add.cos(a) - 0.55) / 0.3))
 
 
@@ -1449,27 +1482,34 @@ add.cuboid([72.5, ground(72.5, 84) + 0.4, 84], [1.2, 0.8, 0.8], P["wood"])
 flush("under water")
 
 
-# the road down to the harbour: cobbles on a bed of stone along ROAD, the ground cut and banked to it (see ground())
+# the road from the gate to the harbour, paved: a bed of stone along ROAD, fieldstones set close in rows across it, a
+# kerb of stones on the side of the hill and a low wall of stones on the side where the hill falls away; the ground is
+# cut and banked to it (see ground())
 ROAD_LEN = [0.0]
 for k in range(1, len(ROAD)):
     ROAD_LEN.append(ROAD_LEN[-1] + add.sqrt((ROAD[k][0] - ROAD[k - 1][0]) ** 2 + (ROAD[k][1] - ROAD[k - 1][1]) ** 2))
+ROAD_T = [(0.0, 1.0)]                                  # the way the road goes at each point: off the bridge straight,
+for k in range(1, len(ROAD)):                          # then along the line through its neighbours
+    a, b = ROAD[k - 1], ROAD[min(len(ROAD) - 1, k + 1)]
+    d = add.sqrt((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2)
+    ROAD_T.append(((b[0] - a[0]) / d, (b[1] - a[1]) / d))
 
 
 def road(u, v):
-    """The point at ``u`` (0 at the terrace .. 1 at the wharf) along the
-    road and ``v`` (0 .. 1) across it, on its surface."""
+    """The point at ``u`` (0 at the drawbridge .. 1 at the wharf) along the
+    road and ``v`` (0 .. 1) across it, on its surface -- level across."""
     s_ = u * ROAD_LEN[-1]
     k = min(len(ROAD) - 2, max(0, next((i for i in range(len(ROAD) - 1) if ROAD_LEN[i + 1] >= s_), len(ROAD) - 2)))
     t = (s_ - ROAD_LEN[k]) / max(1e-9, ROAD_LEN[k + 1] - ROAD_LEN[k])
     (x0, z0, y0), (x1, z1, y1) = ROAD[k], ROAD[k + 1]
-    dx, dz = x1 - x0, z1 - z0
-    L = add.sqrt(dx * dx + dz * dz)
-    x, z = x0 + dx * t + (-dz / L) * (v - 0.5) * 2 * ROAD_W, z0 + dz * t + (dx / L) * (v - 0.5) * 2 * ROAD_W
+    tx, tz = ROAD_T[k][0] + (ROAD_T[k + 1][0] - ROAD_T[k][0]) * t, ROAD_T[k][1] + (ROAD_T[k + 1][1] - ROAD_T[k][1]) * t
+    L = add.sqrt(tx * tx + tz * tz)
+    x, z = x0 + (x1 - x0) * t + (-tz / L) * (v - 0.5) * 2 * ROAD_W, z0 + (z1 - z0) * t + (tx / L) * (v - 0.5) * 2 * ROAD_W
     return [x, y0 + (y1 - y0) * t + 0.12, z]
 
 
 def on_road(x, z, margin=0.6):
-    """Is (x, z) on the road down to the harbour (its cobbled strip plus
+    """Is (x, z) on the road to the harbour (its paved strip plus
     ``margin``), on the drawbridge, or on the landing before the gate?"""
     if abs(x) < 5.5 + margin and 50 < z < MOAT[3] + 1.5:
         return True
@@ -1477,11 +1517,67 @@ def on_road(x, z, margin=0.6):
     return q is not None and q[0] < ROAD_W + margin
 
 
-add.parametric(road, 0, 1, int(ROAD_LEN[-1] * 2), 0, 1, 6, P["stone_dark"], thickness=0.25)
-for i in range(count(3400)):                           # cobbles along the road
-    q = road(add.random(), add.uniform(0.03, 0.97))
-    add.mesh(add.move(add.rotateY(COBBLE, add.uniform(0, 6.3)), [q[0], q[1] - 0.02, q[2]]))
-flush("the road down to the harbour")
+add.parametric(lambda u, v: [road(u, v)[k] - (0.125 if k == 1 else 0.0) for k in range(3)], 0, 1, int(ROAD_LEN[-1] * 2), 0, 1, 6, P["stone_dark"],
+               thickness=0.25)                         # the bed: a slab whose top is the road's surface
+FIELD = [shade_of("stone_dark", 0), shade_of("stone_dark", 1), shade_of("stone_dark", 2), shade_of("stone", 0), shade_of("stone", 2),
+         P["rock"], P["granite"], P["granite"], P["earth_light"], P["spire"]]            # fieldstones: grey, pink, brown
+
+
+def fieldstone(at, r, seed, squash=0.6):
+    """A rounded fieldstone of radius ``r`` (squashed flat) at ``at``."""
+    M = add.stretch(PEBBLE, [r * (1.0 + 0.3 * hash2(seed, 1, 81)), r * squash, r], (0, 0, 0))
+    add.mesh(add.move(add.rotateY(add.color(M, FIELD[int(hash2(seed, 2, 81) * 10) % 10]), hash2(seed, 3, 81) * 6.28), at))
+
+
+laid = {}                                              # the cobbles: fieldstones of all colours and sizes, worn flat, set
+n = 0                                                  # close in rows across the road -- and none on another where the rows
+for i in range(int(ROAD_LEN[-1] / 0.36)):              # fan out on a bend
+    u = (i + 0.5) * 0.36 / ROAD_LEN[-1]
+    for j in range(11 - i % 2):
+        off = -1.98 + 0.372 * (j + 0.5 * (i % 2))                                # between the kerb and the parapet
+        if hash2(i, j, 71) > max(DENSITY, 0.35):
+            continue
+        q = road(u, 0.5 + off / (2 * ROAD_W))
+        q = [q[0] + (hash2(i, j, 72) - 0.5) * 0.06, q[1], q[2] + (hash2(i, j, 73) - 0.5) * 0.06]
+        size = 1.0 + 0.2 * hash2(i, j, 76)
+        cx, cz = int(q[0] // 0.5), int(q[2] // 0.5)
+        if any((q[0] - p_[0]) ** 2 + (q[2] - p_[1]) ** 2 < (0.14 * (size + p_[2])) ** 2
+               for di in (-1, 0, 1) for dj in (-1, 0, 1) for p_ in laid.get((cx + di, cz + dj), ())):
+            continue
+        laid.setdefault((cx, cz), []).append((q[0], q[2], size))
+        stone = add.stretch(COBBLES[int(hash2(i, j, 74) * 6) % 6], [size, 0.6 + 0.35 * hash2(i, j, 77), size], (0, 0, 0))
+        add.mesh(add.move(add.rotateY(add.color(stone, FIELD[int(hash2(i, j, 78) * 10) % 10]), hash2(i, j, 75) * 6.28),
+                          [q[0], q[1] - 0.03, q[2]]))
+        n += 1
+
+
+def along(v, s0, step):
+    """Points on the road's surface at ``v`` across it, every ``step``
+    metres along that line from ``s0`` metres along the road on."""
+    pts = [road(min(1.0, (s0 + i * 0.05) / ROAD_LEN[-1]), v) for i in range(int((ROAD_LEN[-1] - s0) / 0.05) + 1)]
+    out_, walk = [pts[0]], 0.0
+    for i in range(1, len(pts)):
+        walk += add.sqrt((pts[i][0] - pts[i - 1][0]) ** 2 + (pts[i][2] - pts[i - 1][2]) ** 2)
+        if walk >= step:
+            out_.append(pts[i])
+            walk = 0.0
+    return out_
+
+
+for k, q in enumerate(along(0.5 - (ROAD_W - 0.2) / (2 * ROAD_W), ROAD_LEN[4] + 0.5, 0.4)):   # the kerb on the hill side:
+    fieldstone([q[0], q[1] - 0.04, q[2]], 0.17 + 0.03 * hash2(k, 5, 82), k, 0.75)            # a row of stones half sunk
+pts = along(0.5 + (ROAD_W - 0.27) / (2 * ROAD_W), 2.0, 0.6)      # on the side where the hill falls away, a parapet: a low
+for k in range(len(pts) - 1):                                     # wall of fieldstones set in mortar, knee high
+    A, B = pts[k], pts[k + 1]
+    d = vunit([B[0] - A[0], 0.0, B[2] - A[2]])
+    add.beam([A[0], A[1] + 0.15, A[2]], [B[0], B[1] + 0.15, B[2]], 0.54, 0.6, P["mortar"])
+    for f in (0.25, 0.75):
+        c = [A[j] + (B[j] - A[j]) * f for j in range(3)]
+        fieldstone([c[0], c[1] + 0.47, c[2]], 0.22 + 0.04 * hash2(k, int(f * 4), 83), k * 4 + int(f * 4), 0.5)   # on top
+        for sd in (-1, 1):                                                                                     # and in its faces
+            fieldstone([c[0] + sd * d[2] * 0.25, c[1] + 0.22, c[2] - sd * d[0] * 0.25], 0.15 + 0.03 * hash2(k, sd, 84),
+                       k * 8 + int(f * 4) + sd + 3, 0.7)
+flush("the road to the harbour (%d cobbles)" % n)
 
 
 # the forest on the slopes: low-poly trees of the northern woods, each species by its shape -- spruces in drooping
@@ -2192,18 +2288,19 @@ cobble_area(lambda x, z: (z >= GATE_Z1 or abs(x) < 2.45) and hash2(int(x * 9), i
             -13, 13, GATE_Z0, MOAT[2] - 1, G + 0.02, step=0.44, scale=0.7, seed=5)      # cobbles: landing and passage
 flush("gatehouse")
 
-# the portcullis, lowered to a third, in a slot just inside the outer face
+# the portcullis, drawn up -- only its teeth show under the arch, high over a knight with his lance upright -- in a
+# slot just inside the outer face
 PORT_Z = GATE_Z1 - 0.7
-PORT_BOTTOM = G + 2.4
+PORT_BOTTOM = SPRING + 1.1
 for i in range(8):
     x = -2.1 + i * 0.6
     add.cylinder([x, PORT_BOTTOM + 0.4, PORT_Z], [x, GATE_TOP - 0.2, PORT_Z], 0.07, 12, P["iron"])
     add.cone([x, PORT_BOTTOM + 0.4, PORT_Z], [x, PORT_BOTTOM, PORT_Z], 0.07, 12, P["iron"])
 for y in (PORT_BOTTOM + 0.9, PORT_BOTTOM + 2.3, PORT_BOTTOM + 3.7, PORT_BOTTOM + 5.1):
     add.cuboid([0, y, PORT_Z], [4.5, 0.12, 0.12], P["iron"])
-# the wooden gate behind it: two leaves on hinges, one wide open, one ajar;
+# the wooden gate behind it: two leaves on hinges, both swung wide open;
 # their tops follow the arch, so that closed they fill it exactly
-for s, angle in ((-1, 1.3), (1, -0.25)):
+for s, angle in ((-1, 1.3), (1, -1.3)):
     leaf = add.Mesh()                                  # hinge at x = 0, planks towards +x
 
     def gate_top(x):                                   # the arch: centre 2.5 from the hinge, radius 2.5
@@ -2225,7 +2322,7 @@ for s, angle in ((-1, 1.3), (1, -0.25)):
 flush("portcullis and gate")
 
 # the drawbridge: planks on two beams, spanning the moat from bank to bank, its beams let into the kerbs so that its
-# deck lies level with the paving before the gate and a step's height over the terrace (with a ramp of stone down)
+# deck lies level with the paving before the gate and with the road on the far side
 BRIDGE_Z0, BRIDGE_Z1 = MOAT[2] - 1.0, MOAT[3] + 1.0
 for s in (-1, 1):
     add.cuboid([s * 1.9, G - 0.155, (BRIDGE_Z0 + BRIDGE_Z1) / 2], [0.3, 0.25, BRIDGE_Z1 - BRIDGE_Z0], P["wood_dark"])
@@ -2236,8 +2333,6 @@ for i in range(planks):
 for z in (BRIDGE_Z0 + 0.3, BRIDGE_Z1 - 0.3):               # iron straps at both ends
     add.cuboid([0, G + 0.145, z], [4.7, 0.05, 0.2], P["iron"])
 add.cylinder([-2.5, G - 0.155, BRIDGE_Z0], [2.5, G - 0.155, BRIDGE_Z0], 0.08, 12, P["iron"])   # the hinge bar on the bank
-add.mesh(add.make(add.prism, [[G - 0.01, BRIDGE_Z1], [G + 0.12, BRIDGE_Z1], [G - 0.01, BRIDGE_Z1 + 1.6]], 5.0, P["stone_dark"],
-                  (0, 0, 0), (1, 0, 0)))                                            # the ramp down onto the terrace
 # the chains run taut and parallel from the bridge's far end up into two round
 # holes in the gate's front, lined with iron: behind them, inside the gatehouse,
 # the windlass that winds them in and draws the bridge up against the gate
@@ -6451,7 +6546,7 @@ standing_man([20, Y, 36], 2.6, P["leaf"])
 add.seed(31)
 for i in range(count(14)):                                          # gulls over the lake and the yard, each on its own
     a = i * 1.1 + add.uniform(-0.2, 0.2)                            # circle, height and turn, at its own beat of the wings
-    rad, y = add.uniform(30, 85), add.uniform(19, 34)
+    rad, y = add.uniform(30, 85), G + add.uniform(5, 20)
     way = 1 if i % 3 else -1                                        # most wheel one way, some the other
     heading = add.atan2(-add.cos(a), -add.sin(a)) if way > 0 else add.atan2(add.cos(a), add.sin(a))
     beat = add.uniform(0, 2 * add.pi)                               # up, gliding, down ...
@@ -6460,7 +6555,7 @@ for i in range(count(14)):                                          # gulls over
 flush("courtyard")
 
 
-def ship(at, forward, L=24.0, B=7.2, seed=0, crew=(), band=None, shields=False):
+def ship(at, forward, L=24.0, B=7.2, seed=0, crew=(), band=None, shields=False, gangway=None):
     """A great ship, a cog, moored: a deep round-bellied hull of strakes,
     tarred below the water, three wales along each side following the sheer
     and the ends of the deck beams showing through the planking, the top
@@ -6475,7 +6570,10 @@ def ship(at, forward, L=24.0, B=7.2, seed=0, crew=(), band=None, shields=False):
     masthead; the rudder hung on iron straps, its tiller.  ``at`` is the
     middle of the ship at the waterline, ``forward`` the way the bow points
     (x, z); ``crew`` = (x, z, facing) of sailors on deck, in the ship's
-    frame (x forward, z to port)."""
+    frame (x forward, z to port).  With ``gangway`` = (x, y): the bulwark
+    opened on the starboard side about x, and a ramp from the gunwale down
+    to a quay at height y, wide and gentle enough to lead a horse aboard --
+    boards with cleats across, a rail each side."""
     band = band or P["red"]
     half = lambda t: max(0.16, (B / 2) * (1 - abs(t) ** 2.4) ** 0.55)                 # the half-breadth at the gunwale,
     sheer = lambda t: 1.5 + 0.9 * t * t + (0.3 * t if t > 0 else 0.0)                 # the gunwale's height (the deck),
@@ -6529,10 +6627,14 @@ def ship(at, forward, L=24.0, B=7.2, seed=0, crew=(), band=None, shields=False):
         w = side(t, y)
         for sg in (-1, 1):
             add.cuboid([xs(t), y, sg * (w + 0.1)], [0.26, 0.26, 0.34], P["wood_dark"])
+    gap = []                                                                           # (where the gangway opens it)
     for i in range(n - 1):                                                             # the bulwarks, a cap rail on them,
         t0, t1 = -1 + 2.0 * i / (n - 1), -1 + 2.0 * (i + 1) / (n - 1)               # frames inside
         for sg in (-1, 1):
             a, b = [xs(t0), sheer(t0), sg * half(t0)], [xs(t1), sheer(t1), sg * half(t1)]
+            if gangway and sg < 0 and abs((a[0] + b[0]) / 2 - gangway[0]) < 1.1:
+                gap += [a[0], b[0]]
+                continue
             quad = [a, b, [b[0], b[1] + 0.55, b[2]], [a[0], a[1] + 0.55, a[2]]]
             sheet(quad if sg < 0 else quad[::-1], band, 0.07)
             add.cuboid([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 0.58, (a[2] + b[2]) / 2], [abs(b[0] - a[0]) + 0.02, 0.06, 0.14], P["wood_dark"])
@@ -6645,6 +6747,25 @@ def ship(at, forward, L=24.0, B=7.2, seed=0, crew=(), band=None, shields=False):
     for cx_, cz_ in ((-2.5, -1.8), (2.6, 2.2)):
         add.torus([cx_, sheer(tx(cx_)) + 0.08, cz_], 0.45, 0.08, 12, 6, P["rope"])
         add.torus([cx_, sheer(tx(cx_)) + 0.22, cz_], 0.38, 0.08, 12, 6, P["rope"])
+    if gangway:                                                                        # the gangway: a post at each end of
+        gx, quay = gangway                                                             # the opening, the ramp resting on the
+        for e in (min(gap), max(gap)):                                                 # gunwale and reaching down to the quay
+            add.cuboid([e, sheer(tx(e)) + 0.33, -(half(tx(e)) - 0.1)], [0.16, 0.66, 0.16], P["wood_dark"])   # at 1 in 4
+        rim, deck = -half(tx(gx)), sheer(tx(gx))
+        reach = (deck - quay) / 0.25
+        A, B = [gx, deck + 0.04 + 0.35 * 0.25, rim + 0.35], [gx, quay + 0.04, rim - reach]
+        add.beam(A, B, 1.8, 0.08, shade_of("wood_light", 1))
+        span = vlen(vsub(B, A))
+        for c in range(1, int(span / 0.35)):                                           # cleats for the hooves
+            p = [A[j] + (B[j] - A[j]) * c * 0.35 / span for j in range(3)]
+            add.beam([gx - 0.8, p[1] + 0.065, p[2]], [gx + 0.8, p[1] + 0.065, p[2]], 0.06, 0.05, P["wood"])
+        for sx in (-0.84, 0.84):                                                       # the rails
+            tops = []
+            for f in (0.12, 0.88):
+                p = [A[j] + (B[j] - A[j]) * f for j in range(3)]
+                add.cylinder([gx + sx, p[1] + 0.03, p[2]], [gx + sx, p[1] + 0.95, p[2]], 0.04, 6, P["wood_dark"])
+                tops.append([gx + sx, p[1] + 0.95, p[2]])
+            add.cylinder(tops[0], tops[1], 0.035, 6, P["wood"])
     for cx_, cz_, cf in crew:                                                          # sailors about the deck
         figure([cx_, sheer(tx(cx_)), cz_], cf, person("stand", (P["blue"], P["linen"], P["red"])[int(abs(cx_) * 3) % 3], hat=(cz_ > 0),
                                                       hair=(P["wood_dark"], P["black"], P["straw"])[int(abs(cz_) * 5) % 3]))
@@ -6711,8 +6832,11 @@ def dock_pt(u, v, y):
 
 
 U_SHORE = next(u * 0.25 for u in range(int(DOCK_U0 * 4), 600) if ground(*[dock_pt(u * 0.25, 0, 0)[k] for k in (0, 2)]) < WATER_Y - 0.1)
+KING_U, GANG_X = DOCK_U1 - 14.5, 4.45                                                        # the king's ship, its gangway
+POSTS = [(u, sg) for sg in (-1, 1) for u in range(int(U_SHORE + 5), int(DOCK_U1), 6)         # bollards on the edges, but
+         if not (sg > 0 and abs(u - KING_U - GANG_X) < 1.6)]                                 # where the ramp comes down
 add.push()
-add.cuboid([(DOCK_U0 - 1.0 + U_SHORE + 1.5) / 2, (DOCK_Y - 0.3 - 1.5) / 2, 0], [U_SHORE + 1.5 - DOCK_U0 + 1.0, DOCK_Y - 0.3 + 1.5, 2 * DOCK_W + 0.6],
+add.cuboid([(DOCK_U0 - 1.0 + U_SHORE + 1.5) / 2, (DOCK_Y - 0.23 - 1.5) / 2, 0], [U_SHORE + 1.5 - DOCK_U0 + 1.0, DOCK_Y - 0.23 + 1.5, 2 * DOCK_W + 0.6],
            P["stone_dark"])                                                                  # the abutment of stone on the shore
 rows = [U_SHORE + 1.2 + 3.0 * k for k in range(int((DOCK_U1 - U_SHORE - 1.2) / 3.0) + 1)]
 for k, u in enumerate(rows):                                                                 # piles in rows, a cap beam on each
@@ -6724,15 +6848,15 @@ for k, u in enumerate(rows):                                                    
         for v0 in (-DOCK_W + 0.3, 1.3):
             add.beam([u, DOCK_Y - 0.5, v0], [u, WATER_Y - 1.2, v0 + 2.6], 0.12, 0.14, P["wood_dark"])
 for v in (-3.6, -1.8, 0.0, 1.8, 3.6):                                                        # stringers along
-    add.cuboid([(U_SHORE + DOCK_U1) / 2, DOCK_Y - 0.13, v], [DOCK_U1 - U_SHORE, 0.2, 0.18], P["wood"])
-n = int((DOCK_U1 - DOCK_U0 + 1.0) / 0.3)
-for i in range(n):                                                                           # the deck: planks across, with gaps
-    pitch = (DOCK_U1 - DOCK_U0 + 1.0) / n
-    u = DOCK_U0 - 1.0 + (i + 0.5) * pitch
+    add.cuboid([(DOCK_U0 + DOCK_U1) / 2, DOCK_Y - 0.13, v], [DOCK_U1 - DOCK_U0, 0.2, 0.18], P["wood"])
+n = int((DOCK_U1 - DOCK_U0) / 0.3)
+for i in range(n):                                                                           # the deck: planks across, with gaps,
+    pitch = (DOCK_U1 - DOCK_U0) / n                                                          # from the end of the road
+    u = DOCK_U0 + (i + 0.5) * pitch
     add.cuboid([u, DOCK_Y - 0.03, (hash2(i, 3, 17) - 0.5) * 0.06], [pitch - 0.02, 0.06, 2 * DOCK_W - 0.02 * hash2(i, 4, 17)], pick("wood", i, 13))
 for sg in (-1, 1):                                                                           # fender logs along the sides,
     add.cylinder([U_SHORE, DOCK_Y - 0.28, sg * (DOCK_W + 0.12)], [DOCK_U1 + 0.1, DOCK_Y - 0.28, sg * (DOCK_W + 0.12)], 0.15, 10, P["wood_dark"])
-    for u in range(int(U_SHORE + 5), int(DOCK_U1), 6):                                       # bollards on the edges
+    for u in (u for u, side in POSTS if side == sg):                                         # the bollards
         add.cylinder([u, DOCK_Y, sg * (DOCK_W - 0.35)], [u, DOCK_Y + 0.55, sg * (DOCK_W - 0.35)], 0.2, 12, P["wood_dark"])
         add.cylinder([u, DOCK_Y + 0.55, sg * (DOCK_W - 0.35)], [u, DOCK_Y + 0.62, sg * (DOCK_W - 0.35)], 0.26, 12, P["wood_dark"])
 for i in range(8):                                                                           # a ladder down at the end
@@ -6763,25 +6887,22 @@ for u in (U_SHORE + 3.0, DOCK_U1 - 1.0):                                        
     add.cuboid([u, DOCK_Y + 3.0, -DOCK_W + 0.4], [0.3, 0.4, 0.3], P["iron"])
     add.sphere([u, DOCK_Y + 3.0, -DOCK_W + 0.4], 0.12, 6, FLAME)
 add.mesh(add.rotateY(add.pop(), -DOCK_A))
-# the ships, moored along the wharf with bow and stern lines to the bollards, fenders between; a gangplank up to the
-# king's ship
-SHIPS = [((DOCK_U1 - 14.5, DOCK_W + 0.3 + 3.6, 1), 1), ((DOCK_U1 - 16.0, -(DOCK_W + 0.3 + 3.6), -1), 2)]
+# the ships, moored along the wharf with bow and stern lines to the bollards, fenders between; the king's ship with
+# its gangway open and a ramp down onto the wharf
+SHIPS = [((KING_U, DOCK_W + 0.3 + 3.6, 1), 1), ((DOCK_U1 - 16.0, -(DOCK_W + 0.3 + 3.6), -1), 2)]
 for (u, v, way), seed in SHIPS:
     ship(dock_pt(u, v, WATER_Y), (way * DOCK_C, way * DOCK_S), seed=seed, band=P["red"] if seed == 1 else P["blue"], shields=seed == 1,
+         gangway=(GANG_X, DOCK_Y - WATER_Y) if seed == 1 else None,
          crew=((3.0, 1.2, 0.6), (-3.5, -1.0, 2.5), (-9.0, 0.4, 1.6)) if seed == 1 else ((5.0, 0.8, 1.0), (-2.0, -1.4, 4.0)))
     sg = 1 if v > 0 else -1
     for du in (-11.0, 11.5):                                                          # the lines
-        b = dock_pt(int(U_SHORE + 5) + 6 * round((u + du - int(U_SHORE + 5)) / 6.0), sg * (DOCK_W - 0.35), DOCK_Y + 0.5)   # to a bollard
+        post = min((p for p, side in POSTS if side == sg), key=lambda p: abs(p - u - du))                            # to the nearest
+        b = dock_pt(post, sg * (DOCK_W - 0.35), DOCK_Y + 0.5)                                                               # bollard
         h = dock_pt(u + du * 0.85, v - sg * 2.2, WATER_Y + 2.7)
         add.polyline([h, [(h[0] + b[0]) / 2, (h[1] + b[1]) / 2 - 0.35, (h[2] + b[2]) / 2], b], 0.04, 6, P["rope"], smooth=1)
     for du in (-6.0, 0.0, 6.0):                                                       # fenders: bundles of rope
         c = dock_pt(u + du, sg * (DOCK_W + 0.3), WATER_Y + 0.9)
         add.mesh(add.move(add.stretch(add.make(add.sphere, [0, 0, 0], 0.3, 8, P["rope"]), [1.0, 1.6, 1.0], (0, 0, 0)), c))
-g0, g1 = dock_pt(DOCK_U1 - 12.0, DOCK_W - 0.6, DOCK_Y + 0.03), dock_pt(DOCK_U1 - 12.0, DOCK_W + 1.8, WATER_Y + 2.1)
-add.beam(g0, g1, 0.7, 0.08, shade_of("wood_light", 1))                                   # the gangplank
-for k in range(1, 6):
-    q = [g0[j] + (g1[j] - g0[j]) * k / 6.0 for j in range(3)]
-    add.mesh(add.move(add.rotateY(add.make(add.cuboid, [0, 0, 0], [0.08, 0.05, 0.6], P["wood"]), -DOCK_A), [q[0], q[1] + 0.06, q[2]]))
 # the rowing boats: one at the wharf's ladder, the rest all round the island by the shore, each tied to a stake
 BOATS = [(dock_pt(DOCK_U1 + 1.4, 3.6, 0), DOCK_A + add.pi / 2 + 0.25, None)]
 for deg in BOAT_DEGS:

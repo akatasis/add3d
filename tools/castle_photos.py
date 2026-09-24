@@ -22,42 +22,42 @@ import preview
 
 # name, eye, at, fov (half angle, degrees); y is up, the gate is at +z
 PHOTOS = [
-    ("01_pilis_nuo_ezero", (72, 36, 98), (0, 18, 5), 33),                 # the castle on its hill, from the south-east
-    ("02_priesaisrys_nuo_kranto", (14, 3.5, 150), (0, 24, 30), 32),       # from the far shore: lake, terrace, gate
-    ("03_vartai_ir_pakeliamas_tiltas", (0, 19, 76), (0, 17, 48), 36),     # the gatehouse and the drawbridge
-    ("04_grandines_ir_grioviai", (-10, 17, 63), (0, 16.5, 52), 40),       # chains, moat and the gate arch
-    ("05_griovys_is_sono", (-22, 21, 78), (6, 15, 56), 30),               # the moat and the bridge from the side
-    ("06_siena_virs_skardzio", (-98, 30, -42), (-40, 22, -20), 40),       # the curtain wall on the cliff side
-    ("07_stogai_is_paukscio_skrydzio", (24, 72, 34), (0, 25, -14), 40),   # the palace roofs from above
-    ("08_donzonas", (-36, 17.5, -6), (-26, 33, -33), 40),                 # the donjon from the west side of the yard
-    ("09_koplycia", (46, 19, -10), (30, 20, -16), 40),                    # the chapel and its stained glass
-    ("10_rumu_fasadas", (7, 22, 31), (0, 18, -2), 42),                    # the palace front from the courtyard
-    ("11_kiemas_nuo_sienos", (32, 27.5, 36), (-5, 16, 5), 45),            # the courtyard from the wall walk
-    ("12_sulinys_ir_fontanas", (19, 17.5, 18), (11, 15.5, 16), 45),       # the well and the fountain
-    ("13_turgus", (-3, 17.5, 37), (-12, 15.8, 30), 45),                   # the market
-    ("14_kalve", (-25, 17, 11), (-34, 15.8, 6), 45),                      # the smithy
-    ("15_arklides", (17, 17, -32), (10, 15.5, -40), 45),                  # the stable and the horses
-    ("16_patrankos_prie_vartu", (15, 17.8, 33), (7.5, 15.6, 41), 40),     # the cannons inside the gate
-    ("17_katapulta", (36, 17.5, 25), (28, 16, 18), 45),                   # the trebuchet
-    ("18_sienos_takas", (34.9, 28.6, 34.9), (14, 26.8, 49), 45),          # along the wall walk to the gate towers
-    ("19_bokstas_su_zibintu", (-6, 19, 28), (-20.7, 32, 50), 26),          # a tower top: parapet, lantern, flag
-    ("20_vartu_praejimas", (0, 16.5, 39), (0, 17.5, 53), 45),             # the gate passage and the portcullis
-    ("21_didzioji_sale", (2, 19.5, -5), (0, 17.5, -27), 36),              # the great hall towards the throne
-    ("22_karalius", (1.5, 17.3, -21), (0, 16.6, -27.5), 28),              # the king on his throne
-    ("23_puota", (-3, 17.5, -7), (-6.5, 15.9, -16), 40),                  # the feast, the fire and the throne
-    ("24_zidinys", (-8, 18.5, -16), (-20.8, 18, -16), 40),                # the fireplace
-    ("25_sachmatu_etiudas", (17, 16.9, -9.5), (15.3, 15.6, -12.2), 30),   # the chess study: White to play and win
-    ("26_koplycios_vidus", (28, 17.2, -9.6), (28, 16.5, -21), 45),        # inside the chapel
-    ("27_kareiviu_miegamasis", (0, 26.3, -8), (0, 25.4, -20), 42),        # the soldiers' dormitory
-    ("28_pastoge", (-6, 31.5, -16), (4, 30.3, -24), 45),                  # the attic and its junk
-    ("29_lobynas_ir_drakonas", (-26.8, 17.7, -28.8), (-24.5, 16.6, -33.2), 44),  # the treasury and the dragon
-    ("30_valdovo_kambarys", (-21.5, 34.6, -29.5), (-27, 34, -33.5), 50),  # the lord's chamber
-    ("31_uostas_ir_laivai", (142, 13, 84), (96, 8, 32), 30),              # the harbour: the wharf and the two ships
-    ("32_karaliaus_laivas", (94.0, 4.3, 34.0), (104, 5.5, 43.5), 40),     # the king's ship, from the wharf
-    ("33_kelias_i_pili", (86, 7, 18), (38, 13, 56), 34),                  # the road up the hill to the terrace and the gate
-    ("34_rastiniai_nameliai", (3, 16.3, -44), (-8, 15.4, -36), 40),       # log houses behind the palace
-    ("35_namelio_vidus", (-0.6, 16.1, -36.8), (-3.0, 15.2, -34.7), 50),   # inside a log house: beds, the table
-    ("36_virtuves_vidus", (-42.2, 15.8, -7.7), (-44.5, 15.1, -11.1), 50), # inside the kitchen: the hearth, the cook
+    ("01_pilis_nuo_ezero", (72, 31.5, 98), (0, 13.5, 5), 33),                 # the castle on its hill, from the south-east
+    ("02_priesaisrys_nuo_kranto", (48, 4, 150), (28, 11, 45), 32),           # from the far shore: the island, the road, the harbour
+    ("03_vartai_ir_pakeliamas_tiltas", (0, 14.5, 76), (0, 12.5, 48), 36),     # the gatehouse and the drawbridge
+    ("04_grandines_ir_grioviai", (-10, 12.5, 63), (0, 12, 52), 40),       # chains, moat and the gate arch
+    ("05_griovys_is_sono", (-22, 16.5, 78), (6, 10.5, 56), 30),               # the moat and the bridge from the side
+    ("06_siena_virs_skardzio", (-98, 25.5, -42), (-40, 17.5, -20), 40),       # the curtain wall on the cliff side
+    ("07_stogai_is_paukscio_skrydzio", (24, 67.5, 34), (0, 20.5, -14), 40),   # the palace roofs from above
+    ("08_donzonas", (-36, 13, -6), (-26, 28.5, -33), 40),                 # the donjon from the west side of the yard
+    ("09_koplycia", (46, 14.5, -10), (30, 15.5, -16), 40),                    # the chapel and its stained glass
+    ("10_rumu_fasadas", (7, 17.5, 31), (0, 13.5, -2), 42),                    # the palace front from the courtyard
+    ("11_kiemas_nuo_sienos", (32, 23, 36), (-5, 11.5, 5), 45),            # the courtyard from the wall walk
+    ("12_sulinys_ir_fontanas", (19, 13, 18), (11, 11, 16), 45),       # the well and the fountain
+    ("13_turgus", (-3, 13, 37), (-12, 11.3, 30), 45),                   # the market
+    ("14_kalve", (-25, 12.5, 11), (-34, 11.3, 6), 45),                      # the smithy
+    ("15_arklides", (17, 12.5, -32), (10, 11, -40), 45),                  # the stable and the horses
+    ("16_patrankos_prie_vartu", (15, 13.3, 33), (7.5, 11.1, 41), 40),     # the cannons inside the gate
+    ("17_katapulta", (36, 13, 25), (28, 11.5, 18), 45),                   # the trebuchet
+    ("18_sienos_takas", (34.9, 24.1, 34.9), (14, 22.3, 49), 45),          # along the wall walk to the gate towers
+    ("19_bokstas_su_zibintu", (-6, 14.5, 28), (-20.7, 27.5, 50), 26),          # a tower top: parapet, lantern, flag
+    ("20_vartu_praejimas", (0, 12, 39), (0, 13, 53), 45),             # the gate passage and the portcullis
+    ("21_didzioji_sale", (2, 15, -5), (0, 13, -27), 36),              # the great hall towards the throne
+    ("22_karalius", (1.5, 12.8, -21), (0, 12.1, -27.5), 28),              # the king on his throne
+    ("23_puota", (-3, 13, -7), (-6.5, 11.4, -16), 40),                  # the feast, the fire and the throne
+    ("24_zidinys", (-8, 14, -16), (-20.8, 13.5, -16), 40),                # the fireplace
+    ("25_sachmatu_etiudas", (17, 12.4, -9.5), (15.3, 11.1, -12.2), 30),   # the chess study: White to play and win
+    ("26_koplycios_vidus", (28, 12.7, -9.6), (28, 12, -21), 45),        # inside the chapel
+    ("27_kareiviu_miegamasis", (0, 21.8, -8), (0, 20.9, -20), 42),        # the soldiers' dormitory
+    ("28_pastoge", (-6, 27, -16), (4, 25.8, -24), 45),                  # the attic and its junk
+    ("29_lobynas_ir_drakonas", (-26.8, 13.2, -28.8), (-24.5, 12.1, -33.2), 44),  # the treasury and the dragon
+    ("30_valdovo_kambarys", (-21.5, 30.1, -29.5), (-27, 29.5, -33.5), 50),  # the lord's chamber
+    ("31_uostas_ir_laivai", (127.4, 12, 72.5), (70, 6, 40), 32),          # the harbour: the wharf, the two ships, the road up
+    ("32_karaliaus_laivas", (116.0, 4.6, 45.1), (110.0, 3.3, 46.1), 45),  # the king's ship and the ramp for a horse, from the wharf
+    ("33_kelias_i_pili", (27, 11.2, 66), (2, 11.5, 58), 36),              # the paved road along the moat to the drawbridge and the gate
+    ("34_rastiniai_nameliai", (3, 11.8, -44), (-8, 10.9, -36), 40),       # log houses behind the palace
+    ("35_namelio_vidus", (-0.6, 11.6, -36.8), (-3.0, 10.7, -34.7), 50),   # inside a log house: beds, the table
+    ("36_virtuves_vidus", (-42.2, 11.3, -7.7), (-44.5, 10.6, -11.1), 50), # inside the kitchen: the hearth, the cook
 ]
 
 

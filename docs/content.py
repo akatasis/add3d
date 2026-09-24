@@ -1480,7 +1480,7 @@ GALLERY = [
     ("castle.png", "46_castle.py",
      "The castle: an island in a transparent lake, a wall of stone blocks "
      "with eight hollow towers (spiral stairs inside), a gatehouse with a "
-     "portcullis and a drawbridge on chains, a road down to a harbour with "
+     "portcullis and a drawbridge on chains, a paved road down to a harbour with "
      "two moored ships, a palace with glass windows and a tiled roof, a "
      "chapel with stained glass, a courtyard full of knights, archers, "
      "townsfolk, log houses, carts and animals -- and, inside, the king in "
@@ -1490,7 +1490,7 @@ GALLERY = [
      "compressed.",
      "Pilis: sala permatomame ežere, akmens blokų siena su aštuoniais "
      "tuščiaviduriais bokštais (viduje sraigtiniai laiptai), vartai su "
-     "pakeliamomis grotomis ir tiltu ant grandinių, kelias žemyn į uostą su "
+     "pakeliamomis grotomis ir tiltu ant grandinių, grįstas kelias žemyn į uostą su "
      "dviem prišvartuotais laivais, rūmai su stiklo langais ir čerpių stogu, "
      "koplyčia su vitražais, kiemas pilnas riterių, lankininkų, miestiečių, "
      "rąstinių namelių, vežimų ir gyvūnų -- o viduje karalius sosto menėje "

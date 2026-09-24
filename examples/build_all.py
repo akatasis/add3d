@@ -68,7 +68,7 @@ VIEWS = {
     "planet": (20, 25, 1.3, (20, 20, 40)),
     "geodesic_dome": (25, 22, 1.3),
     "glass_and_textures": (22, 16, 1.7),
-    "castle": dict(turn=28, tilt=34, at=(0, 20, 8), radius=58, size=(1100, 760)),
+    "castle": dict(turn=28, tilt=34, at=(0, 15.5, 8), radius=58, size=(1100, 760)),
     "example1": (30, 22, 1.0), "example2": (30, 22, 1.0),
     "example3": (30, 28, 1.0), "example4": (20, 12, 1.0),
     "example5": (30, 22, 1.0), "example6": (30, 22, 1.0),
@@ -79,10 +79,10 @@ VIEWS = {
 #: more pictures of one model: stem -> [(picture stem, render options)]
 EXTRA_VIEWS = {
     "castle": [
-        ("castle_gate", dict(eye=(0, 19, 60), at=(0, 17, 30), fov=34, size=(880, 620))),
-        ("castle_yard", dict(eye=(6, 42, 44), at=(-4, 16, 8), fov=38, size=(1100, 760))),
-        ("castle_hall", dict(eye=(2, 19.5, -5), at=(0, 17.5, -27), fov=36, size=(1100, 760))),
-        ("castle_treasury", dict(eye=(-26.8, 17.7, -28.8), at=(-24.5, 16.6, -33.2), fov=44, size=(880, 620))),
+        ("castle_gate", dict(eye=(0, 14.5, 60), at=(0, 12.5, 30), fov=34, size=(880, 620))),
+        ("castle_yard", dict(eye=(6, 37.5, 44), at=(-4, 11.5, 8), fov=38, size=(1100, 760))),
+        ("castle_hall", dict(eye=(2, 15, -5), at=(0, 13, -27), fov=36, size=(1100, 760))),
+        ("castle_treasury", dict(eye=(-26.8, 13.2, -28.8), at=(-24.5, 12.1, -33.2), fov=44, size=(880, 620))),
     ],
 }
 

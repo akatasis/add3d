@@ -180,9 +180,9 @@ textures](examples/45_glass_and_textures.py) -- and the
 and a sunken boat, an octagonal wall of individual stone blocks with eight
 hollow towers -- spiral stairs, doors onto the wall walk, lookouts on top
 -- a gatehouse with a portcullis and a drawbridge hanging on real chains
-over the moat to a terrace, a road cut into the hill down to a harbour
-where two great ships lie moored at a wharf and rowing boats are tied up
-all round the shore, a palace with glass windows, a porch on columns,
+over the moat, a road paved with fieldstones from the bridge along the moat
+and gently down round the hill to a harbour where two great ships lie
+moored at a wharf and rowing boats are tied up all round the shore, a palace with glass windows, a porch on columns,
 balconies, dormers and a roof of single tiles, a chapel with stained glass
 and an altar, a courtyard with a well, a fountain, a smithy, a kitchen with
 a hearth and a bread oven, log houses with hay lofts and a cottage, all

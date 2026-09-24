@@ -175,9 +175,10 @@ tekstūromis](examples/45_glass_and_textures.py) -- ir
 nuskendusia valtimi, aštuonkampė siena iš atskirų akmens blokų su
 aštuoniais tuščiaviduriais bokštais -- sraigtiniai laiptai, durys į sienos
 taką, apžvalgos aikštelės viršuje -- vartai su pakeliamomis grotomis ir
-tiltu, kabančiu ant tikrų grandinių, per griovį į terasą, į kalvą įkirstas
-kelias žemyn į uostą, kur prie krantinės prišvartuoti du dideli laivai, o
-aplink salą pririštos valtys, rūmai su stiklo langais, portiku ant kolonų,
+tiltu, kabančiu ant tikrų grandinių, per griovį, lauko akmenimis grįstas
+kelias nuo tilto palei griovį ir švelniai žemyn aplink kalvą į uostą, kur
+prie krantinės prišvartuoti du dideli laivai, o aplink salą pririštos
+valtys, rūmai su stiklo langais, portiku ant kolonų,
 balkonais, stoglangiais ir stogu iš atskirų čerpių, koplyčia su vitražais
 ir altoriumi, kiemas su šuliniu, fontanu, kalve, virtuve su židiniu ir
 duonkepe krosnimi, rąstiniais nameliais su šienaujomis ir trobele (visi
