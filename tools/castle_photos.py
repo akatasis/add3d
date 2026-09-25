@@ -1,13 +1,14 @@
 """
-castle_photos.py -- forty photographs of the castle (examples/46_castle.py).
+castle_photos.py -- forty-one photographs of the castle (examples/46_castle.py).
 
-Forty camera positions chosen the way a photographer would walk round
+Forty-one camera positions chosen the way a photographer would walk round
 the finished model: the approach over the lake, the gatehouse, the walls,
 the courtyard and its trades, the palace inside and out, the donjon with the
 treasury, the chapel, the roofs, the harbour with its ships, the road up the
 hill, the log houses and the kitchen inside, the meadow outside the walls,
-a school of fish, the wood on the shore, the wine cellar.  Each is rendered
-with tools/preview.py (the big model is streamed) to ``<folder>/NN_name.png``.
+a school of fish, the wood on the shore, the wine cellar, the armoury.
+Each is rendered with tools/preview.py (the big model is streamed) to
+``<folder>/NN_name.png``.
 
     python3 tools/castle_photos.py examples/out/castle_full/castle.obj photos
     python3 tools/castle_photos.py castle.obj photos --size 1600 1000 --only 1,7,21
@@ -52,7 +53,7 @@ PHOTOS = [
     ("27_kareiviu_miegamasis", (0, 21.8, -8), (0, 20.9, -20), 42),        # the soldiers' dormitory
     ("28_pastoge", (-6, 27, -16), (4, 25.8, -24), 45),                  # the attic and its junk
     ("29_lobynas_ir_drakonas", (-26.8, 13.2, -28.8), (-24.5, 12.1, -33.2), 44),  # the treasury and the dragon
-    ("30_valdovo_kambarys", (-21.5, 30.1, -29.5), (-27, 29.5, -33.5), 50),  # the lord's chamber
+    ("30_valdovo_kambarys", (-24.1, 30.8, -30.0), (-27.6, 29.9, -31.6), 42),  # the lord's chamber: the two four-posters
     ("31_uostas_ir_laivai", (127.4, 12, 72.5), (70, 6, 40), 32),          # the harbour: the wharf, the two ships, the road up
     ("32_karaliaus_laivas", (116.0, 4.6, 45.1), (110.0, 3.3, 46.1), 45),  # the king's ship and the ramp for a horse, from the wharf
     ("33_kelias_i_pili", (27, 11.2, 66), (2, 11.5, 58), 36),              # the paved road along the moat to the drawbridge and the gate
@@ -63,6 +64,7 @@ PHOTOS = [
     ("38_zuvu_burys", (-72.5, 3.6, 47.8), (-75.6, -0.2, 43.6), 34),        # a school of bream in the lake
     ("39_miskas_prie_kranto", (-52, 9, 76), (-44, 7, 57), 40),              # the wood on the shore: spruces, birches, oaks
     ("40_vyno_rusys", (17.2, 8.1, -18.2), (0.0, 7.2, -16.4), 40),           # the wine cellar: down the aisle to the great tun
+    ("41_ginkline", (-27.6, 21.7, -33.5), (-20.0, 21.9, -33.2), 42),       # the armoury: swords on the wall, crossed under shields
 ]
 
 

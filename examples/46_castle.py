@@ -116,6 +116,8 @@ P["needles"] = [36, 80, 56]                              # the blue-green needle
 P["oak_leaf"] = [70, 106, 38]                            # the dark leaves of oaks
 P["bark_red"] = [168, 98, 64]                            # and the red upper bark of pines
 P["granite"] = [168, 130, 118]                          # the pinkish granite of fieldstones: the road to the harbour
+P["scree"] = [150, 141, 124]                            # the gravel and grit of the landslide on the hill
+P["wine"] = [92, 14, 30]                                 # red wine
 P["poppy"] = [222, 44, 36]                               # the flowers in the grass: poppies,
 P["cornflower"] = [80, 120, 230]                         # cornflowers
 P["dandelion"] = [250, 212, 40]                          # and dandelions
@@ -187,6 +189,19 @@ def vunit(a):
 
 def vcross(a, b):
     return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+
+
+def joint(a, c, l1, l2, pole):
+    """The middle joint (elbow, knee) of a limb from ``a`` to ``c`` whose two
+    bones are ``l1`` and ``l2`` long, bent towards the direction ``pole``."""
+    d = vsub(c, a)
+    L = min(vlen(d), l1 + l2 - 1e-4)
+    u = vunit(d)
+    x = (l1 * l1 - l2 * l2 + L * L) / (2 * L)
+    h = add.sqrt(max(0.0, l1 * l1 - x * x))
+    k = sum(pole[i] * u[i] for i in range(3))
+    p = vunit([pole[i] - u[i] * k for i in range(3)])
+    return [a[i] + u[i] * x + p[i] * h for i in range(3)]
 
 
 SHADED = ("stone", "stone_dark", "brick", "wood", "wood_light", "wood_dark", "slate", "spire", "straw", "dragon_wing")
@@ -457,7 +472,7 @@ def board_minus_circle(p, circle, along):
 
 
 def plank_floor(x0, x1, z0, z1, y, thick=0.04, width=0.3, length=3.0, name="wood", along="z", avoid=None,
-                holes=(), rounds=(), gap=0.01, nails=None):
+                holes=(), rounds=(), gap=0.01, nails=None, covered=None):
     """A floor of separate boards (staggered, three shades) whose top is at
     ``y``.  Where the floor is open the boards are sawn off at the edge --
     ``holes`` are rectangles (x0, x1, z0, z1), a stairwell; ``rounds`` are
@@ -465,10 +480,13 @@ def plank_floor(x0, x1, z0, z1, y, thick=0.04, width=0.3, length=3.0, name="wood
     across the opening or taken out whole; a board running along an edge is
     cut lengthwise.  ``avoid(x, z)`` still leaves out whole boards.  ``gap``
     is the joint on either side of a board; ``nails`` the joists under the
-    boards (their x for boards along x, z for boards along z): every board
-    is nailed to each with two nails (next to a joint, a hand's breadth
-    in from its own end)."""
-    rows = int((x1 - x0) / width) if along == "z" else int((z1 - z0) / width)
+    boards (their x for boards along x, z for boards along z -- or, for a
+    joist that does not run the whole width, ``(u, v0, v1)``, where it
+    runs across the boards' way; see :func:`floor_joists`): every board is
+    nailed to each with two nails (next to a joint, a hand's breadth in
+    from its own end; a board cut narrow, with one) -- but where the floor
+    is ``covered(x, z)`` (with hay, say), which hides them."""
+    rows = int(add.ceil(((x1 - x0) if along == "z" else (z1 - z0)) / width - 1e-6))    # (the last row a board cut narrow)
     span = (z1 - z0) if along == "z" else (x1 - x0)
     for i in range(rows):
         offset = (i % 3) * length / 3.0
@@ -479,9 +497,9 @@ def plank_floor(x0, x1, z0, z1, y, thick=0.04, width=0.3, length=3.0, name="wood
             if t1 - t0 < 0.15:
                 continue
             if along == "z":                                         # the board, ``gap`` in from its neighbours
-                board = (x0 + i * width + gap, x0 + (i + 1) * width - gap, z0 + t0 + gap, z0 + t1 - gap)
+                board = (x0 + i * width + gap, min(x0 + (i + 1) * width, x1) - gap, z0 + t0 + gap, z0 + t1 - gap)
             else:
-                board = (x0 + t0 + gap, x0 + t1 - gap, z0 + i * width + gap, z0 + (i + 1) * width - gap)
+                board = (x0 + t0 + gap, x0 + t1 - gap, z0 + i * width + gap, min(z0 + (i + 1) * width, z1) - gap)
             if avoid and avoid((board[0] + board[1]) / 2, (board[2] + board[3]) / 2):
                 continue
             pieces = [board]
@@ -496,14 +514,79 @@ def plank_floor(x0, x1, z0, z1, y, thick=0.04, width=0.3, length=3.0, name="wood
                     if nails is None:
                         continue
                     lo, hi = (bx0, bx1) if along == "x" else (bz0, bz1)
-                    for u in nails:
+                    vlo, vhi = (bz0, bz1) if along == "x" else (bx0, bx1)
+                    half = min(0.26 * width, (vhi - vlo) / 2 - 0.035)                  # (two nails a board, clear of its
+                    vs = ((vlo + vhi) / 2 - half, (vlo + vhi) / 2 + half) if half > 0.03 else ((vlo + vhi) / 2,)   # edges)
+                    for joist in nails:
+                        u, j0, j1 = joist if isinstance(joist, tuple) else (joist, -1e9, 1e9)
                         if lo - 0.02 <= u <= hi + 0.02:
                             u = min(max(u, lo + 0.045), hi - 0.045)
-                            for dv in (-0.26, 0.26):
-                                if along == "x":
-                                    floor_nail(u, y, (bz0 + bz1) / 2 + dv * width, 4)
-                                else:
-                                    floor_nail((bx0 + bx1) / 2 + dv * width, y, u, 4)
+                            for v in vs:
+                                nx, nz = (u, v) if along == "x" else (v, u)
+                                if j0 + 0.03 <= v <= j1 - 0.03 and not (covered and covered(nx, nz)):   # (only where there
+                                    floor_nail(nx, y, nz, 4)                                            # is a joist)
+
+
+def clay_bed(x0, x1, z0, z1, y, holes=(), thick=0.02):
+    """A bed of clay ``thick`` on the ground ``y`` of a house, under its
+    floor's joists, over the rectangle x0..x1, z0..z1 -- but where a hearth
+    or a chimney stands (``holes``): what shows between the boards."""
+    pieces = [(x0, x1, z0, z1)]
+    for h in holes:
+        pieces = [q for p in pieces for q in rect_minus(p, h)]
+    for a, b, c, d in pieces:
+        add.cuboid([(a + b) / 2, y + thick / 2, (c + d) / 2], [b - a, thick, d - c], P["earth_dark"])
+
+
+def floor_joists(x0, x1, z0, z1, y, along="x", step=0.5, size=(0.12, 0.14), holes=(), blocks=(), ends=(0.08, 0.08),
+                 name="wood_dark"):
+    """The joists under a plank floor over the rectangle x0..x1, z0..z1 whose
+    boards run ``along`` and whose underside is at ``y``: across the boards,
+    ``size`` (width, depth), one every ``step`` from the rectangle's start
+    (where :func:`plank_floor`'s boards are butted, when ``step`` divides a
+    third of their length) and one at each end, ``ends`` in from its edges.
+    At an opening in the floor (``holes``, rectangles as for
+    :func:`plank_floor`) the joists are sawn off short of it and carried on
+    a trimmer along its edge, framed into the whole joists either side; at
+    ``blocks`` (rectangles: posts, a hearth) they are only sawn off.
+    Returns where they are, for the nails: [(u, v0, v1)]."""
+    lo, hi = (x0, x1) if along == "x" else (z0, z1)
+    vlo, vhi = (z0, z1) if along == "x" else (x0, x1)
+    w, d = size
+    swap = (lambda r: r) if along == "x" else (lambda r: (r[2], r[3], r[0], r[1]))    # rectangles as (u0, u1, v0, v1)
+    holes, blocks = [swap(h) for h in holes], [swap(b) for b in blocks]
+    n = int((hi - lo - ends[1]) / step + 1e-6)
+    us = [lo + ends[0]] + [lo + step * k for k in range(1, n + 1) if lo + ends[0] + w < lo + step * k < hi - ends[1] - w] + [hi - ends[1]]
+
+    def box(u, a, b, k):
+        c, s = [u, y - d / 2, (a + b) / 2], [w, d, b - a]
+        if along != "x":
+            c, s = [c[2], c[1], c[0]], [s[2], s[1], s[0]]
+        add.cuboid(c, s, shade_of(name, k))
+    out = []
+    for k, u in enumerate(us):
+        pieces = [(vlo, vhi)]
+        for h0, h1, g0, g1 in holes + blocks:
+            if h0 - w / 2 - 0.01 < u < h1 + w / 2 + 0.01:
+                trim = w if (h0, h1, g0, g1) in holes else 0.02                  # (room for the trimmer)
+                pieces = [q for a, b in pieces for q in ((a, min(b, g0 - trim)), (max(a, g1 + trim), b)) if q[1] - q[0] > 0.15]
+        for a, b in pieces:
+            box(u, a, b, k)
+            out.append((u, a, b))
+    for h0, h1, g0, g1 in holes:                                                 # the trimmers, between the whole joists
+        lefts, rights = [u for u in us if u < h0 - w / 2 - 0.01], [u for u in us if u > h1 + w / 2 + 0.01]
+        if not lefts or not rights:
+            continue
+        left, right = max(lefts), min(rights)
+        for g, s in ((g0, -1), (g1, 1)):
+            um, vm = (h0 + h1) / 2, g + s * w / 2
+            if vlo + 0.05 < g < vhi - 0.05 and not any(o[0] < um < o[1] and o[2] < vm < o[3] for o in holes + blocks):
+                a, b = left + w / 2, right - w / 2                                # (none where the next opening is)
+                c, sz = [(a + b) / 2, y - d / 2, g + s * w / 2], [b - a, d, w]
+                if along != "x":
+                    c, sz = [c[2], c[1], c[0]], [sz[2], sz[1], sz[0]]
+                add.cuboid(c, sz, P[name])
+    return out
 
 
 def arms(w, h, thick=0.04, field=None):
@@ -851,27 +934,45 @@ def timber_floor(poly, y, angle, bearing=None, holes=(), trimmers=(), thick=TREA
                             break
 
 
+RISER, NOSING = 0.03, 0.02                             # a stair's riser boards: how thick; how far a tread stands proud of one
+HOUSED = 0.08                                          # how far a stair's treads and landings run on past its reach: into the wall
+
+
 def stair_step(cx, cz, a0, a1, yb, yt, r_in, r_out, r_of=None, arcs=2, i=0, nails=True):
     """One step of a wooden spiral stair from angle a0 to a1, its top at
     ``yt``: two boards nailed down on a bearer that runs from the newel
-    into the wall under the joint between them, and under the front edge,
-    set back for the nosing, a riser board standing on the step below
-    (which is at ``yb``)."""
+    into the wall under the joint between them, and a riser board under
+    the front edge, standing on the step below (which is at ``yb``) just
+    before its back edge, up against the underside of this one, whose
+    nosing stands a little proud of it.  The boards and the riser are
+    housed in the newel and in the wall (``HOUSED`` beyond the stair's
+    reach): nowhere a chink between them to see through."""
     am = (a0 + a1) / 2
     rr = (lambda a: r_of(a)) if r_of else (lambda a: r_out)
-    for b0, b1, k in ((a0, am - 0.003, 0), (am + 0.003, a1, 1)):          # the two boards
-        pts = [(cx + (r_in - 0.02) * add.cos(b0), cz + (r_in - 0.02) * add.sin(b0))]
-        pts += [(cx + rr(a) * add.cos(a), cz + rr(a) * add.sin(a)) for a in outline_angles(b0, b1, arcs, r_of)]
-        pts.append((cx + (r_in - 0.02) * add.cos(b1), cz + (r_in - 0.02) * add.sin(b1)))
+    deep = lambda a: rr(a) * (1 + HOUSED / r_out)                        # (its outline, moved out into the wall)
+    ex, ez = add.cos(a0), add.sin(a0)
+    tx, tz = -ez, ex                                                     # the way the stair climbs
+    lip = RISER + 0.005 + NOSING                                         # how far the front edge is before the line a0
+
+    def front(s):                                                        # the point ``s`` out along the front edge
+        return (cx + ex * s - tx * lip, cz + ez * s - tz * lip)
+
+    s = deep(a0)
+    for _ in range(4):                                                   # (where the front edge runs into the wall)
+        x, z = front(s)
+        s = add.sqrt(max(0.0, deep(add.atan2(z - cz, x - cx)) ** 2 - lip * lip))
+    for b0, b1, k in ((a0, am - 0.003, 0), (am + 0.003, a1, 1)):          # the two boards, the front one's edge
+        pts = [front(r_in - 0.04), front(s)] if k == 0 else [(cx + (r_in - 0.04) * add.cos(b0), cz + (r_in - 0.04) * add.sin(b0))]
+        pts += [(cx + deep(a) * add.cos(a), cz + deep(a) * add.sin(a)) for a in outline_angles(b0, b1, arcs, r_of)]
+        pts.append((cx + (r_in - 0.04) * add.cos(b1), cz + (r_in - 0.04) * add.sin(b1)))
         add.mesh(solid(pts, yt - TREAD, yt, shade_of("wood", 2 * i + k)))
-    ex, ez = add.cos(am), add.sin(am)                                    # the bearer
-    timber((cx + ex * (r_in - 0.05), cz + ez * (r_in - 0.05)), (cx + ex * (rr(am) + 0.12), cz + ez * (rr(am) + 0.12)),
+    bx, bz = add.cos(am), add.sin(am)                                    # the bearer
+    timber((cx + bx * (r_in - 0.05), cz + bz * (r_in - 0.05)), (cx + bx * (rr(am) + 0.12), cz + bz * (rr(am) + 0.12)),
           yt - TREAD - 0.1, yt - TREAD, 0.1, "wood_dark")
-    ex, ez = add.cos(a0), add.sin(a0)                                    # the riser, behind the nosing
-    tx, tz = -ez, ex
-    p = (cx + ex * r_in - tx * 0.045, cz + ez * r_in - tz * 0.045)
-    q = (cx + ex * rr(a0) - tx * 0.045, cz + ez * rr(a0) - tz * 0.045)
-    timber(p, q, yb, yt - TREAD, 0.03, shade_of("wood", i + 1))
+    off = RISER / 2 + 0.005                                              # the riser, on the step below, under the nosing
+    p = (cx + ex * (r_in - 0.04) - tx * off, cz + ez * (r_in - 0.04) - tz * off)
+    q = (cx + ex * deep(a0) - tx * off, cz + ez * deep(a0) - tz * off)
+    timber(p, q, yb, yt - TREAD, RISER, shade_of("wood", i + 1))
     if nails:                                                             # each board nailed to the bearer
         for r in (0.9, 0.62 * rr(am) + 0.3):
             for s in (-1, 1):
@@ -996,7 +1097,11 @@ def wall_segment(a, b, y0, y1, t=WALL_T, walk=True, inner=True, ends=("round", "
 def cone_roof(centre, y, r, h, k, tiles=True, color=None, colours="slate", size=None):
     """A conical roof of individual slates -- or, with ``colours="spire"``,
     of the palace's clay tiles, the size of the tiles on its roof
-    (``size``: width and height of a tile) -- or a plain ``color`` cone."""
+    (``size``: width and height of a tile) -- or a plain ``color`` cone.
+    Each slate is solid, lying on the cone, its butt standing 5 cm proud
+    over the head of the course below and thinning to nothing at its own
+    head; bent round the cone in as many flat facets as it takes to keep
+    it off the cone's own facets."""
     cx, cz = centre[0], centre[2]
     if color is not None:
         add.cone([cx, y, cz], [cx, y + h, cz], r, k, color)
@@ -1007,19 +1112,33 @@ def cone_roof(centre, y, r, h, k, tiles=True, color=None, colours="slate", size=
         return
     tw, th = size or (0.42, 0.45)
     rows = max(4, int((h if size is None else add.sqrt(h * h + r * r)) / th))
+    sl = add.sqrt(h * h + r * r)
+
+    def on(a, t, lift):                                                                # a point of the cone, lifted off it
+        ca, sa = add.cos(a), add.sin(a)
+        return [cx + r * (1 - t) * ca + lift * h / sl * ca, y + h * t + lift * r / sl, cz + r * (1 - t) * sa + lift * h / sl * sa]
     for j in range(rows):
         t0, t1 = j / float(rows), (j + 1) / float(rows)
-        r0, r1 = r * (1 - t0), r * (1 - t1)
-        yy0, yy1 = y + h * t0, y + h * t1
+        r0 = r * (1 - t0)
         n = max(8, int(2 * add.pi * r0 / tw))
         for i in range(n):
             a0 = 2 * add.pi * (i + (0.5 if j % 2 else 0)) / n
             a1 = 2 * add.pi * (i + 0.92 + (0.5 if j % 2 else 0)) / n
-            q = [[cx + (r0 + 0.05) * add.cos(a0), yy0 - 0.06, cz + (r0 + 0.05) * add.sin(a0)],
-                 [cx + (r0 + 0.05) * add.cos(a1), yy0 - 0.06, cz + (r0 + 0.05) * add.sin(a1)],
-                 [cx + (r1 + 0.05) * add.cos(a1), yy1, cz + (r1 + 0.05) * add.sin(a1)],
-                 [cx + (r1 + 0.05) * add.cos(a0), yy1, cz + (r1 + 0.05) * add.sin(a0)]]
-            add.polygon(q[::-1], shade_of(colours, int(hash2(i, j, 8) * 3)))
+            m = max(1, int((a1 - a0) / (2 * add.acos(1 - 0.003 / r0))) + 1)
+            M = add.Mesh()
+            for f in range(m + 1):
+                a = a0 + (a1 - a0) * f / m
+                for q in (on(a, t0, 0.006), on(a, t0, 0.056), on(a, t1, 0.006)):     # bed, butt, head
+                    M.add_vertex(q)
+            colour = shade_of(colours, int(hash2(i, j, 8) * 3))
+            for f in range(m):
+                b0, u0, h0, b1, u1, h1 = 3 * f, 3 * f + 1, 3 * f + 2, 3 * f + 3, 3 * f + 4, 3 * f + 5
+                M.add_face([b0, h0, h1, b1], colour)
+                M.add_face([u0, u1, h1, h0], colour)
+                M.add_face([b0, b1, u1, u0], colour)
+            M.add_face([0, 1, 2], colour)
+            M.add_face([3 * m, 3 * m + 2, 3 * m + 1], colour)
+            add.mesh(add.fix_normals(M))
     if colours == "slate":
         add.cone([cx, y + h - 0.5, cz], [cx, y + h + 0.05, cz], 0.25, 8, P["slate"])
     else:
@@ -1028,10 +1147,13 @@ def cone_roof(centre, y, r, h, k, tiles=True, color=None, colours="slate", size=
 
 def tile_face(A, B, C, D, blocked=None, size=None, colours="spire"):
     """Cover the planar face A-B (eave) .. D-C (ridge; C may equal D for a
-    triangle) with rows of tiles, each a thin two-sided sheet lifted a
-    little off the face; ``blocked(x, z)`` says where to leave tiles out.
-    ``colours`` names a shaded palette colour: "spire" for the clay tiles
-    of the palace, "slate" for the towers."""
+    triangle) with rows of tiles laid like shingles: each tile a solid
+    wedge lying on the face, its butt 5 cm thick over the head of the row
+    below and thinning to nothing at its own head, so that the eaves and
+    the verges show the tiles' thickness and nothing hangs in the air;
+    ``blocked(x, z)`` says where to leave tiles out.  ``colours`` names a
+    shaded palette colour: "spire" for the clay tiles of the palace,
+    "slate" for the towers."""
     tw, th = size or TILE
     n = vunit(vcross(vsub(B, A), vsub(D, A)))
     rows = max(1, int(vlen(vsub(D, A)) / th))
@@ -1053,10 +1175,42 @@ def tile_face(A, B, C, D, blocked=None, size=None, colours="spire"):
             if blocked and blocked(*cxz):
                 continue
             colour = shade_of(colours, int(hash2(i, j, 5) * 3))
-            lifted = [[p[k] + n[k] * 0.06 for k in range(3)] for p in q]
-            if vlen(vsub(lifted[2], lifted[3])) < 0.01:                        # a triangle at the apex
-                lifted = lifted[:3]
-            sheet(lifted[::-1], colour, 0.05)
+            bed = [[p[k] + n[k] * 0.004 for k in range(3)] for p in q]                 # a hair off the face
+            butt = [[p[k] + n[k] * 0.054 for k in range(3)] for p in q[:2]]
+            M = add.Mesh()                                                             # (its faces listed outward: n is)
+            if vlen(vsub(q[2], q[3])) < 0.01:                                        # a triangle at the apex
+                for p in bed[:3] + butt:
+                    M.add_vertex(p)
+                for f in ([0, 2, 1], [3, 4, 2], [0, 1, 4, 3], [0, 3, 2], [1, 2, 4]):
+                    M.add_face(f, colour)
+            else:
+                for p in bed + butt:
+                    M.add_vertex(p)
+                for f in ([0, 3, 2, 1], [4, 5, 2, 3], [0, 1, 5, 4], [0, 4, 3], [1, 2, 5]):
+                    M.add_face(f, colour)
+            add.mesh(M)
+
+
+def ridge_cap(a, b, n1, n2, color, w=0.24, lift=0.056, t=0.05):
+    """The capping of a ridge from ``a`` to ``b`` where two tiled slopes
+    meet (``n1``, ``n2`` their normals, out of the roof): a bent strip
+    ``t`` thick lying on the tiles of both, ``w`` down each from the ridge,
+    at the roof's own pitch -- a prism of the ridge's angle, not a box."""
+    m = vunit([n1[k] + n2[k] for k in range(3)])
+    along = vunit(vsub(b, a))
+    downs = []
+    for n in (n1, n2):
+        d = vunit(vcross(n, along))
+        downs.append(d if d[0] * m[0] + d[1] * m[1] + d[2] * m[2] < 0 else [-c for c in d])
+    k1 = n1[0] * m[0] + n1[1] * m[1] + n1[2] * m[2]
+
+    def section(p):
+        apex_in = [p[k] + m[k] * lift / k1 for k in range(3)]
+        apex_out = [p[k] + m[k] * (lift + t) / k1 for k in range(3)]
+        e1 = [apex_in[k] + downs[0][k] * w for k in range(3)]
+        e2 = [apex_in[k] + downs[1][k] * w for k in range(3)]
+        return [e1, apex_in, e2, [e2[k] + n2[k] * t for k in range(3)], apex_out, [e1[k] + n1[k] * t for k in range(3)]]
+    add.mesh(add.fix_normals(add.make(add.loft, [section(a), section(b)], color)))
 
 
 TILE = (0.28, 0.25)
@@ -1225,9 +1379,10 @@ def shaft_sector(cx, cz, a0, a1, r_in, r_out, r_of=None, grow=0.0, arcs=None):
 
 def stair_landing(cx, cz, a0, a1, y, r_out, r_of=None):
     """A landing of a spiral stair: boards across the sector a0..a1 at the
-    level ``y``, nailed to joists that run from the newel out into the wall."""
+    level ``y`` -- housed in the wall, as the steps are -- nailed to joists
+    that run from the newel out into the wall."""
     am = (a0 + a1) / 2
-    timber_floor(shaft_sector(cx, cz, a0, a1, 0.33, r_out, r_of), y, am + add.pi / 2,
+    timber_floor(shaft_sector(cx, cz, a0, a1, 0.33, r_out, r_of, grow=HOUSED), y, am + add.pi / 2,
                  bearing=shaft_sector(cx, cz, a0, a1, 0.2, r_out, r_of, grow=0.2), step=0.55, joist=(0.12, 0.18), width=0.26)
 
 
@@ -1330,8 +1485,10 @@ def platform(cx, cz, r, y, hole_from, hole_to, r_of=None, wall=None):
         ox, oz = -add.sin(a) * s * 0.09, add.cos(a) * s * 0.09
         edges.append(((cx + 0.3 * add.cos(a) + ox, cz + 0.3 * add.sin(a) + oz),
                       (cx + (rr(a) + 0.25) * add.cos(a) + ox, cz + (rr(a) + 0.25) * add.sin(a) + oz)))
-    timber_floor(pts, y, mid + add.pi / 2, bearing=bearing, holes=[newel], trimmers=edges, step=0.75, joist=(0.16, 0.24),
-                 span=(-(wall or r) * 0.98, (wall or r) * 0.98) if r_of is None else None)
+    along = mid + add.pi / 2                                                 # the boards' way; the joists over the whole
+    uc = cx * add.cos(along) + cz * add.sin(along)                           # width of the drum, measured from its centre
+    timber_floor(pts, y, along, bearing=bearing, holes=[newel], trimmers=edges, step=0.75, joist=(0.16, 0.24),
+                 span=(uc - (wall or r) * 0.98, uc + (wall or r) * 0.98) if r_of is None else None)
     edge = wall or rr(hole_from)
     guard_rail(cx, cz, hole_from, 0.4, edge - 0.08, y)                       # from the newel to the wall
 
@@ -1351,7 +1508,7 @@ def round_tower(centre, y0, y1, r, doors, walk=None, y_floor=None, roof_h=8.0, r
     ``width, height`` -- the default is DOOR_W x DOOR_H, man-high and more);
     ``walk`` is ``(level, a_from, a_to)`` -- the landing at the wall walk
     with doors at both ends; ``walls`` the directions where curtain walls
-    run into it (its stones stop at theirs, up to the wall walk); one of
+    run into it (its stones run on into their cores, but for the walk); one of
     its embrasures is on the angle ``phase`` (the angles of them all go
     into EMBRASURES under its centre)."""
     cx, cz = centre[0], centre[2]
@@ -1382,9 +1539,10 @@ def round_tower(centre, y0, y1, r, doors, walk=None, y_floor=None, roof_h=8.0, r
     drum = add.difference(drum, *(holes + list(cutters)))
     add.mesh(tex_round(drum, name, cx, cz, r, 3.0))
     if blocks:
-        for a in walls:                                                         # no blocks where a wall joins: up to its
-            skip.append((a, add.asin(min(1.0, (WALL_T / 2 + 0.25) / (r + 0.24))), y0, WALK))   # stone faces, and to its walk
-        stone_ring(cx, cz, r, max(y0, G - 0.5), y1 - 1.0, name, skip)
+        for a in walls:                                                         # where a wall joins, the courses run on into
+            level = walk[0] if walk else WALK                                   # its core, right up to its stones (as the
+            skip.append((a, add.asin(min(1.0, (WALL_T / 2 + 0.25) / (r + 0.24))), level - 0.24, level))   # palace towers'
+        stone_ring(cx, cz, r, max(y0, G - 0.5), y1 - 1.0, name, skip)          # do): none only where its walk comes in
         stone_ring(cx, cz, r_in - 0.02, y_floor, y1, "stone_dark", inside)       # and inside, the same courses
     floor_stones(circle_poly(cx, cz, r_in + 0.1, 40), y_floor, seed=int(cx * 7 + cz))   # a floor of flagstones
     if stops is None:
@@ -1639,10 +1797,11 @@ def by_terrace(x, z, margin=0.0):
     return TERRACE[0] - margin < x < TERRACE[1] + margin and TERRACE[2] - 8 - margin < z < TERRACE[3] + margin
 
 
-# the moat is a pond of natural outline before the south front: from the south-west corner tower round to the
-# south-east one, its water comes right up to the curtain wall, the corner towers and the two gate towers, which go
-# down to its floor -- nobody can walk round it to the gate.  The only dry way in is the drawbridge, onto the landing
-# before the gate where the guards stand.  Its bank is lined with rough stone blocks (see "the moat's stonework").
+# the moat is a pond before the south front, its far bank straight and its corners rounded: from the south-west
+# corner tower round to the south-east one, its water comes right up to the curtain wall, the corner towers and the
+# two gate towers, which go down to its floor -- nobody can walk round it to the gate.  The only dry way in is the
+# drawbridge, onto the landing before the gate where the guards stand.  Its bank is lined with rough stone blocks
+# (see "the moat's stonework").
 GATE_X = 10.5                                          # the gatehouse takes the middle of the south wall
 GATE_W = 7.0
 GATE_Z0, GATE_Z1 = 47.0, 53.0                          # the gate passage, from the courtyard out to the landing
@@ -1673,10 +1832,15 @@ def spline(points, step):
     return out
 
 
-MOAT_EDGE = spline([_on_tower(CORNERS[2], 94), (-21.3, 56.6), (-21.35, 58.8), (-20.85, 61.0), (-19.5, 62.75),
-                    (-17.3, 63.65), (-14.2, 63.85), (-10.8, 63.45), (-7.4, 63.35), (-4.6, 63.8), (-3.2, 64.0),
-                    (0.0, 64.0), (3.2, 64.0), (4.7, 63.75), (7.9, 63.3), (11.6, 63.55), (15.0, 63.9), (17.9, 63.5),
-                    (19.9, 62.3), (21.0, 60.4), (21.35, 58.0), (21.25, 56.2), _on_tower(CORNERS[1], 86)], 0.25)
+def straight_run(a, b, n):
+    """``n`` points evenly along the straight line from ``a`` to ``b`` (in XZ), both ends included."""
+    return [(a[0] + (b[0] - a[0]) * i / (n - 1.0), a[1] + (b[1] - a[1]) * i / (n - 1.0)) for i in range(n)]
+
+
+MOAT_EDGE = spline([_on_tower(CORNERS[2], 94), (-21.3, 56.6), (-21.35, 58.8), (-20.85, 61.0), (-19.5, 62.75)] +
+                   straight_run((-17.3, 63.65), (-3.2, 64.0), 6) + [(0.0, 64.0)] +          # the far bank straight from each
+                   straight_run((3.2, 64.0), (17.9, 63.5), 6) +                             # corner to the bridge
+                   [(19.9, 62.3), (21.0, 60.4), (21.35, 58.0), (21.25, 56.2), _on_tower(CORNERS[1], 86)], 0.25)
 MOAT_OUTLINE = MOAT_EDGE + [(CORNERS[1][0], 50.0), (CORNERS[2][0], 50.0)]   # closed through the towers and the wall
 LANDING = [(-6.6, GATE_Z1), (6.6, GATE_Z1), (6.6, 53.8), (5.2, 55.35), (4.95, 55.72), (4.6, 55.95), (4.3, 56.0),
            (-4.3, 56.0), (-4.6, 55.95), (-4.95, 55.72), (-5.2, 55.35), (-6.6, 53.8)]  # the landing: stone, before the gate
@@ -1769,22 +1933,87 @@ def ground(x, z):
     return y
 
 
-def ground_color(x, z):
-    if moat_dug(x, z):
-        return P["lakebed"]                            # the moat's floor
-    y = ground(x, z)
+def land_fields(x, z, y):
+    """What the colour of the land at (x, z), ``y`` high, goes by: six
+    numbers, smooth over the land, whose signs tell whether it lies above
+    the lake's edge (else it is sand), above the lake bed's, whether it is
+    steep -- the landslide, where the grass does not hold -- whether the
+    grass is dry there, and on the landslide whether it is bare rock,
+    scree or earth."""
     slope = abs(ground(x + 1, z) - y) + abs(ground(x, z + 1) - y)
-    if y < WATER_Y + 0.4:
-        return P["lakebed"] if y < WATER_Y - 0.5 else P["sand"]
-    if slope > 0.9:
-        return P["rock"]
     patch = add.sin(x / 9.0) * add.cos(z / 11.0) + 0.5 * add.sin(x / 4.0 + z / 5.0)
-    return P["grass_dry"] if patch > 0.55 else P["grass"]
+    m = value_noise(x, z, 2.5, 77)
+    return (y - WATER_Y - 0.4, y - WATER_Y + 0.5, slope - 0.9, patch - 0.55, m - 0.4, m - 0.62)
+
+
+def land_paint(s):
+    """The colour of land on the sides ``s`` (+1 or -1) of those six edges."""
+    if s[0] < 0:
+        return P["lakebed"] if s[1] < 0 else P["sand"]
+    if s[2] > 0:
+        return P["rock"] if s[4] < 0 else P["scree"] if s[5] < 0 else P["earth_dark"]
+    return P["grass_dry"] if s[3] > 0 else P["grass"]
+
+
+def land_split(poly, cross, k=0, s=None):
+    """A convex piece of land -- its corners (id, x, y, z, fields) -- cut
+    along every edge between colours that runs through it (where a field,
+    taken as straight between two corners, changes sign; ``cross(p, q, k)``
+    makes the corner where it does on the side p-q), so that the colours
+    meet along smooth lines, not in steps: the pieces and their colours."""
+    s = s or [0] * 6
+    while k < 6:
+        if (k == 1 and s[0] > 0) or (k >= 2 and s[0] < 0) or (k == 3 and s[2] > 0) or (k >= 4 and s[2] < 0) or (k == 5 and s[4] < 0):
+            k += 1                                                        # (an edge that does not matter here)
+            continue
+        lo, hi = min(v[4][k] for v in poly), max(v[4][k] for v in poly)
+        if lo < 0 < hi:
+            A, B = [], []
+            for i, p in enumerate(poly):
+                q = poly[(i + 1) % len(poly)]
+                if p[4][k] >= 0:
+                    A.append(p)
+                if p[4][k] <= 0:
+                    B.append(p)
+                if (p[4][k] > 0 > q[4][k]) or (p[4][k] < 0 < q[4][k]):
+                    c = cross(p, q, k)
+                    A.append(c)
+                    B.append(c)
+            out_ = []
+            for piece, side in ((A, 1), (B, -1)):
+                if len(piece) > 2:
+                    out_ += land_split(piece, cross, k + 1, s[:k] + [side] + s[k + 1:])
+            return out_
+        s = s[:k] + [1 if hi > 0 or lo >= 0 else -1] + s[k + 1:]
+        k += 1
+    return [(poly, land_paint(s))]
+
+
+def land_at(p, q, k, key):
+    """Where field ``k`` changes sign on the side from corner ``p`` to ``q``
+    (worked from the one with the lower id, so that both pieces of land on
+    that side agree to the last digit), with the id ``key``."""
+    if p[0] > q[0]:
+        p, q = q, p
+    t = p[4][k] / (p[4][k] - q[4][k])
+    return (key, p[1] + (q[1] - p[1]) * t, p[2] + (q[2] - p[2]) * t, p[3] + (q[3] - p[3]) * t,
+            tuple(a + (b - a) * t for a, b in zip(p[4], q[4])))
 
 
 N_GROUND = 800                                         # cells of 0.375 units
 land = add.Mesh()
-index = {}
+index, crossings, _column = {}, {}, {}
+
+
+def land_corner(i, j):
+    """The corner (i, j) of the land's grid: its vertex, where it is and its fields."""
+    if (i, j) not in _column:
+        x, z = -WORLD / 2 + WORLD * i / N_GROUND, -WORLD / 2 + WORLD * j / N_GROUND
+        y = ground(x, z)
+        if (i, j) not in index:
+            index[(i, j)] = land.add_vertex([x, y, z])
+        _column[(i, j)] = (index[(i, j)], x, y, z, land_fields(x, z, y))
+    return _column[(i, j)]
 
 
 def land_vertex(i, j):
@@ -1794,14 +2023,28 @@ def land_vertex(i, j):
     return index[(i, j)]
 
 
+def land_cross(p, q, k):
+    key = (min(p[0], q[0]), max(p[0], q[0]), k)
+    if key not in crossings:
+        c = land_at(p, q, k, None)
+        crossings[key] = (land.add_vertex([c[1], c[2], c[3]]),) + c[1:]
+    return crossings[key]
+
+
 cell = WORLD / N_GROUND
 for i in range(N_GROUND):
     for j in range(N_GROUND):
         x, z = -WORLD / 2 + (i + 0.5) * cell, -WORLD / 2 + (j + 0.5) * cell
         if any(c[0] - 0.8 < x < c[1] + 0.8 and c[2] - 0.8 < z < c[3] + 0.8 for c in (CELLAR_WELL, CELLAR_ROOM)):
             continue                                   # the wine cellar and the stair down to it
-        land.add_face([land_vertex(i, j), land_vertex(i, j + 1),
-                       land_vertex(i + 1, j + 1), land_vertex(i + 1, j)], ground_color(x, z))
+        quad = [land_corner(i, j), land_corner(i, j + 1), land_corner(i + 1, j + 1), land_corner(i + 1, j)]
+        if moat_dug(x, z):                             # the moat's floor
+            land.add_face([v[0] for v in quad], P["lakebed"])
+            continue
+        for piece, colour in land_split(quad, land_cross):
+            land.add_face([v[0] for v in piece], colour)
+    for j in range(N_GROUND + 1):                      # (done with this column of corners)
+        _column.pop((i, j), None)
 # the land is a closed block: four sides down to BOTTOM, and an underside
 edges = ([(0, j) for j in range(N_GROUND + 1)],                          # x = -150, along z
          [(i, N_GROUND) for i in range(N_GROUND + 1)],                   # z = +150, along x
@@ -1815,7 +2058,7 @@ for links in edges:
 land.add_polygon([[-WORLD / 2, BOTTOM, -WORLD / 2], [-WORLD / 2, BOTTOM, WORLD / 2],
                   [WORLD / 2, BOTTOM, WORLD / 2], [WORLD / 2, BOTTOM, -WORLD / 2]], P["sand"])
 add.mesh(add.fix_normals(land))
-land, index = None, None                               # free the memory
+land, index, crossings = None, None, None             # free the memory
 flush("hill, lake bed and moat")
 
 
@@ -2057,18 +2300,31 @@ def shore_r(a):
 BOAT_DEGS = (44, 78, 104, 248, 283, 318)                # where rowing boats are tied up along the shore
 
 
-def by_jetty(x, z, margin=0.5):
-    """By the harbour -- the end of the road, the wharf, the ships moored to
-    it -- or by one of the rowing boats on the shore (plus ``margin``)?"""
-    u, v = x * DOCK_C + z * DOCK_S, -x * DOCK_S + z * DOCK_C
-    if DOCK_U0 - 6 - margin < u < DOCK_U1 + 8 + margin and abs(v) < 13 + margin:
-        return True
+def by_boat(x, z, margin=0.0):
+    """By one of the rowing boats on the shore (plus ``margin``)?"""
     for deg in BOAT_DEGS:
         a = deg * add.pi / 180
         r = shore_r(a) + 1.9
         if (x - r * add.cos(a)) ** 2 + (z - r * add.sin(a)) ** 2 < (3.2 + margin) ** 2:
             return True
     return False
+
+
+def by_jetty(x, z, margin=0.5):
+    """By the harbour -- the end of the road, the wharf, the ships moored to
+    it -- or by one of the rowing boats on the shore (plus ``margin``)?"""
+    u, v = x * DOCK_C + z * DOCK_S, -x * DOCK_S + z * DOCK_C
+    if DOCK_U0 - 6 - margin < u < DOCK_U1 + 8 + margin and abs(v) < 13 + margin:
+        return True
+    return by_boat(x, z, margin)
+
+
+def on_wharf(x, z, margin=0.0):
+    """On the wharf itself -- its deck from the end of the road out into the
+    lake, its beams and posts -- plus ``margin`` (the land round it is
+    free for the grass)?"""
+    u, v = x * DOCK_C + z * DOCK_S, -x * DOCK_S + z * DOCK_C
+    return DOCK_U0 - 0.3 - margin < u < DOCK_U1 + 0.5 + margin and abs(v) < DOCK_W + 0.3 + margin
 
 
 # fish in the lake, in schools of one kind, each school heading one way: small silver roach in big schools, perch, bluish
@@ -2130,6 +2386,61 @@ for n in range(count(900) // 12 * 4):                                           
         placed += 1
     n_fish += placed
 flush("fish (%d, in %d schools)" % (n_fish, len(SCHOOLS)), clean=False)
+
+
+def shark(at, heading, size=1.0):
+    """A shark swimming ``heading`` (an angle in XZ), its middle at ``at``, ``size`` times 3 m long: a long body, blue-
+    grey above and white below, its snout pointed and its mouth under it, five gill slits a side, black eyes; the tall
+    fin on its back, the smaller one behind it, the long fins at its sides angled down, the fins under its belly, and the
+    tail's upper lobe longer than the lower."""
+    stations = ((1.5, 0.02, 0.015), (1.35, 0.1, 0.08), (1.1, 0.2, 0.17), (0.7, 0.28, 0.25), (0.2, 0.3, 0.27), (-0.3, 0.26, 0.22),
+                (-0.8, 0.17, 0.14), (-1.15, 0.09, 0.08), (-1.3, 0.05, 0.045))   # (x, half height, half width)
+    add.push()
+    rings = [[[x, h * add.sin(2 * add.pi * j / 12) - 0.03 * (x > 1.0) * (1 - add.sin(2 * add.pi * j / 12)), w * add.cos(2 * add.pi * j / 12)]
+              for j in range(12)] for x, h, w in stations]
+    body = add.make(add.loft, rings, P["white"])
+    add.mesh(add.fix_normals(add.color_by(body, lambda q: P["white"] if q[1] < -0.05 else P["mail"])))
+    fin = lambda pts, t, c, col=None: add.mesh(add.make(add.prism, pts, t, col or P["mail"], c, (0, 0, 1)))
+    fin([[0.2, 0.25], [-0.35, 0.25], [-0.2, 0.85]], 0.05, (0, 0, 0))                                        # the fins on its back
+    fin([[-0.75, 0.15], [-0.95, 0.15], [-0.93, 0.36]], 0.03, (0, 0, 0))
+    fin([[-1.25, 0.0], [-1.3, 0.06], [-1.85, 0.62], [-1.62, 0.02], [-1.75, -0.4], [-1.3, -0.05]], 0.04, (0, 0, 0))   # its tail
+    for sz in (-1, 1):
+        add.mesh(slab([[0.6, -0.12, sz * 0.2], [0.25, -0.14, sz * 0.22], [0.0, -0.36, sz * 0.72], [0.28, -0.3, sz * 0.62]][::sz], 0.03, P["mail"]))
+        add.mesh(slab([[-0.55, -0.15, sz * 0.1], [-0.72, -0.14, sz * 0.09], [-0.8, -0.3, sz * 0.26], [-0.66, -0.28, sz * 0.24]][::sz], 0.02,
+                      P["mail"]))
+        add.sphere([1.18, 0.06, sz * 0.135], 0.022, 4, P["black"])                                       # the eyes,
+        for k in range(5):                                                                                  # the gills
+            gx = 0.9 - 0.075 * k
+            add.cuboid([gx, 0.0, sz * (0.23 - 0.004 * k)], [0.012, 0.16, 0.02], P["black"])
+    add.cuboid([1.22, -0.15, 0], [0.14, 0.012, 0.16], P["black"])                                          # the mouth
+    M = add.pop()
+    add.mesh(add.move(add.rotateY(add.stretch(M, [size] * 3, (0, 0, 0)), -heading), at))
+
+
+SHARKS = []                                            # two or three sharks in the deep water well out from the island,
+for n in range(400):                                   # clear of the harbour, the sunken boat, the bed, the surface and
+    if len(SHARKS) == 3:                               # the fish
+        break
+    a, r = 6.2832 * hash2(n, 1, 131), 112 + 25 * hash2(n, 2, 131)
+    x, z = r * add.cos(a), r * add.sin(a)
+    if abs(x) > W_EDGE - 10 or abs(z) > W_EDGE - 10 or by_jetty(x, z, 22.0) or (x - 71) ** 2 + (z - 83) ** 2 < 16 ** 2:
+        continue
+    if any((x - q[0]) ** 2 + (z - q[2]) ** 2 < 30 ** 2 for q in SHARKS):
+        continue
+    heading = a + add.pi / 2 + 0.4 * (hash2(n, 3, 131) - 0.5)          # (round the island)
+    size = 0.9 + 0.25 * hash2(n, 4, 131)
+    y = WATER_Y - 1.2 - 0.6 * hash2(n, 5, 131)
+    c, sn = add.cos(heading), add.sin(heading)
+    balls = [(x + c * d * size, y, z + sn * d * size, 0.95 * size) for d in (1.0, 0.0, -1.0)]
+    if any(by - br < ground(bx, bz) + 0.3 or by + br > WATER_Y - 0.15 for bx, by, bz, br in balls):
+        continue
+    if any((bx - q[0]) ** 2 + (by - q[1]) ** 2 + (bz - q[2]) ** 2 < (br + q[3] + 0.3) ** 2 for bx, by, bz, br in balls
+           for a_ in range(int(bx // 1) - 2, int(bx // 1) + 3) for b_ in range(int(by // 1) - 2, int(by // 1) + 3)
+           for e_ in range(int(bz // 1) - 2, int(bz // 1) + 3) for q in _fish_cells.get((a_, b_, e_), ())):
+        continue
+    shark([x, y, z], heading, size)
+    SHARKS.append((x, y, z, heading, size))
+flush("sharks (%d)" % len(SHARKS), clean=False)
 add.seed(8)
 for i in range(count(800)):                            # reeds in the shallows, the same way out from the
     a, r = add.uniform(0, 2 * add.pi), add.uniform(93, 98)   # shore all round -- the shore is no circle:
@@ -2510,12 +2821,22 @@ LEAVES = {"pine": ("needles", "leaf_dark"), "birch": ("birch_leaf", "grass", "bi
           "elm": ("leaf", "grass", "leaf_dark"), "lime": ("leaf", "leaf_dark", "grass")}
 
 
-def forest_tree(at, h, kind, seed):
+def forest_tree(at, h, kind, seed, bury=True):
     """A tree ``h`` tall of the given species, its foot at ``at``; returns
-    how high over the foot the lowest of its leaves hang."""
+    how high over the foot the lowest of its leaves hang.  With ``bury``
+    its trunk runs on down, the way it leans, until it is in the ground
+    all round -- on a slope too."""
     x, y, z = at
     rnd = lambda j: hash2(seed, j, 41)
     low = [h]
+
+    def rooted(to, r, k, col):                                            # the trunk (from the foot towards ``to``, ``r`` at
+        if not bury:                                                      # the foot) on down into the ground
+            return
+        deep = min(ground(x + (r + 0.05) * add.cos(a), z + (r + 0.05) * add.sin(a)) for a in (i * add.pi / 6 for i in range(12))) - 0.15
+        if deep < y:
+            d = vunit(vsub(to, [x, y, z]))
+            add.frustum([x - d[0] * (y - deep) / d[1], deep, z - d[2] * (y - deep) / d[1]], [x, y, z], r, r, k, P[col])
 
     def blob(c, r, st, j):                                                # a bunch of leaves
         add.mesh(add.stretch(add.make(add.sphere, c, r, 4, P[LEAVES[kind][j % len(LEAVES[kind])]]), st, c))
@@ -2532,6 +2853,7 @@ def forest_tree(at, h, kind, seed):
         up = max(0.0, max(ground(x + R0 * add.cos(a), z + R0 * add.sin(a)) - (y + 0.2) for a in (k * add.pi / 4 for k in range(8))))
         base, top = 1.4 + up, 0.82 * h                                    # the lowest tips a man's height over the ground
         add.frustum([x, y, z], [x, y + 0.84 * h, z], 0.036 * h, 0.01 * h, 7, P["trunk"])
+        rooted([x, y + 1, z], 0.036 * h, 7, "trunk")
         step = (top - base) / (n - 1)
         for i in range(n):
             yr = base + step * i                                          # how high this tier's tips are
@@ -2559,6 +2881,7 @@ def forest_tree(at, h, kind, seed):
             f = 0.5 * t / 0.55 if t <= 0.55 else 0.5 + 0.5 * (t - 0.55) / 0.35
             return [x + lx * f, y + t * h, z + lz * f]
         add.frustum([x, y, z], on(0.55), 0.046 * h, 0.034 * h, 7, P["trunk"])
+        rooted(on(0.55), 0.046 * h, 7, "trunk")
         add.frustum(on(0.55), on(0.9), 0.034 * h, 0.014 * h, 7, P["bark_red"])
         for j in range(3):                                                # dead stubs low down
             a, p0 = rnd(10 + j) * 6.28, on(0.32 + 0.08 * j)
@@ -2578,6 +2901,7 @@ def forest_tree(at, h, kind, seed):
             top = [x + lean * add.cos(a), y + 0.88 * h, z + lean * add.sin(a)]
             at_t = lambda t: [x + (top[0] - x) * t, y + (top[1] - y) * t, z + (top[2] - z) * t]
             add.frustum([x, y, z], top, 0.03 * h, 0.01 * h, 7, P["white"])
+            rooted(top, 0.03 * h, 7, "white")
             for j in range(7):                                            # black marks round the white bark
                 t0 = 0.06 + 0.12 * j + 0.05 * rnd(70 + j + 9 * k)
                 t1 = t0 + 0.01 + 0.012 * rnd(80 + j + 9 * k)
@@ -2595,6 +2919,7 @@ def forest_tree(at, h, kind, seed):
             blob(top, 0.07 * h, [0.9, 1.3, 0.9], 0)
     elif kind == "oak":
         add.frustum([x, y, z], [x, y + 0.1 * h, z], 0.1 * h, 0.075 * h, 9, P["trunk"])           # flaring at the foot
+        rooted([x, y + 1, z], 0.1 * h, 9, "trunk")
         add.frustum([x, y + 0.1 * h, z], [x, y + 0.8 * h, z], 0.075 * h, 0.02 * h, 9, P["trunk"])
         for j in range(5):                                                # five crooked limbs
             a, t = (j + 0.6 * rnd(100 + j)) * 2 * add.pi / 5, 0.3 + 0.05 * j
@@ -2613,6 +2938,7 @@ def forest_tree(at, h, kind, seed):
             blob([x + 0.15 * h * add.cos(a), y + 0.78 * h, z + 0.15 * h * add.sin(a)], 0.15 * h, [1.1, 0.8, 1.1], j + 2)
     elif kind == "elm":
         add.frustum([x, y, z], [x, y + 0.88 * h, z], 0.055 * h, 0.012 * h, 8, P["rock"])          # grey bark
+        rooted([x, y + 1, z], 0.055 * h, 8, "rock")
         for j in range(4):                                                # stems parting low, rising apart like a vase
             a = (j + 0.5 * rnd(140 + j)) * add.pi / 2
             p0 = [x, y + (0.28 + 0.03 * j) * h, z]
@@ -2626,6 +2952,7 @@ def forest_tree(at, h, kind, seed):
         blob([x, y + 0.88 * h, z], 0.22 * h, [1.2, 0.6, 1.2], 0)
     else:                                                                 # a lime
         add.frustum([x, y, z], [x, y + 0.78 * h, z], 0.055 * h, 0.018 * h, 8, P["trunk"])
+        rooted([x, y + 1, z], 0.055 * h, 8, "trunk")
         for j in range(5):
             a, t = (j + 0.5 * rnd(150 + j)) * 2 * add.pi / 5, 0.38 + 0.04 * j
             p0 = [x, y + t * h, z]
@@ -2676,7 +3003,7 @@ def trees_near(x, z):
 
 
 tries = 0
-while len(TREES) < count(450) and tries < 40000:
+while len(TREES) < count(300) and tries < 40000:
     tries += 1
     a, r = add.uniform(0, 2 * add.pi), add.uniform(60, 90)
     x, z = r * add.cos(a), r * add.sin(a)
@@ -2774,11 +3101,35 @@ def land_y(x, z):
 
 
 def land_colour(x, z):
-    """The colour of the land's quad at (x, z)."""
-    key = (int((x + WORLD / 2) // LAND_CELL), int((z + WORLD / 2) // LAND_CELL))
-    if key not in _land_colour:
-        _land_colour[key] = ground_color(-WORLD / 2 + (key[0] + 0.5) * LAND_CELL, -WORLD / 2 + (key[1] + 0.5) * LAND_CELL)
-    return _land_colour[key]
+    """The colour of the land as drawn at (x, z): of its quad there, or of
+    the piece of the quad that (x, z) is in, where colours meet in it."""
+    i, j = int((x + WORLD / 2) // LAND_CELL), int((z + WORLD / 2) // LAND_CELL)
+    if (i, j) not in _land_colour:
+        cx, cz = -WORLD / 2 + (i + 0.5) * LAND_CELL, -WORLD / 2 + (j + 0.5) * LAND_CELL
+        if moat_dug(cx, cz):
+            _land_colour[(i, j)] = P["lakebed"]
+        else:
+            quad = []
+            for n_, (a, b) in enumerate(((i, j), (i, j + 1), (i + 1, j + 1), (i + 1, j))):
+                px, pz = -WORLD / 2 + a * LAND_CELL, -WORLD / 2 + b * LAND_CELL
+                py = ground(px, pz)
+                quad.append((n_, px, py, pz, land_fields(px, pz, py)))
+            ids = [4]
+
+            def cross(p, q, k):
+                ids[0] += 1
+                return land_at(p, q, k, ids[0])
+            pieces = land_split(quad, cross)
+            _land_colour[(i, j)] = pieces[0][1] if len(pieces) == 1 else ("pieces", [([(v[1], v[3]) for v in poly], c) for poly, c in pieces])
+    got = _land_colour[(i, j)]
+    if not isinstance(got, tuple):
+        return got
+    best = None
+    for poly, c in got[1]:                                              # the piece it is in (or nearest to being in)
+        worst = min(((b[0] - a[0]) * (z - a[1]) - (b[1] - a[1]) * (x - a[0])) * -1 for a, b in zip(poly, poly[1:] + poly[:1]))
+        if best is None or worst > best[0]:
+            best = (worst, c)
+    return best[1]
 
 
 def tuft(x, y, z, n, tall=1.0, dry=False, lush=0.5):
@@ -2884,6 +3235,7 @@ STAKES = [((shore_r(d * add.pi / 180) - 1.8) * add.cos(d * add.pi / 180), (shore
           for d in BOAT_DEGS]                          # the stakes the boats are tied to (see "the rowing boats"), and the
 ROCK_SEAT = (87.4 * add.cos(add.pi / 3), 87.4 * add.sin(add.pi / 3))   # fisherman's rock on the shore ("fishermen")
 _mushrooms = Spots(MUSHROOMS)
+_scree = Spots()                                       # (the stones and plants of the landslide: see below)
 
 
 def meadow(x, z, top=0.0):
@@ -2896,7 +3248,7 @@ def meadow(x, z, top=0.0):
     c = land_colour(x, z)
     if c is not P["grass"] and c is not P["grass_dry"]:
         return False
-    if in_moat(x, z, 0.15) or on_road(x, z, 0.45) or by_jetty(x, z, 0.0):
+    if in_moat(x, z, 0.15) or on_road(x, z, 0.45) or on_wharf(x, z, 0.3) or by_boat(x, z):
         return False
     if any((x - p[0]) ** 2 + (z - p[1]) ** 2 < r * r for p, r in ((ROCK_SEAT, 1.6),) + tuple((q, 0.3) for q in STAKES)):
         return False
@@ -2904,7 +3256,7 @@ def meadow(x, z, top=0.0):
         d2 = (x - t[0]) ** 2 + (z - t[1]) ** 2
         if d2 < (TRUNK[t[3]] * t[2] + 0.2) ** 2 or (d2 < (t[4] + 0.2) ** 2 and land_y(x, z) + top > t[5] - 0.05):
             return False
-    return not _mushrooms.near(x, z, 0.36)
+    return not _mushrooms.near(x, z, 0.36) and not _scree.near(x, z, 0.55)
 
 
 def meadow_edge(x, z, y):
@@ -2945,6 +3297,222 @@ def meadow_grass(x0, x1, z0, z1, ok, edge, root, dry, seed, flowers, step=GRASS_
             if n % 40000 == 0:
                 flush("grass (%d tufts)" % n, clean=False)
     return n, n_f
+
+
+# the landslide: on the steepest of the hill the grass has not held, and the ground is bare -- rock, scree and earth in
+# patches -- strewn with stones fallen from above, of every size, bedded in it the way they came to rest, and gravel;
+# ferns grow on it, a few bushes, and grass in the pockets of earth.  (Only there: each thing wholly on the landslide,
+# clear of the trees, the mushrooms and one another.)
+LANDSLIDE = (P["rock"], P["scree"], P["earth_dark"])
+SCREE = (P["rock"], P["stone_dark"], shade_of("stone_dark", 1), P["scree"], shade_of("stone", 2), P["granite"])
+
+
+def slope_frame(x, z):
+    """Three axes at (x, z) of the ground: along it (x-ish), its normal, along it (z-ish)."""
+    e = 0.3
+    n = vunit([-(ground(x + e, z) - ground(x - e, z)) / (2 * e), 1.0, -(ground(x, z + e) - ground(x, z - e)) / (2 * e)])
+    u = vunit(vcross(n, [0, 0, 1]))
+    return u, n, vcross(u, n)
+
+
+def on_landslide(x, z, r):
+    """Is (x, z) on the landslide, and all round it ``r`` out?"""
+    return all(land_colour(x + r * dx, z + r * dz) in LANDSLIDE for dx, dz in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)))
+
+
+def scree_stone(x, z, r, seed, squash):
+    """A stone ``r`` across, fallen and bedded in the slope at (x, z): flat side down, square to the ground, two fifths
+    of it sunk."""
+    u, n, w = slope_frame(x, z)
+    M = add.stretch(PEBBLE, [r * (1.0 + 0.35 * hash2(seed, 1, 96)), r * squash, r * (0.85 + 0.3 * hash2(seed, 2, 96))], (0, 0, 0))
+    M = add.color(add.rotateY(M, 6.2832 * hash2(seed, 3, 96)), SCREE[int(hash2(seed, 4, 96) * len(SCREE)) % len(SCREE)])
+    c = [x + n[0] * r * squash * 0.35, land_y(x, z) + n[1] * r * squash * 0.35, z + n[2] * r * squash * 0.35]
+    add.mesh(add.transform(M, [[u[0], n[0], w[0], c[0]], [u[1], n[1], w[1], c[1]], [u[2], n[2], w[2], c[2]]]))
+
+
+def fern(x, z, seed):
+    """A fern: seven to nine fronds from one root, each arching up and out and over, tapering to its tip."""
+    y = land_y(x, z) - 0.02
+    for i in range(7 + int(hash2(seed, 1, 91) * 3)):
+        a = 2 * add.pi * (i + 0.4 * hash2(seed, i, 92)) / 8.0
+        L, rise = 0.4 + 0.3 * hash2(seed, i, 93), 0.3 + 0.35 * hash2(seed, i, 94)
+        c, s_ = add.cos(a), add.sin(a)
+        mid = lambda t: [x + c * L * t, y + 0.02 + rise * (1.8 * t - 1.3 * t * t), z + s_ * L * t]
+        half = lambda t: 0.05 * (1 - t) + 0.006
+        for k in range(4):
+            t0, t1 = k / 4.0, (k + 1) / 4.0
+            p0, p1 = mid(t0), mid(t1)
+            sheet([[p0[0] - s_ * half(t0), p0[1], p0[2] + c * half(t0)], [p0[0] + s_ * half(t0), p0[1], p0[2] - c * half(t0)],
+                   [p1[0] + s_ * half(t1), p1[1], p1[2] - c * half(t1)], [p1[0] - s_ * half(t1), p1[1], p1[2] + c * half(t1)]],
+                  P["leaf"] if (i + k) % 3 else P["leaf_dark"], 0.006)
+
+
+def bush(x, z, r, seed):
+    """A little bush: bunches of leaves, the lowest sunk a little into the slope wherever it is lowest."""
+    for j in range(3 + int(hash2(seed, 2, 95) * 3)):
+        a, d = 6.2832 * hash2(seed, j, 97), r * 0.45 * hash2(seed, j, 98)
+        rr = r * (0.45 + 0.25 * hash2(seed, j, 99))
+        bx, bz = x + d * add.cos(a), z + d * add.sin(a)
+        low = min(ground(bx + rr * add.cos(b), bz + rr * add.sin(b)) for b in (0.0, 1.57, 3.14, 4.71))
+        c = [bx, low + rr * 0.72 + j * 0.06 * r, bz]
+        add.mesh(add.stretch(add.make(add.sphere, c, rr, 4, (P["leaf_dark"], P["leaf"], P["oak_leaf"])[j % 3]), [1.0, 0.8, 1.0], c))
+
+
+def clear_of_trees(x, z, r):
+    return all((x - t[0]) ** 2 + (z - t[1]) ** 2 > (TRUNK[t[3]] * t[2] + r + 0.15) ** 2 for t in trees_near(x, z))
+
+
+n_st = n_pl = 0
+STEP_S = 0.8
+for i in range(int(-93 // STEP_S), int(93 // STEP_S) + 1):             # the plants first, then the stones round them
+    for j in range(int(-93 // STEP_S), int(93 // STEP_S) + 1):
+        x, z = (i + hash2(i, j, 81)) * STEP_S, (j + hash2(i, j, 82)) * STEP_S
+        if x * x + z * z > 93 * 93 or land_colour(x, z) not in LANDSLIDE or on_road(x, z, 1.0) or by_jetty(x, z, 1.0):
+            continue
+        u, v = hash2(i, j, 83), hash2(i, j, 84)
+        if u < 0.22:                                                   # a fern, or a bush
+            r = 0.72 if u < 0.15 else 0.45
+            if on_landslide(x, z, r) and clear_of_trees(x, z, r) and not _mushrooms.near(x, z, r + 0.2) and not _scree.near(x, z, r + 0.35):
+                if u < 0.15:
+                    fern(x, z, i * 7919 + j)
+                else:
+                    bush(x, z, 0.4 + 0.2 * v, i * 7919 + j)
+                _scree.add((x, z))
+                n_pl += 1
+        elif u < 0.4 and land_colour(x, z) is P["earth_dark"]:       # grass in the earth
+            grown = []
+            for k in range(3):
+                tx_, tz_ = x + 0.2 * add.cos(2.1 * k + v * 6), z + 0.2 * add.sin(2.1 * k + v * 6)
+                if on_landslide(tx_, tz_, 0.18) and clear_of_trees(tx_, tz_, 0.15) and not _scree.near(tx_, tz_, 0.6):
+                    tuft(tx_, land_y(tx_, tz_) - 0.02, tz_, i * 31 + j * 7 + k, 1.0, False, 0.6)
+                    grown.append((tx_, tz_))
+                    n_pl += 1
+            for q in grown:                                            # (the stones keep clear of it)
+                _scree.add(q)
+for i in range(int(-93 // STEP_S), int(93 // STEP_S) + 1):
+    for j in range(int(-93 // STEP_S), int(93 // STEP_S) + 1):
+        x, z = (i + hash2(i, j, 85)) * STEP_S, (j + hash2(i, j, 86)) * STEP_S
+        if hash2(i, j, 87) > 0.5 or x * x + z * z > 93 * 93 or land_colour(x, z) not in LANDSLIDE or on_road(x, z, 1.0):
+            continue
+        r = 0.07 + 0.38 * hash2(i, j, 88) ** 3                         # a stone
+        if on_landslide(x, z, r) and clear_of_trees(x, z, r) and not _mushrooms.near(x, z, r + 0.2) and not _scree.near(x, z, r + 0.45):
+            scree_stone(x, z, r, i * 7919 + j, 0.45 + 0.25 * hash2(i, j, 89))
+            _scree.add((x, z))
+            n_st += 1
+for i in range(int(-93 // 0.4), int(93 // 0.4) + 1):                  # and gravel on the scree
+    for j in range(int(-93 // 0.4), int(93 // 0.4) + 1):
+        if hash2(i, j, 86) > 0.3:
+            continue
+        x, z = (i + hash2(i, j, 87)) * 0.4, (j + hash2(i, j, 88)) * 0.4
+        if x * x + z * z > 93 * 93 or land_colour(x, z) is not P["scree"]:
+            continue
+        r = 0.03 + 0.04 * hash2(i, j, 89)
+        if on_landslide(x, z, r) and clear_of_trees(x, z, r) and not _scree.near(x, z, r + 0.12) and not _mushrooms.near(x, z, 0.25):
+            scree_stone(x, z, r, i * 104729 + j, 0.6)
+            n_st += 1
+flush("the landslide (%d stones, %d plants)" % (n_st, n_pl), clean=False)
+
+
+# the wild things of the wood, running: hares, foxes, and two wolves -- each in the green among the trees, on
+# ground not too steep, clear of the trunks, of the mushrooms, of the road and of each other; the grass keeps clear of
+# them (so no blade goes through a leg)
+BEASTS = {  # body length, height of its middle, body (half x, y, z), front hip (x, y, z), front leg bones and radius,
+            # hind hip, hind leg bones and radius, colour, belly colour, leg colour
+    "hare": (0.45, 0.2, (0.17, 0.085, 0.08), (0.1, -0.03, 0.045), (0.1, 0.1, 0.017), (-0.12, -0.01, 0.06), (0.13, 0.15, 0.024),
+             "earth", "linen", "earth"),
+    "fox": (0.75, 0.33, (0.26, 0.1, 0.09), (0.17, -0.05, 0.05), (0.14, 0.14, 0.02), (-0.18, -0.03, 0.06), (0.15, 0.16, 0.025),
+            "orange", "white", "black"),
+    "wolf": (1.1, 0.52, (0.4, 0.16, 0.14), (0.28, -0.08, 0.08), (0.22, 0.22, 0.035), (-0.28, -0.05, 0.09), (0.24, 0.25, 0.04),
+             "mail", "stone", "mail")}
+
+
+def beast(x0, z0, heading, kind, stride):
+    """A hare, a fox or a wolf running the way ``heading`` (an angle in XZ) at (x0, z0) on the ground: ``stride`` 0,
+    its legs stretched out fore and aft, one hind foot pushing off the ground; 1, gathered under it, one fore foot
+    down. The legs reach the ground wherever it is; the body is lowered for them if it must be."""
+    L, hb, bd, fh, fl, hh, hl, col, belly, legc = BEASTS[kind]
+    c, s_ = add.cos(heading), add.sin(heading)
+    world = lambda lx, lz: (x0 + lx * c - lz * s_, z0 + lx * s_ + lz * c)
+    y0 = ground(x0, z0)
+    legs = []                                                             # hip, foot, bones, radius, pole, on the ground
+    for front, hip, (l1, l2, r) in ((True, fh, fl), (False, hh, hl)):
+        reach = l1 + l2
+        for side in (-1, 1):
+            if stride == 0:
+                fx, lift = (0.55 * reach, 0.1 * reach) if front else (-0.6 * reach, 0.0 if side > 0 else 0.08 * reach)
+            else:
+                fx, lift = (-0.3 * reach, 0.0 if side > 0 else 0.1 * reach) if front else (0.4 * reach, 0.1 * reach)
+            wx, wz = world(hip[0] + fx, side * hip[2])
+            legs.append([[hip[0], hip[1], side * hip[2]], [hip[0] + fx, ground(wx, wz) - y0 + r + lift, side * hip[2]], l1, l2, r,
+                         [-1, 0, 0] if front else [1, 0, 0], lift == 0.0])
+    down = 0.0                                                           # (low enough for the feet on the ground to reach it)
+    for hip, foot, l1, l2, r, pole, planted in legs:
+        if planted:
+            dx, dz = foot[0] - hip[0], foot[2] - hip[2]
+            dy_max = add.sqrt(max(0.0, (0.97 * (l1 + l2)) ** 2 - dx * dx - dz * dz))
+            down = max(down, (hb + hip[1]) - foot[1] - dy_max)
+    add.push()
+    yb = hb - down
+    add.mesh(add.stretch(add.make(add.sphere, [0, yb, 0], 1.0, 8, P[col]), list(bd), (0, yb, 0)))                     # the body,
+    add.mesh(add.stretch(add.make(add.sphere, [0.05 * L, yb - 0.4 * bd[1], 0], 1.0, 6, P[belly]), [bd[0] * 0.7, bd[1] * 0.6, bd[2] * 0.8],
+                         (0.05 * L, yb - 0.4 * bd[1], 0)))                                                           # its belly
+    for hip, foot, l1, l2, r, pole, planted in legs:                                                                 # the legs
+        h_ = [hip[0], yb + hip[1], hip[2]]
+        knee = joint(h_, foot, l1, l2, pole)
+        add.capsule(h_, knee, r * 1.25, 6, P[col])
+        add.capsule(knee, foot, r, 6, P[legc])
+    if kind == "hare":
+        hd = [0.19, yb + 0.07, 0]
+        add.mesh(add.stretch(add.make(add.sphere, hd, 1.0, 6, P[col]), [0.07, 0.055, 0.05], hd))
+        for sz in (-1, 1):
+            add.capsule([0.17, yb + 0.11, sz * 0.025], [0.04, yb + 0.2, sz * 0.045], 0.018, 5, P[col])            # its ears, laid back,
+            add.sphere([0.04, yb + 0.2, sz * 0.045], 0.019, 4, P["black"])                                        # black-tipped
+            add.sphere([0.23, yb + 0.09, sz * 0.042], 0.011, 3, P["black"])
+        add.sphere([-0.19, yb + 0.04, 0], 0.04, 5, P["white"])                                                     # the white scut
+    else:
+        k = 1.0 if kind == "fox" else 1.5
+        hd = [bd[0] + 0.07 * k, yb + 0.07 * k, 0]
+        add.sphere(hd, 0.075 * k, 6, P[col])                                                                       # the head,
+        add.cone([hd[0] + 0.03 * k, hd[1] - 0.015 * k, 0], [hd[0] + 0.16 * k, hd[1] - 0.03 * k, 0], 0.04 * k, 6, P[col])   # the snout
+        add.sphere([hd[0] + 0.155 * k, hd[1] - 0.03 * k, 0], 0.011 * k, 3, P["black"])                              # (its nose)
+        for sz in (-1, 1):
+            add.cone([hd[0] - 0.01 * k, hd[1] + 0.05 * k, sz * 0.04 * k], [hd[0] - 0.02 * k, hd[1] + 0.13 * k, sz * 0.05 * k], 0.028 * k, 4,
+                     P["black"] if kind == "fox" else P["stone_dark"])                                             # the ears,
+            add.sphere([hd[0] + 0.05 * k, hd[1] + 0.02 * k, sz * 0.045 * k], 0.01 * k, 3, P["black"])               # the eyes
+        tail = [[-bd[0] + 0.02, yb + 0.02, 0], [-bd[0] - 0.12 * k, yb - 0.02 * k, 0], [-bd[0] - 0.26 * k, yb - 0.02 * k, 0],
+                [-bd[0] - 0.36 * k, yb + 0.02 * k, 0]]                                                             # the brush,
+        for i in range(3):
+            add.capsule(tail[i], tail[i + 1], (0.05 + 0.012 * (i == 1)) * k, 6, P[col])
+        add.sphere(tail[3], 0.048 * k, 5, P["white"] if kind == "fox" else P["stone_dark"])                         # its tip
+    M = add.pop()
+    add.mesh(add.move(add.rotateY(M, -heading), [x0, y0, z0]))
+    return [world(f * L, 0) for f in (-0.5, 0.0, 0.5)]
+
+
+n_b, RUNNING = 0, []
+for kind, many in (("wolf", 2), ("fox", 3), ("hare", 5)):
+    got = 0
+    for n in range(3000):
+        if got == many:
+            break
+        a, r = 6.2832 * hash2(n, len(kind), 141), 62 + 26 * hash2(n, 2, 141)
+        x, z = r * add.cos(a), r * add.sin(a)
+        L = BEASTS[kind][0]
+        if land_colour(x, z) not in (P["grass"], P["grass_dry"]) or on_road(x, z, 2.0) or by_jetty(x, z, 2.0) or octagon_r(x, z) < 56:
+            continue
+        if abs(ground(x + 1, z) - ground(x - 1, z)) + abs(ground(x, z + 1) - ground(x, z - 1)) > 0.9:   # (not too steep)
+            continue
+        if not clear_of_trees(x, z, L) or _mushrooms.near(x, z, L) or _scree.near(x, z, L + 0.3):
+            continue
+        if any((x - q[0]) ** 2 + (z - q[1]) ** 2 < 6 ** 2 for q in RUNNING):
+            continue
+        heading = 6.2832 * hash2(n, 5, 141)
+        for q in beast(x, z, heading, kind, got % 2):
+            _scree.add(q)
+        RUNNING.append((x, z, kind))
+        got += 1
+    n_b += got
+flush("the wild things of the wood (%d)" % n_b, clean=False)
 
 
 n, n_f = meadow_grass(-93.0, 93.0, -93.0, 93.0, lambda x, z, top: x * x + z * z < 93 * 93 and meadow(x, z, top),
@@ -3024,19 +3592,6 @@ LIFE = 1.15                                            # knights and horses are 
 def _at(a, d, t):
     """The point ``t`` units from ``a`` along the direction ``d``."""
     return [a[0] + d[0] * t, a[1] + d[1] * t, a[2] + d[2] * t]
-
-
-def joint(a, c, l1, l2, pole):
-    """The middle joint (elbow, knee) of a limb from ``a`` to ``c`` whose two
-    bones are ``l1`` and ``l2`` long, bent towards the direction ``pole``."""
-    d = vsub(c, a)
-    L = min(vlen(d), l1 + l2 - 1e-4)
-    u = vunit(d)
-    x = (l1 * l1 - l2 * l2 + L * L) / (2 * L)
-    h = add.sqrt(max(0.0, l1 * l1 - x * x))
-    k = sum(pole[i] * u[i] for i in range(3))
-    p = vunit([pole[i] - u[i] * k for i in range(3)])
-    return [a[i] + u[i] * x + p[i] * h for i in range(3)]
 
 
 def ramp(values):
@@ -3578,7 +4133,7 @@ for z0, z1 in ((GATE_Z1, GATE_Z1 + 0.5), (GATE_Z0 - 0.5, GATE_Z0)):             
     GATE_GAPS = merlon_row(-GATE_EDGE, GATE_EDGE, GATE_ROOF, z0, z1, n=3, seed=int(z0))   # embrasures for the two guns
 GATE_TEXT, GATE_H = "ADD 2.0", 0.55                   # the gate's name on a stone tablet fixed to the wall over the arch,
 TABLET_G = add.text_width(GATE_TEXT, GATE_H) + 0.5    # narrow enough to sit between the drawbridge's two chains
-TABLET_Y, TABLET_H = G + 8.3, GATE_H + 0.35
+TABLET_Y, TABLET_H = G + 8.8, GATE_H + 0.35
 add.cuboid([0, TABLET_Y, GATE_Z1 + 0.26], [TABLET_G, TABLET_H, 0.12], P["stone_dark"])
 for y in (TABLET_Y - TABLET_H / 2 + 0.03, TABLET_Y + TABLET_H / 2 - 0.03):
     add.cuboid([0, y, GATE_Z1 + 0.335], [TABLET_G, 0.06, 0.03], P["gold"])
@@ -3891,7 +4446,8 @@ plinth = add.difference(plinth, *(tower_cutters(G - 1, KY + 1) + CELLAR_CUT))   
 add.mesh(add.color(plinth, P["stone_dark"]))
 N_, S_, E_, W_ = KZ0 - PL, KZ1 + PL, KX1 + PL, KX0 - PL                                 # its faces: courses of stones,
 plinth_face((E_, N_), (W_, N_), G - 0.1, KY, skip=[(0, E_ - 17.3), (E_ + 18.6, E_ - W_)], seed=1)   # fitted round the towers,
-plinth_face((W_, S_), (E_, S_), G - 0.1, KY, skip=[(0, 5.5), (-2.9 - W_, 2.9 - W_), (17.3 - W_, E_ - W_)], seed=2)   # the steps
+plinth_face((W_, S_), (E_, S_), G - 0.1, KY, skip=[(0, 5.5), (-3.85 - W_, 3.85 - W_), (17.3 - W_, E_ - W_)], seed=2)   # the steps
+                                                                                         # and the porch's pilasters
 plinth_face((E_, S_), (E_, N_), G - 0.1, KY, skip=[(0, 5.3), (S_ - (KZ1 - 7 + PL), S_ - (KZ0 + 7 - PL)), (S_ + 25.5, S_ - N_)], seed=3)
 plinth_face((W_, N_), (W_, S_), G - 0.1, KY, skip=[(0, -26.8 - N_), (S_ - N_ - 5.3, S_ - N_)], seed=4)   # and the chapel
 add.stairs([0, G, KZ1 + PL + 2.4], 4, 5.6, (KY - G) / 4, 0.6, P["stone_dark"], direction=(0, 0, -1))   # between the porch's pedestals
@@ -4268,7 +4824,19 @@ def hip_roof(x0, x1, z0, z1, y, h, inset=INSET, over=OVER, cutters=(), dormers=(
     keep_out = (lambda xx, zz: bay(xx, zz) or (blocked(xx, zz) if blocked else False))
     for face in (south, north, east, west):
         tile_face(*face, blocked=keep_out)
-    add.cuboid([(x0 + x1) / 2, y + h, zc], [x1 - x0 - 2 * inset + 0.4, 0.3, 0.5], shade_of("spire", 2))   # ridge cap, in the tiles' colour
+    normal = lambda f: vunit(vcross(vsub(f[1], f[0]), vsub(f[3] if f[3] is not f[2] else f[2], f[0])))
+    ridge_cap([r0[0] - 0.15, y + h, zc], [r1[0] + 0.15, y + h, zc], normal(south), normal(north), shade_of("spire", 2), 0.3)   # ridge cap
+    for corner, top, f1, f2 in (((ex0, ez1), r0, south, west), ((ex1, ez1), r1, south, east), ((ex1, ez0), r1, north, east),
+                                ((ex0, ez0), r0, north, west)):   # and a roll of tiles down every hip, from the ridge cap
+        nb = vunit([a_ + b_ for a_, b_ in zip(normal(f1), normal(f2))])   # to the eaves (or to the tower it runs into)
+        p0 = [corner[0] + nb[0] * 0.06, y + nb[1] * 0.06, corner[1] + nb[2] * 0.06]
+        p1 = [top[k] + nb[k] * 0.06 for k in range(3)]
+        t0 = 0.0
+        while t0 < 1.0 and any((p0[0] + (p1[0] - p0[0]) * t0 - cx) ** 2 + (p0[2] + (p1[2] - p0[2]) * t0 - cz) ** 2 < (r + 0.45) ** 2
+                               for cx, cz, r in CYLS):
+            t0 += 0.002
+        if t0 < 0.95:
+            add.cylinder([p0[k] + (p1[k] - p0[k]) * t0 for k in range(3)], p1, 0.1, 8, shade_of("spire", 2))
     for x, sg in sides:                                                  # the dormers, both sides
         zf = (ez1 - DORMER_IN) if sg > 0 else (ez0 + DORMER_IN)
         yf = y + h * DORMER_IN / (ez1 - zc)
@@ -4307,8 +4875,13 @@ def hip_roof(x0, x1, z0, z1, y, h, inset=INSET, over=OVER, cutters=(), dormers=(
         if sg < 0:                                                   # the gable over the window: tiled too,
             g = [g[1], g[0], g[2]]                                   # facing out over the eaves
         tile_face(g[0], g[1], g[2], g[2])
-        add.cuboid([x, yf + 3.9, zd((d_front + d_ridge + 0.3) / 2)], [0.4, 0.26, d_ridge + 0.3 - d_front],
-                   shade_of("spire", 2))                             # and a ridge cap, into the roof at the back
+        ridge_cap([x, yf + 3.9, zd(d_front)], [x, yf + 3.9, zd(d_ridge + 0.3)], [1.4 / 2.0887, 1.55 / 2.0887, 0],
+                  [-1.4 / 2.0887, 1.55 / 2.0887, 0], shade_of("spire", 2), 0.2)   # and a ridge cap, into the roof at the back;
+        for side in (-1, 1):                                         # a roll of tiles up each front edge, and lead in
+            nb = vunit([side * 1.4 / 2.086, 1.55 / 2.086, sg])       # the valleys where its slopes run into the roof's
+            e0, ap = [x + side * 1.55, yf + 2.5, zd(d_front)], [x, yf + 3.9, zd(d_front)]
+            add.cylinder([e0[k] + nb[k] * 0.04 for k in range(3)], [ap[k] + nb[k] * 0.04 for k in range(3)], 0.07, 8, shade_of("spire", 2))
+            add.polyline([[x + side * 1.55, yf + 2.52, zd(d_eave)], [x, yf + 3.92, zd(d_ridge)]], 0.1, 6, P["iron"])
         back = DORMER_IN + DORMER_D - 0.15                               # the side walls carried on under its eaves, from inside
         cheeks = add.make(add.cuboid, [x, yf + 2.0, zd((back + d_eave + 0.3) / 2)], [2.4, 1.0, d_eave + 0.3 - back], P["mortar"])
         add.mesh(add.difference(cheeks, slope_cut))                      # the back wall to where the eaves meet the slope
@@ -4340,66 +4913,253 @@ for i in range(count(8)):                                                       
     add.sphere([CHIM_X + 0.3 * add.sin(i), EAVE + 7.2 + i * 0.8, CHIM_Z + 0.3 * add.cos(i * 1.3)], 0.35 + 0.1 * i, 8, SMOKE)
 flush("palace: roof")
 
-# the balconies of the south front, each behind its glazed doors: of oak, like every floor that is not on the ground --
-# five joists run out of the wall, braced from below, boards across them nailed down, and a railing of posts, balusters
-# and a handrail round the three open sides
-BAL_Z0, BAL_Z1 = KZ1 + 0.6 + 0.22, KZ1 + 0.6 + 1.8
+# the balconies of the south front, each behind its glazed doors: of stone, like the palace they stand out from -- a
+# slab with a moulded edge on three carved consoles, and round its three open sides an arcade of little round arches
+# on turned colonnettes between pedestals, under a coping, the round arches of the palace's windows over again;
+# urns of flowers on the front corners, a ball on the middle pedestal; a threshold stone under the doors
+BAL_Z0, BAL_Z1, BAL_W = KZ1 + 0.6 + 0.22, KZ1 + 0.6 + 1.8, 2.3            # the face of the wall, the front, the half width
+
+
+def console(x, y, z, depth=1.1, height=1.0, width=0.34):
+    """A stone console on the face of a wall at ``z`` (standing out to +z),
+    its top at ``y``: an S-scroll, a big volute under the front of the top
+    and a smaller one at the foot against the wall, the curve between them
+    hollowed; rosettes on the volutes' sides, acanthus leaves down the
+    front, a drop of leaves hanging from the foot."""
+    R1, R2, c = 0.22, 0.13, depth - 0.22
+
+    def top(u):
+        return 0.0 if u <= c else -R1 + add.sqrt(max(0.0, R1 * R1 - (u - c) ** 2))
+
+    def bot(u):
+        if u <= 2 * R2:
+            return -height + R2 - add.sqrt(max(0.0, R2 * R2 - (u - R2) ** 2))
+        if u >= c:
+            return -R1 - add.sqrt(max(0.0, R1 * R1 - (u - c) ** 2))
+        w = (1 - add.cos(add.pi * (u - 2 * R2) / (c - 2 * R2))) / 2
+        return -height + R2 + (R2 + height - 2 * R1 - R2) * w - R2 * 0.0
+
+    us = [2 * R2 * k / 6 for k in range(6)] + [2 * R2 + (c - 2 * R2) * k / 10 for k in range(10)] + \
+         [c + (R1 - 0.012) * add.sin(add.pi / 2 * k / 7) for k in range(8)]
+    add.loft([[(x - width / 2, y + bot(u), z + u), (x + width / 2, y + bot(u), z + u),
+               (x + width / 2, y + top(u), z + u), (x - width / 2, y + top(u), z + u)] for u in us], P["bone"])
+    for sx in (-1, 1):                                                     # the rosettes on the volutes' sides
+        for (u, v, r) in ((c, -R1, R1 * 0.72), (R2, -height + R2, R2 * 0.7)):
+            a, b = [x + sx * width / 2, y + v, z + u], [x + sx * (width / 2 + 0.03), y + v, z + u]
+            add.cylinder(a, b, r, 14, P["stone_dark"])
+            add.cylinder(b, [b[0] + sx * 0.02, b[1], b[2]], r * 0.4, 10, P["bone"])
+    for u0, u1, dx, w0 in ((0.3, 0.82, 0.0, 0.1), (0.36, 0.66, -0.1, 0.05), (0.36, 0.66, 0.1, 0.05)):
+        rings = []                                                         # acanthus down the hollow of the front,
+        for k in range(13):                                                # carved: leaves lying on the curve
+            f = k / 12.0
+            u = u0 + (u1 - u0) * f
+            v, v2 = bot(u), bot(u + 0.005)
+            tl = add.sqrt(0.005 ** 2 + (v2 - v) ** 2)
+            ny, nz = -0.005 / tl, (v2 - v) / tl                            # (out of the curve)
+            w = max(0.006, w0 * add.sin(add.pi * f) ** 0.6)
+            rings.append([(x + dx - w, y + v, z + u), (x + dx + w, y + v, z + u),
+                          (x + dx + w, y + v + ny * 0.025, z + u + nz * 0.025), (x + dx - w, y + v + ny * 0.025, z + u + nz * 0.025)])
+        add.loft(rings, P["bone"])
+    lathe([[0.0, 0.0], [0.035, 0.02], [0.06, 0.07], [0.055, 0.11], [0.03, 0.15], [0.0, 0.17]],
+          [x, y - height - 0.155, z + R2], 10, P["bone"])                 # the drop, into the foot
+    add.cylinder([x, y - height - 0.005, z + R2], [x, y - height + 0.02, z + R2], 0.035, 10, P["bone"])
+
+
+def arcade(a, b, y, depth=0.16):
+    """A stone arcade from ``a`` to ``b`` (x, z) on the floor ``y``: a base
+    rail, colonnettes, a band pierced with round arches between their
+    capitals, a coping on it; to 0.92 high."""
+    L = vlen([b[0] - a[0], 0, b[1] - a[1]])
+    d = [(b[0] - a[0]) / L, 0.0, (b[1] - a[1]) / L]
+    n = max(1, int(round(L / 0.32)))
+    s = L / n
+    at = lambda u, h: [a[0] + d[0] * u, y + h, a[1] + d[2] * u]
+    add.beam(at(0, 0.05), at(L, 0.05), depth + 0.04, 0.1, P["stone_dark"])         # the base rail,
+    for k in range(1, n):                                                          # the colonnettes,
+        lathe([[0.0, 0.0], [0.05, 0.0], [0.05, 0.025], [0.036, 0.045], [0.032, 0.09], [0.03, 0.44], [0.036, 0.48],
+               [0.05, 0.51], [0.055, 0.54], [0.0, 0.54]], at(k * s, 0.1), 10, P["bone"])
+    band = add.make(add.beam, at(0, 0.74), at(L, 0.74), depth, 0.2, P["bone"])    # the band and its arches,
+    e = [-d[2] * (depth / 2 + 0.05), 0.0, d[0] * (depth / 2 + 0.05)]
+    arches = [add.make(add.cylinder, [p + q for p, q in zip(at((k + 0.5) * s, 0.64), e)],
+                       [p - q for p, q in zip(at((k + 0.5) * s, 0.64), e)], s / 2 - 0.055, 16) for k in range(n)]
+    add.mesh(add.color(add.difference(band, *arches), P["bone"]))
+    add.beam(at(0, 0.88), at(L, 0.88), depth + 0.08, 0.08, P["stone_dark"])       # the coping
+
+
+def pedestal(x, z, y, top=None):
+    """A stone pedestal of the balustrade on the floor ``y``: a base, the
+    die, a cap -- and on it ``top``: "urn" (of flowers) or "ball"."""
+    add.cuboid([x, y + 0.05, z], [0.34, 0.1, 0.34], P["stone_dark"])
+    add.cuboid([x, y + 0.51, z], [0.3, 0.82, 0.3], P["bone"])
+    add.cuboid([x, y + 0.96, z], [0.36, 0.08, 0.36], P["stone_dark"])
+    if top == "ball":
+        lathe([[0.0, 0.0], [0.09, 0.0], [0.09, 0.03], [0.04, 0.06], [0.04, 0.1], [0.0, 0.1]], [x, y + 1.0, z], 12, P["stone_dark"])
+        add.sphere([x, y + 1.21, z], 0.12, 8, P["bone"])
+    elif top == "urn":
+        lathe([[0.0, 0.0], [0.08, 0.0], [0.08, 0.03], [0.05, 0.06], [0.05, 0.1], [0.14, 0.2], [0.16, 0.3], [0.13, 0.36],
+               [0.15, 0.4], [0.12, 0.4], [0.0, 0.38]], [x, y + 1.0, z], 14, P["bone"])
+        for i in range(9):                                                         # and the flowers in it
+            a = 2 * add.pi * i / 9 + 0.4
+            r = 0.02 if i == 0 else 0.07 + 0.03 * (i % 2)
+            fy = y + 1.43 + 0.06 * hash2(i, int(x * 3), 29)
+            add.ellipsoid([x + r * add.cos(a), fy - 0.04, z + r * add.sin(a)], [0.035, 0.07, 0.035], 3, P["leaf"])
+            add.sphere([x + r * add.cos(a), fy + 0.04, z + r * add.sin(a)], 0.04, 3, (P["poppy"], P["rose"], P["white"])[i % 3])
+
+
 for bx in BALCONY_X:
-    for i in (0, 2, 4):                                                     # (the braces under three of the joists)
-        x = bx - 2.0 + i * 1.0
-        add.beam([x, FLOOR2 - 1.35, BAL_Z0 + 0.02], [x, FLOOR2 - TREAD - 0.24, BAL_Z0 + 1.05], 0.14, 0.14, P["wood_dark"])
-    timber_floor([(bx - 2.2, BAL_Z0), (bx + 2.2, BAL_Z0), (bx + 2.2, BAL_Z1), (bx - 2.2, BAL_Z1)], FLOOR2, 0.0,
-                 bearing=[(bx - 2.3, KZ1 + 0.2), (bx + 2.3, KZ1 + 0.2), (bx + 2.3, BAL_Z1), (bx - 2.3, BAL_Z1)],
-                 span=(bx - 2.0 - 0.09, bx + 2.0 + 0.09), step=1.0, joist=(0.18, 0.26), width=0.26)
-    for dx in (-2.1, 2.1):                                                  # the railing: posts at the corners ...
-        timber_post(bx + dx, BAL_Z1 - 0.08, FLOOR2, FLOOR2 + 0.95, 0.0, 0.12)
-        timber_post(bx + dx, BAL_Z0 + 0.08, FLOOR2, FLOOR2 + 0.95, 0.0, 0.12)
-    for i in range(1, 17):                                                  # ... balusters between them ...
-        timber_post(bx - 2.1 + i * 0.247, BAL_Z1 - 0.08, FLOOR2, FLOOR2 + 0.9, 0.0, 0.05)
-    for dx in (-2.1, 2.1):
-        for i in range(1, 6):
-            timber_post(bx + dx, BAL_Z0 + 0.08 + i * (BAL_Z1 - BAL_Z0 - 0.16) / 6, FLOOR2, FLOOR2 + 0.9, 0.0, 0.05)
-    for a, b in (((bx - 2.16, BAL_Z1 - 0.08), (bx + 2.16, BAL_Z1 - 0.08)),     # ... and the handrail on top
-                 ((bx - 2.1, BAL_Z0 + 0.02), (bx - 2.1, BAL_Z1 - 0.02)), ((bx + 2.1, BAL_Z0 + 0.02), (bx + 2.1, BAL_Z1 - 0.02))):
-        timber(a, b, FLOOR2 + 0.9, FLOOR2 + 0.98, 0.12, "wood_dark")
-# the porch over the main door, all of oak but for the stone pedestals it stands on beside the steps (not on them):
-# two posts with bolsters on their heads carrying a beam across the front and a beam along each side back to the wall,
-# knee braces, a gable of upright boards with the arms on it under a king post and two rafters, and a gabled roof of
-# the palace's tiles running back to the wall over a ceiling of light boards
-PZ = KZ1 + PL + 2.7                                                          # the line of the posts
-RIDGE_P, EAVE_P = KY + 7.3, KY + 5.62
-TOP_P = KY + 5.5                                                             # the top of the beams
+    y, zf = FLOOR2, BAL_Z1 - 0.15                                            # the floor; the line of the front balustrade
+    for k, (h0, h1, inset, name) in enumerate(((0.22, 0.0, 0.0, "bone"), (0.3, 0.22, 0.06, "stone_dark"),
+                                               (0.4, 0.3, 0.13, "bone"), (0.48, 0.4, 0.2, "stone_dark"))):
+        w, zz = BAL_W - inset, BAL_Z1 - inset                                # the slab and the mouldings under its edge
+        add.cuboid([bx, y - (h0 + h1) / 2, (BAL_Z0 + zz) / 2], [2 * w, h0 - h1, zz - BAL_Z0], P[name])
+    add.cuboid([bx, y - 0.125, (KZ1 + 0.6 + BAL_Z0) / 2], [2.5, 0.25, BAL_Z0 - KZ1 - 0.6], P["stone_dark"])   # the threshold
+    for dx in (-1.75, 0.0, 1.75):
+        console(bx + dx, y - 0.48, BAL_Z0)
+    for dx, top in ((-2.15, "urn"), (0.0, "ball"), (2.15, "urn")):
+        pedestal(bx + dx, zf, y, top)
+    for dx in (-2.15, 2.15):
+        pedestal(bx + dx, BAL_Z0 + 0.15, y)                                  # (against the wall)
+    for a, b in (((bx - 1.98, zf), (bx - 0.17, zf)), ((bx + 0.17, zf), (bx + 1.98, zf)),
+                 ((bx - 2.15, BAL_Z0 + 0.32), (bx - 2.15, zf - 0.17)), ((bx + 2.15, BAL_Z0 + 0.32), (bx + 2.15, zf - 0.17))):
+        arcade(a, b, y)
+# the porch over the main door, of stone like the palace, and richer than any other part of it: two columns on
+# pedestals beside the steps (not on them) with pilasters answering them on the wall -- moulded bases, fluted shafts,
+# capitals of two rows of acanthus leaves with volutes at the corners; an entablature round three sides (architrave in
+# two faces, a frieze with rosettes, dentils under the cornice), a pediment with the arms and a finial at each corner;
+# a coffered ceiling, and a gabled roof of the palace's tiles running back to the wall
+PZ = KZ1 + PL + 2.7                                                          # the line of the columns
+RIDGE_P, EAVE_P = KY + 7.3, KY + 5.8                                        # the roof; the top of the entablature
+CAP_P = KY + 4.72                                                            # the top of the capitals
+HALF_P = 3.4 + 0.32                                                          # the outer faces of the entablature
+
+
+def fluted(base, top, r0, r1, n=12, depth=0.022, color=None):
+    """A fluted shaft of a column from ``base`` up to ``top``, its radius
+    ``r0`` tapering to ``r1``: ``n`` flutes, round-bottomed, with fillets
+    between them (its ends open: a base and a capital cover them)."""
+    rings = []
+    for i in range(11):
+        f = i / 10.0
+        r = r0 + (r1 - r0) * f * f                                          # (a little entasis)
+        pts = []
+        for j in range(n):
+            for q in range(4):                                              # a fillet, then the flute's hollow
+                a = 2 * add.pi * (j + q / 4.0) / n
+                rr = r if q == 0 else r - depth * add.sin(add.pi * q / 4.0) ** 0.5
+                pts.append((base[0] + rr * add.cos(a), base[1] + (top - base[1]) * f, base[2] + rr * add.sin(a)))
+        rings.append(pts)
+    add.mesh(add.fix_normals(add.make(add.loft, rings, color, closed=False, caps=False)))
+
+
+def acanthus(cx, y, cz, a, r, h, w, color):
+    """One acanthus leaf of a capital: rising from the bell at radius ``r``
+    in the direction ``a``, ``h`` tall and ``w`` wide, its tip curling out."""
+    ca, sa = add.cos(a), add.sin(a)
+    rings = []
+    for k in range(9):
+        f = k / 8.0
+        out = r + 0.02 + 0.09 * f ** 3                                      # (standing off the bell a little)
+        yy = y + h * (f - 0.18 * f ** 4)
+        half = max(0.008, w / 2 * add.sin(add.pi * (0.12 + 0.8 * f)))
+        rings.append([(cx + out * ca - half * sa, yy, cz + out * sa + half * ca), (cx + out * ca + half * sa, yy, cz + out * sa - half * ca),
+                      (cx + (out + 0.025) * ca + half * sa, yy, cz + (out + 0.025) * sa - half * ca),
+                      (cx + (out + 0.025) * ca - half * sa, yy, cz + (out + 0.025) * sa + half * ca)])
+    add.loft(rings, color)
+
+
+def capital(x, y, z, full=True):
+    """A capital from ``y`` (the top of the shaft) up to ``y`` + 0.66: the
+    astragal, the bell with two rows of acanthus, the volutes under the
+    corners of the abacus, the abacus."""
+    add.torus([x, y + 0.02, z], 0.27, 0.035, k_(12), 6, P["bone"])                  # the astragal,
+    add.frustum([x, y, z], [x, y + 0.54, z], 0.25, 0.36, k_(12), P["bone"])         # the bell,
+    for i in range(8):                                                               # two rows of leaves,
+        acanthus(x, y + 0.05, z, 2 * add.pi * i / 8, 0.255, 0.24, 0.17, P["bone"])
+        acanthus(x, y + 0.2, z, 2 * add.pi * (i + 0.5) / 8, 0.285, 0.3, 0.16, P["bone"])
+    for sx in (-1, 1):                                                               # the volutes under the corners,
+        for sz in (-1, 1):
+            c = [x + sx * 0.33, y + 0.47, z + sz * 0.33]
+            d = vunit([sz, 0.0, -sx])
+            add.cylinder([c[k] - d[k] * 0.05 for k in range(3)], [c[k] + d[k] * 0.05 for k in range(3)], 0.075, 12, P["bone"])
+            add.cylinder([c[k] - d[k] * 0.07 for k in range(3)], [c[k] + d[k] * 0.07 for k in range(3)], 0.03, 8, P["stone_dark"])
+    add.cuboid([x, y + 0.6, z], [0.92, 0.12, 0.92], P["bone"])                     # and the abacus
+
+
+# the pedestals, the columns and the pilasters on the wall behind them
 for s in (-1, 1):
-    add.cuboid([s * 3.4, (G + KY) / 2, PZ], [0.95, KY - G, 0.95], P["stone_dark"])                 # a pedestal on the ground,
-    add.cuboid([s * 3.4, KY + 0.07, PZ], [0.6, 0.14, 0.6], P["stone"])                            # a stone under the post,
-    add.cuboid([s * 3.4, KY + 2.5, PZ], [0.34, 4.72, 0.34], P["wood_dark"])                         # the post
-    add.cuboid([s * 3.4, KY + 4.96, PZ], [0.34, 0.2, 1.1], P["wood_dark"])                          # its bolster, under the side
-    add.cuboid([s * 3.4, TOP_P - 0.22, (KZ1 + 0.3 + PZ + 0.2) / 2], [0.3, 0.44, PZ + 0.2 - KZ1 - 0.3], P["wood_dark"])   # beam
-    for a, b in (([s * 3.4, KY + 3.9, PZ], [s * 2.4, KY + 5.06, PZ]),                             # knee braces up to the
-                 ([s * 3.4, KY + 3.9, PZ - 0.1], [s * 3.4, KY + 5.08, PZ - 1.2])):                  # front beam and to the side one
-        add.beam(a, b, 0.14, 0.14, P["wood"])
-add.cuboid([0, TOP_P - 0.22, PZ], [8.0, 0.44, 0.34], P["wood_dark"])                               # the beam across the front
-for i in range(int(8.0 / 0.2)):                                                                    # the gable: upright boards,
-    x0, x1 = -4.0 + i * 0.2 + 0.006, -4.0 + (i + 1) * 0.2 - 0.006
-    top = RIDGE_P - (RIDGE_P - EAVE_P) * max(abs(x0), abs(x1)) / 4.05                              # cut to the roof's slope
-    if top - TOP_P > 0.05:
-        add.cuboid([(x0 + x1) / 2, (TOP_P + top) / 2, PZ + 0.12], [x1 - x0, top - TOP_P, 0.05], pick("wood", i, 7))
-add.cuboid([0, (TOP_P + RIDGE_P - 0.1) / 2, PZ + 0.18], [0.22, RIDGE_P - 0.1 - TOP_P, 0.1], P["wood_dark"])   # the king post,
-for sg in (-1, 1):                                                                                 # the rafters, the barge boards
-    add.beam([sg * 3.9, EAVE_P - 0.05, PZ + 0.18], [0, RIDGE_P - 0.02, PZ + 0.18], 0.1, 0.22, P["wood_dark"])
-    add.beam([sg * 4.35, EAVE_P - 0.06, PZ + 0.52], [0, RIDGE_P + 0.2, PZ + 0.52], 0.06, 0.28, P["wood_dark"])
-add.mesh(add.move(arms(0.8, 1.0, 0.04), [-0.4, TOP_P + 0.3, PZ + 0.25]))                                # the arms on the king post
+    x = s * 3.4
+    add.cuboid([x, G + 0.08, PZ], [1.09, 0.16, 1.09], P["stone_dark"])                              # the pedestal: its base,
+    add.cuboid([x, (G + 0.16 + KY - 0.1) / 2, PZ], [0.95, KY - 0.1 - G - 0.16, 0.95], P["stone_dark"])   # die
+    add.cuboid([x, KY - 0.05, PZ], [1.07, 0.1, 1.07], P["stone"])                                   # and cornice
+    add.cuboid([x, KY + 0.06, PZ], [0.86, 0.12, 0.86], P["stone_dark"])                            # the column: its plinth,
+    add.torus([x, KY + 0.17, PZ], 0.33, 0.055, k_(14), 6, P["bone"])                               # a torus,
+    add.frustum([x, KY + 0.21, PZ], [x, KY + 0.27, PZ], 0.29, 0.3, k_(14), P["stone_dark"])         # a hollow,
+    add.torus([x, KY + 0.3, PZ], 0.31, 0.04, k_(14), 6, P["bone"])                                 # a torus
+    fluted([x, KY + 0.3, PZ], KY + 4.06, 0.3, 0.26, color=P["bone"])                               # the fluted shaft
+    capital(x, KY + 4.06, PZ)
+    zw = KZ1 + 0.82                                                                                 # the pilaster on the wall,
+    add.cuboid([x, (G + KY) / 2, zw + 0.09], [0.9, KY - G, 0.22], P["stone_dark"])                 # on a pedestal of its own
+    add.cuboid([x, KY + 0.15, zw + 0.1], [0.8, 0.3, 0.2], P["stone_dark"])
+    add.cuboid([x, (KY + 0.3 + CAP_P - 0.2) / 2, zw + 0.07], [0.62, CAP_P - 0.2 - KY - 0.3, 0.14], P["bone"])
+    add.cuboid([x, CAP_P - 0.1, zw + 0.1], [0.78, 0.2, 0.2], P["bone"])
+# the entablature: across the front the whole width, along each side back to the wall
+x_in = 3.4 - 0.32                                                             # (its inner faces)
+parts = [(0.0, 0.18, 0.62), (0.18, 0.38, 0.68), (0.38, 0.74, 0.64)]
+for y0, y1, d in parts:                                                        # architrave (two faces) and frieze,
+    add.cuboid([0, CAP_P + (y0 + y1) / 2, PZ], [2 * (3.4 + d / 2), y1 - y0, d], P["stone"])        # centred on the line of
+    for s in (-1, 1):                                                          # the columns
+        add.cuboid([s * 3.4, CAP_P + (y0 + y1) / 2, (KZ1 + 0.82 + PZ - d / 2) / 2], [d, y1 - y0, PZ - d / 2 - KZ1 - 0.82], P["stone"])
+for y0, y1, name in ((0.84, 1.02, "stone"), (1.02, 1.08, "stone_dark")):       # the corona and a cyma over it, standing
+    add.cuboid([0, CAP_P + (y0 + y1) / 2, PZ + 0.13], [2 * HALF_P + 0.6, y1 - y0, 0.9], P[name])   # out over the front and the
+    for s in (-1, 1):                                                          # sides, their inner faces flush
+        add.cuboid([s * (x_in + 0.45), CAP_P + (y0 + y1) / 2, (KZ1 + 0.82 + PZ - 0.32) / 2], [0.9, y1 - y0, PZ - 0.32 - KZ1 - 0.82], P[name])
+for i in range(int(2 * HALF_P / 0.18)):                                         # dentils under it, front and sides
+    x = -HALF_P + 0.09 + i * 0.18
+    add.cuboid([x, CAP_P + 0.79, PZ + 0.32 + 0.05], [0.09, 0.1, 0.1], P["stone_dark"])
+for s in (-1, 1):
+    for i in range(int((PZ - 0.32 - KZ1 - 0.82) / 0.18)):
+        z = KZ1 + 0.82 + 0.09 + i * 0.18
+        add.cuboid([s * (HALF_P + 0.05), CAP_P + 0.79, z], [0.1, 0.1, 0.09], P["stone_dark"])
+for x in (-2.6, -1.3, 1.3, 2.6):                                              # rosettes on the frieze
+    add.cylinder([x, CAP_P + 0.56, PZ + 0.32], [x, CAP_P + 0.56, PZ + 0.35], 0.12, 12, P["stone_dark"])
+    add.cylinder([x, CAP_P + 0.56, PZ + 0.35], [x, CAP_P + 0.56, PZ + 0.37], 0.05, 10, P["gold"])
+for s in (-1, 1):
+    for z in (KZ1 + 1.6, (KZ1 + 0.82 + PZ) / 2 + 0.6):
+        add.cylinder([s * HALF_P, CAP_P + 0.56, z], [s * (HALF_P + 0.03), CAP_P + 0.56, z], 0.12, 12, P["stone_dark"])
+        add.cylinder([s * (HALF_P + 0.03), CAP_P + 0.56, z], [s * (HALF_P + 0.05), CAP_P + 0.56, z], 0.05, 10, P["gold"])
+# the ceiling: stone, coffered -- a grid of ribs and a rosette in each coffer
+add.cuboid([0, EAVE_P - 0.04, (KZ1 + 0.82 + PZ - 0.32) / 2], [2 * x_in, 0.08, PZ - 0.32 - KZ1 - 0.82], P["stone"])
+for i in range(1, 4):
+    x = -x_in + i * 2 * x_in / 4
+    add.cuboid([x, EAVE_P - 0.12, (KZ1 + 0.82 + PZ - 0.32) / 2], [0.1, 0.08, PZ - 0.32 - KZ1 - 0.82], P["stone_dark"])
+for i in range(1, 3):
+    z = KZ1 + 0.82 + i * (PZ - 0.32 - KZ1 - 0.82) / 3
+    add.cuboid([0, EAVE_P - 0.12, z], [2 * x_in, 0.08, 0.1], P["stone_dark"])
+for i in range(4):
+    for k in range(3):
+        x = -x_in + (i + 0.5) * 2 * x_in / 4
+        z = KZ1 + 0.82 + (k + 0.5) * (PZ - 0.32 - KZ1 - 0.82) / 3
+        add.cylinder([x, EAVE_P - 0.08, z], [x, EAVE_P - 0.1, z], 0.1, 10, P["gold"])
+# the pediment: the tympanum with the arms, the raking cornices, the finials
+tri = [[-HALF_P - 0.1, EAVE_P], [HALF_P + 0.1, EAVE_P], [0, RIDGE_P - 0.05]]
+add.mesh(add.make(add.prism, tri, 0.4, P["bone"], (0, 0, PZ + 0.1), (0, 0, 1)))
+add.mesh(add.move(arms(0.8, 1.0, 0.04), [-0.4, EAVE_P + 0.12, PZ + 0.32]))
+for sg in (-1, 1):
+    add.beam([sg * (HALF_P + 0.45), EAVE_P + 0.02, PZ + 0.4], [0, RIDGE_P + 0.12, PZ + 0.4], 0.5, 0.2, P["stone"])
+    lathe([[0.0, 0.0], [0.16, 0.0], [0.16, 0.08], [0.1, 0.12], [0.14, 0.24], [0.1, 0.36], [0.0, 0.42]],
+          [sg * (HALF_P + 0.3), EAVE_P + 0.12, PZ + 0.45], 12, P["bone"])                   # the finials on the corners
+lathe([[0.0, 0.0], [0.18, 0.0], [0.18, 0.08], [0.1, 0.14], [0.16, 0.3], [0.12, 0.46], [0.05, 0.56], [0.0, 0.6]],
+      [0, RIDGE_P + 0.2, PZ + 0.45], 12, P["bone"])                                          # and on the top
 for sg in (-1, 1):                                                                                 # the roof: boards, and tiles
-    A, B = [sg * 4.35, EAVE_P - 0.12, PZ + 0.55], [sg * 4.35, EAVE_P - 0.12, KZ1 + 0.3]
-    C, D = [0, RIDGE_P + 0.12, KZ1 + 0.3], [0, RIDGE_P + 0.12, PZ + 0.55]
+    A, B = [sg * (HALF_P + 0.6), EAVE_P + 0.02, PZ + 0.15], [sg * (HALF_P + 0.6), EAVE_P + 0.02, KZ1 + 0.3]
+    C, D = [0, RIDGE_P + 0.12, KZ1 + 0.3], [0, RIDGE_P + 0.12, PZ + 0.15]
     add.mesh(slab([A, B, C, D] if sg > 0 else [B, A, D, C], 0.12, P["wood_dark"]))
-    lift = [[q[0], q[1] + 0.12, q[2]] for q in (A, B, C, D)]
+    lift = [[q[0], q[1] + 0.12 / add.cos(add.atan2(RIDGE_P + 0.12 - EAVE_P - 0.02, HALF_P + 0.6)), q[2]] for q in (A, B, C, D)]
     q = lift if vcross(vsub(lift[1], lift[0]), vsub(lift[3], lift[0]))[1] > 0 else [lift[1], lift[0], lift[3], lift[2]]
     tile_face(*q)
-add.cuboid([0, RIDGE_P + 0.3, (PZ + 0.55 + KZ1 + 0.3) / 2], [0.4, 0.26, PZ + 0.25 - KZ1], shade_of("spire", 2))   # its ridge cap
-timber_floor([(-3.25, KZ1 + 0.3), (3.25, KZ1 + 0.3), (3.25, PZ - 0.17), (-3.25, PZ - 0.17)], TOP_P, add.pi / 2,   # the ceiling:
-             bearing=[(-3.4, KZ1 + 0.3), (3.4, KZ1 + 0.3), (3.4, PZ - 0.17), (-3.4, PZ - 0.17)], thick=0.03, width=0.2,
-             step=0.7, joist=(0.14, 0.2), name="wood_light", joist_name="wood_dark", nails=False, gap=0.0)   # light boards on joists
+th_p = add.atan2(RIDGE_P + 0.12 - EAVE_P - 0.02, HALF_P + 0.6)                                   # its ridge cap
+yr_p = RIDGE_P + 0.12 + 0.12 / add.cos(th_p)
+ridge_cap([0, yr_p, PZ + 0.15], [0, yr_p, KZ1 + 0.3], [add.sin(th_p), add.cos(th_p), 0], [-add.sin(th_p), add.cos(th_p), 0], shade_of("spire", 2))
 flush("palace: balconies and porch")
 
 # the chapel wing on the east side: stained glass, a gable roof and a spire
@@ -4505,9 +5265,11 @@ for sg in (-1, 1):                                                              
     add.polyline([[B[0] + 0.05, B[1] + 0.02, B[2]], [C[0], C[1] + 0.02, C[2]]], 0.1, 6, P["iron"])   # lead in the valley
     add.beam([KX1 + WT / 2 + 0.28, DM_RO + 0.06, CH_C[1] + sg * 0.02],                 # and a lead flashing where the
              [KX1 + WT / 2 + 0.28, DM_RO - DM_EAVE + 0.06, CH_C[1] + sg * DM_EAVE], 0.14, 0.12, P["iron"])  # slates meet the wall
-add.cuboid([(KX1 + WT / 2 + dormer_valley(0)) / 2 + 0.05, DM_RO + 0.1, CH_C[1]],      # the dormer's ridge cap, from the wall
-           [dormer_valley(0) - KX1 - WT / 2 + 0.1, 0.22, 0.34], shade_of("slate", 2))  # into the slope
+ridge_cap([KX1 + WT / 2 + 0.22, DM_RO, CH_C[1]], [dormer_valley(0) + 0.1, DM_RO, CH_C[1]], [0, 0.7071, 0.7071], [0, 0.7071, -0.7071],
+          shade_of("slate", 2), 0.18)                                                   # the dormer's ridge cap, from the wall into the slope
 add.cuboid([CH_X1 + 0.3, CH_TOP - 0.3, CH_C[1]], [0.6, 0.6, CH_Z1 - CH_Z0 + 1.0], P["stone_dark"])   # cornice
+ridge_cap([CH_C[0], CH_TOP + CH_RH, CH_ZA], [CH_C[0], CH_TOP + CH_RH, CH_ZB], vunit([CH_S, 1, 0]), vunit([-CH_S, 1, 0]), shade_of("slate", 2),
+          0.3)                                                                          # the ridge
 
 
 def chapel_gable(zc, out, a0, sd):
@@ -4876,27 +5638,81 @@ def roast_pig(at):
 
 
 def barrel(at, r=0.45, h=1.2, k=None, upright=True, open_top=False):
-    """A barrel of separate staves with three iron hoops (``open_top``: its
-    head knocked out, to keep things in)."""
-    k = k or k_(14)
+    """A barrel, a cask: close-fitting staves a finger thick, as many as it
+    takes for them to be a hand wide, bellied out to ``r`` at the bilge;
+    two heads, each of four boards, set into the staves a little in from
+    their ends so that the chimes stand proud of them; six flat iron hoops,
+    a pair at each end and one either side of the bilge.  ``open_top``: the
+    top head knocked out, to keep things in.  Lying (``upright`` False), it
+    lies along z.  See barrel_r for its girth at any height."""
+    k = k or max(12, int(2 * add.pi * r / 0.085))
+    T, R = max(0.02, 0.05 * r), lambda y: barrel_r(r, h, y)
     add.push()
-    for i in range(k):
-        a0, a1 = 2 * add.pi * i / k, 2 * add.pi * (i + 0.93) / k
-        prof = [[r * 0.9, 0], [r, h / 2], [r * 0.9, h]]
-        piece = add.make(add.revolve, lambda t: prof[min(2, int(round(t)))], [0, 0, 0], [0, 1, 0], 0, 2, 2, 1,
-                         pick("wood", i, 3), angle=a1 - a0, caps=False)
-        add.mesh(add.rotateY(piece, -a0))
-    for t in (0.12, 0.5, 0.88):
-        rr = r * (0.9 + 0.1 * add.sin(add.pi * t))
-        add.torus([0, h * t, 0], rr, 0.035, k, 8, P["iron"])
-    if not open_top:
-        add.cylinder([0, h - 0.08, 0], [0, h - 0.03, 0], r * 0.88, k, P["wood_dark"])
-    add.cylinder([0, 0.03, 0], [0, 0.08, 0], r * 0.88, k, P["wood_dark"])
+    for i in range(k):                                                            # the staves
+        arc = [2 * add.pi * (i + f / 2.0) / k for f in range(3)]
+        rings = [[[R(y) * add.cos(a), y, R(y) * add.sin(a)] for a in arc] +
+                 [[(R(y) - T) * add.cos(a), y, (R(y) - T) * add.sin(a)] for a in arc[::-1]]
+                 for y in (h * f for f in (0, 0.07, 0.18, 0.32, 0.5, 0.68, 0.82, 0.93, 1))]
+        add.mesh(add.fix_normals(add.make(add.loft, rings, pick("wood", i, 3))))
+    for f0 in (0.035, 0.12, 0.3, 0.65, 0.83, 0.915):                             # the hoops
+        y0, y1 = f0 * h, (f0 + 0.05) * h
+        r0, r1 = R(y0) / add.cos(add.pi / k) + 0.0005, R(y1) / add.cos(add.pi / k) + 0.0005
+        band = [[[q * add.cos(2 * add.pi * j / k), yq, q * add.sin(2 * add.pi * j / k)] for j in range(k)]
+                for q, yq in ((r0, y0), (r0 + 0.008, y0), (r1 + 0.008, y1), (r1, y1))]
+        add.mesh(add.fix_normals(add.make(add.loft, band, P["iron"], True)))
+    for y0, y1 in ((0.04, 0.075),) + (() if open_top else ((h - 0.075, h - 0.04),)):   # the heads, of boards
+        rh = (min(R(y0), R(y1)) - T) * add.cos(add.pi / (2 * k)) - 0.002
+        rim = [(rh * add.cos(2 * add.pi * j / 32), rh * add.sin(2 * add.pi * j / 32)) for j in range(32)]
+        for b in range(4):
+            piece = clip_half(clip_half(rim, 0, -1, -rh * (0.5 * b - 1)), 0, 1, rh * (0.5 * b - 0.5))   # rh (b/2 - 1) < z < rh (b/2 - 1/2)
+            if len(piece) > 2:
+                add.mesh(solid(piece, y0, y1, shade_of("wood_light", b + int(y0 * 7), 3)))
     M = add.pop()
     if not upright:
         M = add.rotateX(M, add.pi / 2)
         M = add.move(M, [0, r, h / 2])
     add.mesh(add.move(M, at))
+
+
+def barrel_r(r, h, y):
+    """How far out a barrel's staves are ``y`` up it: bellied, from 0.86 r at the ends to r at the bilge."""
+    u = 2 * y / h - 1
+    return r * (0.86 + 0.14 * (1 - u * u))
+
+
+def bucket(at, facing=0.0, water=False, bail=0.0, fill=0.77, liquid=None):
+    """A wooden bucket standing ``at`` its foot: twelve staves, wider at the
+    top, a bottom let into them, two iron hoops, two iron ears and an iron
+    bail between them -- upright, or leant over ``bail`` radians to one side
+    (+z of the bucket, turned by ``facing``); ``water``: full to a hand
+    below the brim (or ``fill`` of the way up, of ``liquid``).  Returns the
+    top of the bail, where a rope is tied."""
+    RB, RT, H, T, K = 0.15, 0.19, 0.3, 0.022, 12
+    ro = lambda y: RB + (RT - RB) * y / H                                        # the outside of the staves at height y
+    add.push()
+    for i in range(K):                                                            # the staves
+        a0, a1 = 2 * add.pi * (i - 0.48) / K, 2 * add.pi * (i + 0.48) / K
+        rings = []
+        for y in (0.0, H):
+            arc = [a0 + (a1 - a0) * f / 2 for f in range(3)]
+            rings.append([[ro(y) * add.cos(a), y, ro(y) * add.sin(a)] for a in arc] +
+                         [[(ro(y) - T) * add.cos(a), y, (ro(y) - T) * add.sin(a)] for a in arc[::-1]])
+        add.mesh(add.fix_normals(add.make(add.loft, rings, shade_of("wood", i, 3))))
+    fit = add.cos(0.24 * add.pi / K)                                              # (the staves' faces: two to a stave)
+    add.cylinder([0, 0.02, 0], [0, 0.045, 0], (ro(0.02) - T) * fit - 0.002, 2 * K, P["wood_dark"])   # the bottom
+    for y0, y1 in ((0.04, 0.07), (0.225, 0.255)):                                 # the hoops
+        r = ro(y1) / add.cos(add.pi / (2 * K)) + 0.0005
+        add.pipe([0, y0, 0], [0, y1, 0], r + 0.008, r, 2 * K, P["iron"])
+    for sx in (-1, 1):                                                            # the ears, on the staves above the hoop
+        add.beam([sx * (ro(0.262) + 0.013), 0.262, 0], [sx * (ro(0.298) + 0.013), 0.298, 0], 0.035, 0.024, P["iron"], up=(sx, 0, 0))
+    up = [0, add.cos(bail), add.sin(bail)]
+    add.arch([-(ro(0.28) + 0.033), 0.28, 0], [ro(0.28) + 0.033, 0.28, 0], 0.26, 0.008, P["iron"], 16, 6, up)   # the bail
+    if water:
+        add.cylinder([0, fill * H, 0], [0, fill * H + 0.005, 0], (ro(fill * H) - T) * fit - 0.002, 2 * K, liquid or WATER)
+    add.mesh(add.move(add.rotateY(add.pop(), facing), at))
+    top = [0, 0.28 + 0.26 * up[1], 0.26 * up[2]]
+    c, s_ = add.cos(facing), add.sin(facing)                                      # (rotateY: x' = x c + z s, z' = -x s + z c)
+    return [at[0] + top[0] * c + top[2] * s_, at[1] + top[1], at[2] - top[0] * s_ + top[2] * c]
 
 
 def crate(at, s=0.9):
@@ -4967,8 +5783,8 @@ def shield(at, facing=0.0, r=0.5):
     add.mesh(add.move(add.rotateY(M, facing), at))
 
 
-def torch(at, facing=0.0):
-    """A wall torch in its holder.  The holder: an iron strap nailed to the
+def torch(at, facing=0.0, size=1.0):
+    """A wall torch in its holder (``size`` times the usual).  The holder: an iron strap nailed to the
     wall, an arm out of it ending in a ring, and at its foot a cup forged
     on the strap.  The torch leans out from the wall through the ring, its
     foot standing in the cup so that it cannot slip down and fall: a
@@ -5000,7 +5816,7 @@ def torch(at, facing=0.0):
     add.cone([at_d(0.32)[0], at_d(0.32)[1] + 0.11, at_d(0.32)[2]], [at_d(0.32)[0], at_d(0.32)[1] + 0.35, at_d(0.32)[2]],
              0.075, 8, FLAME)                                                       # to a point
     add.ellipsoid(at_d(0.27), [0.045, 0.1, 0.045], 5, P["flame_core"])
-    add.mesh(add.move(add.rotateY(add.pop(), facing), at))
+    add.mesh(add.move(add.rotateY(add.stretch(add.pop(), [size] * 3, (0, 0, 0)), facing), at))
 
 
 def lantern(at):
@@ -5085,10 +5901,73 @@ def asleep(at, facing=0.0, blanket=None, seed=0, pillow=False):
     add.mesh(add.move(add.rotateY(add.pop(), facing), at))
 
 
-def bed(at, facing=0.0, sleeper=True, canopy=False, blanket=None):
+def four_poster(blanket, hangings):
+    """A lord's bed (head towards -z, at the origin): four turned posts of
+    dark oak at its corners, the frame between them, a panelled headboard
+    with the castle's arms carved in it and a lower footboard; on the posts
+    a tester -- a frame of rails and a roof of cloth over it, gold finials
+    on its corners -- and valances of ``hangings`` (a colour's name) round it with a
+    scalloped hem, curtains gathered in folds at the four corners behind
+    them; a mattress, a bolster, two pillows and a coverlet of ``blanket``
+    with a gold hem."""
+    wood, dark, cloth = P["wood"], P["wood_dark"], P[hangings]
+    PX, PZ, PS, TOP = 0.55, 1.1, 0.12, 2.3                                          # the posts: where, how thick, how tall
+    for sx in (-PX, PX):
+        for sz in (-PZ, PZ):
+            add.cuboid([sx, 0.3, sz], [PS, 0.6, PS], dark)                              # square below, where the frame
+            lathe([[0.0, 0.0], [0.05, 0.0], [0.05, 0.04], [0.035, 0.08], [0.035, 0.5], [0.05, 0.56], [0.05, 0.6], [0.032, 0.66],
+                   [0.032, 1.3], [0.045, 1.36], [0.045, 1.4], [0.03, 1.46], [0.03, 1.6], [0.0, 1.6]],   # is let into them, turned
+                  [sx, 0.6, sz], k_(8), dark)                                                        # above it
+            add.cuboid([sx, TOP + 0.06 - 0.05, sz], [PS, 0.22, PS], dark)                # and square again at the top, where the
+    add.cuboid([0, 0.3, 0], [2 * PX - PS, 0.12, 2 * PZ - PS], wood)                    # tester's rails are; the frame,
+    for sz in (-PZ, PZ):                                                                # the rails of the tester,
+        add.cuboid([0, TOP + 0.06, sz], [2 * PX - PS, 0.12, 0.1], dark)
+    for sx in (-PX, PX):
+        add.cuboid([sx, TOP + 0.06, 0], [0.1, 0.12, 2 * PZ - PS], dark)
+    add.cuboid([0, TOP + 0.135, 0], [2 * PX + 0.16, 0.03, 2 * PZ + 0.16], cloth)       # and its roof, gold finials on it
+    for sx in (-PX, PX):
+        for sz in (-PZ, PZ):
+            lathe([[0.0, 0.0], [0.04, 0.0], [0.02, 0.03], [0.045, 0.08], [0.04, 0.12], [0.0, 0.16]], [sx, TOP + 0.15, sz], k_(6),
+                  P["gold"])
+    head = PZ - PS / 2                                                                   # the headboard: a frame and a
+    add.cuboid([0, 0.9, -PZ], [2 * PX - PS, 1.08, 0.06], dark)                          # raised panel, the arms on it
+    add.cuboid([0, 1.0, -PZ + 0.04], [0.74, 0.62, 0.02], wood)
+    add.mesh(add.move(arms(0.3, 0.36, 0.02), [-0.15, 0.9, -PZ + 0.06]))
+    add.cuboid([0, 0.55, PZ], [2 * PX - PS, 0.38, 0.06], dark)                          # the footboard
+    add.cuboid([0, 0.46, 0], [0.96, 0.2, 2 * head - 0.02], P["linen"])                 # the mattress, the bolster, the
+    add.cylinder([-0.44, 0.63, -head + 0.1], [0.44, 0.63, -head + 0.1], 0.07, 10, P["white"])   # pillows, the coverlet
+    for sx in (-0.22, 0.22):
+        add.mesh(add.move(add.stretch(add.make(add.sphere, [0, 0, 0], 0.2, 8, P["white"]), [1.0, 0.4, 0.8], (0, 0, 0)),
+                          [sx, 0.64, -head + 0.34]))
+    add.cuboid([0, 0.575, 0.25], [0.97, 0.03, 1.45], P["gold"])                         # with its hem of gold
+    add.cuboid([0, 0.6, 0.25], [0.93, 0.02, 1.41], blanket)
+    V = 0.3                                                                              # the valances, V deep, their
+    for side in range(4):                                                                # hems scalloped
+        L = 2 * PX + 0.14 if side % 2 == 0 else 2 * PZ + 0.12
+        n = 2 * int(L / 0.32)
+        prof = [[-L / 2, 0.0]] + [[-L / 2 + L * i / n, -V + (0.06 if i % 2 else 0.0)] for i in range(n + 1)] + [[L / 2, 0.0]]
+        if side % 2 == 0:                                                                # the ends, over the posts' faces,
+            z = (PZ + PS / 2 + 0.009) * (1 if side == 0 else -1)                         # and the sides between them
+            add.prism([[u, TOP + 0.12 + v] for u, v in prof], 0.016, cloth, (0, 0, z), (0, 0, 1))
+        else:
+            x = (PX + PS / 2 + 0.009) * (1 if side == 1 else -1)
+            add.prism([[TOP + 0.12 + v, u] for u, v in prof], 0.016, cloth, (x, 0, 0), (1, 0, 0))
+    for sx in (-1, 1):                                                                   # the curtains, gathered in folds
+        for sz in (-1, 1):                                                               # beside each post, hanging from
+            for f in range(3):                                                           # the rail to the floor
+                x, z = sx * (PX + 0.02), sz * (PZ - PS / 2 - 0.035 - 0.06 * f)
+                add.cylinder([x, 0.06, z], [x, TOP, z], 0.03, 8, shade_of(hangings, f))
+
+
+def bed(at, facing=0.0, sleeper=True, canopy=False, blanket=None, hangings=None):
     """A wooden bed with a mattress, pillow and blanket -- and someone
-    asleep under the blanket, head on the pillow."""
+    asleep under the blanket, head on the pillow; with ``canopy``, a
+    four-poster (see :func:`four_poster`)."""
     add.push()
+    if canopy:
+        four_poster(blanket or P["red"], hangings or "red")
+        add.mesh(add.move(add.rotateY(add.pop(), facing), at))
+        return
     add.cuboid([0, 0.3, 0], [1.1, 0.12, 2.2], P["wood"])
     for sx in (-0.5, 0.5):
         for sz, hh in ((-1.05, 0.9), (1.05, 0.6)):
@@ -5101,13 +5980,6 @@ def bed(at, facing=0.0, sleeper=True, canopy=False, blanket=None):
         asleep([0, 0.56, 0], 0.0, blanket or P["red"], int(at[0] * 3) + int(at[2] * 7))
     else:
         add.cuboid([0, 0.6, 0.2], [0.95, 0.06, 1.5], blanket or P["red"])                         # a folded blanket
-    if canopy:
-        for sx in (-0.55, 0.55):
-            for sz in (-1.1, 1.1):
-                add.cylinder([sx, 0, sz], [sx, 2.4, sz], 0.06, 12, P["wood_dark"])
-        add.cuboid([0, 2.45, 0], [1.4, 0.1, 2.5], P["red"])
-        for sz in (-1.1, 1.1):
-            add.cuboid([0, 2.25, sz], [1.3, 0.3, 0.04], P["gold"])
     add.mesh(add.move(add.rotateY(add.pop(), facing), at))
 
 
@@ -5761,10 +6633,17 @@ add.cuboid([0, 0.35, 1.05], [0.94, 0.04, 0.54], P["gold"])
 add.mesh(add.move(add.stretch(add.pop(), [THRONE_S] * 3, (0, 0, 0)), THRONE))
 
 
-def crown(at, r=0.2):
+def crown(at, r=0.2, kind=0):
     """A royal crown: a gold band set with rubies and pearls, four fleurs-
     de-lis, four pearl-studded arches over a red velvet cap, and an orb
-    with a small cross on top -- rich, but not overdone."""
+    with a small cross on top -- rich, but not overdone.  Other ``kind``s:
+    1, an open crown of eight fleurs-de-lis over a band of sapphires and
+    rubies; 2, a crown of ten tall points tipped with pearls over a band of
+    emeralds; 3, a queen's crown of silver, crosses and trefoils round its
+    band, two arches of pearls over a blue cap."""
+    if kind:
+        add.mesh(add.move(crown_kind(r, kind), at))
+        return
     add.push()
     add.pipe([0, 0, 0], [0, 0.12, 0], r, r - 0.025, k_(18), P["gold"])
     add.torus([0, 0.0, 0], r, 0.02, k_(18), 8, P["gold"])
@@ -5787,6 +6666,57 @@ def crown(at, r=0.2):
     add.cuboid([0, 0.49, 0], [0.01, 0.07, 0.01], P["gold"])
     add.cuboid([0, 0.5, 0], [0.05, 0.01, 0.01], P["gold"])
     add.mesh(add.move(add.pop(), at))
+
+
+def crown_kind(r, kind):
+    """The crowns of the other ``kind``s (see crown), about the origin."""
+    metal = P["steel"] if kind == 3 else P["gold"]
+    add.push()
+    add.pipe([0, 0, 0], [0, 0.1, 0], r, r - 0.022, k_(18), metal)                 # the band, rolled at its edges
+    add.torus([0, 0.0, 0], r, 0.018, k_(18), 8, metal)
+    add.torus([0, 0.1, 0], r, 0.018, k_(18), 8, metal)
+    gems = {1: (P["blue"], P["red"]), 2: (P["dragon"], P["dragon"]), 3: (P["white"], P["cornflower"])}[kind]
+    for i in range(8):                                                     # stones round the band
+        a = 2 * add.pi * (i + 0.5) / 8
+        add.sphere([(r + 0.004) * add.cos(a), 0.05, (r + 0.004) * add.sin(a)], 0.02, 4, gems[i % 2])
+    if kind == 1:                                                          # eight fleurs-de-lis
+        for i in range(8):
+            a = 2 * add.pi * i / 8
+            c, sn = add.cos(a), add.sin(a)
+            add.cone([r * c, 0.11, r * sn], [r * 1.02 * c, 0.27, r * 1.02 * sn], 0.028, 6, metal)          # the middle petal
+            for sd in (-1, 1):                                              # and the two curling out beside it
+                t = [-sn * sd, 0, c * sd]
+                add.polyline([[r * c + t[0] * 0.012, 0.115, r * sn + t[2] * 0.012], [r * c + t[0] * 0.05, 0.17, r * sn + t[2] * 0.05],
+                               [r * 1.03 * c + t[0] * 0.035, 0.215, r * 1.03 * sn + t[2] * 0.035]], 0.011, 5, metal, smooth=1)
+            add.cuboid([r * c, 0.14, r * sn], [0.05, 0.012, 0.05], metal)                                  # the band round them
+    elif kind == 2:                                                        # ten tall points, a pearl on each
+        for i in range(10):
+            a = 2 * add.pi * i / 10
+            c, sn = add.cos(a), add.sin(a)
+            add.cone([r * c, 0.11, r * sn], [r * 1.06 * c, 0.34, r * 1.06 * sn], 0.034, 4, metal)
+            add.sphere([r * 1.065 * c, 0.355, r * 1.065 * sn], 0.02, 4, P["white"])
+    else:                                                                  # crosses and trefoils,
+        for i in range(8):
+            a = 2 * add.pi * i / 8
+            c, sn = add.cos(a), add.sin(a)
+            if i % 2 == 0:
+                add.cuboid([r * c, 0.17, r * sn], [0.016, 0.13, 0.016], metal)
+                add.mesh(add.move(add.rotateY(add.make(add.cuboid, [0, 0, 0], [0.07, 0.016, 0.016], metal), -a + add.pi / 2),
+                                  [r * c, 0.19, r * sn]))
+            else:
+                for dy, dt in ((0.15, 0.0), (0.125, -0.022), (0.125, 0.022)):
+                    add.sphere([r * c - sn * dt, dy, r * sn + c * dt], 0.016, 4, metal)
+                add.cuboid([r * c, 0.11, r * sn], [0.012, 0.02, 0.012], metal)
+        add.mesh(add.stretch(add.make(add.sphere, [0, 0.14, 0], r - 0.03, 8, P["blue"]), [1.0, 1.0, 1.0], (0, 0.1, 0)))   # the cap
+        for a in (add.pi / 8, add.pi / 8 + add.pi / 2):                    # two arches of pearls over it, strung close
+            c, sn = add.cos(a), add.sin(a)
+            for j in range(19):
+                t = 0.15 + (add.pi - 0.3) * j / 18
+                add.sphere([r * 0.97 * add.cos(t) * c, 0.12 + 0.22 * add.sin(t), r * 0.97 * add.cos(t) * sn], 0.016, 4, P["white"])
+        add.sphere([0, 0.384, 0], 0.028, 6, metal)
+        add.cuboid([0, 0.44, 0], [0.01, 0.06, 0.01], metal)
+        add.cuboid([0, 0.45, 0], [0.04, 0.01, 0.01], metal)
+    return add.pop()
 
 
 def king(at, facing=0.0, size=1.0):
@@ -5835,13 +6765,14 @@ for i in range(12):
     add.cuboid([-1.75 + i * 0.32, KY + 4.82, FZ0 + 1.8], [0.2, 0.25, 0.05], P["gold"])
 add.mesh(add.move(arms(3.4, 4.6, 0.06), [-1.7, KY + 0.3, FZ0 + 0.03]))            # the arms on the wall behind the throne
 MOTTO = "VENI VIDI VICI"                                                            # a Latin motto over the throne, in gold
-TABLET_W = add.text_width(MOTTO, 0.8) + 1.0                                         # letters on a tablet of dark stone, the
-add.cuboid([0, KY + 8.1, FZ0 + 0.05], [TABLET_W, 1.5, 0.14], P["stone_dark"])       # tablet's back 2 cm into the wall and the
-for y in (KY + 7.38, KY + 8.82):                                                    # letters half sunk into the tablet: all
-    add.cuboid([0, y, FZ0 + 0.125], [TABLET_W, 0.06, 0.03], P["gold"])              # fixed to the wall, nothing in the air
+MOTTO_H, MOTTO_Y = 0.7, KY + 7.35                                                   # letters on a tablet of dark stone, the
+TABLET_W = add.text_width(MOTTO, MOTTO_H) + 0.9                                     # tablet's back 2 cm into the wall and the
+add.cuboid([0, MOTTO_Y, FZ0 + 0.05], [TABLET_W, 1.3, 0.14], P["stone_dark"])        # letters half sunk into the tablet: all
+for y in (MOTTO_Y - 0.62, MOTTO_Y + 0.62):                                          # fixed to the wall, nothing in the air
+    add.cuboid([0, y, FZ0 + 0.125], [TABLET_W, 0.06, 0.03], P["gold"])
 for x in (-TABLET_W / 2 + 0.03, TABLET_W / 2 - 0.03):
-    add.cuboid([x, KY + 8.1, FZ0 + 0.125], [0.06, 1.5, 0.03], P["gold"])
-add.text(MOTTO, [0, KY + 7.7, FZ0 + 0.15], 0.8, 0.06, P["gold"], align="center", k=8)
+    add.cuboid([x, MOTTO_Y, FZ0 + 0.125], [0.06, 1.3, 0.03], P["gold"])
+add.text(MOTTO, [0, MOTTO_Y - MOTTO_H / 2, FZ0 + 0.15], MOTTO_H, 0.06, P["gold"], align="center", k=8)
 for s in (-1, 1):                                                                 # fire stands on the dais: a round foot on
     cx, cz = s * 4.2, HZ0 + 1.5                                                     # its carpet, the post, a dish of glowing coals
     lathe([[0.0, 0.0], [0.26, 0.0], [0.26, 0.03], [0.12, 0.08], [0.07, 0.13], [0.0, 0.13]], [cx, KY + 0.66, cz], k_(8), P["iron"])
@@ -6010,7 +6941,7 @@ for k in range(5):
     x = WX0 + 0.8 + k * (LAND_X - WX0 - 1.0) / 4
     add.cylinder([x, rail(x) - 0.05, WZ0 + 0.03], [x, rail(x) - 0.05, WZ0 + 0.13], 0.015, 6, P["iron"])
     add.cylinder([x, rail(x) - 0.05, WZ0 + 0.14], [x, rail(x) - 0.02, WZ0 + 0.14], 0.012, 6, P["iron"])
-torch([WX1 - 0.05, CY + 1.5, (WZ0 + WZ1) / 2], -add.pi / 2)
+torch([WX1 - 0.05, CY + 1.5, (WZ0 + WZ1) / 2], -add.pi / 2, 0.7)
 bal = [[CELLAR_STAIR[0] + 0.6, WZ1 + 0.08], [CELLAR_STAIR[1] + 0.08, WZ1 + 0.08], [CELLAR_STAIR[1] + 0.08, WZ0]]
 for (ax, az), (bx_, bz_) in zip(bal, bal[1:]):         # up in the hall, a stone balustrade round the opening
     n = int(max(abs(bx_ - ax), abs(bz_ - az)) / 0.3)
@@ -6040,13 +6971,18 @@ add.cylinder([DX1 - 0.05, CY + 0.05, Z0 + 0.04], [DX1 - 0.05, DOOR_SPR + 0.3, Z0
 CASK = add.make(barrel, [0, -0.5, 0], 0.4, 1.0, 20)                     # upright, round its middle; 0.87 across its hoops
 
 
+CASK_HOOP = 0.4 * (0.86 + 0.14 * (1 - 0.66 ** 2)) / add.cos(add.pi / 20) + 0.0085     # its quarter hoops, on the rails,
+CASK_BILGE = 0.4 * (0.86 + 0.14 * (1 - 0.3 ** 2)) / add.cos(add.pi / 20) + 0.0085    # and the hoops by its bilge
+CASK_Y = CY + 0.14 + CASK_HOOP                                          # (so a cask lies on the rails, and one on two)
+CASK_UP = add.sqrt((2 * CASK_BILGE) ** 2 - 0.475 ** 2)
+
+
 def cask(x, y, z, along="z", turn=0.0, bung=False):
     M = add.rotateY(CASK, turn)
     M = add.rotateX(M, add.pi / 2) if along == "z" else add.rotateZ(M, add.pi / 2)
     add.mesh(add.move(M, [x, y, z]))
-    if bung:                                                            # its bung, on top beside the middle hoop
-        bx_, bz_ = (x, z + 0.13) if along == "z" else (x + 0.13, z)
-        add.cylinder([bx_, y + 0.38, bz_], [bx_, y + 0.415, bz_], 0.035, 8, P["wood_light"])
+    if bung:                                                            # its bung, on top at the bilge
+        add.cylinder([x, y + 0.4 * add.cos(add.pi / 40) - 0.001, z], [x, y + 0.435, z], 0.035, 8, P["wood_light"])
 
 
 def stack(xm, zc):
@@ -6055,11 +6991,11 @@ def stack(xm, zc):
     for dz in (-0.38, 0.38):
         add.cuboid([xm, CY + 0.07, zc + dz], [2.76, 0.14, 0.12], P["wood_dark"])
         for dx in (-1.33, -0.475, 0.475, 1.33):                        # wedges against the casks' rolling
-            add.cuboid([xm + dx, CY + 0.17, zc + dz], [0.1, 0.07, 0.1], P["wood_dark"])
+            add.cuboid([xm + dx, CY + 0.175, zc + dz], [0.1, 0.07, 0.1], P["wood_dark"])
     for dx in (-0.95, 0.0, 0.95):
-        cask(xm + dx, CY + 0.55, zc, "z", hash2(int(xm * 10), int(dx * 10), int(zc * 10)) * 6.28)
+        cask(xm + dx, CASK_Y, zc, "z", hash2(int(xm * 10), int(dx * 10), int(zc * 10)) * 6.28)
     for dx in (-0.475, 0.475):
-        cask(xm + dx, CY + 0.55 + 0.73, zc, "z", hash2(int(xm * 10), int(dx * 10), int(zc * 10) + 7) * 6.28, bung=True)
+        cask(xm + dx, CASK_Y + CASK_UP, zc, "z", hash2(int(xm * 10), int(dx * 10), int(zc * 10) + 7) * 6.28, bung=True)
 
 
 AISLE = Z0 + 2.5 * BAY                                 # the middle of the main aisle (the middle row of bays), along x
@@ -6073,27 +7009,33 @@ for i in (2, 4):                                       # and against the south w
     stack(X0 + (i + 0.5) * BAY, Z1 - 0.62)
     stack(X0 + (i + 0.5) * BAY, Z1 - 1.82)
 
-# the great tun on its cradle at the west end of the aisle, its head down the aisle, a brass tap and a bucket under it
+# the great tun on its cradle at the west end of the aisle, its head down the aisle: the castle's arms carved on it in
+# a brass ring, a brass tap below them, and under the tap a bucket half full of wine
 TUN_R, TUN_L = 1.1, 1.9
 tx, ty, tz = X0 + 0.2 + TUN_L / 2, CY + 1.55, AISLE
 tun = add.make(barrel, [0, -TUN_L / 2, 0], TUN_R, TUN_L, 32)
 add.mesh(add.move(add.rotateZ(tun, add.pi / 2), [tx, ty, tz]))
-for dx in (-0.6, 0.6):                                 # the cradle: two chocks shaped to the tun
-    r_at = TUN_R * (0.9 + 0.1 * (1 - abs(2 * (0.5 + dx / TUN_L) - 1)))
-    arc = [[ty - add.sqrt(max(0.0, r_at * r_at - zz * zz)) + 0.01, tz + zz] for zz in [0.9 - 1.8 * q / 10 for q in range(11)]]
-    add.prism([[CY, tz - 0.9], [CY, tz + 0.9]] + arc, 0.28, P["wood_dark"], (tx + dx, 0, 0), (1, 0, 0))
-hx = tx + TUN_L / 2                                    # its head
-add.torus([hx + 0.02, ty, tz], TUN_R * 0.7, 0.03, 32, 6, P["gold"], axis=(1, 0, 0))   # a brass ring on it, and the tap:
-add.cylinder([hx - 0.02, ty - 0.72, tz], [hx + 0.2, ty - 0.72, tz], 0.04, 10, P["gold"])
-add.cylinder([hx + 0.17, ty - 0.72, tz], [hx + 0.17, ty - 0.84, tz], 0.025, 8, P["gold"])
-add.cylinder([hx + 0.17, ty - 0.66, tz - 0.08], [hx + 0.17, ty - 0.66, tz + 0.08], 0.012, 6, P["gold"])
-add.cylinder([hx + 0.17, ty - 0.72, tz], [hx + 0.17, ty - 0.64, tz], 0.012, 6, P["gold"])
-bx, bz = hx + 0.17, tz                                 # the bucket under the tap
-add.frustum([bx, CY, bz], [bx, CY + 0.32, bz], 0.15, 0.19, 12, P["wood"])
-add.cylinder([bx, CY + 0.25, bz], [bx, CY + 0.28, bz], 0.17, 12, P["cushion"])        # (wine in it)
-for y in (0.06, 0.26):
-    add.torus([bx, CY + y, bz], 0.155 + 0.12 * y, 0.012, 12, 4, P["iron"])
-add.polyline([[bx - 0.19, CY + 0.3, bz], [bx, CY + 0.52, bz], [bx + 0.19, CY + 0.3, bz]], 0.008, 4, P["iron"], smooth=2)
+for sz in (-1, 1):                                     # the cradle: two sleepers on the floor, on them two chocks
+    add.cuboid([tx, CY + 0.07, tz + sz * 0.6], [1.7, 0.14, 0.16], P["wood_dark"])   # hollowed to the tun between its
+for dx in (-0.5, 0.5):                                 # hoops, bolted
+    rr = barrel_r(TUN_R, TUN_L, TUN_L / 2 + abs(dx) - 0.11) + 0.003
+    arc = [[ty - add.sqrt(rr * rr - zz * zz), tz + zz] for zz in [0.8 - 1.6 * q / 16 for q in range(17)]]
+    add.mesh(add.fix_normals(add.make(add.prism, [[CY + 0.14, tz - 0.92], [CY + 0.14, tz + 0.92]] + arc, 0.22, P["wood"], (tx + dx, 0, 0),
+                                        (1, 0, 0))))
+    for sz in (-1, 1):                                 # (the bolts' heads and nuts)
+        for yb in (CY + 0.3, CY + 0.62):
+            for sx in (-1, 1):
+                add.cylinder([tx + dx + sx * 0.11, yb, tz + sz * 0.72], [tx + dx + sx * 0.125, yb, tz + sz * 0.72], 0.022, 6, P["iron"])
+hx = tx + TUN_L / 2 - 0.04                             # its head (the face of it, in from the chime)
+add.torus([hx + 0.03, ty, tz], 0.62, 0.03, 32, 6, P["gold"], axis=(1, 0, 0))
+add.mesh(add.move(add.rotateY(arms(0.56, 0.7, 0.04), add.pi / 2), [hx + 0.02, ty - 0.35, tz + 0.28]))
+TAP = ty - 0.76                                        # the tap: a spout from the head, bent down, a key in it
+add.cylinder([hx, TAP, tz], [hx + 0.24, TAP, tz], 0.04, 10, P["gold"])
+add.cylinder([hx + 0.21, TAP - 0.04, tz], [hx + 0.21, TAP - 0.16, tz], 0.025, 8, P["gold"])
+add.cylinder([hx + 0.21, TAP + 0.04, tz], [hx + 0.21, TAP + 0.1, tz], 0.012, 6, P["gold"])
+add.cylinder([hx + 0.21, TAP + 0.1, tz - 0.08], [hx + 0.21, TAP + 0.1, tz + 0.08], 0.012, 6, P["gold"])
+add.sphere([hx + 0.21, TAP - 0.175, tz], 0.012, 4, P["wine"])                    # a drop
+bucket([hx + 0.21, CY, tz], add.pi / 2, water=True, bail=1.2, fill=0.5, liquid=P["wine"])
 
 
 # the racks of bottles: bottles lying, their necks and capsules out to the room
@@ -6254,13 +7196,13 @@ chandelier([TX, CY + 2.25, TZ], 0.45, arch_y - CY - 2.25)
 
 # light: torches in their holders on the walls, and lanterns hanging from the vaults over the main aisle
 for i in range(NX - 1):                                 # (on the face of the blocks) over the casks on the north wall,
-    torch([X0 + (i + 0.5) * BAY, CY + 1.95, Z0 + 0.05], 0.0)
+    torch([X0 + (i + 0.5) * BAY, CY + 1.95, Z0 + 0.05], 0.0, 0.7)
 for i in (2, 4):                                        # on the south one,
-    torch([X0 + (i + 0.5) * BAY, CY + 2.1, Z1 - 0.05], add.pi)
+    torch([X0 + (i + 0.5) * BAY, CY + 2.1, Z1 - 0.05], add.pi, 0.7)
 for zz in (Z0 + 0.5 * BAY, Z0 + 3.5 * BAY):             # the west one,
-    torch([X0 + 0.05, CY + 2.1, zz], add.pi / 2)
+    torch([X0 + 0.05, CY + 2.1, zz], add.pi / 2, 0.7)
 for zz in (Z0 + 0.6 * BAY, AISLE, Z0 + 4.5 * BAY):      # and the east one
-    torch([X1 - 0.05, CY + 1.8, zz], -add.pi / 2)
+    torch([X1 - 0.05, CY + 1.8, zz], -add.pi / 2, 0.7)
 for i in range(1, NX):
     lx, lz = X0 + (i + 0.5) * BAY, AISLE
     ly = CY + 2.3
@@ -6970,7 +7912,7 @@ barrel([DON[0] + 2.0, AY, DON[1] + 2.0], 0.34, 0.62, open_top=True)       # a ha
 for i in range(12):                                                         # leaning on the rim, the feathers standing out
     aa = 2 * add.pi * (i + 0.3 * hash2(i, 5, 17)) / 12
     ca, sa = add.cos(aa), add.sin(aa)
-    rim = 0.34 * 0.9 - 0.009                                                # (the staves' top edge, less the shaft)
+    rim = (barrel_r(0.34, 0.62, 0.62) - 0.02) * add.cos(add.pi / 50) - 0.006  # (the staves' inner top edge, less the shaft)
     foot = [DON[0] + 2.0 + 0.1 * ca, AY + 0.08, DON[1] + 2.0 + 0.1 * sa]
     lean = vunit([(rim - 0.1) * ca, 0.62 - 0.08, (rim - 0.1) * sa])
     arrow([foot[k] + lean[k] * 0.8 for k in range(3)], foot, cock=(P["red"], P["blue"])[i % 2])
@@ -6989,15 +7931,52 @@ mx = GX + 1.0
 hands = (([-0.035, 0.939, 0.209], [0.3, 0.0, 1], [-1, -0.8, -0.2]), ([0.052, 1.0, 0.383], [0, -0.6, 1], [1, -0.8, -0.2]))
 figure([mx, AY, GZ], -add.pi / 2, person("stand", P["blue"], arms=hands, lean=0.12, hair=P["black"]))
 sword([GX - 0.218, AY + 1.245, GZ], (0.985, -0.174, 0), 0.85, side=(0, 0, 1))
+# swords on the wall: four hung point down, flat to the wall, each by its cross-guard on two iron pegs driven into
+# the stones (between a torch and the stairwell); and under three of the shields trophies of two swords crossed
+# over a round boss of oak with an iron rim, the swords resting on it and on each other, clear of the curved wall
+for i, aa in enumerate((0.28, 0.36, 0.44, 0.52)):
+    ex, ez, tx_, tz_ = add.cos(aa), add.sin(aa), -add.sin(aa), add.cos(aa)
+    blade = 1.1 - 0.03 * i
+    tip = [DON[0] + (DON_IN - 0.075) * ex, AY + 0.75, DON[1] + (DON_IN - 0.075) * ez]
+    sword(tip, (0, 1, 0), blade, side=(tx_, 0, tz_))
+    for sg in (-1, 1):
+        px, pz = DON[0] + DON_IN * ex + sg * 0.13 * tx_, DON[1] + DON_IN * ez + sg * 0.13 * tz_
+        y = AY + 0.75 + blade - 0.025 - 0.012                                        # (under the guard)
+        add.cylinder([px + 0.01 * ex, y, pz + 0.01 * ez], [px - 0.12 * ex, y, pz - 0.12 * ez], 0.012, 6, P["iron"])
+for aa in (5.8, 6.05, 6.3):                                                           # (clear of the window at 1.75 pi)
+    ex, ez, tx_, tz_ = add.cos(aa), add.sin(aa), -add.sin(aa), add.cos(aa)
+    cy = AY + 2.4
+    boss = add.make(add.cylinder, [0, 0, -0.005], [0, 0, 0.11], 0.2, k_(12), P["wood_dark"])     # (built facing +z, turned
+    boss.extend(add.make(add.pipe, [0, 0, 0.03], [0, 0, 0.11], 0.214, 0.2, k_(12), P["iron"]))      # to face the room)
+    add.mesh(add.move(add.rotateY(boss, add.pi / 2 - aa + add.pi), [DON[0] + DON_IN * ex, cy, DON[1] + DON_IN * ez]))
+    for sg, d in ((1, 0.12), (-1, 0.14)):                                                           # (the one behind, then
+        u = [sg * 0.643 * tx_, 0.766, sg * 0.643 * tz_]                                              # the one on top of it)
+        c = [DON[0] + (DON_IN - d) * ex, cy, DON[1] + (DON_IN - d) * ez]
+        side = vunit(vcross(u, [ex, 0, ez]))
+        sword([c[k] - u[k] * 0.62 for k in range(3)], u, 1.1, side=side)
 for aa in (0.2, 4.45, 5.2):
     torch([DON[0] + (DON_IN - 0.05) * add.cos(aa), AY + 2.6, DON[1] + (DON_IN - 0.05) * add.sin(aa)], -aa - add.pi / 2)
 flush("armoury")
 
-# the lord's chamber on the second floor
+# the lord's chamber on the second floor: his four-poster and the princess's, a table between their heads with a
+# candle and a book of hours on it, a rug before them, a washstand, a writing table, a chest, a wardrobe (all clear of
+# the stair that climbs round the wall), a tapestry
 LY = F2
-add.cuboid([DON[0], LY + 0.03, DON[1]], [6.0, 0.05, 6.0], P["red"])                       # a carpet
-bed([DON[0] - 2.2, LY, DON[1] + 0.5], add.pi / 2, sleeper=False, canopy=True)
-bed([DON[0] - 2.2, LY, DON[1] + 2.4], add.pi / 2, sleeper=False, canopy=True, blanket=P["rose"])      # and the princess's
+RUG = (DON[0] - 1.0, DON[0] + 1.3, DON[1] - 0.6, DON[1] + 3.2)                              # a rug, gold-bordered, lying
+RY = LY + 0.036                                                                             # over the nails of the floor
+add.cuboid([(RUG[0] + RUG[1]) / 2, LY + 0.021, (RUG[2] + RUG[3]) / 2], [RUG[1] - RUG[0], 0.03, RUG[3] - RUG[2]], P["red"])
+for x0, x1, z0, z1 in ((RUG[0] + 0.12, RUG[1] - 0.12, RUG[2] + 0.12, RUG[2] + 0.2), (RUG[0] + 0.12, RUG[1] - 0.12, RUG[3] - 0.2, RUG[3] - 0.12),
+                       (RUG[0] + 0.12, RUG[0] + 0.2, RUG[2] + 0.2, RUG[3] - 0.2), (RUG[1] - 0.2, RUG[1] - 0.12, RUG[2] + 0.2, RUG[3] - 0.2)):
+    add.cuboid([(x0 + x1) / 2, RY + 0.002, (z0 + z1) / 2], [x1 - x0, 0.004, z1 - z0], P["gold"])
+bed([DON[0] - 2.2, LY, DON[1] + 0.5], add.pi / 2, sleeper=False, canopy=True, hangings="red")
+bed([DON[0] - 2.2, LY, DON[1] + 2.4], add.pi / 2, sleeper=False, canopy=True, blanket=P["rose"], hangings="rose")   # and the princess's
+table([DON[0] - 3.02, LY, DON[1] + 1.45], 0.44, 0.44, 0.62, P["wood_dark"])                # between their heads
+candle([DON[0] - 3.1, LY + 0.62, DON[1] + 1.52], 0.22, 0.03)
+add.cuboid([DON[0] - 2.93, LY + 0.645, DON[1] + 1.38], [0.16, 0.05, 0.12], P["purple"])       # (the book of hours)
+table([DON[0] + 0.2, LY, DON[1] - 2.9], 0.7, 0.45, 0.8, P["wood_dark"])                     # the washstand: a basin, a ewer
+bowl([DON[0] + 0.1, LY + 0.8, DON[1] - 2.92], 0.2, P["steel"])
+jug([DON[0] + 0.42, LY + 0.8, DON[1] - 2.95], P["steel"], 0.4)
+add.cuboid([DON[0] + 0.2, LY + 0.81, DON[1] - 2.72], [0.3, 0.02, 0.06], P["linen"])          # and a towel folded by them
 table([DON[0] + 2.0, LY, DON[1] - 2.0], 1.6, 0.9, 0.8, P["wood_dark"])
 chair([DON[0] + 2.0, LY, DON[1] - 1.2], add.pi, P["wood_dark"])
 add.cuboid([DON[0] + 1.7, LY + 0.83, DON[1] - 2.1], [0.5, 0.06, 0.7], P["white"])           # an open book, a quill, a candle
@@ -7005,13 +7984,17 @@ add.cuboid([DON[0] + 1.7, LY + 0.86, DON[1] - 2.1], [0.03, 0.02, 0.7], P["wood_d
 add.cylinder([DON[0] + 2.4, LY + 0.83, DON[1] - 2.2], [DON[0] + 2.55, LY + 1.25, DON[1] - 2.4], 0.012, 5, P["white"])
 candle([DON[0] + 2.5, LY + 0.83, DON[1] - 1.8], 0.3, 0.04)
 chest([DON[0] + 2.2, LY, DON[1] + 2.4], -0.4, s=0.8)
-add.cuboid([DON[0] - 2.0, LY + 1.1, DON[1] - 2.4], [1.4, 2.2, 0.7], P["wood_dark"])         # a wardrobe
-add.cuboid([DON[0] - 2.0, LY + 1.1, DON[1] - 2.03], [0.04, 2.0, 0.04], P["gold"])
+add.cuboid([DON[0] - 1.6, LY + 1.1, DON[1] - 2.3], [1.4, 2.2, 0.7], P["wood_dark"])         # a wardrobe
+add.cuboid([DON[0] - 1.6, LY + 1.1, DON[1] - 1.93], [0.04, 2.0, 0.04], P["gold"])
 for i in range(2):
-    add.sphere([DON[0] - 2.0 + (0.12 if i else -0.12), LY + 1.1, DON[1] - 2.02], 0.04, 4, P["gold"])
-add.mesh(add.move(arms(2.4, 1.8, 0.05), [DON[0] - 1.2, LY + 0.7, DON[1] + DON_IN - 0.45]))   # a tapestry
-add.cylinder([DON[0] - 1.3, LY + 2.55, DON[1] + DON_IN - 0.45], [DON[0] + 1.3, LY + 2.55, DON[1] + DON_IN - 0.45], 0.05, 8, P["wood_dark"])
-standing_man([DON[0] + 0.5, LY, DON[1] + 1.0], 2.4, P["purple"], hat=True)                 # the lord himself, looking at the bed
+    add.sphere([DON[0] - 1.6 + (0.12 if i else -0.12), LY + 1.1, DON[1] - 1.92], 0.04, 4, P["gold"])
+add.mesh(add.move(arms(2.4, 1.8, 0.05), [DON[0] - 1.05, LY + 0.7, DON[1] + DON_IN - 0.45]))  # a tapestry (clear of the
+add.cylinder([DON[0] - 1.15, LY + 2.55, DON[1] + DON_IN - 0.45], [DON[0] + 1.45, LY + 2.55, DON[1] + DON_IN - 0.45], 0.05, 8,   # window)
+             P["wood_dark"])
+for x in (-1.1, 1.4):                                                                       # on a rod, on two iron brackets
+    add.cylinder([DON[0] + x, LY + 2.55, DON[1] + DON_IN - 0.4], [DON[0] + x, LY + 2.55, DON[1] + add.sqrt(DON_IN ** 2 - x * x) + 0.01],
+                 0.02, 6, P["iron"])
+standing_man([DON[0] + 0.5, RY, DON[1] + 1.0], 2.4, P["purple"], hat=True)                 # the lord himself, looking at the bed
 for aa in (0.3, 1.0, 2.2):
     torch([DON[0] + (DON_IN - 0.05) * add.cos(aa), LY + 2.6, DON[1] + (DON_IN - 0.05) * add.sin(aa)], -aa - add.pi / 2)
 flush("lord's chamber")
@@ -7160,9 +8143,9 @@ for dz in (1.6, 2.3):                                                           
           at, k_(8), P["gold"])
     add.cylinder([at[0], CA_Y + 1.15, at[2]], [at[0], CA_Y + 1.45, at[2]], 0.035, 12, P["white"])
     add.cylinder([at[0], CA_Y + 1.45, at[2]], [at[0], CA_Y + 1.48, at[2]], 0.008, 4, P["black"])
-for j, (bx, bz, facing) in enumerate(((CA_X1 - 0.9, CA_Z0 + 1.3, 0.0), (CA_X1 - 0.9, CA_Z0 + 4.6, 0.0),   # beds for the
-                                     (CH_C[0], CA_Z0 + 1.3, 0.0), (CA_X0 + 0.9, CA_Z0 + 1.6, 0.0),        # priest and the
-                                     (CA_X0 + 0.9, CA_Z1 - 1.5, add.pi))):                                # brothers: under
+ATTIC_BEDS = ((CA_X1 - 0.9, CA_Z0 + 1.3, 0.0), (CA_X1 - 0.9, CA_Z0 + 4.6, 0.0), (CH_C[0], CA_Z0 + 1.3, 0.0),   # beds for the
+              (CA_X0 + 0.9, CA_Z0 + 1.6, 0.0), (CA_X0 + 0.9, CA_Z1 - 1.5, add.pi))                         # priest and the
+for j, (bx, bz, facing) in enumerate(ATTIC_BEDS):                                                         # brothers: under
     bed([bx, CA_Y, bz], facing, sleeper=j == 1, blanket=(P["wood"], P["linen"])[j % 2])                   # the roof, clear of
                                                                                                           # the rafters' feet
 px, pz = CH_C[0] + 2.2, CH_C[1] - 2.4                                                                  # the processional cross,
@@ -7170,6 +8153,17 @@ add.cuboid([px, CA_Y + 0.1, pz], [0.45, 0.2, 0.45], P["wood_dark"])             
 add.cylinder([px, CA_Y + 0.2, pz], [px, CA_Y + 2.2, pz], 0.03, 8, P["wood_dark"])
 add.cuboid([px, CA_Y + 2.4, pz], [0.07, 0.55, 0.05], P["gold"])
 add.cuboid([px, CA_Y + 2.48, pz], [0.42, 0.07, 0.05], P["gold"])
+ON_ATTIC = ([(CA_X0 + 0.45, CH_C[1], 0.5, DM_I + 0.05), (CH_C[0] - 1.7, CA_Z1 - 2.5, 0.65, 0.4), (px, pz, 0.3, 0.3),   # (what
+             (CA_X0 + 1.35, CH_C[1] + 2.0, 0.5, 0.8), (CA_X0 + 1.35, CH_C[1] - 2.6, 0.9, 0.8), (CA_X1 - 1.35, CH_C[1] + 1.4, 0.5, 0.8)] +
+            [(CA_X1 - 1.4, CA_Z1 - dz, 0.27, 0.27) for dz in (1.6, 2.3)] + [(bx, bz, 0.62, 1.17) for bx, bz, f in ATTIC_BEDS] +
+            [(CA_X0 + 0.1, CA_Z0 + 1.38 + 1.4 * k, 0.4, 0.15) for k in range(8)])      # stands on the floor: steps, table,
+for i in range(30):                                                  # cross, chests, candlesticks, beds, rafters' feet)
+    x = CA_X0 + (i + 0.5) * BOARD                                    # every board nailed to each beam with two nails
+    for k in range(8):
+        z = CA_Z0 + 1.38 + 1.4 * k
+        for dx in (-0.26 * BOARD, 0.26 * BOARD):
+            if not any(abs(x + dx - qx) < hx and abs(z - qz) < hz for qx, qz, hx, hz in ON_ATTIC):
+                floor_nail(x + dx, CA_Y, z, 4)
 flush("chapel attic")
 
 
@@ -7217,8 +8211,9 @@ FOOTPRINTS = [(FOUNTAIN[0], FOUNTAIN[1], 3.25), (12, 24, 1.7), (2.8, 1.2, 0.6), 
               (-44.2, -8.5, 6.0), (-43.2, -15.2, 1.5), (-40.0, -4.5, 1.2), (-41.0, -15.2, 0.5),     # the kitchen, its oven,
               (46.2, -5.2, 4.9), (46.2, 8.5, 0.9), (46.2, 12.3, 0.9), (37.0, 9.5, 0.5), (37.5, 12.8, 0.5),   # the stores, the butts,
               (-11.5, -37.0, 4.7), (-2.0, -35.2, 4.7), (-44.0, 8.5, 4.7), (40.5, 17.5, 4.7), (20.5, 25.0, 4.7)]   # the log houses
-YARD_TREES = [((15, 8), "lime", 7.0), ((-15, 8), "lime", 7.0), ((40, 0), "birch", 9.0), ((-40, 0), "birch", 9.0),   # limes
-              ((22.5, 38.5), "oak", 7.5), ((-18, 40), "elm", 9.0)]                      # by the square, birches, an oak, an elm
+YARD_TREES = [((15, 14.5), "lime", 7.0), ((-15, 14.5), "lime", 7.0), ((40, 0), "birch", 9.0), ((-40, 0), "birch", 9.0),   # limes
+              ((22.5, 38.5), "oak", 7.5), ((-18, 40), "elm", 9.0)]                      # by the square (off its cobbles),
+                                                                                        # birches, an oak, an elm
 FOOTPRINTS += [(x, z, TRUNK[kind] * h + 0.15) for (x, z), kind, h in YARD_TREES]         # (nothing laid round their trunks)
 HOUSES = [((-11.5, -37.0), add.pi, True, False, ("sleep",)), ((-2.0, -35.2), add.pi, False, True, ("eat",)),   # log houses for
           ((-44.0, 8.5), add.pi / 2, True, False, ("eat", "sleep")), ((40.5, 17.5), -add.pi / 2, True, False, ("sleep",)),   # the folk:
@@ -7416,49 +8411,93 @@ flush("grass in the yard (%d tufts, %d flowers)" % (n, n_f), clean=False)
 
 
 def well(at):
-    """A well with a windlass, a rope and a bucket, under a little roof."""
+    """A well: a ring of stone with a coping, water down in it; over it a
+    little roof on two posts -- the posts on stone footings, a ridge beam on
+    them braced to them, a cross beam through each post braced to it,
+    plates on the cross beams' ends, rafters from the plates to the ridge,
+    boards on the rafters and slates on the boards, bargeboards at the
+    gables and a lead roll along the ridge; between the posts the windlass,
+    a log on an iron axle through both posts, bound with iron, a crank on
+    its end, the rope wound on it and down to a bucket of staves hanging
+    over the water, and another bucket, full, standing on the coping."""
     add.push()
-    add.pipe([0, 0, 0], [0, 1.0, 0], 1.2, 0.9, k_(16), P["mortar"])
+    add.pipe([0, 0, 0], [0, 1.0, 0], 1.15, 0.9, k_(16), P["mortar"])                               # a core of rubble,
     for j in range(2):                                                                             # two courses of blocks
-        n_b = k_(10)
-        for i in range(n_b):
-            a = 2 * add.pi * (i + 0.5 * j) / n_b
-            add.mesh(add.move(add.rotateY(add.make(add.cuboid, [0, 0, 0], [2 * add.pi * 1.2 / n_b - 0.05, 0.45, 0.14], pick("stone", i, j)), add.pi / 2 - a),
-                              [1.22 * add.cos(a), 0.25 + j * 0.5, 1.22 * add.sin(a)]))
-    for i in range(k_(12)):
-        a = 2 * add.pi * i / k_(12)
-        add.mesh(add.move(add.rotateY(add.make(add.cuboid, [0, 0, 0], [0.45, 0.14, 0.42], pick("stone", i, 4)), add.pi / 2 - a),
-                          [1.05 * add.cos(a), 1.06, 1.05 * add.sin(a)]))
+        for i in range(12):                                                                        # round it, curved to it,
+            a = 2 * add.pi * (i + 0.5 * j) / 12                                                    # and a coping of sixteen
+            ring_block(0, 0, 1.155, 1.3, a + 0.012, a + 2 * add.pi / 12 - 0.012, j * 0.5, j * 0.5 + 0.48, pick("stone", i, j), 3)
+    for i in range(16):
+        a = 2 * add.pi * i / 16
+        ring_block(0, 0, 0.86, 1.33, a + 0.008, a + 2 * add.pi / 16 - 0.008, 1.0, 1.14, pick("stone", i, 4), 3)
     add.cylinder([0, 0.02, 0], [0, 0.05, 0], 0.9, k_(16), WATER)
-    for sx in (-1.4, 1.4):
-        add.cuboid([sx, 1.4, 0], [0.2, 2.8, 0.2], P["wood_dark"])
-    add.cylinder([-1.4, 2.2, 0], [1.4, 2.2, 0], 0.16, k_(10), P["wood"])                         # the windlass
-    add.helix([0, 2.2, 0], 0.17, 0.05, 6, 40, 0.02, 6, P["rope"], axis=(1, 0, 0))
-    add.polyline([[1.55, 2.2, 0], [1.75, 2.2, 0], [1.75, 2.6, 0], [1.95, 2.6, 0]], 0.04, 8, P["iron"])   # the crank
-    add.cylinder([0, 2.2, 0.175], [0, 1.69, 0.175], 0.015, 6, P["rope"])                          # the rope, off the drum,
-    add.torus([0, 1.66, 0.175], 0.028, 0.011, 8, 4, P["rope"], axis=(1, 0, 0))                   # knotted round the top
-    add.sphere([0, 1.7, 0.175], 0.024, 4, P["rope"])                                              # of the bucket's handle
-    lathe([[0.16, 0], [0.18, 0], [0.22, 0.3], [0.2, 0.3], [0.16, 0.02]], [0, 1.1, 0.175], k_(10), P["wood_dark"])
-    add.arch([-0.2, 1.4, 0.175], [0.2, 1.4, 0.175], 0.25, 0.015, P["iron"], 8, 6)
-    add.roof([0, 2.8, 0], [3.6, 2.2], 1.0, P["wood_dark"], 0.2)                                   # its roof: boards,
-    for sx in (-1, 1):                                                                             # and slates on them
-        tile_face([sx * 2.0, 2.8, sx * 1.3], [sx * 2.0, 2.8, -sx * 1.3], [0, 3.8, -sx * 1.3], [0, 3.8, sx * 1.3],
-                  size=(0.3, 0.26), colours="slate")
-    add.cuboid([0, 3.84, 0], [0.16, 0.1, 2.7], P["iron"])                                          # a lead ridge
+    PX, AY, RB0 = 1.5, 2.2, 3.45                                                   # the posts, the axle, the ridge beam's foot
+    for sx in (-1, 1):
+        add.cuboid([sx * PX, 0.1, 0], [0.36, 0.2, 0.36], P["stone_dark"])                              # a footing,
+        post = add.make(add.cuboid, [sx * PX, (0.2 + RB0) / 2, 0], [0.2, RB0 - 0.2, 0.2], P["wood_dark"])   # the post,
+        hole = add.make(add.cylinder, [sx * PX - 0.2, AY, 0], [sx * PX + 0.2, AY, 0], 0.045, 12)         # bored for the axle
+        slot = add.make(add.cuboid, [sx * PX, 2.65, 0], [0.14, 0.2, 0.3])                               # and mortised for
+        add.mesh(add.difference(post, hole, slot))                                                       # the cross beam
+        add.cuboid([sx * PX, 2.65, 0], [0.14, 0.2, 3.24], P["wood_dark"])
+        for sz in (-1, 1):                                                                               # braced to it
+            add.mesh(add.fix_normals(add.make(add.prism, [[1.9, sz * 0.1], [2.55, sz * 0.72], [2.55, sz * 0.5], [2.12, sz * 0.1]],
+                                                0.1, P["wood"], (sx * PX, 0, 0), (1, 0, 0))))
+        add.mesh(add.fix_normals(add.make(add.prism, [[sx * 1.4, 2.95], [sx * 1.4, 3.17], [sx * 1.17, RB0], [sx * 0.95, RB0]],
+                                            0.1, P["wood"], (0, 0, 0), (0, 0, 1))))                    # and to the ridge beam
+    add.cuboid([0, RB0 + 0.1, 0], [4.5, 0.2, 0.2], P["wood_dark"])                                      # the ridge beam
+    for sz in (-1, 1):
+        add.cuboid([0, 2.82, sz * 1.52], [4.5, 0.14, 0.14], P["wood_dark"])                               # the plates
+    s = (RB0 + 0.2 - 2.89) / (1.59 - 0.1)                                                                # the pitch: the rafters'
+    cs = 1 / add.sqrt(1 + s * s)                                                                         # undersides on the plates'
+    yu = lambda z: RB0 + 0.2 + s * (0.1 - abs(z))                                                        # outer edges and the
+    yt = lambda z: yu(z) + 0.12 / cs                                                                     # ridge beam's
+    yb = lambda z: yt(z) + 0.03 / cs                                                                     # (the boards' tops)
+    for sz in (-1, 1):
+        for x in (-1.95, -1.15, -0.35, 0.35, 1.15, 1.95):                                               # the rafters,
+            add.mesh(add.fix_normals(add.make(add.prism, [[yu(0), 0.0], [yu(1.8), sz * 1.8], [yt(1.8), sz * 1.8], [yt(0), 0.0]],
+                                                0.1, shade_of("wood", int(x * 3 + sz), 3), (x, 0, 0), (1, 0, 0))))
+        n_b = 9                                                                                          # the boards on them
+        for k in range(n_b):
+            z0, z1 = 1.8 - (1.8 - 0.015) * k / n_b, 1.8 - (1.8 - 0.015) * (k + 1) / n_b + 0.004 * cs
+            q = [[-2.25, yt(z0), sz * z0], [2.25, yt(z0), sz * z0], [2.25, yt(z1), sz * z1], [-2.25, yt(z1), sz * z1]]
+            add.mesh(slab(q if sz > 0 else [q[1], q[0], q[3], q[2]], 0.03, shade_of("wood_light", k, 3)))
+        A, B = [-2.25, yb(1.8), sz * 1.8], [2.25, yb(1.8), sz * 1.8]                                    # the slates
+        C, D = [2.25, yb(0.015), sz * 0.015], [-2.25, yb(0.015), sz * 0.015]
+        tile_face(*([A, B, C, D] if sz > 0 else [B, A, D, C]), size=(0.3, 0.26), colours="slate")
+    for sx in (-1, 1):                                                                                   # the bargeboards
+        prof = [[yt(1.8) - 0.12, -1.8], [yt(1.8) + 0.1, -1.8], [yt(0) + 0.1, 0.0], [yt(1.8) + 0.1, 1.8], [yt(1.8) - 0.12, 1.8],
+                [yt(0) - 0.12, 0.0]]
+        add.mesh(add.fix_normals(add.make(add.prism, prof, 0.04, P["wood_dark"], (sx * 2.27, 0, 0), (1, 0, 0))))
+    add.cylinder([-2.25, yb(0) + 0.07 / cs + 0.01, 0], [2.25, yb(0) + 0.07 / cs + 0.01, 0], 0.07, 10, P["iron"])   # lead
+    add.cylinder([-1.64, AY, 0], [1.64, AY, 0], 0.035, 8, P["iron"])                                      # the axle, the drum,
+    add.pipe([-1.2, AY, 0], [1.2, AY, 0], 0.16, 0.037, 12, P["wood"])                                  # its bands
+    for x0 in (-1.16, 1.1):
+        add.pipe([x0, AY, 0], [x0 + 0.06, AY, 0], 0.172, 0.1605, 12, P["iron"])
+    add.beam([1.665, AY - 0.04, 0], [1.665, AY + 0.3, 0], 0.08, 0.05, P["iron"], up=(1, 0, 0))            # the crank and
+    add.cylinder([1.69, AY + 0.26, 0], [1.9, AY + 0.26, 0], 0.028, 8, P["wood_dark"])                   # its grip
+    R = 0.183                                                                                            # the rope wound on
+    coil = [[-0.12 + 0.25 * f / 200.0, AY - R * add.sin(-10 * add.pi * (1 - f / 200.0)), R * add.cos(-10 * add.pi * (1 - f / 200.0))]
+            for f in range(201)]
+    top = bucket([0.13, 1.2, R], 0.0, bail=0.0)                                                          # and down to the bucket
+    add.polyline(coil + [[0.13, AY - 0.3, R], [0.13, top[1] + 0.03, R]], 0.02, 6, P["rope"])
+    add.torus([0.13, top[1], R], 0.02, 0.01, 8, 4, P["rope"], axis=(1, 0, 0))                           # tied to its bail
+    a = 2 * add.pi * 3.5 / 16                                                                             # the full one, on a
+    bucket([1.095 * add.cos(a), 1.14, 1.095 * add.sin(a)], 0.7, water=True, bail=0.9)                    # stone of the coping
     add.mesh(add.move(add.pop(), at))
 
 
 def fountain(at):
     """The fountain of the courtyard: an octagonal basin of dressed stone
     on a step, brim-full; in the middle a pedestal with four stone fish
-    round it spouting into the basin, a wide bowl brimming over in a thin
+    on it spouting into the basin, a wide bowl brimming over in a thin
     bell of water, a slender shaft and a smaller bowl brimming over into
-    the wide one, and on top, on a little plinth, the founder of the castle
-    in stone: a knight resting on his sword, looking out towards the gate."""
+    the wide one, and on top, on a round plinth in the small bowl, Neptune
+    in stone: crowned and bearded, in a short tunic, barefoot, his trident
+    upright in his right hand, looking out towards the gate, and at his
+    left side a dolphin standing on its head, spouting."""
     add.push()
     R = 2.6                                                                    # the basin: its wall's outer radius
-    oct_ = lambda r, y0, y1, color: add.mesh(solid([(r * add.cos(add.pi / 8 + k * add.pi / 4), r * add.sin(add.pi / 8 + k * add.pi / 4))
-                                                   for k in range(8)], y0, y1, color))
+    octagon = lambda r: [(r * add.cos(add.pi / 8 + k * add.pi / 4), r * add.sin(add.pi / 8 + k * add.pi / 4)) for k in range(8)]
+    oct_ = lambda r, y0, y1, color: add.mesh(solid(octagon(r), y0, y1, color))
     oct_(R + 0.45, -0.1, 0.12, P["stone_dark"])                                 # the step
     oct_(R - 0.3, 0.1, 0.18, P["stone_dark"])                                   # the floor of the basin
     for k in range(8):                                                         # its wall: a block of stone a side,
@@ -7471,41 +8510,89 @@ def fountain(at):
         cap = [((R + 0.06) * c0[0], (R + 0.06) * c0[1]), ((R + 0.06) * c1[0], (R + 0.06) * c1[1]),
                ((R - 0.36) * c1[0], (R - 0.36) * c1[1]), ((R - 0.36) * c0[0], (R - 0.36) * c0[1])]
         add.mesh(solid(cap, 0.68, 0.8, shade_of("stone_dark", k)))            # under a moulded coping
-    oct_(R - 0.305, 0.18, 0.66, WATER)                                          # the water, brim-full
-    add.cylinder([0, 0.18, 0], [0, 1.35, 0], 0.34, k_(12), P["stone"])          # the pedestal
+    add.mesh(add.color(add.difference(add.make(solid, octagon(R - 0.305), 0.18, 0.66, WATER),   # the water, brim-full, round
+                                      add.make(add.cylinder, [0, 0.1, 0], [0, 0.8, 0], 0.342, k_(12))), WATER))   # the pedestal
+    add.cylinder([0, 0.18, 0], [0, 1.3, 0], 0.34, k_(12), P["stone"])           # the pedestal
     add.torus([0, 0.7, 0], 0.36, 0.05, k_(12), 6, P["stone_dark"])
-    for i in range(4):                                                         # four fish round it, heads down,
-        a = add.pi / 4 + i * add.pi / 2                                        # spouting into the basin
-        M = add.color(add.make(fish, [0, 0, 0], 0.0, P["stone"], 0.55), shade_of("stone", i))
-        M = add.rotateZ(M, 0.9)                                                # (its head is at -x: tipped down and out)
-        M = add.rotateY(M, add.pi - a)
-        add.mesh(add.move(M, [0.8 * add.cos(a), 0.98, 0.8 * add.sin(a)]))
-        mouth = [1.07 * add.cos(a), 0.72, 1.07 * add.sin(a)]
-        arc = [[mouth[0] + add.cos(a) * 0.8 * t, mouth[1] + 0.25 * t - 0.31 * t * t, mouth[2] + add.sin(a) * 0.8 * t]
+    for i in range(4):                                                         # four fish on it, heads down, tails
+        a = add.pi / 4 + i * add.pi / 2                                        # against it, spouting into the basin
+        F = add.rotateZ(add.color(add.make(fish, [0, 0, 0], 0.0, P["stone"], 0.5), shade_of("stone", i)), 0.7)   # (head at -x)
+        tail, top_ = max(v[0] for v in F.V), max(v[1] for v in F.V)
+        mouth = min(F.V, key=lambda v: v[1] + 0.3 * v[0])
+        rf, yf_ = 0.335 + tail, 1.27 - top_                                    # (its tail on the pedestal, under the bowl)
+        add.mesh(add.move(add.rotateY(F, add.pi - a), [rf * add.cos(a), yf_, rf * add.sin(a)]))
+        m0 = [(rf - mouth[0]) * add.cos(a), yf_ + mouth[1], (rf - mouth[0]) * add.sin(a)]
+        arc = [[m0[0] + add.cos(a) * 0.8 * t, m0[1] + 0.2 * t - (m0[1] + 0.2 - 0.66) * t * t, m0[2] + add.sin(a) * 0.8 * t]
                for t in (0.0, 0.25, 0.5, 0.75, 1.0)]
-        arc[-1][1] = 0.66
         add.polyline(arc, 0.035, 6, WATER, smooth=1)
     lathe([[0.3, 0], [0.5, 0.05], [1.0, 0.18], [1.32, 0.34], [1.36, 0.42], [1.28, 0.42], [0.95, 0.3], [0.3, 0.3]],
           [0, 1.3, 0], k_(20), P["stone"])                                     # the wide bowl,
-    add.cylinder([0, 1.58, 0], [0, 1.7, 0], 1.27, k_(20), WATER)                # full,
+    lathe([[0.162, 0.3], [0.95, 0.3], [1.28, 0.42], [0.162, 0.42]], [0, 1.3, 0], k_(20), WATER)   # full to the brim,
     for i in range(16):                                                        # brimming over in thin streams
         a = 2 * add.pi * (i + 0.5) / 16
         c, sn = add.cos(a), add.sin(a)
         add.polyline([[1.37 * c, 1.71, 1.37 * sn], [1.45 * c, 1.55, 1.45 * sn], [1.53 * c, 1.1, 1.53 * sn], [1.58 * c, 0.66, 1.58 * sn]],
                      0.018, 5, WATER, smooth=1)
-    add.column([0, 1.7, 0], 0.9, 0.16, P["stone"], k_(10))                      # the shaft,
+    add.frustum([0, 1.6, 0], [0, 2.55, 0], 0.16, 0.136, k_(10), P["stone"])   # the shaft, from the bowl's floor,
     lathe([[0.16, 0], [0.3, 0.04], [0.6, 0.14], [0.68, 0.24], [0.62, 0.24], [0.45, 0.16], [0.16, 0.16]],
           [0, 2.55, 0], k_(16), P["stone"])                                    # the small bowl,
-    add.cylinder([0, 2.7, 0], [0, 2.77, 0], 0.61, k_(16), WATER)
+    lathe([[0.442, 0.16], [0.45, 0.16], [0.62, 0.24], [0.442, 0.24]], [0, 2.55, 0], k_(16), WATER)
     for i in range(10):                                                        # brimming over into the wide one
         a = 2 * add.pi * i / 10
         c, sn = add.cos(a), add.sin(a)
-        add.polyline([[0.69 * c, 2.78, 0.69 * sn], [0.76 * c, 2.6, 0.76 * sn], [0.85 * c, 2.1, 0.85 * sn], [0.9 * c, 1.69, 0.9 * sn]],
+        add.polyline([[0.69 * c, 2.78, 0.69 * sn], [0.76 * c, 2.6, 0.76 * sn], [0.85 * c, 2.1, 0.85 * sn], [0.9 * c, 1.72, 0.9 * sn]],
                      0.015, 5, WATER, smooth=1)
-    oct_(0.3, 2.7, 2.95, P["stone_dark"])                                      # and on a little plinth, the knight
-    M = add.color(add.stretch(knight("sword", True, False), [0.62 * LIFE] * 3, (0, 0, 0)), P["stone"])
-    add.mesh(add.move(M, [0, 2.95, 0]))
+    PT = 2.71 + 0.26                                                           # the plinth, moulded, and on it Neptune
+    lathe([[0.0, 0], [0.44, 0], [0.44, 0.05], [0.4, 0.08], [0.4, 0.2], [0.44, 0.23], [0.44, 0.26], [0.0, 0.26]], [0, 2.71, 0], k_(16), P["stone_dark"])
+    add.mesh(add.move(neptune(), [-0.03, PT, -0.02]))
+    D = dolphin()                                                              # and his dolphin, spouting
+    add.mesh(add.move(D, [0.2, PT, 0.02]))
+    add.polyline([[0.33, PT + 0.015, 0.02], [0.44, PT + 0.03, 0.02], [0.52, 2.88, 0.02], [0.56, 2.79, 0.02]], 0.018, 5, WATER, smooth=1)
     add.mesh(add.move(add.pop(), at))
+
+
+def neptune():
+    """Neptune in stone, 0.62 of life-size, his feet at the origin, facing +z: a short tunic, bare legs and feet, a
+    beard and long hair, a crown of points; his right hand holding his trident upright, its butt on the ground by his
+    right foot, his left arm down at his side."""
+    arms = (([-0.32, 1.22, 0.14], [0, 1, 0], [-1, -0.3, -0.2]), ([0.235, 0.86, 0.03], [0.1, -1, 0.2], [1, -0.2, -0.3]))
+    add.push()
+    add.mesh(person("stand", P["linen"], hose=P["skin"], beard=P["linen"], hair=P["linen"], long_hair=True,
+                    head=("circlet", P["gold"]), shoes=(SHOE, (P["skin"], P["skin"])), arms=arms))
+    for i in range(7):                                                         # the points of his crown
+        a = add.pi / 2 + (i - 3) * 0.42
+        c, sn = add.cos(a), add.sin(a)
+        add.cone([0.086 * c, 1.72, -0.008 + 0.086 * sn], [0.1 * c, 1.83, -0.008 + 0.1 * sn], 0.014, 4, P["gold"])
+    add.cylinder([-0.32, 0.0, 0.14], [-0.32, 1.97, 0.14], 0.018, 8, P["wood"])   # the trident: its shaft,
+    add.cuboid([-0.32, 1.99, 0.14], [0.28, 0.04, 0.04], P["gold"])              # the crossbar and three prongs
+    for dx, top in ((-0.12, 2.2), (0.0, 2.28), (0.12, 2.2)):
+        add.cylinder([-0.32 + dx, 2.01, 0.14], [-0.32 + dx, top, 0.14], 0.013, 6, P["gold"])
+        add.cone([-0.32 + dx, top, 0.14], [-0.32 + dx, top + 0.09, 0.14], 0.022, 4, P["gold"])
+    M = add.pop()
+    return add.color(add.stretch(M, [0.62 * LIFE] * 3, (0, 0, 0)), P["stone"])
+
+
+def dolphin():
+    """A dolphin in stone, standing on its head at the origin, its snout out along +x: a body curving up and back to
+    its tail, the flukes spread, a fin on its back and two at its sides."""
+    spine = [(0.12, 0.014), (0.07, 0.055), (0.09, 0.13), (0.14, 0.2), (0.16, 0.28), (0.13, 0.36), (0.07, 0.42), (0.01, 0.45)]
+    radii = [0.013, 0.05, 0.075, 0.08, 0.072, 0.055, 0.035, 0.022]
+    add.push()
+    rings = []
+    for k, ((sx, sy), rr) in enumerate(zip(spine, radii)):
+        a_, b_ = spine[max(0, k - 1)], spine[min(len(spine) - 1, k + 1)]
+        tx_, ty_ = b_[0] - a_[0], b_[1] - a_[1]
+        tl = add.sqrt(tx_ * tx_ + ty_ * ty_)
+        nx, ny = -ty_ / tl, tx_ / tl                                           # (square to the spine, in its plane)
+        rings.append([[sx + nx * rr * add.cos(2 * add.pi * j / 10), sy + ny * rr * add.cos(2 * add.pi * j / 10),
+                       rr * add.sin(2 * add.pi * j / 10)] for j in range(10)])
+    add.mesh(add.fix_normals(add.make(add.loft, rings, P["stone"])))
+    add.mesh(add.make(add.prism, [[-0.01, 0.0], [0.06, 0.13], [0.11, 0.11], [0.06, 0.0], [0.11, -0.11], [0.06, -0.13]], 0.012,
+                      P["stone"], (0, 0.462, 0), (0, 1, 0)))                   # the flukes, spread,
+    for sz in (-1, 1):                                                         # the fins at its sides
+        add.mesh(add.make(add.prism, [[0.1, 0.12], [0.16, 0.1], [0.13, 0.05]], 0.01, P["stone"], (0, 0, sz * 0.073), (0, 0, 1)))
+    add.mesh(add.make(add.prism, [[0.22, 0.24], [0.3, 0.3], [0.22, 0.32]], 0.012, P["stone"], (0, 0, 0), (0, 0, 1)))   # and on its back
+    return add.pop()
 
 
 def tomb(x, z, seed=0):
@@ -7525,14 +8612,32 @@ def tomb(x, z, seed=0):
     add.cuboid([x + 1.4, G + 0.73, z], [2.34, 0.1, 1.04], P["stone_dark"])                         # the lid,
     add.cuboid([x + 1.55, G + 0.79, z], [1.5, 0.02, 0.1], P["stone"])                               # the cross on it
     add.cuboid([x + 1.1, G + 0.79, z], [0.1, 0.02, 0.55], P["stone"])
-    M = add.stretch(add.make(crown, [0, 0, 0], 0.2), [0.6, 0.6, 0.6], (0, 0, 0))                   # the crown
-    add.mesh(add.move(M, [x + 0.55, G + 0.78, z]))
+    M = add.stretch(add.make(crown, [0, 0, 0], 0.2, seed % 4), [0.6, 0.6, 0.6], (0, 0, 0))         # the crown: each his own
+    add.mesh(add.move(M, [x + 0.55, G + 0.78 + 0.012, z]))
     add.prism([[yy, s] for s, yy in arch_profile(G + 0.12, 0.8, 1.3)], 0.16, pick("stone", seed, 5), (x + 0.1, 0, z), (1, 0, 0))
     add.cuboid([x + 0.185, G + 0.82, z], [0.02, 0.62, 0.07], P["stone_dark"])                      # the headstone: a cross
     add.cuboid([x + 0.185, G + 0.97, z], [0.02, 0.07, 0.36], P["stone_dark"])
-    add.cuboid([x + 0.185, G + 1.2, z], [0.02, 0.05, 0.26], P["gold"])                             # and a crown over it
-    for dz in (-0.1, 0.0, 0.1):
-        add.cone([x + 0.19, G + 1.22, z + dz], [x + 0.19, G + 1.3 + (0.03 if dz == 0 else 0.0), z + dz], 0.025, 6, P["gold"])
+    metal = P["steel"] if seed % 4 == 3 else P["gold"]                                             # and his crown over it
+    add.cuboid([x + 0.185, G + 1.2, z], [0.02, 0.05, 0.26], metal)
+    if seed % 4 == 0:
+        for dz in (-0.1, 0.0, 0.1):
+            add.cone([x + 0.19, G + 1.22, z + dz], [x + 0.19, G + 1.3 + (0.03 if dz == 0 else 0.0), z + dz], 0.025, 6, metal)
+    elif seed % 4 == 1:                                                                            # (of lilies,
+        for dz in (-0.1, -0.05, 0.0, 0.05, 0.1):
+            add.cone([x + 0.19, G + 1.22, z + dz], [x + 0.19, G + 1.29, z + dz], 0.014, 6, metal)
+            for sd in (-1, 1):
+                add.sphere([x + 0.19, G + 1.245, z + dz + sd * 0.014], 0.008, 3, metal)
+    elif seed % 4 == 2:                                                                            # of points and
+        for dz in (-0.1, -0.033, 0.033, 0.1):                                                      # pearls,
+            add.cone([x + 0.19, G + 1.22, z + dz], [x + 0.19, G + 1.32, z + dz], 0.02, 4, metal)
+            add.sphere([x + 0.19, G + 1.33, z + dz], 0.012, 3, P["white"])
+        for dz in (-0.066, 0.0, 0.066):
+            add.sphere([x + 0.196, G + 1.2, z + dz], 0.01, 3, P["dragon"])
+    else:                                                                                          # an arched one)
+        add.mesh(add.move(add.make(add.arch, [0, G + 1.22, z - 0.12], [0, G + 1.22, z + 0.12], 0.1, 0.012, metal, 10, 5,
+                                   (0, 1, 0)), [x + 0.19, 0, 0]))
+        add.cuboid([x + 0.19, G + 1.365, z], [0.02, 0.05, 0.01], metal)
+        add.cuboid([x + 0.19, G + 1.37, z], [0.02, 0.01, 0.035], metal)
     colours = (P["red"], P["white"], P["cheese"], P["blue"], P["rose"])
     for k in range(5):                                                                             # flowers at the feet
         fz = z - 0.4 + 0.2 * k + 0.05 * (hash2(seed, k, 3) - 0.5)
@@ -7726,8 +8831,9 @@ def smithy(at, facing=0.0):
     roof = slab([[-3.4, 3.4, 2.9], [3.4, 3.4, 2.9], [3.4, 4.4, -2.8], [-3.4, 4.4, -2.8]], 0.2, P["slate"])   # the roof
     add.mesh(add.difference(roof, add.make(add.cuboid, [(stack[0] + stack[1]) / 2, 4.4, (stack[2] + stack[3]) / 2],
                                            [stack[1] - stack[0], 3.0, stack[3] - stack[2]])))
-    tile_face([-3.4, 3.6, 2.9], [3.4, 3.6, 2.9], [3.4, 4.6, -2.8], [-3.4, 4.6, -2.8], size=(0.45, 0.4), colours="slate",
-              blocked=lambda x, z: stack[0] - 0.2 < x < stack[1] + 0.2 and stack[2] - 0.2 < z < stack[3] + 0.2)
+    rise = 0.2 / add.cos(add.atan2(1.0, 5.7))                                                   # (on the roof's top face)
+    tile_face([-3.4, 3.4 + rise, 2.9], [3.4, 3.4 + rise, 2.9], [3.4, 4.4 + rise, -2.8], [-3.4, 4.4 + rise, -2.8],
+              size=(0.45, 0.4), colours="slate", blocked=lambda x, z: stack[0] - 0.2 < x < stack[1] + 0.2 and stack[2] - 0.2 < z < stack[3] + 0.2)
     for i in range(4):
         add.beam([-3.2 + i * 2.1, 3.3, 2.6], [-3.2 + i * 2.1, 4.3, -2.6], 0.15, 0.15, P["wood_dark"])
     brick_box([-1.6, 0.5, -1.4], [2.2, 1.0, 1.8])                                                # the hearth,
@@ -7807,14 +8913,14 @@ def cottage(at, facing=0.0, w=7.0, d=5.0, h=3.6):
     a hearth with a pot on the fire under a brick chimney that goes up
     through the thatch, a table and stools, and the woman of the house
     sitting by the fire.  Built with its door towards +z."""
-    T = 0.3
-    add.push()
+    T, FL = 0.3, 0.2                                                                         # the walls; the floor of boards,
+    add.push()                                                                               # on joists on the house's base
     door = (0.0, 1.3, 2.7)
     wins = [(sx, 1.0, 1.0) for sx in (-w / 4, w / 4)]                                        # x, width, height
     SILL = h * 0.55 - 0.5
     shell = add.make(add.cuboid, [0, h / 2, 0], [w, h, d], P["white"])
     cuts = [add.make(add.cuboid, [0, (0.06 + h + 1) / 2, 0], [w - 2 * T, h + 1 - 0.06, d - 2 * T], P["white"]),
-            add.make(add.cuboid, [door[0], (0.06 + door[2]) / 2, d / 2], [door[1], door[2] - 0.06, 2 * T + 0.2], P["wood_dark"])]
+            add.make(add.cuboid, [door[0], (FL + door[2]) / 2, d / 2], [door[1], door[2] - FL, 2 * T + 0.2], P["wood_dark"])]
     cuts += [add.make(add.cuboid, [x, SILL + hh / 2, d / 2], [ww, hh, 2 * T + 0.2], P["white"]) for x, ww, hh in wins]
     add.mesh(add.difference(shell, *cuts))
     for x in (-w / 2, w / 2):
@@ -7849,7 +8955,7 @@ def cottage(at, facing=0.0, w=7.0, d=5.0, h=3.6):
         for y in (SILL - 0.05, SILL + hh + 0.05):
             add.cuboid([x, y, d / 2 + 0.03], [ww, 0.1, 0.08], P["wood_dark"])
     add.push()                                                                               # the door, open into the room
-    add.cuboid([door[1] / 2, (0.06 + door[2]) / 2, -0.04], [door[1] - 0.04, door[2] - 0.08, 0.08], P["wood_dark"])
+    add.cuboid([door[1] / 2, (FL + door[2]) / 2, -0.04], [door[1] - 0.04, door[2] - FL - 0.04, 0.08], P["wood_dark"])
     add.sphere([door[1] - 0.2, 1.0, 0.03], 0.06, 4, P["gold"])
     add.mesh(add.move(add.rotateY(add.pop(), 1.25), [door[0] - door[1] / 2, 0, d / 2 - T]))
     cx, cz = w / 4, -d / 2 + T + 0.3                                                           # the chimney, from the hearth up
@@ -7867,7 +8973,10 @@ def cottage(at, facing=0.0, w=7.0, d=5.0, h=3.6):
     add.cylinder([-X, h + RH + 0.4, 0], [X, h + RH + 0.4, 0], 0.26, 10, shade_of("straw", 0))    # and its ridge, rolled
     brick_box([cx, (0.06 + h + 3.2) / 2, cz], [0.8, h + 3.2 - 0.06, 0.6], flue=(0.4, 0.3, 0.8))  # through the thatch and well
     chimney_cap([cx, h + 3.26, cz], 0.95, 0.75, 0.12, (0.4, 0.3))                              # over its ridge: thatch burns
-    plank_floor(-w / 2 + T, w / 2 - T, -d / 2 + T, d / 2 - T, 0.1, along="x", holes=[(cx - 0.65, cx + 0.65, -d / 2 + T, cz + 1.05)])
+    hearth = [(cx - 0.4, cx + 0.4, -d / 2 + T, cz + 0.3), (cx - 0.6, cx + 0.6, cz + 0.3, cz + 1.0)]   # the floor, sawn off
+    clay_bed(-w / 2 + T, w / 2 - T, -d / 2 + T, d / 2 - T, 0.06, hearth)                          # (on a bed of clay)
+    joists = floor_joists(-w / 2 + T, w / 2 - T, -d / 2 + T, d / 2 - T, FL - 0.04, size=(0.12, FL - 0.12), holes=hearth)   # at the
+    plank_floor(-w / 2 + T, w / 2 - T, -d / 2 + T, d / 2 - T, FL, along="x", holes=hearth, nails=joists)   # chimney and the hearth
     brick_box([cx, (0.06 + 0.4) / 2, cz + 0.65], [1.2, 0.34, 0.7])                              # the hearth, a fire, a pot on it
     for i, a in enumerate((0.3, -0.5, 1.2)):
         add.cylinder([cx - 0.22 * add.cos(a), 0.45, cz + 0.65 - 0.18 * add.sin(a)], [cx + 0.22 * add.cos(a), 0.45, cz + 0.65 + 0.18 * add.sin(a)],
@@ -7877,15 +8986,15 @@ def cottage(at, facing=0.0, w=7.0, d=5.0, h=3.6):
     lathe([[0.0, 0], [0.12, 0], [0.18, 0.06], [0.2, 0.18], [0.17, 0.26], [0.19, 0.28], [0.16, 0.28], [0.0, 0.22]],
           [cx + 0.42, 0.4, cz + 0.72], k_(10), P["iron"], 0.9)
     for i, x in enumerate((-w / 2 + T + 0.65, -w / 2 + T + 1.9)):                             # two beds against the back wall
-        bed([x, 0.1, -d / 2 + T + 1.13], 0.0, sleeper=False, blanket=(P["blue"], P["red"])[i])
-    table([cx - 0.2, 0.1, 1.05], 1.2, 0.7, 0.78, P["wood"])                                   # the table and stools
-    bread([cx - 0.1, 0.88, 1.05], 1)
-    jug([cx - 0.55, 0.88, 1.1], P["brick"], 0.45)
+        bed([x, FL, -d / 2 + T + 1.13], 0.0, sleeper=False, blanket=(P["blue"], P["red"])[i])
+    table([cx - 0.2, FL, 1.05], 1.2, 0.7, 0.78, P["wood"])                                    # the table and stools
+    bread([cx - 0.1, FL + 0.78, 1.05], 1)
+    jug([cx - 0.55, FL + 0.78, 1.1], P["brick"], 0.45)
     for dx in (-0.45, 0.35):
-        stool([cx - 0.2 + dx, 0.1, 1.72], 0.44)
-    stool([cx - 1.2, 0.1, cz + 1.35], 0.44)                                                    # and her stool by the fire
+        stool([cx - 0.2 + dx, FL, 1.72], 0.44)
+    stool([cx - 1.2, FL, cz + 1.35], 0.44)                                                     # and her stool by the fire
     wife = person("sit", gown=P["blue"], female=True, head=("veil", P["white"]), hair=P["trunk"], seat=0.54, reach=0.42)
-    figure([cx - 1.2, 0.1 + 0.44, cz + 1.35], 2.1, wife)
+    figure([cx - 1.2, FL + 0.44, cz + 1.35], 2.1, wife)
     add.mesh(add.move(add.rotateY(add.pop(), facing), at))
 
 
@@ -7933,7 +9042,9 @@ def log_house(at, facing=0.0, W=6.6, D=5.0, loft=False, thatch=False, seed=0, fo
     under = lambda z: H + (D / 2 + 0.3 - abs(z)) * PITCH                       # the roof's underside over |z|
     RU = under(0)
     add.push()
-    add.cuboid([0, FT / 2, 0], [W + 0.7, FT, D + 0.7], P["stone_dark"])                       # the footing
+    footing = add.make(add.cuboid, [0, FT / 2, 0], [W + 0.7, FT, D + 0.7], P["stone_dark"])    # the footing, hollowed out
+    add.mesh(add.difference(footing, add.make(add.cuboid, [0, FL - 0.2 + 0.5, 0], [W - 2 * T, 1.0, D - 2 * T], P["earth_dark"])))
+                                                                                               # for the joists of the floor
     door = (-W / 2 + 1.35, 1.0, 2.0)                                                            # x, width, height
     front, back_w = [(W / 2 - 1.35, 0.8, 0.8)], [(0.4, 0.8, 0.8)]                               # windows: x, width, height
     SILL = FL + 1.0
@@ -8026,7 +9137,9 @@ def log_house(at, facing=0.0, W=6.6, D=5.0, loft=False, thatch=False, seed=0, fo
     if thatch:
         add.cylinder([-W / 2 - 0.6, RU + 0.45, 0], [W / 2 + 0.6, RU + 0.45, 0], 0.28, 10, P["straw"])   # the ridge, rolled
     else:
-        add.beam([-W / 2 - 0.6, RU + 0.2, 0], [W / 2 + 0.6, RU + 0.2, 0], 0.26, 0.16, P["wood_dark"])
+        th = add.atan(PITCH)                                                   # a ridge of two boards, at the roof's pitch
+        ridge_cap([-W / 2 - 0.6, RU + 0.1 / add.cos(th), 0], [W / 2 + 0.6, RU + 0.1 / add.cos(th), 0],
+                  [0, add.cos(th), add.sin(th)], [0, add.cos(th), -add.sin(th)], P["wood_dark"])
     # the door, open into the room on its iron straps, and glass in the windows, shutters open outside
     add.push()
     add.cuboid([door[1] / 2, FL + door[2] / 2, -0.03], [door[1] - 0.04, door[2] - 0.03, 0.06], shade_of("wood", 2))
@@ -8047,7 +9160,8 @@ def log_house(at, facing=0.0, W=6.6, D=5.0, loft=False, thatch=False, seed=0, fo
     for sz in (-1, 1):
         add.cuboid([W / 2 + 0.275, SILL + end_w[2] / 2, end_w[0] + sz * (end_w[1] / 2 + 0.1 + end_w[1] / 4 + 0.02)], [0.04, end_w[2] + 0.1, end_w[1] / 2], shutter)
     # inside: the floor, beds against the back wall, the table and benches, a shelf, a chest
-    plank_floor(-W / 2 + T, W / 2 - T, -D / 2 + T, D / 2 - T, FL, along="x")
+    joists = floor_joists(-W / 2 + T, W / 2 - T, -D / 2 + T, D / 2 - T, FL - 0.04, size=(0.12, 0.16))   # on the footing
+    plank_floor(-W / 2 + T, W / 2 - T, -D / 2 + T, D / 2 - T, FL, along="x", nails=joists)
     n_beds = 2 if loft else 3
     for i in range(n_beds):
         bed([-W / 2 + T + 0.65 + i * 1.25, FL, -D / 2 + T + 1.13], 0.0, sleeper=("sleep" in folk and i == 0),
@@ -8070,14 +9184,22 @@ def log_house(at, facing=0.0, W=6.6, D=5.0, loft=False, thatch=False, seed=0, fo
         chest([W / 2 - T - 0.5, FL, -D / 2 + T + 0.45], 0.0, s=0.6)
     if loft:                                                                   # the loft: joists, a floor with a hatch, a ladder
         hatch = (0.5, 1.5, -D / 2 + T + 0.1, -D / 2 + T + 1.0)                 # (x0, x1, z0, z1)
+        HAY = (W / 2 - T - 0.05, 0.55 - (D - 2 * T - 1.2) / 2, 0.55 + (D - 2 * T - 1.2) / 2)    # the hay over the floor,
+        HEAPS = ((-W / 2 + T + 0.78, -0.95, 0.65), (-0.6, -D / 2 + T + 0.75, 0.85), (W / 2 - T - 0.9, -0.35, 0.6))   # heaps
+        hay_on = lambda x, z: ((abs(x) < HAY[0] + 0.03 and HAY[1] - 0.03 < z < HAY[2] + 0.03) or        # (no nails to be
+                               any(((x - hx) / (1.15 * r + 0.03)) ** 2 + ((z - hz) / (0.85 * r + 0.03)) ** 2 < 1   # seen under
+                                   for hx, hz, r in HEAPS))                                             # it)
+        loft_joists = []
         for i in range(int((W - 2 * T) / 0.9) + 1):
             x = -W / 2 + T + 0.3 + i * 0.9
             if hatch[0] < x < hatch[1]:                                        # the joist under the hatch stops at a trimmer
                 add.cuboid([x, LF - 0.13, (hatch[3] + 0.12 + D / 2 - T) / 2], [0.12, 0.18, D / 2 - T - hatch[3] - 0.12], P["wood_dark"])
-                add.cuboid([x, LF - 0.13, hatch[3] + 0.06], [1.92, 0.18, 0.12], P["wood_dark"])   # across to the joists either side
+                add.cuboid([x, LF - 0.13, hatch[3] + 0.06], [1.68, 0.18, 0.12], P["wood_dark"])   # framed into the joists
+                loft_joists.append((x, hatch[3] + 0.12, D / 2 - T))                                 # either side
             elif x < W / 2 - T - 0.2:
                 add.cuboid([x, LF - 0.13, 0], [0.12, 0.18, D - 2 * T], P["wood_dark"])
-        plank_floor(-W / 2 + T, W / 2 - T, -D / 2 + T, D / 2 - T, LF, along="x", holes=[hatch])
+                loft_joists.append(x)
+        plank_floor(-W / 2 + T, W / 2 - T, -D / 2 + T, D / 2 - T, LF, along="x", holes=[hatch], nails=loft_joists, covered=hay_on)
         # the ladder: its foot on the floor by the back wall, leaning forward through the hatch against its front edge
         # (the trimmer) and on up to hold on to when stepping off onto the loft floor
         lx, uz, uy = (hatch[0] + hatch[1]) / 2, add.sin(0.26), add.cos(0.26)     # (15 degrees off the upright)
@@ -8090,8 +9212,7 @@ def log_house(at, facing=0.0, W=6.6, D=5.0, loft=False, thatch=False, seed=0, fo
             t = (i + 0.5) / 12.0
             y, z = foot[1] + t * (top[1] - foot[1]), foot[0] + t * (top[0] - foot[0])
             add.cylinder([lx - 0.22, y, z], [lx + 0.22, y, z], 0.025, 6, P["wood"])
-        add.cuboid([0, LF + 0.1, 0.55], [W - 2 * T - 0.1, 0.2, D - 2 * T - 1.2], P["straw"])    # hay over the floor,
-        HEAPS = ((-W / 2 + T + 0.78, -0.95, 0.65), (-0.6, -D / 2 + T + 0.75, 0.85), (W / 2 - T - 0.9, -0.35, 0.6))
+        add.cuboid([0, LF + 0.1, (HAY[1] + HAY[2]) / 2], [2 * HAY[0], 0.2, HAY[2] - HAY[1]], P["straw"])    # hay over the floor,
         for hx, hz, r in HEAPS:                                                                   # heaped up, clear of the walls
             assert abs(hx) + 1.15 * r < W / 2 - T and abs(hz) + 0.85 * r < D / 2 - T
             add.mesh(add.move(add.stretch(add.make(add.hemisphere, [0, 0, 0], r, 8, P["straw"]), [1.15, 0.8, 0.85], (0, 0, 0)), [hx, LF, hz]))
@@ -8472,50 +9593,102 @@ def fence(a, b, h=1.1, rails=2, color=None):
 
 
 def dovecote(at):
-    """A round dovecote: a whitewashed drum on a stone plinth with a little
-    door, flight holes with landing ledges, a slate cone with a gold finial,
-    pigeons perched and one on the roof."""
-    add.cylinder(at, [at[0], at[1] + 0.6, at[2]], 0.82, k_(12), P["stone_dark"])
-    add.cylinder([at[0], at[1] + 0.6, at[2]], [at[0], at[1] + 3.6, at[2]], 0.7, k_(12), P["white"])
-    add.torus([at[0], at[1] + 3.55, at[2]], 0.72, 0.05, k_(12), 5, P["wood_dark"])
-    add.cone([at[0], at[1] + 3.6, at[2]], [at[0], at[1] + 4.8, at[2]], 0.95, k_(12), P["slate"])
-    add.sphere([at[0], at[1] + 4.85, at[2]], 0.08, 4, P["gold"])
-    add.cuboid([at[0], at[1] + 1.05, at[2] + 0.69], [0.5, 0.9, 0.06], P["wood_dark"])                      # the door
-    add.torus([at[0] + 0.15, at[1] + 1.0, at[2] + 0.73], 0.035, 0.008, 8, 4, P["iron"], axis=(0, 0, 1))
-    bird([at[0] + 0.1, at[1] + 4.78, at[2] + 0.12], 2.0, 0.35, P["white"], False)
-    for i in range(6):
-        a = 2 * add.pi * i / 6
-        add.cuboid([at[0] + 0.66 * add.cos(a), at[1] + 2.6 + (i % 2) * 0.6, at[2] + 0.66 * add.sin(a)], [0.2, 0.28, 0.2], P["black"])
-        add.cuboid([at[0] + 0.72 * add.cos(a), at[1] + 2.42 + (i % 2) * 0.6, at[2] + 0.72 * add.sin(a)], [0.34, 0.05, 0.34], P["wood"])
-    for i in range(4):
-        a = 1.0 + i * 1.7
-        bird([at[0] + 0.85 * add.cos(a), at[1] + 2.5 + (i % 2) * 0.6, at[2] + 0.85 * add.sin(a)], a + add.pi, 0.35, P["white"], False)
-
-
-def bird(at, facing=0.0, size=1.0, color=None, flying=True):
-    """A bird: body, head with eyes and a beak, a tail, two wings (spread
-    when flying, folded when perched)."""
-    color = color or P["white"]
+    """A round dovecote: a drum of whitewashed plaster on a plinth of stone
+    blocks, a stone string course over the plinth (where the doves stand),
+    another round the middle and a cornice at the eaves; eighteen flight
+    holes, arched, in three rows, each with a landing board under it; a
+    door of boards in an arched recess, with iron straps and a ring; a cone
+    roof of slates, a lead cap, a gold ball and a weathervane on it.  Doves
+    on the boards and the string course, one on the ball, two flying
+    round it."""
     add.push()
-    add.mesh(add.stretch(add.make(add.sphere, [0, 0, 0], 0.25, 8, color), [2.0, 0.7, 0.8], (0, 0, 0)))
-    add.sphere([0.5, 0.12, 0], 0.14, 8, color)
-    add.cone([0.6, 0.1, 0], [0.82, 0.08, 0], 0.05, 6, P["orange"])
-    for s in (-1, 1):
-        add.sphere([0.56, 0.18, s * 0.09], 0.03, 4, P["black"])
-    add.mesh(add.make(add.prism, [[-0.4, 0.0], [-0.95, 0.16], [-0.95, -0.16]], 0.05, P["black"], (0, 0, 0), (0, 1, 0)))   # tail, on the centre line
-    for s in (-1, 1):
-        if flying:
-            wing = add.make(add.prism, [[0.2, 0], [-0.35, s * 1.4], [0.35, s * 1.4]], 0.04, color, (0, 0.05, 0), (0, 1, 0))
-            add.mesh(add.rotateX(wing, -s * 0.25))
-        else:
-            add.mesh(add.stretch(add.make(add.sphere, [0, 0, 0], 0.16, 6, P["stone_dark"]), [1.6, 0.5, 0.6], (0, 0, 0)))
-    M = add.pop()
-    add.mesh(add.move(add.rotateY(add.stretch(M, [size, size, size], (0, 0, 0)), facing), at))
+    add.cylinder([0, 0, 0], [0, 0.6, 0], 0.62, k_(12), P["mortar"])                    # the plinth: a core, two courses
+    for j in range(2):                                                                   # of blocks round it
+        for i in range(10):
+            a = 2 * add.pi * (i + 0.5 * j) / 10
+            ring_block(0, 0, 0.625, 0.86, a + 0.01, a + 2 * add.pi / 10 - 0.01, j * 0.3, j * 0.3 + 0.29, pick("stone_dark", i, j + 3), 3)
+    for i in range(12):                                                                  # the string courses
+        a = 2 * add.pi * i / 12
+        ring_block(0, 0, 0.6, 0.92, a + 0.006, a + 2 * add.pi / 12 - 0.006, 0.6, 0.7, shade_of("stone", i, 3), 3)
+        ring_block(0, 0, 0.705, 0.77, a + 0.006, a + 2 * add.pi / 12 - 0.006, 2.1, 2.18, shade_of("stone", i + 1, 3), 3)
+        ring_block(0, 0, 0.6, 0.86, a + 0.006, a + 2 * add.pi / 12 - 0.006, 3.5, 3.6, shade_of("stone", i + 2, 3), 3)
+    holes = [(2 * add.pi * (i + 0.5 * (row % 2)) / 6 + 0.25, (1.1, 1.6, 2.5, 3.0)[row]) for row in range(4) for i in range(6)]
+    holes = [(a, y) for a, y in holes if abs((a - add.pi / 2 + add.pi) % (2 * add.pi) - add.pi) > 0.5 or y > 2.0]   # (not over the door)
+    cutters = [radial_cutter(0, 0, a, y, 0.14, 0.2, 0.6, 0.8) for a, y in holes]
+    cutters.append(radial_cutter(0, 0, add.pi / 2, 0.7, 0.52, 1.0, 0.56, 0.8))        # (the door's recess)
+    drum = add.make(add.cylinder, [0, 0.7, 0], [0, 3.5, 0], 0.7, 32, P["white"])
+    add.mesh(add.color(add.difference(drum, *cutters), P["white"]))
+    for a, ys in holes:                                                                  # the holes: dark within, a
+        plate = add.make(add.prism, [[yy, ss] for ss, yy in arch_profile(ys, 0.14, 0.2)], 0.006, P["black"], (0.603, 0, 0), (1, 0, 0))
+        add.mesh(add.rotateY(plate, -a))                                                 # board under each
+        board = add.make(add.cuboid, [0.76, ys - 0.015, 0], [0.14, 0.03, 0.2], P["wood"])
+        add.mesh(add.rotateY(board, -a))
+    door = arch_profile(0.7, 0.5, 0.98)                                                  # the door: three boards,
+    for b in range(3):
+        piece = clip_half(clip_half(door, 1, 0, -0.25 + 0.5 * (b + 1) / 3), -1, 0, -(-0.25 + 0.5 * b / 3))
+        leaf = add.make(add.prism, [[yy, ss] for ss, yy in piece], 0.04, shade_of("wood", b, 3), (0.58, 0, 0), (1, 0, 0))
+        add.mesh(add.rotateY(leaf, -add.pi / 2))
+    for yy in (0.95, 1.35):                                                              # two straps, a ring
+        add.cuboid([0, yy, 0.605], [0.44, 0.05, 0.01], P["iron"])
+    add.torus([0.14, 1.15, 0.62], 0.035, 0.008, 8, 4, P["iron"], axis=(0, 0, 1))
+    cone_roof([0, 0, 0], 3.6, 0.98, 1.3, 32, colours="slate", size=(0.22, 0.2))         # the roof
+    add.sphere([0, 5.02, 0], 0.07, 6, P["gold"])                                        # a ball on the lead cap, a rod on
+    add.cylinder([0, 5.09, 0], [0, 5.32, 0], 0.02, 6, P["iron"])                        # it and a vane on the rod
+    add.mesh(add.make(add.prism, [[0.02, 5.15], [0.32, 5.17], [0.32, 5.25], [0.02, 5.27]], 0.012, P["iron"], (0, 0, 0), (0, 0, 1)))
+    for k_i, (a, ys) in enumerate(holes[1::5]):                                          # doves on the boards,
+        c, sn = add.cos(a), add.sin(a)
+        dove([0.78 * c, ys, 0.78 * sn], -a + add.pi / 2 * (1 if k_i % 2 else -1), "perch", k_i)
+    for k_i, a in enumerate((0.6, 1.4, 3.6, 4.6)):                                       # on the string course,
+        c, sn = add.cos(a), add.sin(a)
+        dove([0.81 * c, 0.7, 0.81 * sn], -a + (add.pi / 2 if k_i % 2 else -add.pi / 2), "perch" if k_i != 2 else "peck", k_i + 3)
+    for k_i, (a, y) in enumerate(((4.0, 3.3), (5.0, 4.1))):                              # and two on the wing, circling
+        dove([1.9 * add.cos(a), y, 1.9 * add.sin(a)], -a - add.pi / 2, "fly", k_i + 10)
+    add.mesh(add.move(add.pop(), at))
+
+
+def dove(at, facing=0.0, pose="perch", seed=0):
+    """A dove, life-size, facing the way ``facing`` turns +x: white or grey
+    (by ``seed``), a round body, the breast full, a small head on a short
+    neck with black eyes and a pale beak, a fan of a tail.  "perch" and
+    "peck" (its head down) stand it on its pink feet at ``at``, its wings
+    folded along its back; "fly" gives it no feet and its wings spread,
+    ``at`` then its middle."""
+    white = seed % 3 != 1
+    body, wing, tip = (P["white"], P["white"], P["mail"]) if white else (P["mail"], P["slate"], P["black"])
+    add.push()
+    add.mesh(add.stretch(add.make(add.sphere, [0, 0.1, 0], 1.0, 8, body), [0.12, 0.062, 0.064], (0, 0.1, 0)))    # the body,
+    add.mesh(add.stretch(add.make(add.sphere, [0.05, 0.11, 0], 1.0, 8, body), [0.07, 0.06, 0.058], (0.05, 0.11, 0)))   # breast,
+    hd = [0.125, 0.17, 0] if pose != "peck" else [0.16, 0.07, 0]
+    add.capsule([0.07, 0.13, 0], hd, 0.034, 8, body if white else P["dragon"])                        # the neck
+    add.sphere(hd, 0.037, 8, body)                                                                     # and head,
+    d = vunit([hd[0] - 0.07, hd[1] - 0.13, 0])
+    fwd = [d[0] * 0.5 + 0.5, d[1] * 0.5 - 0.1, 0] if pose == "peck" else [1, -0.15, 0]
+    fwd = vunit(fwd)
+    add.cone([hd[0] + fwd[0] * 0.032, hd[1] + fwd[1] * 0.032, 0], [hd[0] + fwd[0] * 0.07, hd[1] + fwd[1] * 0.07, 0], 0.009, 6, P["skin"])
+    for sz in (-1, 1):
+        add.sphere([hd[0] + fwd[0] * 0.014, hd[1] + 0.013, sz * 0.03], 0.007, 3, P["black"])
+    add.mesh(add.make(add.prism, [[-0.095, 0.0], [-0.23, 0.045], [-0.23, -0.045]], 0.012, tip, (0, 0.095, 0), (0, 1, 0)))   # tail
+    if pose == "fly":
+        for sz in (-1, 1):                                                                             # wings spread:
+            arm = [[0.05, 0.12, sz * 0.05], [-0.06, 0.12, sz * 0.05], [-0.08, 0.15, sz * 0.2], [0.06, 0.15, sz * 0.2]]
+            hand = [arm[3], arm[2], [-0.14, 0.19, sz * 0.34], [0.0, 0.18, sz * 0.36]]
+            add.mesh(slab(arm if sz > 0 else arm[::-1], 0.012, wing))
+            add.mesh(slab(hand if sz > 0 else hand[::-1], 0.01, tip))
+    else:
+        for sz in (-1, 1):                                                                             # folded along the
+            W_ = add.stretch(add.make(add.sphere, [0, 0, 0], 1.0, 6, wing), [0.11, 0.038, 0.018], (0, 0, 0))   # back, the tips
+            add.mesh(add.move(add.rotateZ(W_, 0.12), [-0.03, 0.125, sz * 0.052]))                          # darker
+            W_ = add.stretch(add.make(add.sphere, [0, 0, 0], 1.0, 5, tip), [0.07, 0.025, 0.014], (0, 0, 0))
+            add.mesh(add.move(add.rotateZ(W_, 0.12), [-0.12, 0.12, sz * 0.042]))
+            add.capsule([0.0, 0.0, sz * 0.022], [0.012, 0.048, sz * 0.02], 0.006, 5, P["rose"])        # the legs,
+            for tw in (-0.5, 0.0, 0.5):                                                                # the toes
+                add.capsule([0.0, 0.004, sz * 0.022], [0.028 * add.cos(tw), 0.004, sz * 0.022 + 0.028 * add.sin(tw)], 0.004, 4, P["rose"])
+    add.mesh(add.move(add.rotateY(add.pop(), facing), at))
 
 
 def gull(at, heading=0.0, bank=0.0, pitch=0.0, arm=0.15, hand=-0.35, size=1.0, tail=0.3):
-    """A gull on the wing: a white body and head, a yellow beak with a red
-    spot, black eyes, a white fan of a tail, the feet tucked under it, and
+    """A gull on the wing: a white body and head, a yellow beak, black
+    eyes, a white fan of a tail, the feet tucked under it, and
     long pointed wings -- grey above and white below, each an arm and a
     hand bent at the wrist, the hand ending in black tips.  ``arm`` lifts
     the inner wing (radians; raised on the upstroke, dropped on the
@@ -8526,8 +9699,7 @@ def gull(at, heading=0.0, bank=0.0, pitch=0.0, arm=0.15, hand=-0.35, size=1.0, t
     add.push()
     add.ellipsoid([0, 0, 0], [0.42, 0.14, 0.15], 6, white)                                  # the body,
     add.sphere([0.4, 0.08, 0], 0.1, 8, white)                                              # the head,
-    add.cone([0.48, 0.07, 0], [0.64, 0.045, 0], 0.028, 6, P["cheese"])                     # the beak and its red spot,
-    add.sphere([0.585, 0.045, 0], 0.012, 3, P["red"])
+    add.cone([0.48, 0.07, 0], [0.64, 0.045, 0], 0.028, 6, P["cheese"])                     # the beak,
     for s in (-1, 1):
         add.sphere([0.46, 0.11, s * 0.065], 0.014, 3, P["black"])                           # the eyes,
         add.cylinder([-0.22, -0.1, s * 0.04], [-0.36, -0.1, s * 0.05], 0.012, 5, P["pig"])  # the feet, tucked
@@ -8641,12 +9813,13 @@ def kitchen(at, facing=0.0):
     it and a water barrel.  Built with its door towards +z, 10 m long and
     6 m deep."""
     W, D, H, R, T = 10.0, 6.0, 3.8, 6.6, 0.45                                 # length, depth, walls, ridge, wall thickness
-    FL = 0.12                                                                  # the floor of boards inside
+    FL, BASE = 0.22, 0.08                                                      # the floor of boards inside, on joists on the
+                                                                               # house's base of stone
     add.push()
     door, windows = (-1.5, 1.4, 2.6), ((1.8, 1.0, 1.1), (3.9, 1.0, 1.1))
     end_z = D / 2 - 1.0                                                        # a window in the end, by the oven
     shell = add.make(add.cuboid, [0, H / 2, 0], [W, H, D], P["mortar"])
-    room = add.make(add.cuboid, [0, (FL - 0.04 + H + 1) / 2, 0], [W - 2 * T, H + 1 - FL + 0.04, D - 2 * T], P["white"])
+    room = add.make(add.cuboid, [0, (BASE + H + 1) / 2, 0], [W - 2 * T, H + 1 - BASE, D - 2 * T], P["white"])
     holes = [add.make(add.cuboid, [door[0], (FL - 0.04 + door[2]) / 2, D / 2], [door[1], door[2] - FL + 0.04, 2 * T + 0.2], P["stone_dark"]),
              add.make(add.cuboid, [W / 2, 1.85, end_z], [2 * T + 0.2, 1.1, 1.0], P["white"])]
     holes += [add.make(add.cuboid, [x, 1.3 + h / 2, D / 2], [w, h, 2 * T + 0.2], P["white"]) for x, w, h in windows]
@@ -8656,7 +9829,7 @@ def kitchen(at, facing=0.0):
     for sz in (-1, 1):                                                         # the walls carried up to the roof
         prof = [[H - 0.01, sz * D / 2], [H - 0.01, sz * (D / 2 - T)], [under(D / 2 - T), sz * (D / 2 - T)], [under(D / 2), sz * D / 2]]
         add.mesh(add.make(add.prism, prof, W, P["white"], (0, 0, 0), (1, 0, 0)))
-    skips = {0: [(W / 2 + door[0] - door[1] / 2, W / 2 + door[0] + door[1] / 2, 0, door[2])] +
+    skips = {0: [(W / 2 + door[0] - door[1] / 2, W / 2 + door[0] + door[1] / 2, FL - 0.04, door[2])] +
              [(W / 2 + x - w / 2, W / 2 + x + w / 2, 1.3, 1.3 + h) for x, w, h in windows],
              1: [(D / 2 - end_z - 0.5, D / 2 - end_z + 0.5, 1.3, 2.4)]}
     for face in range(4):                                                      # stone skins, fitted round the openings
@@ -8699,15 +9872,20 @@ def kitchen(at, facing=0.0):
         add.mesh(slab(quad, 0.15, P["wood_dark"]))
         lift = [[q[0], q[1] + 0.15 / add.cos(add.atan2(R - H + 0.38, D / 2 + 0.5)), q[2]] for q in quad]
         tile_face(*lift, blocked=lambda x, z: abs(x - chimney[0]) < chimney[2] / 2 + 0.2 and abs(z - chimney[1]) < chimney[3] / 2 + 0.2)
-    add.beam([-W / 2 - 0.35, R + 0.2, 0], [W / 2 + 0.35, R + 0.2, 0], 0.3, 0.16, P["spire"])      # the ridge
+    th_r = add.atan2(R - H + 0.38, D / 2 + 0.5)                                 # the ridge
+    ridge_cap([-W / 2 - 0.35, R + 0.15 / add.cos(th_r), 0], [W / 2 + 0.35, R + 0.15 / add.cos(th_r), 0], [0, add.cos(th_r), add.sin(th_r)],
+              [0, add.cos(th_r), -add.sin(th_r)], P["spire"])
     brick_box([chimney[0], (R + 1.6) / 2, chimney[1]], [chimney[2], R + 1.6, chimney[3]], flue=(0.5, 0.4, 1.0))
     chimney_cap([chimney[0], R + 1.68, chimney[1]], chimney[2] + 0.2, chimney[3] + 0.2, 0.16, (0.5, 0.4))
     for i in range(4):
         add.sphere([chimney[0] + 0.25 * add.sin(i * 1.3), R + 2.3 + 0.8 * i, chimney[1] - 0.2 * i], 0.35 + 0.12 * i, 8, SMOKE)
     cx, cz = chimney[0], chimney[1] + chimney[3] / 2 + 0.6                     # inside: the hearth at the chimney's foot,
-    plank_floor(-W / 2 + T, W / 2 - T, -D / 2 + T, D / 2 - T, FL, along="x",
-                holes=[(cx - 0.8, cx + 0.8, chimney[1] - chimney[3] / 2, cz + 0.6)])
-    brick_box([cx, (FL - 0.04 + 0.52) / 2, cz], [1.6, 0.56 - FL, 1.2])
+    hearth = [(chimney[0] - chimney[2] / 2, chimney[0] + chimney[2] / 2, chimney[1] - chimney[3] / 2, chimney[1] + chimney[3] / 2),
+              (cx - 0.8, cx + 0.8, cz - 0.6, cz + 0.6)]                        # the floor, sawn off at the chimney and the hearth
+    clay_bed(-W / 2 + T, W / 2 - T, -D / 2 + T, D / 2 - T, BASE, hearth)                          # (on a bed of clay)
+    joists = floor_joists(-W / 2 + T, W / 2 - T, -D / 2 + T, D / 2 - T, FL - 0.04, size=(0.12, FL - 0.06 - BASE), holes=hearth)
+    plank_floor(-W / 2 + T, W / 2 - T, -D / 2 + T, D / 2 - T, FL, along="x", holes=hearth, nails=joists)
+    brick_box([cx, (BASE + 0.52) / 2, cz], [1.6, 0.52 - BASE, 1.2])
     hood = [[1.95, cz - 0.65], [1.95, cz + 0.7], [2.15, cz + 0.7], [3.3, cz - 0.3], [3.3, cz - 0.65]]
     add.mesh(add.make(add.prism, hood, 1.8, P["white"], (cx, 0, 0), (1, 0, 0)))  # its hood, drawing the smoke up the flue
     add.cuboid([cx, 2.02, cz + 0.72], [1.9, 0.16, 0.1], P["wood_dark"])            # a beam along the hood's mouth
@@ -8728,7 +9906,7 @@ def kitchen(at, facing=0.0):
     cook = person("stand", gown=P["brick"], female=True, head=("veil", P["white"]), hair=P["trunk"],
                   arms=(([-0.05, 1.12, 0.33], [0.25, -0.35, 1], [-1, -0.5, -0.3]), ([0.1, 1.08, 0.3], [-0.5, -0.1, 1], [1, -0.6, -0.3])))
     figure([cx, FL, cz + 1.25], add.pi, cook)                                  # the cook, stirring it
-    add.cylinder([cx + 0.04, 1.44, cz + 0.92], [cx, PY + 0.33, cz + 0.1], 0.018, 6, P["wood"])   # her ladle
+    add.cylinder([cx + 0.04, FL + 1.32, cz + 0.92], [cx, PY + 0.33, cz + 0.1], 0.018, 6, P["wood"])   # her ladle
     tx, tz = 0.4, 1.15                                                         # the table where the servants eat
     table([tx, FL, tz], 2.0, 0.85, 0.78, P["wood"])
     for sz in (-1, 1):
@@ -8781,44 +9959,49 @@ def kitchen(at, facing=0.0):
 
 def storehouse(at, facing=0.0, W=8.5, D=4.6):
     """A storehouse against the curtain wall: a timber lean-to on posts
-    with stone footings, a plank floor, board walls at the back and ends,
-    a roof of wooden shingles on rafters, open to the yard; inside sacks
-    of grain, barrels and crates.  Built open towards +z."""
+    standing on its stone base, a floor of boards nailed to joists on the
+    base, board walls at the back and ends standing on the floor, a roof
+    of wooden shingles on rafters, open to the yard; inside sacks of
+    grain, barrels and crates.  Built open towards +z."""
     HF, HB = 3.2, 4.6                                                          # the roof's height at the front and the back
+    FS = 0.3                                                                   # the top of the floor
     add.push()
-    plank_floor(-W / 2, W / 2, -D / 2, D / 2, 0.16, thick=0.05, width=0.3, length=2.8, along="x")
-    add.cuboid([0, 0.055, 0], [W, 0.11, D], P["stone_dark"])
-    xs = [-W / 2 + 0.15, -W / 6, W / 6, W / 2 - 0.15]
-    for x in xs:
-        for z, h in ((D / 2 - 0.15, HF), (-D / 2 + 0.15, HB)):
-            add.cuboid([x, 0.1, z], [0.4, 0.2, 0.4], P["stone_dark"])
-            add.cuboid([x, h / 2, z], [0.22, h, 0.22], P["wood_dark"])
-    add.cuboid([0, HF - 0.1, D / 2 - 0.15], [W, 0.2, 0.24], P["wood_dark"])                    # the plates
-    add.cuboid([0, HB - 0.1, -D / 2 + 0.15], [W, 0.2, 0.24], P["wood_dark"])
-    for i in range(int(W / 0.3)):                                              # the back wall: boards
-        add.cuboid([-W / 2 + (i + 0.5) * W / int(W / 0.3), HB / 2, -D / 2 + 0.04], [W / int(W / 0.3) - 0.02, HB, 0.08], shade_of("wood", i % 3))
+    add.cuboid([0, 0.055, 0], [W, 0.11, D], P["stone_dark"])                   # the base
+    xs = [-W / 2 + 0.19, -W / 6, W / 6, W / 2 - 0.19]                         # the posts, clear inside the boards of the
+    posts = [(x, z, h) for x in xs for z, h in ((D / 2 - 0.15, HF), (-D / 2 + 0.19, HB))]   # walls, through the floor
+    around = [(x - 0.11, x + 0.11, z - 0.11, z + 0.11) for x, z, h in posts]
+    joists = floor_joists(-W / 2, W / 2, -D / 2, D / 2, FS - 0.05, step=2.8 / 6, size=(0.12, FS - 0.05 - 0.11), blocks=around)
+    plank_floor(-W / 2, W / 2, -D / 2, D / 2, FS, thick=0.05, width=0.3, length=2.8, along="x", holes=around, nails=joists)
+    for x, z, h in posts:
+        add.cuboid([x, (0.11 + h) / 2, z], [0.22, h - 0.11, 0.22], P["wood_dark"])
+    add.cuboid([0, HF - 0.1, D / 2 - 0.15], [W - 0.16, 0.2, 0.24], P["wood_dark"])             # the plates, between the ends
+    add.cuboid([0, HB - 0.1, -D / 2 + 0.2], [W - 0.16, 0.2, 0.24], P["wood_dark"])
+    n = int(W / 0.3)
+    for i in range(n):                                                         # the back wall: boards
+        add.cuboid([-W / 2 + 0.08 + (i + 0.5) * (W - 0.16) / n, (FS + HB) / 2, -D / 2 + 0.04], [(W - 0.16) / n - 0.02, HB - FS, 0.08],
+                   shade_of("wood", i % 3))
     for sx in (-1, 1):                                                          # the ends: boards up to the roof
         n = int(D / 0.3)
         for i in range(n):
             z = -D / 2 + (i + 0.5) * D / n
             h = HB + (HF - HB) * (z + D / 2) / D
-            add.cuboid([sx * (W / 2 - 0.04), h / 2, z], [0.08, h, D / n - 0.02], shade_of("wood", (i + 1) % 3))
-    for x in [-W / 2 + 0.1 + i * (W - 0.2) / 7 for i in range(8)]:           # the rafters
+            add.cuboid([sx * (W / 2 - 0.04), (FS + h) / 2, z], [0.08, h - FS, D / n - 0.02], shade_of("wood", (i + 1) % 3))
+    for x in [-W / 2 + 0.14 + i * (W - 0.28) / 7 for i in range(8)]:         # the rafters
         add.beam([x, HF + 0.05, D / 2 + 0.45], [x, HB + 0.05, -D / 2 - 0.05], 0.12, 0.14, P["wood_dark"])
     quad = [[-W / 2 - 0.3, HF + 0.12, D / 2 + 0.5], [W / 2 + 0.3, HF + 0.12, D / 2 + 0.5],
             [W / 2 + 0.3, HB + 0.12, -D / 2 - 0.05], [-W / 2 - 0.3, HB + 0.12, -D / 2 - 0.05]]
     add.mesh(slab(quad, 0.08, P["wood_dark"]))
-    tile_face(*[[q[0], q[1] + 0.09, q[2]] for q in quad], size=(0.3, 0.26), colours="wood")
+    tile_face(*[[q[0], q[1] + 0.08 / add.cos(add.atan2(HB - HF, D + 0.55)), q[2]] for q in quad], size=(0.3, 0.26), colours="wood")
     for i in range(6):                                                         # the stores
-        sack([-W / 2 + 0.7 + (i % 3) * 0.75, 0.16 + (0.45 if i >= 3 else 0), -D / 2 + 0.6 + (i % 2) * 0.1], 0.36)
+        sack([-W / 2 + 0.7 + (i % 3) * 0.75, FS + (0.45 if i >= 3 else 0), -D / 2 + 0.6 + (i % 2) * 0.1], 0.36)
     for x in (-0.9, 0.1, 1.1):
-        barrel([x, 0.16, -D / 2 + 0.75], 0.45, 1.2)
-    barrel([-0.4, 0.16, 0.8], 0.45, 1.2, upright=False)
-    crate([2.0, 0.16, -D / 2 + 0.7], 0.9)
-    crate([2.0, 1.06, -D / 2 + 0.7], 0.8)
-    crate([3.1, 0.16, -D / 2 + 0.75], 0.8)
-    crate([2.6, 0.16, 0.6], 0.7)
-    sack([-2.8, 0.16, 1.2], 0.4)
+        barrel([x, FS, -D / 2 + 0.75], 0.45, 1.2)
+    barrel([-0.4, FS, 0.8], 0.45, 1.2, upright=False)
+    crate([2.0, FS, -D / 2 + 0.7], 0.9)
+    crate([2.0, FS + 0.9, -D / 2 + 0.7], 0.8)
+    crate([3.1, FS, -D / 2 + 0.75], 0.8)
+    crate([2.6, FS, 0.6], 0.7)
+    sack([-2.8, FS, 1.2], 0.4)
     add.mesh(add.move(add.rotateY(add.pop(), facing), at))
 
 
@@ -8879,7 +10062,7 @@ for i, (cx, cz) in enumerate(hens):
     chicken([cx, Y, cz], add.uniform(0, 6.28), (P["white"], P["wood_light"], P["linen"])[i % 3], rooster=(i == 4))
 for (x, z), kind, h in YARD_TREES:                                                       # trees in the yard: their
     assert in_yard(x, z, CROWN[kind] * h + 0.3), (x, z)                                 # crowns clear of the walls
-    forest_tree([x, Y - 0.1, z], h, kind, int(x * 7 + z))                               # and the buildings
+    forest_tree([x, Y - 0.1, z], h, kind, int(x * 7 + z), bury=False)                   # and the buildings
 stable([10, Y, -40], 0)
 fence([2, Y, -36], [2, Y, -44])
 fence([18, Y, -36], [18, Y, -44])
@@ -8948,6 +10131,50 @@ add.cone([FX, G + 2.15, FZ], [FX, G + 2.42, FZ], 0.17, 12, P["wood"])
 flush("the field of rye (%d tufts)" % n, clean=False)
 
 
+def captain(at, facing=0.0):
+    """The master of a ship: a coat of dark blue to the knee with gold at
+    its hems, black hose and boots, a red chaperon, a black beard; his
+    right arm out, pointing the way, a rolled chart in his left hand, a
+    sword at his left side in its scabbard."""
+    arms = (([-0.22, 1.46, 0.5], [0.0, 0.25, 1], [-1, -0.2, -0.1]), ([0.2, 1.05, 0.24], [-0.6, 0.3, 0.7], [1, -0.7, -0.3]))
+    add.push()
+    add.mesh(person("stand", P["blue"], trim=P["gold"], hose=P["black"], beard=P["black"], hair=P["black"], head=("chaperon", P["red"]),
+                    arms=arms))
+    add.cylinder([0.02, 1.13, 0.36], [0.26, 1.03, 0.2], 0.035, 10, P["linen"])       # the chart, rolled
+    add.capsule([0.27, 0.9, 0.03], [0.34, 0.22, -0.17], 0.032, 8, P["black"])        # the scabbard, and the hilt over it:
+    add.beam([0.245, 0.97, 0.1], [0.3, 0.93, -0.06], 0.02, 0.02, P["gold"])            # the guard, the grip, the pommel
+    add.cylinder([0.265, 0.97, 0.05], [0.255, 1.1, 0.09], 0.016, 6, P["wood_dark"])
+    add.sphere([0.253, 1.12, 0.095], 0.025, 4, P["gold"])
+    figure(at, facing, add.pop())
+
+
+def sailor(at, facing=0.0, task="coil", seed=0):
+    """A sailor at work, barefoot, in a short tunic and a knitted cap: with
+    ``task`` "coil" holding a coil of rope before him, "mop" swabbing the
+    deck with a mop of rope yarns."""
+    tunic = (P["linen"], P["blue"], P["red"])[seed % 3]
+    cap = (P["red"], P["blue"], P["wood_dark"])[(seed + 1) % 3]
+    bare = (SHOE, (P["skin"], P["skin"]))
+    add.push()
+    if task == "coil":
+        arms = (([-0.21, 1.0, 0.26], [1, 0.0, 0.4], [-1, -0.6, -0.3]), ([0.21, 1.0, 0.26], [-1, 0.0, 0.4], [1, -0.6, -0.3]))
+        add.mesh(person("stand", tunic, hose=P["wood"], head=("cap", cap), shoes=bare, arms=arms))
+        add.torus([0, 1.0, 0.33], 0.16, 0.035, 14, 6, P["rope"], axis=(0, 0, 1))
+        add.torus([0, 1.0, 0.36], 0.15, 0.03, 14, 6, P["rope"], axis=(0, 0, 1))
+    else:
+        A, B = [-0.12, 1.36, 0.08], [0.1, 0.07, 0.86]                             # the mop's handle, through both hands
+        on = lambda t: [A[k] + (B[k] - A[k]) * t for k in range(3)]
+        d = vunit(vsub(B, A))
+        arms = ((on(0.1), d, [-1, -0.5, -0.4]), (on(0.42), d, [1, -0.6, -0.3]))
+        add.mesh(person("stand", tunic, hose=P["wood"], head=("cap", cap), shoes=bare, arms=arms, lean=0.12))
+        add.cylinder(A, B, 0.02, 6, P["wood"])
+        add.ellipsoid([B[0], 0.05, B[2]], [0.16, 0.05, 0.13], 4, P["rope"])
+        for i in range(6):                                                           # its yarns spread on the boards
+            a = 2 * add.pi * i / 6
+            add.capsule([B[0], 0.05, B[2]], [B[0] + 0.24 * add.cos(a), 0.02, B[2] + 0.2 * add.sin(a)], 0.018, 5, P["rope"])
+    figure(at, facing, add.pop())
+
+
 def ship(at, forward, L=24.0, B=7.2, seed=0, crew=(), band=None, shields=False, gangway=None):
     """A great ship, a cog, moored: a deep round-bellied hull of strakes,
     tarred below the water, three wales along each side following the sheer
@@ -8995,6 +10222,7 @@ def ship(at, forward, L=24.0, B=7.2, seed=0, crew=(), band=None, shields=False, 
 
     add.push()                                                                         # the hull's skin, dark between the
     add.mesh(add.color_by(hull, lambda q: P["black"] if q[1] < 0.15 else P["wood_dark"]))   # planks laid on it
+    deck_boards = []                                                                   # (their stations and sides, for the nails)
     for k in range(int(B / 0.3)):                                                      # the deck: boards fore and aft, their
         z0, z1 = -B / 2 + 0.3 * k + 0.012, -B / 2 + 0.3 * (k + 1) - 0.012             # butts staggered, between the frames
         m = max(abs(z0), abs(z1)) + 0.15                                               # of the bulwarks
@@ -9011,6 +10239,13 @@ def ship(at, forward, L=24.0, B=7.2, seed=0, crew=(), band=None, shields=False, 
                 x, y = xs(t), sheer(t)
                 rings.append([[x, y + 0.03, z0], [x, y + 0.03, z1], [x, y - 0.02, z1], [x, y - 0.02, z0]])
             add.mesh(add.fix_normals(add.make(add.loft, rings, shade_of("wood_light", k * 2 + j + seed))))
+            deck_boards.append((ta, tb, z0, z1))
+    BEAMS = [tx(x) for x in (-4.8, -2.4, 0.0, 2.4, 4.8, 7.2)]                            # under them, the deck beams (aft of
+    for t in BEAMS:                                                                    # these, the castle stands on the deck),
+        rise = (sheer(t + 0.001) - sheer(t - 0.001)) / (xs(t + 0.001) - xs(t - 0.001))    # square to the sheer, right up
+        w = (side(t, sheer(t) - 0.27) or 0.0) - 0.03                                  # under the boards, from side to side
+        beam = add.make(add.cuboid, [0, -0.1, 0], [0.2, 0.2, 2 * w], P["wood_dark"])
+        add.mesh(add.move(add.rotateZ(beam, add.atan(rise)), [xs(t), sheer(t) - 0.02, 0]))
 
     def hull_at(t, f, sg, off=0.0):
         """The point of the side (``sg``: 1 port, -1 starboard) at station ``t``, ``f`` of the way down from the gunwale
@@ -9060,32 +10295,127 @@ def ship(at, forward, L=24.0, B=7.2, seed=0, crew=(), band=None, shields=False, 
         w = side(t, y)
         for sg in (-1, 1):
             add.cuboid([xs(t), y, sg * (w + 0.1)], [0.26, 0.26, 0.34], P["wood_dark"])
-    gap = []                                                                           # (where the gangway opens it)
-    for i in range(n - 1):                                                             # the bulwarks, a cap rail on them,
-        t0, t1 = -1 + 2.0 * i / (n - 1), -1 + 2.0 * (i + 1) / (n - 1)               # frames inside
-        for sg in (-1, 1):
-            a, b = [xs(t0), sheer(t0), sg * half(t0)], [xs(t1), sheer(t1), sg * half(t1)]
-            if gangway and sg < 0 and abs((a[0] + b[0]) / 2 - gangway[0]) < 1.1:
-                gap += [a[0], b[0]]
+    def rim(t, sg):
+        """The gunwale at station ``t`` on side ``sg``, and the level way out of the hull there, square to it."""
+        ta, tb = max(-1.0, t - 0.002), min(1.0, t + 0.002)
+        dx, dh = xs(tb) - xs(ta), half(tb) - half(ta)
+        l = add.sqrt(dx * dx + dh * dh)
+        return [xs(t), sheer(t), sg * half(t)], (-dh / l, sg * dx / l)
+
+    def by_rim(t, sg, o, y):
+        """The point ``o`` out from the gunwale at station ``t`` (in if negative), ``y`` above it."""
+        p, (nx, nz) = rim(t, sg)
+        return [p[0] + nx * o, p[1] + y, p[2] + nz * o]
+
+    def t_at(x):
+        """The station at ``x`` along the ship."""
+        lo, hi = -1.0, 1.0
+        for _ in range(40):
+            lo, hi = ((lo + hi) / 2, hi) if xs((lo + hi) / 2) < x else (lo, (lo + hi) / 2)
+        return (lo + hi) / 2
+
+    POST_Z = 0.211                                                                     # (the stem's and the sternpost's sides)
+
+    def rail_timber(sg, ta, tb, y0, y1, o0, o1, colour):
+        """A timber along the gunwale on side ``sg``, from station ``ta`` to ``tb``, ``y0``..``y1`` above
+        it and ``o0``..``o1`` out from the line of the hull; at the stem and the sternpost (``ta`` -1, ``tb``
+        1) it runs into their sides and stops there, cut to them."""
+        ends = []
+        for o, y in ((o0, y0), (o1, y0), (o1, y1), (o0, y1)):
+            lim = []
+            for tt in (ta, tb):
+                if abs(tt) < 1.0:
+                    lim.append(tt)
+                    continue
+                lo, hi = 0.0, tt                                                       # where this edge reaches the post
+                for _ in range(50):
+                    mid = (lo + hi) / 2
+                    lo, hi = (mid, hi) if abs(by_rim(mid, sg, o, y)[2]) > POST_Z else (lo, mid)
+                lim.append(lo)
+            ends.append(lim)
+        steps = max(2, int(abs(tb - ta) / 0.012))
+        rings = [[by_rim(a + (b - a) * i / steps, sg, o, y) for (a, b), (o, y) in zip(ends, ((o0, y0), (o1, y0), (o1, y1), (o0, y1)))]
+                 for i in range(steps + 1)]
+        add.mesh(add.fix_normals(add.make(add.loft, rings, colour)))
+
+    GAP = (t_at(gangway[0] - 1.2), t_at(gangway[0] + 1.2)) if gangway else None         # (where the gangway opens it)
+    for sg in (-1, 1):                                                                 # the bulwarks: two strakes a hand
+        runs = [(-1.0, GAP[0]), (GAP[1], 1.0)] if GAP and sg < 0 else [(-1.0, 1.0)]  # thick, clinker-laid, the upper
+        for ta, tb in runs:                                                            # lapping over the lower; frames
+            rail_timber(sg, ta, tb, 0.0, 0.28, -0.06, 0.012, band)                   # inside them, a broad cap rail on
+            rail_timber(sg, ta, tb, 0.28, 0.55, -0.06, 0.03, band)                   # them and the frames, following
+            rail_timber(sg, ta, tb, 0.55, 0.61, -0.14, 0.06, P["wood_dark"])         # the sheer and the curve
+        for i in range(3, n - 4):
+            t = -1 + 2.0 * i / (n - 1)
+            if GAP and sg < 0 and GAP[0] - 0.02 < t < GAP[1] + 0.02:
                 continue
-            quad = [a, b, [b[0], b[1] + 0.55, b[2]], [a[0], a[1] + 0.55, a[2]]]
-            sheet(quad if sg < 0 else quad[::-1], band, 0.07)
-            add.cuboid([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 0.58, (a[2] + b[2]) / 2], [abs(b[0] - a[0]) + 0.02, 0.06, 0.14], P["wood_dark"])
-            if 2 < i < n - 4:
-                add.cuboid([a[0], a[1] + 0.27, sg * (half(t0) - 0.12)], [0.1, 0.55, 0.12], P["wood_dark"])
+            add.beam(by_rim(t, sg, -0.06, 0.275), by_rim(t, sg, -0.14, 0.275), 0.1, 0.55, P["wood_dark"])
     x0, x1 = -L / 2 + 1.0, -L / 2 + 6.4                                                # the castle aft: a cabin narrowing to
     z0, z1 = half(2 * x0 / L) - 0.3, half(2 * x1 / L) - 0.3                            # the stern, a deck over it with a rail
     ya, top = sheer(2 * x1 / L) - 0.1, sheer(2 * x0 / L) + 2.0
-    add.mesh(solid([(x0, -z0), (x1, -z1), (x1, z1), (x0, z0)], ya, top, shade_of("wood", 1)))
-    add.mesh(solid([(x0 - 0.2, -z0 - 0.15), (x1 + 0.3, -z1 - 0.15), (x1 + 0.3, z1 + 0.15), (x0 - 0.2, z0 + 0.15)], top, top + 0.12, P["wood_dark"]))
-    add.cuboid([x1 + 0.04, ya + 1.0, 0], [0.08, 1.8, 0.9], P["wood_dark"])            # its door, on iron straps
-    for y in (ya + 0.45, ya + 1.55):
-        add.cuboid([x1 + 0.09, y, 0.1], [0.02, 0.06, 0.7], P["iron"])
-    for zz in (1.2, 1.8):                                                              # a ladder up to it, beside the door
-        add.beam([x1 + 0.9, ya, zz], [x1 + 0.2, top + 0.1, zz], 0.08, 0.08, P["wood"])
-    for k in range(1, 7):
-        u = k / 7.0
-        add.cylinder([x1 + 0.9 - 0.7 * u, ya + (top + 0.1 - ya) * u, 1.2], [x1 + 0.9 - 0.7 * u, ya + (top + 0.1 - ya) * u, 1.8], 0.03, 5, P["wood"])
+    add.mesh(solid([(x0, -z0), (x1, -z1), (x1, z1), (x0, z0)], ya, top, P["wood_dark"]))   # its frame, dark in the seams,
+    ccx = (x0 + x1) / 2                                                               # and the planks nailed on it
+    DOOR, WIN = (ya + 0.05, ya + 1.95), (ya + 1.05, ya + 1.55)
+    walls = [((x1, z1), (x1, -z1), [(0.0, 0.5) + DOOR]), ((x1, -z1), (x0, -z0), [(0.0, 0.3) + WIN]),
+             ((x0, -z0), (x0, z0), [(-0.55, 0.22) + WIN, (0.55, 0.22) + WIN]), ((x0, z0), (x1, z1), [(0.0, 0.3) + WIN])]
+    for wi, (pa, pb, holes) in enumerate(walls):
+        Lw = add.sqrt((pb[0] - pa[0]) ** 2 + (pb[1] - pa[1]) ** 2)
+        ux, uz = (pb[0] - pa[0]) / Lw, (pb[1] - pa[1]) / Lw
+        ox, oz = uz, -ux                                                              # (out of the cabin)
+        if ox * ((pa[0] + pb[0]) / 2 - ccx) + oz * (pa[1] + pb[1]) / 2 < 0:
+            ox, oz = -ox, -oz
+        at_w = lambda sw, y, off: [pa[0] + ux * sw + ox * off, y, pa[1] + uz * sw + oz * off]
+        holes = [(Lw / 2 + c - hw, Lw / 2 + c + hw, hy0, hy1) for c, hw, hy0, hy1 in holes]
+        for k in range(12):                                                           # twelve strakes of planks, stopped
+            y = ya + 0.22 * k                                                         # at the door and the windows
+            spans = [(0.1, Lw - 0.1)]
+            for h0, h1, hy0, hy1 in holes:
+                if y + 0.21 > hy0 and y < hy1:
+                    spans = [piece for a_, b_ in spans for piece in ((a_, min(b_, h0)), (max(a_, h1), b_)) if piece[1] - piece[0] > 0.05]
+            for a_, b_ in spans:
+                add.beam(at_w(a_, y + 0.105, 0.02), at_w(b_, y + 0.105, 0.02), 0.04, 0.21, shade_of("wood", k + wi, 3))
+                for sn in range(int((b_ - a_ - 0.3) / 0.9) + 1):                      # nailed to the frames
+                    add.octahedron(at_w(a_ + 0.15 + sn * 0.9, y + 0.105, 0.043), 0.014, P["iron"])
+        for h0, h1, hy0, hy1 in holes:
+            if hy1 - hy0 < 1.0:                                                       # a window: a frame round it, bars
+                for a_, b_ in ((at_w(h0 - 0.06, hy0 - 0.03, 0.07), at_w(h1 + 0.06, hy0 - 0.03, 0.07)),
+                               (at_w(h0 - 0.06, hy1 + 0.03, 0.07), at_w(h1 + 0.06, hy1 + 0.03, 0.07))):
+                    add.beam(a_, b_, 0.06, 0.06, P["wood_dark"])
+                for sw in (h0 - 0.03, h1 + 0.03):
+                    add.beam(at_w(sw, hy0, 0.07), at_w(sw, hy1, 0.07), 0.06, 0.06, P["wood_dark"])
+                for sw in (h0 + (h1 - h0) / 3, h0 + 2 * (h1 - h0) / 3):
+                    add.cylinder(at_w(sw, hy0, 0.02), at_w(sw, hy1, 0.02), 0.012, 5, P["iron"])
+    for vx, vz in ((x0, -z0), (x1, -z1), (x1, z1), (x0, z0)):                         # posts at its corners
+        add.cuboid([vx, (ya + top) / 2, vz], [0.16, top - ya, 0.16], P["wood_dark"])
+    for j in range(4):                                                                # its door: four boards on iron
+        zb = -0.48 + 0.24 * j                                                         # straps, a ring to pull it by
+        add.cuboid([x1 + 0.025, (DOOR[0] + DOOR[1]) / 2, zb + 0.12], [0.05, DOOR[1] - DOOR[0], 0.235], shade_of("wood", j + 1, 3))
+    for y in (DOOR[0] + 0.4, DOOR[1] - 0.4):
+        add.cuboid([x1 + 0.055, y, 0.08], [0.01, 0.06, 0.78], P["iron"])
+    add.torus([x1 + 0.075, DOOR[0] + 0.95, -0.32], 0.05, 0.01, 10, 4, P["iron"], axis=(1, 0, 0))
+    dpoly = [(x0 - 0.2, -z0 - 0.15), (x1 + 0.3, -z1 - 0.15), (x1 + 0.3, z1 + 0.15), (x0 - 0.2, z0 + 0.15)]
+    add.mesh(solid(dpoly, top, top + 0.08, P["wood_dark"]))                          # its deck: beams, and boards across
+    hwd = lambda x: (z0 + 0.15) + (z1 - z0) * (x - x0 + 0.2) / (x1 - x0 + 0.5)       # nailed to them, fore and aft (but under
+    for k in range(int((x1 - x0 + 0.5) / 0.25)):                                     # the flagstaff and where the master stands)
+        xq = x0 - 0.2 + 0.25 * k
+        wq = min(hwd(xq), hwd(xq + 0.25)) - 0.02
+        add.cuboid([xq + 0.125, top + 0.1, 0], [0.238, 0.04, 2 * wq], shade_of("wood_light", k, 3))
+        for zq in (-wq + 0.3, 0.0, wq - 0.3):
+            for dx in (0.06, 0.18):
+                lamp = abs(xq + dx - x0 - 0.1) < 0.15 and abs(zq) > wq - 0.45                # (the lanterns' posts)
+                if abs(xq + dx - x0 - 0.3) > 0.2 and not lamp and not any(abs(xq + dx - cx_) < 0.4 and abs(zq - cz_) < 0.4
+                                                                           for cx_, cz_, cf, task in crew if task == "captain"):
+                    floor_nail(xq + dx, top + 0.12, zq, 4)
+    foot = [x1 + 1.05, sheer(t_at(x1 + 1.05)) + 0.03]                                # a ladder up to it beside the door,
+    edge = [x1 + 0.35, top + 0.12]                                                    # leaning on the edge of the deck and
+    dl = vunit([edge[0] - foot[0], edge[1] - foot[1], 0.0])                           # standing up above it
+    head = [edge[0] + dl[0] * 0.75, edge[1] + dl[1] * 0.75]
+    for zz in (1.2, 1.8):
+        add.beam([foot[0], foot[1], zz], [head[0], head[1], zz], 0.08, 0.08, P["wood"])
+    for k in range(1, 10):
+        u = k / 10.0
+        add.cylinder([foot[0] + (head[0] - foot[0]) * u, foot[1] + (head[1] - foot[1]) * u, 1.24],
+                     [foot[0] + (head[0] - foot[0]) * u, foot[1] + (head[1] - foot[1]) * u, 1.76], 0.03, 5, P["wood"])
     for sg in (-1, 1):
         for i in range(11):
             u = i / 10.0
@@ -9105,113 +10435,227 @@ def ship(at, forward, L=24.0, B=7.2, seed=0, crew=(), band=None, shields=False, 
         add.cylinder([lx, top + 0.12, lz], [lx, top + 1.5, lz], 0.05, 6, P["iron"])
         lantern([lx, top + 1.5, lz])
     add.cylinder([x0 + 0.3, top + 0.12, 0], [x0 + 0.3, top + 3.6, 0], 0.07, 8, P["wood_dark"])   # the flagstaff at the stern
-    yf = sheer(0.8)                                                                    # the platform forward, narrowing, railed
-    fore = [(L / 2 - 5.2, -half(0.6) + 0.3), (L / 2 - 5.2, half(0.6) - 0.3), (L / 2 - 1.2, half(0.9) - 0.25), (L / 2 - 1.2, -half(0.9) + 0.25)]
-    add.mesh(solid(fore, yf + 1.1, yf + 1.25, P["wood_dark"]))
+    yf = sheer(0.8)                                                                    # the platform forward, narrowing, railed:
+    XA, XB = L / 2 - 5.2, L / 2 - 1.2                                                  # boards across joists, the joists on a
+    hw = lambda x: half(0.6) - 0.3 + (half(0.9) - 0.25 - half(0.6) + 0.3) * (x - XA) / (XB - XA)   # stringer each side,
+    fore = [(XA, -hw(XA)), (XA, hw(XA)), (XB, hw(XB)), (XB, -hw(XB))]                 # the stringers on three posts that
+    timber_floor(fore, yf + 1.25, 0.0, step=0.95, joist=(0.16, 0.19), name="wood_light", joist_name="wood", width=0.26, seed=seed)
+                                                                                       # (stand on the deck, braced to them)
     for sg in (-1, 1):
-        add.cuboid([L / 2 - 5.1, yf + 0.6, sg * (half(0.6) - 0.5)], [0.2, 1.2, 0.2], P["wood_dark"])
+        add.beam([XA, yf + 0.92, sg * (hw(XA) - 0.11)], [XB, yf + 0.92, sg * (hw(XB) - 0.11)], 0.18, 0.18, P["wood_dark"])
+        for k, xq in enumerate((XA + 0.1, (XA + XB) / 2, XB - 0.15)):
+            zq, yd_ = sg * (hw(xq) - 0.11), sheer(t_at(xq)) + 0.03
+            add.cuboid([xq, (yd_ + yf + 0.83) / 2, zq], [0.16, yf + 0.83 - yd_, 0.16], P["wood_dark"])
+            for dxb in ((0.5,) if k == 0 else (-0.5,) if k == 2 else (-0.5, 0.5)):  # knee braces up to the stringer
+                add.beam([xq + dxb * 0.12, yf + 0.3, zq], [xq + dxb * 1.0, yf + 0.84, sg * (hw(xq + dxb * 1.0) - 0.11)], 0.1, 0.1, P["wood"])
         (xa_, za_), (xb_, zb_) = fore[0 if sg < 0 else 1], fore[3 if sg < 0 else 2]
         for i in range(7):
             u = i / 6.0
             add.cylinder([xa_ + (xb_ - xa_) * u, yf + 1.25, za_ + (zb_ - za_) * u], [xa_ + (xb_ - xa_) * u, yf + 1.85, za_ + (zb_ - za_) * u],
                          0.035, 6, P["wood_dark"])
         add.cylinder([xa_, yf + 1.88, za_], [xb_, yf + 1.88, zb_], 0.045, 6, P["wood"])
-    add.cylinder([L / 2 - 0.2, sheer(1.0) + 0.3, 0], [L / 2 + 5.0, sheer(1.0) + 2.6, 0], 0.18, 8, P["wood_dark"])   # the bowsprit
+    for za_, zb_ in ((-hw(XA) + 0.2, -1.85), (-1.15, hw(XA) - 0.2)):                   # the rail across its back, open where
+        for k in range(int((zb_ - za_) / 0.45) + 1):                                   # a ladder comes up from the deck
+            zq = za_ + (zb_ - za_) * k / max(1, int((zb_ - za_) / 0.45))
+            add.cylinder([XA + 0.05, yf + 1.25, zq], [XA + 0.05, yf + 1.85, zq], 0.035, 6, P["wood_dark"])
+        add.cylinder([XA + 0.05, yf + 1.88, za_ - (0.2 if za_ < -2 else 0.0)], [XA + 0.05, yf + 1.88, zb_ + (0.2 if zb_ > 2 else 0.0)],
+                     0.045, 6, P["wood"])
+    foot = [XA - 0.95, sheer(t_at(XA - 0.95)) + 0.03]
+    dl = vunit([XA - 0.05 - foot[0], yf + 1.25 - foot[1], 0.0])
+    head = [XA - 0.05 + dl[0] * 0.75, yf + 1.25 + dl[1] * 0.75]
+    for zz in (-1.8, -1.2):
+        add.beam([foot[0], foot[1], zz], [head[0], head[1], zz], 0.08, 0.08, P["wood"])
+    for k in range(1, 9):
+        u = k / 9.0
+        add.cylinder([foot[0] + (head[0] - foot[0]) * u, foot[1] + (head[1] - foot[1]) * u, -1.76],
+                     [foot[0] + (head[0] - foot[0]) * u, foot[1] + (head[1] - foot[1]) * u, -1.24], 0.03, 5, P["wood"])
+    SLOPE = 0.442                                                                      # the bowsprit, lying on the stem head
+    sprit = lambda x: sheer(1.0) + 0.7 + 0.18 * add.sqrt(1 + SLOPE * SLOPE) + SLOPE * (x - xs(1.0) + 0.35)   # (its axis),
+    lo, hi = XA, xs(1.0) - 0.35                                                        # its heel down on the deck,
+    for _ in range(40):
+        mid = (lo + hi) / 2
+        low = sprit(mid) - 0.18 / add.sqrt(1 + SLOPE * SLOPE)
+        lo, hi = (lo, mid) if low > sheer(t_at(mid + 0.18 * SLOPE / add.sqrt(1 + SLOPE * SLOPE))) + 0.03 else (mid, hi)
+    heel, tip = [hi, sprit(hi), 0.0], [xs(1.0) + 4.4, sprit(xs(1.0) + 4.4), 0.0]
+    add.cylinder(heel, tip, 0.18, 8, P["wood_dark"])
+    for sz in (-1, 1):                                                                 # between two bitts
+        bx = heel[0] + 0.35
+        add.cuboid([bx, sheer(t_at(bx)) + 0.03 + 0.4, sz * 0.28], [0.16, 0.8, 0.16], P["wood_dark"])
     MX, TOP = 1.2, 19.0                                                                # the mast, the fighting top, the yard
     add.cylinder([MX, sheer(0.1) - 0.5, 0], [MX, TOP + 1.2, 0], 0.3, 12, P["wood"])
-    add.cylinder([MX, TOP - 1.2, 0], [MX, TOP - 0.6, 0], 0.85, 12, P["wood_dark"])
-    add.pipe([MX, TOP - 0.6, 0], [MX, TOP + 0.1, 0], 0.85, 0.75, 12, P["wood_dark"])
-    for i in range(8):
-        a = 2 * add.pi * i / 8
-        add.cuboid([MX + 0.8 * add.cos(a), TOP + 0.22, 0.8 * add.sin(a)], [0.2, 0.24, 0.2], P["wood_dark"])
+    add.cylinder([MX, TOP + 1.2, 0], [MX, TOP + 3.3, 0], 0.1, 10, P["wood"])          # a pole on it for the flag, its truck
+    add.sphere([MX, TOP + 3.37, 0], 0.12, 6, P["wood_dark"])
+    FT = TOP - 1.08                                                                    # the top: on two trestletrees either
+    for sz in (-1, 1):                                                                 # side of the mast two crosstrees, on
+        add.cuboid([MX, FT - 0.26, sz * 0.38], [1.44, 0.16, 0.14], P["wood_dark"])     # them a floor of boards, and round it
+    for sx in (-1, 1):                                                                 # a tub of staves bound with iron
+        add.cuboid([MX + sx * 0.45, FT - 0.1, 0], [0.14, 0.16, 1.5], P["wood_dark"])    # hoops, every other pair of staves
+    for j in range(12):                                                                # standing up for a merlon
+        z = -0.9 + 0.15 * j + 0.075
+        half_l = add.sqrt(max(0.0, 0.9 ** 2 - (abs(z) + 0.075) ** 2))
+        pieces = [(-half_l, -0.31), (0.31, half_l)] if abs(z) < 0.375 else [(-half_l, half_l)]
+        for a_, b_ in pieces:
+            if b_ - a_ > 0.05:
+                add.cuboid([MX + (a_ + b_) / 2, FT + 0.01, z], [b_ - a_, 0.06, 0.145], shade_of("wood_light", j, 3))
+                for xc in (-0.45, 0.45):                                               # nailed to the crosstrees
+                    if a_ + 0.04 < xc < b_ - 0.04:
+                        for dz in (-0.036, 0.036):
+                            floor_nail(MX + xc, FT + 0.04, z + dz, 4)
+    for i in range(28):
+        a = 2 * add.pi * (i + 0.5) / 28
+        ca, sa = add.cos(a), add.sin(a)
+        merlon = min(abs((a - add.pi / 8 - add.pi / 4 * k)) for k in range(-1, 9)) < 0.2
+        add.beam([MX + 0.8725 * ca, FT + 0.04, 0.8725 * sa], [MX + 0.8725 * ca, TOP + (0.4 if merlon else 0.1), 0.8725 * sa],
+                 0.188, 0.045, shade_of("wood", i, 3), up=(ca, 0, sa))
+    for y in (FT + 0.25, TOP - 0.02):
+        add.torus([MX, y, 0], 0.9, 0.018, 28, 4, P["iron"])
     add.cylinder([MX, TOP - 3.2, -7.0], [MX, TOP - 3.2, 7.0], 0.16, 8, P["wood_dark"])
     add.cylinder([MX + 0.3, TOP - 3.45, -6.2], [MX + 0.3, TOP - 3.45, 6.2], 0.38, 10, P["linen"])       # the sail, furled
     for i in range(6):                                                                 # and lashed to the yard
         z = -5.5 + i * 2.2
         add.torus([MX + 0.3, TOP - 3.45, z], 0.4, 0.03, 10, 4, P["rope"], axis=(0, 0, 1))
     for sg in (-1, 1):
-        add.cylinder([MX, TOP + 0.3, 0], [MX, TOP - 3.2, sg * 6.8], 0.025, 4, P["rope"])                # the lifts,
+        add.cylinder([MX, TOP + 1.1, 0], [MX, TOP - 3.2, sg * 6.8], 0.025, 4, P["rope"])                # the lifts,
         add.cylinder([MX, TOP - 3.2, sg * 6.8], [x0 + 0.4, top + 0.8, sg * (z0 - 0.1)], 0.025, 4, P["rope"])   # the braces
     for sg in (-1, 1):                                                                 # the shrouds, set up with deadeyes on
-        feet = [[MX - 1.6 + 1.1 * k, sheer(0.05) + 0.62, sg * (half(0.05) + 0.1)] for k in range(4)]   # chainplates, with ratlines
-        for f in feet:
-            add.cylinder(f, [MX, TOP - 1.3, sg * 0.3], 0.03, 4, P["rope"])
-            add.cylinder([f[0], f[1] - 0.12, f[2]], [f[0], f[1] + 0.02, f[2]], 0.12, 8, P["wood_dark"])
-            add.cuboid([f[0], f[1] - 0.6, f[2] - sg * 0.02], [0.06, 1.0, 0.04], P["iron"])
+        ts = [t_at(MX - 1.6 + 1.1 * k) for k in range(4)]                              # a channel, a plank standing out from
+        rail_timber(sg, ts[0] - 0.03, ts[3] + 0.03, 0.40, 0.47, 0.03, 0.34, P["wood_dark"])   # the bulwark, their chainplates
+        feet = []                                                                      # down from it to the wale; ratlines
+        for t in ts:
+            f = by_rim(t, sg, 0.2, 0.61)
+            feet.append(f)
+            add.cylinder(f, [MX, FT - 0.4, sg * 0.3], 0.03, 4, P["rope"])
+            add.cylinder(by_rim(t, sg, 0.2, 0.47), f, 0.12, 8, P["wood_dark"])
+            yw = 1.35 + 0.45 * t * t
+            low = [xs(t), yw, sg * ((side(t, yw) or half(t)) + 0.13)]
+            _, (nx, nz) = rim(t, sg)
+            add.beam(by_rim(t, sg, 0.2, 0.40), low, 0.06, 0.04, P["iron"], up=(nx, 0, nz))
+            add.octahedron([low[0], low[1] + 0.03, low[2] + sg * 0.03], 0.02, P["iron"])
         for k in range(1, 12):
-            y = feet[0][1] + (TOP - 1.3 - feet[0][1]) * k / 12.0
+            y = feet[0][1] + (FT - 0.4 - feet[0][1]) * k / 12.0
             u = k / 12.0
             add.cylinder([feet[0][0] + (MX - feet[0][0]) * u, y, sg * (feet[0][2] * sg + (0.3 - feet[0][2] * sg) * u)],
                          [feet[3][0] + (MX - feet[3][0]) * u, y, sg * (feet[3][2] * sg + (0.3 - feet[3][2] * sg) * u)], 0.015, 3, P["rope"])
-    add.cylinder([MX, TOP + 0.4, 0], [L / 2 + 4.8, sheer(1.0) + 2.5, 0], 0.035, 4, P["rope"])           # the stays
-    add.cylinder([MX, TOP + 0.4, 0], [x0 + 0.3, top + 0.8, 0], 0.035, 4, P["rope"])
-    for t, y1 in ((1.0, sheer(1.0) + 0.7), (-1.0, sheer(-1.0) + 0.2)):                  # the stem and the sternpost, the
-        add.cuboid([xs(t) + 0.05 * t, (keel(t) - 0.1 + y1) / 2, 0], [0.4, y1 - keel(t) + 0.1, 0.42], P["wood_dark"])   # planks' ends in them,
+    add.cylinder([MX, TOP + 1.1, 0], [tip[0] - 0.3, sprit(tip[0] - 0.3), 0], 0.035, 4, P["rope"])        # the stays
+    add.cylinder([MX, TOP + 1.1, 0], [x0 + 0.3, top + 0.8, 0], 0.035, 4, P["rope"])
+    for t in (1.0, -1.0):                                                              # the stem and the sternpost, the
+        y1 = sheer(t) + 0.7                                                            # planks' ends in them,
+        add.cuboid([xs(t) - 0.05 * t, (keel(t) - 0.1 + y1) / 2, 0], [0.6, y1 - keel(t) + 0.1, 2 * POST_Z], P["wood_dark"])
     add.polyline([[xs(t / 20.0), keel(t / 20.0) - 0.02, 0] for t in range(-20, 21)], 0.21, 6, P["wood_dark"])     # the keel between
-    add.cuboid([xs(-1.0) - 0.53, 0.2, 0], [0.7, 3.4, 0.22], P["wood_dark"])             # the rudder hung on the sternpost,
-    for y in (-0.8, 0.4, 1.4):
-        add.cuboid([xs(-1.0) - 0.45, y, 0], [1.0, 0.1, 0.3], P["iron"])
-    add.cylinder([xs(-1.0) - 0.7, 1.9, 0], [-L / 2 + 1.6, 2.6, 0], 0.07, 6, P["wood_dark"])   # its tiller through the stern
-    for sg in (-1, 1):                                                                 # the anchors, catted at the bow, the
-        t = 0.9                                                                        # cables into the hawse holes
-        ax, ay = xs(t) - 0.4, sheer(t) - 1.7
-        az = sg * (half(t) + 0.3)
-        add.cylinder([ax, ay, az], [ax, ay + 1.6, az], 0.07, 6, P["iron"])
-        add.polyline([[ax - 0.55, ay + 0.45, az], [ax - 0.3, ay + 0.08, az], [ax, ay, az], [ax + 0.3, ay + 0.08, az], [ax + 0.55, ay + 0.45, az]],
+    RX = xs(-1.0) - 0.25                                                               # the rudder hung on the sternpost
+    add.cuboid([RX - 0.35, 0.9, 0], [0.7, 4.8, 0.22], P["wood_dark"])                  # by three pairs of straps, its head
+    for y in (0.6, 1.5, 2.4):                                                          # above the post, and the tiller
+        for sz in (-1, 1):                                                             # from it over the post into a port
+            add.cuboid([RX - 0.275, y, sz * 0.12], [0.55, 0.1, 0.02], P["iron"])      # in the castle's stern
+            add.cuboid([RX + 0.175, y, sz * (POST_Z + 0.01)], [0.35, 0.1, 0.02], P["iron"])
+    add.cylinder([RX, 3.2, 0], [-L / 2 + 0.95, 3.2, 0], 0.07, 6, P["wood_dark"])
+    add.cuboid([-L / 2 + 0.955, 3.2, 0], [0.01, 0.3, 0.3], P["black"])
+    for sg in (-1, 1):                                                                 # the anchors, catted at the bow: each
+        t = 0.9                                                                        # hung from a cathead, a timber laid on
+        p, (nx, nz) = rim(t, sg)                                                       # the cap rail and standing out over the
+        tpx, tpz = -nz * sg, nx * sg                                                   # side; the cables into the hawse holes
+        if tpx < 0:
+            tpx, tpz = -tpx, -tpz
+        rise = (sheer(t + 0.001) - sheer(t - 0.001)) / vlen([xs(t + 0.001) - xs(t - 0.001), 0, half(t + 0.001) - half(t - 0.001)])
+        up = vunit(vcross([nx, 0, nz], [tpx, rise, tpz]))
+        up = up if up[1] > 0 else [-c for c in up]
+        a_, b_ = by_rim(t, sg, -0.14, 0.61), by_rim(t, sg, 0.6, 0.61)
+        add.beam([a_[k] + up[k] * 0.1 for k in range(3)], [b_[k] + up[k] * 0.1 for k in range(3)], 0.2, 0.2, P["wood_dark"], up=up)
+        ring = by_rim(t, sg, 0.45, 0.16)
+        ax, ay, az = ring[0], ring[1] - 1.6, ring[2]
+        add.cylinder(by_rim(t, sg, 0.45, 0.61), ring, 0.03, 4, P["rope"])
+        add.cylinder([ax, ay, az], ring, 0.07, 6, P["iron"])
+        add.polyline([[ax + tpx * u, ay + h, az + tpz * u] for u, h in ((-0.55, 0.45), (-0.3, 0.08), (0.0, 0.0), (0.3, 0.08), (0.55, 0.45))],
                      0.06, 6, P["iron"], smooth=1)
-        add.cylinder([ax - 0.4, ay + 1.45, az], [ax + 0.4, ay + 1.45, az], 0.06, 6, P["wood_dark"])
-        add.cylinder([ax, ay + 1.6, az], [ax - 0.1, sheer(t) + 0.55, az - sg * 0.2], 0.03, 4, P["rope"])
+        add.cylinder([ax + nx * 0.35, ring[1] - 0.15, az + nz * 0.35], [ax - nx * 0.35, ring[1] - 0.15, az - nz * 0.35], 0.06, 6, P["wood_dark"])
         th = 0.93
         yh = sheer(th) - 0.55
         wh = side(th, yh) or 0.4
         add.cylinder([xs(th) - 0.2, yh, sg * (wh + 0.02)], [xs(th) - 0.2, yh, sg * (wh + 0.05)], 0.16, 10, P["black"])
-    yd = sheer(0.2)                                                                    # on deck: a hatch with a grating,
-    add.cuboid([4.0, yd + 0.12, 0], [2.4, 0.24, 2.0], P["wood_dark"])                   # a capstan, barrels, coils of rope
+    def on_deck(x, z, lift=0.03):
+        """Set down what was built since ``add.push()`` about the origin on the deck at (x, z), tilted to its sheer."""
+        t = t_at(x)
+        rise = (sheer(t + 0.001) - sheer(t - 0.001)) / (xs(t + 0.001) - xs(t - 0.001))
+        add.mesh(add.move(add.rotateZ(add.pop(), add.atan(rise)), [x, sheer(t) + lift, z]))
+
+    add.push()                                                                         # on deck: a hatch with a grating,
+    add.cuboid([0, 0.12, 0], [2.4, 0.24, 2.0], P["wood_dark"])                          # a capstan, barrels, coils of rope
     for i in range(5):
-        add.cuboid([4.0, yd + 0.25, -0.8 + 0.4 * i], [2.2, 0.04, 0.12], P["wood"])
+        add.cuboid([0, 0.26, -0.8 + 0.4 * i], [2.2, 0.04, 0.12], P["wood"])
     for i in range(5):
-        add.cuboid([3.1 + 0.45 * i, yd + 0.26, 0], [0.12, 0.04, 1.9], P["wood"])
-    cx = 7.4
-    lathe([[0.0, 0], [0.45, 0], [0.4, 0.1], [0.32, 0.2], [0.3, 0.75], [0.42, 0.85], [0.42, 1.05], [0.0, 1.05]], [cx, sheer(tx(cx)), 0], 12, P["wood"])
+        add.cuboid([-0.9 + 0.45 * i, 0.3, 0], [0.12, 0.04, 1.9], P["wood"])
+    on_deck(4.0, 0.0, 0.04)
+    add.push()
+    lathe([[0.0, 0], [0.45, 0], [0.4, 0.1], [0.32, 0.2], [0.3, 0.75], [0.42, 0.85], [0.42, 1.05], [0.0, 1.05]], [0, 0, 0], 12, P["wood"])
     for a in range(4):
-        add.cylinder([cx - 0.9 * add.cos(a * add.pi / 4), sheer(tx(cx)) + 0.95, -0.9 * add.sin(a * add.pi / 4)],
-                     [cx + 0.9 * add.cos(a * add.pi / 4), sheer(tx(cx)) + 0.95, 0.9 * add.sin(a * add.pi / 4)], 0.04, 6, P["wood_dark"])
+        add.cylinder([-0.9 * add.cos(a * add.pi / 4), 0.95, -0.9 * add.sin(a * add.pi / 4)],
+                     [0.9 * add.cos(a * add.pi / 4), 0.95, 0.9 * add.sin(a * add.pi / 4)], 0.04, 6, P["wood_dark"])
+    on_deck(7.4, 0.0)
     for k, (bx, bz) in enumerate(((5.8, 1.9), (5.8, 1.1), (6.5, 1.5), (-1.6, -2.0))):
-        barrel([bx, sheer(tx(bx)), bz], 0.4, 1.0)
+        add.push()
+        barrel([0, 0, 0], 0.4, 1.0)
+        on_deck(bx, bz, 0.035)
     for cx_, cz_ in ((-2.5, -1.8), (2.6, 2.2)):
-        add.torus([cx_, sheer(tx(cx_)) + 0.08, cz_], 0.45, 0.08, 12, 6, P["rope"])
-        add.torus([cx_, sheer(tx(cx_)) + 0.22, cz_], 0.38, 0.08, 12, 6, P["rope"])
+        add.push()
+        add.torus([0, 0.08, 0], 0.45, 0.08, 12, 6, P["rope"])
+        add.torus([0, 0.22, 0], 0.38, 0.08, 12, 6, P["rope"])
+        on_deck(cx_, cz_, 0.035)
+    things = ([(4.0, 0.0, 1.25, 1.05), (7.4, 0.0, 0.5, 0.5), (MX, 0.0, 0.35, 0.35)] +          # every deck board nailed to
+              [(bx, bz, 0.45, 0.45) for bx, bz in ((5.8, 1.9), (5.8, 1.1), (6.5, 1.5), (-1.6, -2.0))] +   # each beam with two
+              [(cx_, cz_, 0.6, 0.6) for cx_, cz_ in ((-2.5, -1.8), (2.6, 2.2))] +              # nails -- but where
+              [(cx_, cz_, 0.9, 0.9) for cx_, cz_, cf, task in crew if task != "captain"])      # something stands on it
+    for ta, tb, z0, z1 in deck_boards:
+        for t in BEAMS:
+            if ta + 0.005 < t < tb - 0.005:
+                for z in ((z0 + z1) / 2 - 0.07, (z0 + z1) / 2 + 0.07):
+                    if not any(abs(xs(t) - qx) < hx and abs(z - qz) < hz for qx, qz, hx, hz in things):
+                        floor_nail(xs(t), sheer(t) + 0.03, z, 4)
     if gangway:                                                                        # the gangway: a post at each end of
         gx, quay = gangway                                                             # the opening, the ramp resting on the
-        for e in (min(gap), max(gap)):                                                 # gunwale and reaching down to the quay
-            add.cuboid([e, sheer(tx(e)) + 0.33, -(half(tx(e)) - 0.1)], [0.16, 0.66, 0.16], P["wood_dark"])   # at 1 in 4
-        rim, deck = -half(tx(gx)), sheer(tx(gx))
+        for t, e in ((GAP[0], 0.08), (GAP[1], -0.08)):                                 # gunwale and reaching down to the quay
+            add.cuboid([xs(t) + e, sheer(t) + 0.36, -(half(t) - 0.055)], [0.16, 0.72, 0.17], P["wood_dark"])   # at 1 in 4
+        edge, deck = -half(t_at(gx)), sheer(t_at(gx))
         reach = (deck - quay) / 0.25
-        A, B = [gx, deck + 0.04 + 0.35 * 0.25, rim + 0.35], [gx, quay + 0.04, rim - reach]
-        add.beam(A, B, 1.8, 0.08, shade_of("wood_light", 1))
-        span = vlen(vsub(B, A))
+        RA, RB = [gx, deck + 0.04 + 0.35 * 0.25, edge + 0.35], [gx, quay + 0.04, edge - reach]
+        add.beam(RA, RB, 1.8, 0.08, shade_of("wood_light", 1))
+        span = vlen(vsub(RB, RA))
         for c in range(1, int(span / 0.35)):                                           # cleats for the hooves
-            p = [A[j] + (B[j] - A[j]) * c * 0.35 / span for j in range(3)]
+            p = [RA[j] + (RB[j] - RA[j]) * c * 0.35 / span for j in range(3)]
             add.beam([gx - 0.8, p[1] + 0.065, p[2]], [gx + 0.8, p[1] + 0.065, p[2]], 0.06, 0.05, P["wood"])
         for sx in (-0.84, 0.84):                                                       # the rails
             tops = []
             for f in (0.12, 0.88):
-                p = [A[j] + (B[j] - A[j]) * f for j in range(3)]
-                add.cylinder([gx + sx, p[1] + 0.03, p[2]], [gx + sx, p[1] + 0.95, p[2]], 0.04, 6, P["wood_dark"])
+                p = [RA[j] + (RB[j] - RA[j]) * f for j in range(3)]
+                add.cylinder([gx + sx, p[1] + 0.04, p[2]], [gx + sx, p[1] + 0.95, p[2]], 0.04, 6, P["wood_dark"])
                 tops.append([gx + sx, p[1] + 0.95, p[2]])
             add.cylinder(tops[0], tops[1], 0.035, 6, P["wood"])
-    for cx_, cz_, cf in crew:                                                          # sailors about the deck
-        figure([cx_, sheer(tx(cx_)), cz_], cf, person("stand", (P["blue"], P["linen"], P["red"])[int(abs(cx_) * 3) % 3], hat=(cz_ > 0),
-                                                      hair=(P["wood_dark"], P["black"], P["straw"])[int(abs(cz_) * 5) % 3]))
+    ties = []                                                                          # timberheads on the cap rail to make
+    for xl in (-9.4, 9.4):                                                             # the mooring lines fast to, on either
+        for sg in (-1, 1):                                                             # side; fenders, bundles of rope, hung
+            t = t_at(xl)                                                               # on the starboard side
+            p, (nx, nz) = rim(t, sg)
+            add.beam(by_rim(t, sg, -0.04, 0.61), by_rim(t, sg, -0.04, 0.91), 0.16, 0.16, P["wood_dark"], up=(nx, 0, nz))
+            if sg < 0:
+                ties.append(by_rim(t, sg, -0.04, 0.84))
+    for xl in (-6.0, 0.0, 6.0):
+        t = t_at(xl)
+        c = [xs(t), 0.72, -((side(t, 0.72) or half(t)) + 0.05 + 0.24)]
+        add.mesh(add.move(add.stretch(add.make(add.sphere, [0, 0, 0], 0.24, 8, P["rope"]), [1.0, 1.6, 1.0], (0, 0, 0)), c))
+        add.cylinder([c[0], 0.72 + 0.38, c[2]], by_rim(t, -1, 0.0, 0.6), 0.02, 4, P["rope"])
+    for k, (cx_, cz_, cf, task) in enumerate(crew):                                   # the crew: the master on the castle's
+        if task == "captain":                                                          # deck, sailors at work on the main one
+            captain([cx_, top + 0.12, cz_], cf)
+        else:
+            sailor([cx_, sheer(t_at(cx_)) + 0.03, cz_], cf, task, seed + k)
     M = add.pop()
     fx, fz = forward
     fl = add.sqrt(fx * fx + fz * fz)
     xa = [fx / fl, 0, fz / fl]
     za = [-xa[2], 0, xa[0]]                                                            # x cross y: a right-handed frame
     add.mesh(placed(M, at, xa, [0, 1, 0], za))
-    flag([at[0] + MX * xa[0], at[1] + TOP + 1.1, at[2] + MX * xa[2]], 2.2, 1.3, add.pi * 0.3, phase=seed * 0.7)   # in the castle's wind
+    flag([at[0] + MX * xa[0], at[1] + TOP + 3.25, at[2] + MX * xa[2]], 2.2, 1.3, add.pi * 0.3, phase=seed * 0.7)   # in the castle's wind
     flag([at[0] + (x0 + 0.3) * xa[0], at[1] + top + 3.5, at[2] + (x0 + 0.3) * xa[2]], 1.6, 1.0, add.pi * 0.3, phase=seed * 0.7 + 0.4)
-    return lambda x, y, z: [at[0] + x * xa[0] + z * za[0], at[1] + y, at[2] + x * xa[2] + z * za[2]]
+    return [[at[0] + x * xa[0] + z * za[0], at[1] + y, at[2] + x * xa[2] + z * za[2]] for x, y, z in ties]
 
 
 def rowboat(at, heading, oars=True):
@@ -9298,18 +10742,31 @@ rows = [U_SHORE + 1.2 + 3.0 * k for k in range(int((DOCK_U1 - U_SHORE - 1.2) / 3
 for k, u in enumerate(rows):                                                                 # piles in rows, a cap beam on each
     for v in (-DOCK_W + 0.3, -1.3, 1.3, DOCK_W - 0.3):
         x, _, z = dock_pt(u, v, 0)
-        add.cylinder([u, ground(x, z) - 0.4, v], [u, DOCK_Y - 0.44, v], 0.18, 10, pick("wood_dark", k, v))
-    add.cuboid([u, DOCK_Y - 0.33, 0], [0.34, 0.24, 2 * DOCK_W + 0.3], P["wood_dark"])
+        add.cylinder([u, ground(x, z) - 0.4, v], [u, DOCK_Y - 0.47, v], 0.18, 10, pick("wood_dark", k, v))
+    add.cuboid([u, DOCK_Y - 0.35, 0], [0.34, 0.24, 2 * DOCK_W + 0.3], P["wood_dark"])
     if k % 2 and u < DOCK_U1 - 8:                                                            # braces under the deep part
         for v0 in (-DOCK_W + 0.3, 1.3):
             add.beam([u, DOCK_Y - 0.5, v0], [u, WATER_Y - 1.2, v0 + 2.6], 0.12, 0.14, P["wood_dark"])
-for v in (-3.6, -1.8, 0.0, 1.8, 3.6):                                                        # stringers along
-    add.cuboid([(DOCK_U0 + DOCK_U1) / 2, DOCK_Y - 0.13, v], [DOCK_U1 - DOCK_U0, 0.2, 0.18], P["wood"])
+STRINGERS = (-3.6, -1.8, 0.0, 1.8, 3.6)
+for v in STRINGERS:                                                                          # stringers along, on the caps
+    add.cuboid([(DOCK_U0 + DOCK_U1) / 2, DOCK_Y - 0.145, v], [DOCK_U1 - DOCK_U0, 0.17, 0.18], P["wood"])
+ON_WHARF = ([(u, sg * (DOCK_W - 0.35), 0.25, 0.25) for u, sg in POSTS] +                        # (what stands on the deck:
+            [(DOCK_U1 - 9.0, -2.4, 0.65, 0.65), (KING_U + GANG_X, 2.9, 1.0, 1.4)] +             # the bollards, the crane,
+            [(u, v, 0.45, 0.45) for u, v in ((DOCK_U1 - 14.0, -2.6), (DOCK_U1 - 13.1, -2.8), (DOCK_U1 - 13.6, -1.9),   # the ramp,
+                                             (DOCK_U1 - 20.0, 2.4), (DOCK_U1 - 19.1, 2.2), (DOCK_U1 - 30.0, -2.8),   # the cargo,
+                                             (DOCK_U1 - 30.7, -2.5), (DOCK_U1 - 30.3, -1.9))] +
+            [(u, v, 0.5, 0.5) for u, v in ((DOCK_U1 - 23.5, -2.5), (DOCK_U1 - 23.5, -1.6), (DOCK_U1 - 26.0, 2.6))] +
+            [(u, -DOCK_W + 0.4, 0.12, 0.12) for u in (U_SHORE + 3.0, DOCK_U1 - 1.0)] +       # the lanterns' posts, the
+            [(DOCK_U1 - 0.3, 0.6, 0.4, 0.7), (DOCK_U1 - 0.3, -1.9, 0.35, 0.35), (DOCK_U1 - 0.9, -2.6, 0.35, 0.35)])   # fishermen)
 n = int((DOCK_U1 - DOCK_U0) / 0.3)
 for i in range(n):                                                                           # the deck: planks across, with gaps,
-    pitch = (DOCK_U1 - DOCK_U0) / n                                                          # from the end of the road
-    u = DOCK_U0 + (i + 0.5) * pitch
+    pitch = (DOCK_U1 - DOCK_U0) / n                                                          # from the end of the road, each
+    u = DOCK_U0 + (i + 0.5) * pitch                                                          # nailed to every stringer
     add.cuboid([u, DOCK_Y - 0.03, (hash2(i, 3, 17) - 0.5) * 0.06], [pitch - 0.02, 0.06, 2 * DOCK_W - 0.02 * hash2(i, 4, 17)], pick("wood", i, 13))
+    for v in STRINGERS:
+        for du in (-0.07, 0.07):
+            if not any(abs(u + du - qu) < hu and abs(v - qv) < hv for qu, qv, hu, hv in ON_WHARF):
+                floor_nail(u + du, DOCK_Y, v, 4)
 for sg in (-1, 1):                                                                           # fender logs along the sides,
     add.cylinder([U_SHORE, DOCK_Y - 0.28, sg * (DOCK_W + 0.12)], [DOCK_U1 + 0.1, DOCK_Y - 0.28, sg * (DOCK_W + 0.12)], 0.15, 10, P["wood_dark"])
     for u in (u for u, side in POSTS if side == sg):                                         # the bollards
@@ -9347,20 +10804,18 @@ for u in (U_SHORE + 3.0, DOCK_U1 - 1.0):                                        
 add.mesh(add.rotateY(add.pop(), -DOCK_A))
 # the ships, moored along the wharf with bow and stern lines to the bollards, fenders between; the king's ship with
 # its gangway open and a ramp down onto the wharf
-SHIPS = [((KING_U, DOCK_W + 0.3 + 3.6, 1), 1), ((DOCK_U1 - 16.0, -(DOCK_W + 0.3 + 3.6), -1), 2)]
+SHIPS = [((KING_U, DOCK_W + 0.8 + 3.6, 1), 1), ((DOCK_U1 - 16.0, -(DOCK_W + 0.8 + 3.6), -1), 2)]    # (off the wharf by the fenders)
 for (u, v, way), seed in SHIPS:
-    ship(dock_pt(u, v, WATER_Y), (way * DOCK_C, way * DOCK_S), seed=seed, band=P["red"] if seed == 1 else P["blue"], shields=seed == 1,
-         gangway=(GANG_X, DOCK_Y - WATER_Y) if seed == 1 else None,
-         crew=((3.0, 1.2, 0.6), (-3.5, -1.0, 2.5), (-9.0, 0.4, 1.6)) if seed == 1 else ((5.0, 0.8, 1.0), (-2.0, -1.4, 4.0)))
+    ties = ship(dock_pt(u, v, WATER_Y), (way * DOCK_C, way * DOCK_S), seed=seed, band=P["red"] if seed == 1 else P["blue"],
+                shields=seed == 1, gangway=(GANG_X, DOCK_Y - WATER_Y) if seed == 1 else None,
+                crew=((3.0, 1.2, 0.6, "coil"), (-4.2, -1.0, 2.5, "mop"), (-8.4, 0.4, add.pi / 2, "captain")) if seed == 1 else
+                     ((5.5, -0.9, 1.0, "coil"), (-3.8, 0.6, 4.0, "mop"), (-8.4, -0.4, add.pi / 2, "captain")))
     sg = 1 if v > 0 else -1
-    for du in (-11.0, 11.5):                                                          # the lines
-        post = min((p for p, side in POSTS if side == sg), key=lambda p: abs(p - u - du))                            # to the nearest
-        b = dock_pt(post, sg * (DOCK_W - 0.35), DOCK_Y + 0.5)                                                               # bollard
-        h = dock_pt(u + du * 0.85, v - sg * 2.2, WATER_Y + 2.7)
+    for h in ties:                                                                    # the lines, from the timberheads to the
+        uh = h[0] * DOCK_C + h[2] * DOCK_S                                            # nearest bollard a little further along
+        post = min((p for p, side in POSTS if side == sg), key=lambda p: abs(p - u - 1.25 * (uh - u)))
+        b = dock_pt(post, sg * (DOCK_W - 0.35), DOCK_Y + 0.5)
         add.polyline([h, [(h[0] + b[0]) / 2, (h[1] + b[1]) / 2 - 0.35, (h[2] + b[2]) / 2], b], 0.04, 6, P["rope"], smooth=1)
-    for du in (-6.0, 0.0, 6.0):                                                       # fenders: bundles of rope
-        c = dock_pt(u + du, sg * (DOCK_W + 0.3), WATER_Y + 0.9)
-        add.mesh(add.move(add.stretch(add.make(add.sphere, [0, 0, 0], 0.3, 8, P["rope"]), [1.0, 1.6, 1.0], (0, 0, 0)), c))
 # the rowing boats: one at the wharf's ladder, the rest all round the island by the shore, each tied to a stake
 BOATS = [(dock_pt(DOCK_U1 + 1.4, 3.6, 0), DOCK_A + add.pi / 2 + 0.25, None)]
 for deg in BOAT_DEGS:

@@ -217,7 +217,7 @@ examples/            43 pavyzdinės programos su komentarais (studijos ir pilni 
   build_all.py       paleidžia visas, tikrina Sketchfab ribas, sugeneruoja paveikslėlius
 tools/
   preview.py         atvaizdavimo įrankis be priklausomybių
-  castle_photos.py   keturiasdešimt pilies nuotraukų, darytų su preview.py
+  castle_photos.py   keturiasdešimt viena pilies nuotrauka, daryta su preview.py
   make_docs.py       sukuria docs/index.html iš kodo aprašymų ir docs/reference.py
   coverage.py        kuris pavyzdys kurią funkciją naudoja
 tests/
