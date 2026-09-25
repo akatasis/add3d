@@ -90,7 +90,7 @@ nes vardas `add` PyPI kataloge užimtas kito žmogaus tuščiu įrašu – žr.
 | **Stiklas ir paveikslėliai** | `transparent` / `opacity` permatomiems paviršiams ir `texture` paveikslėlių tekstūroms, abu įrašomi į `.mtl` failą; `write_png` patiems paskaičiuotiems paveikslėliams |
 | **Failai** | rašo `.off`, `.obj` + `.mtl`, `.ply`, `.stl`; skaito `.off`, `.obj`, `.ply`; `obj_size` dar prieš rašant; `stream` rašo modelį dalimis, todėl jis gali būti didesnis už kompiuterio atmintį |
 | **Tikrinimas** | `stats()` ir `check()` – daugiakampių skaičius, spalvos, uždarumas, tūris ir Sketchfab ribos (50 MB, 50 medžiagų) |
-| **Peržiūra** | `tools/preview.py` – atvaizdavimo įrankis, irgi be jokių priklausomybių; per didelį įkelti failą (400 MB pilį) jis skaito srautu |
+| **Peržiūra** | `tools/preview.py` – atvaizdavimo įrankis, irgi be jokių priklausomybių; per didelį įkelti failą (500 MB pilį) jis skaito srautu |
 
 235 viešų vardų, kiekvienas aprašytas angliškai ir lietuviškai su veikiančiu
 pavyzdžiu, viename 7800 eilučių faile, kurį galima perskaityti.
@@ -171,16 +171,16 @@ paruoštas](examples/41_sketchfab_ready.py) spalvingas modelis, [pagalvinės
 raidės](examples/42_pillow_letters.py), [planeta](examples/43_planet.py),
 [geodezinio kupolo namas](examples/44_geodesic_dome.py), [stiklas su
 tekstūromis](examples/45_glass_and_textures.py) -- ir
-[pilis](examples/46_castle.py): sala permatomame ežere su žuvimis ir
-nuskendusia valtimi, aštuonkampė siena iš atskirų akmens blokų su
+[pilis](examples/46_castle.py): sala permatomame ežere su žuvų būriais ir
+nuskendusia valtimi, pievos su žole ir gėlėmis, aštuonkampė siena iš atskirų akmens blokų su
 aštuoniais tuščiaviduriais bokštais -- sraigtiniai laiptai, durys į sienos
 taką, apžvalgos aikštelės viršuje -- vartai su pakeliamomis grotomis ir
 tiltu, kabančiu ant tikrų grandinių, per akmenimis grįstą tvenkinį iki pat
 sienų, kuriame plaukioja piranijos, patrankos ant bokštų ir virš vartų su
 patrankininkais, lauko akmenimis grįstas kelias nuo tilto palei tvenkinį ir
 švelniai žemyn aplink kalvą į uostą, kur
-prie krantinės prišvartuoti du dideli laivai, o aplink salą pririštos
-valtys, rūmai su stiklo langais, portiku ant kolonų,
+prie krantinės prišvartuoti du dideli laivai iš persidengiančių lentų, o aplink salą pririštos
+valtys, rūmai su stiklo langais, mediniu stogeliu virš įėjimo,
 balkonais, stoglangiais ir stogu iš atskirų čerpių, koplyčia su vitražais
 ir altoriumi, kiemas su šuliniu, fontanu, kalve, virtuve su židiniu ir
 duonkepe krosnimi, rąstiniais nameliais su šienaujomis ir trobele (visi
@@ -191,13 +191,13 @@ ir šunimi, žvejais ant krantinės, eglėmis, pušimis, beržais, ąžuolais,
 guobomis ir liepomis šlaituose, kirais virš ežero -- o viduje siurprizai:
 didžioji menė su karaliumi soste, jo patarėju, juokdariu ir muzikantais,
 puota trisdešimt dviem svečiams, šachmatų etiudas („Baltieji pradeda ir
-laimi") ir laiptai žemyn į vyno rūsį, kareivių miegamasis antrame aukšte,
+laimi") ir laiptai žemyn į skliautuotą vyno rūsį, kareivių miegamasis antrame aukšte,
 palėpė, kur tarp senų daiktų miega svečiai, koplyčios pastogė su kunigo
 rūbais ir taure, o didžiajame bokšte -- lobynas su sparnuotu drakonu,
 ugnimi saugančiu auksą, virš jo ginklinė ir valdovo kambarys; kiekvienas
 pilies gyventojas turi lovą. Tekstūrų nėra: kiekvienas akmens blokas,
 čerpė, grindinio akmuo, vitražo stiklelis ir herbas -- daugiakampiai.
-`python3 46_castle.py` rašo modelį srautu iš karto į `castle.off` (apie 400
+`python3 46_castle.py` rašo modelį srautu iš karto į `castle.off` (apie 500
 MB) ir `castle.obj`, pakeliui sutvarkydamas (jokių pasikartojančių
 viršūnių, pasikartojančių, palaidotų ar persidengiančių sienų), mažiau nei
 100 spalvų; `.obj`, suglaudintas 7-Zip, telpa į 100 MB, kuriuos priima
@@ -217,7 +217,7 @@ examples/            43 pavyzdinės programos su komentarais (studijos ir pilni 
   build_all.py       paleidžia visas, tikrina Sketchfab ribas, sugeneruoja paveikslėlius
 tools/
   preview.py         atvaizdavimo įrankis be priklausomybių
-  castle_photos.py   trisdešimt šešios pilies nuotraukos, darytos su preview.py
+  castle_photos.py   keturiasdešimt pilies nuotraukų, darytų su preview.py
   make_docs.py       sukuria docs/index.html iš kodo aprašymų ir docs/reference.py
   coverage.py        kuris pavyzdys kurią funkciją naudoja
 tests/

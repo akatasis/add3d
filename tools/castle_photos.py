@@ -1,12 +1,13 @@
 """
-castle_photos.py -- thirty-six photographs of the castle (examples/46_castle.py).
+castle_photos.py -- forty photographs of the castle (examples/46_castle.py).
 
-Thirty-six camera positions chosen the way a photographer would walk round
+Forty camera positions chosen the way a photographer would walk round
 the finished model: the approach over the lake, the gatehouse, the walls,
 the courtyard and its trades, the palace inside and out, the donjon with the
 treasury, the chapel, the roofs, the harbour with its ships, the road up the
-hill, the log houses and the kitchen inside.  Each is rendered with tools/preview.py
-(the big model is streamed) to ``<folder>/NN_name.png``.
+hill, the log houses and the kitchen inside, the meadow outside the walls,
+a school of fish, the wood on the shore, the wine cellar.  Each is rendered
+with tools/preview.py (the big model is streamed) to ``<folder>/NN_name.png``.
 
     python3 tools/castle_photos.py examples/out/castle_full/castle.obj photos
     python3 tools/castle_photos.py castle.obj photos --size 1600 1000 --only 1,7,21
@@ -24,7 +25,7 @@ import preview
 PHOTOS = [
     ("01_pilis_nuo_ezero", (72, 31.5, 98), (0, 13.5, 5), 33),                 # the castle on its hill, from the south-east
     ("02_priesaisrys_nuo_kranto", (48, 4, 150), (28, 11, 45), 32),           # from the far shore: the island, the road, the harbour
-    ("03_vartai_ir_pakeliamas_tiltas", (0, 14.5, 76), (0, 12.5, 48), 36),     # the gatehouse and the drawbridge
+    ("03_vartai_ir_pakeliamas_tiltas", (0, 14.5, 69.5), (0, 12.5, 48), 36),   # the gatehouse and the drawbridge
     ("04_grandines_ir_grioviai", (-10, 12.5, 63), (0, 12, 52), 40),       # chains, moat and the gate arch
     ("05_piranijos_tvenkinyje", (-8.3, 10.8, 63.3), (-8.6, 9.3, 57.8), 40),    # piranhas in the moat, leaping by the gate towers
     ("06_siena_virs_skardzio", (-98, 25.5, -42), (-40, 17.5, -20), 40),       # the curtain wall on the cliff side
@@ -33,7 +34,7 @@ PHOTOS = [
     ("09_koplycia", (46, 14.5, -10), (30, 15.5, -16), 40),                    # the chapel and its stained glass
     ("10_rumu_fasadas", (7, 17.5, 31), (0, 13.5, -2), 42),                    # the palace front from the courtyard
     ("11_kiemas_nuo_sienos", (32, 23, 36), (-5, 11.5, 5), 45),            # the courtyard from the wall walk
-    ("12_sulinys_ir_fontanas", (19, 13, 18), (11, 11, 16), 45),       # the well and the fountain
+    ("12_sulinys_ir_fontanas", (-4, 13, 30), (5, 10.5, 14), 40),       # the fountain before the palace, the well
     ("13_turgus", (-3, 13, 37), (-12, 11.3, 30), 45),                   # the market
     ("14_kalve", (-25, 12.5, 11), (-34, 11.3, 6), 45),                      # the smithy
     ("15_arklides", (17, 12.5, -32), (10, 11, -40), 45),                  # the stable and the horses
@@ -58,6 +59,10 @@ PHOTOS = [
     ("34_rastiniai_nameliai", (3, 11.8, -44), (-8, 10.9, -36), 40),       # log houses behind the palace
     ("35_namelio_vidus", (-0.6, 11.6, -36.8), (-3.0, 10.7, -34.7), 50),   # inside a log house: beds, the table
     ("36_virtuves_vidus", (-42.2, 11.3, -7.7), (-44.5, 10.6, -11.1), 50), # inside the kitchen: the hearth, the cook
+    ("37_pieva_ir_geles", (44, 7.6, 66), (30, 8.5, 54), 34),               # the meadow outside the walls, its flowers
+    ("38_zuvu_burys", (-72.5, 3.6, 47.8), (-75.6, -0.2, 43.6), 34),        # a school of bream in the lake
+    ("39_miskas_prie_kranto", (-52, 9, 76), (-44, 7, 57), 40),              # the wood on the shore: spruces, birches, oaks
+    ("40_vyno_rusys", (17.2, 8.1, -18.2), (0.0, 7.2, -16.4), 40),           # the wine cellar: down the aisle to the great tun
 ]
 
 
