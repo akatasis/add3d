@@ -119,9 +119,10 @@ Jei abejojate, pirmiausia išbandykite `test.pypi.org`
   viename archyve. Neviršykite 50 MB ir 50 spalvų (`add.check()` pasako;
   `add.save("modelis.obj", colors=50)` sumažina spalvingą modelį). Į
   atmintį netelpantis modelis rašomas dalimis su `add.stream("modelis.obj")`
-  (taip rašoma 46 pavyzdžio pilis: 400 MB `.off` ir `.obj`, kuris
-  suglaudintas 7-Zip telpa į 100 MB). `save` ir `stream` modelį pakeliui
-  sutvarko, todėl peržiūroje niekas nemirga.
+  (taip rašoma 46 pavyzdžio pilis: daugiau kaip 500 MB `.off` ir `.obj`,
+  kuris suglaudintas 7-Zip telpa į 100 MB -- [pilis
+  Sketchfab'e](https://skfb.ly/pOnRS)). `save` ir `stream` modelį pakeliui sutvarko, todėl
+  peržiūroje niekas nemirga.
 * **Straipsnis**: `paper/paper.md` (+ `references.bib`) parašytas
   informatikos didaktikos leidiniui; repozitorijos nuorodą ir DOI (jei
   leidimą archyvuosite Zenodo) įrašykite ir į `CITATION.cff`.

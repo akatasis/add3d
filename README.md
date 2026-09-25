@@ -7,6 +7,7 @@ nothing to install.
 
 [Documentation](https://akatasis.github.io/add3d/) &middot;
 [Gallery](https://akatasis.github.io/add3d/#gallery) &middot;
+[The castle in 3D on Sketchfab](https://skfb.ly/pOnRS) &middot;
 [Lietuviškai](README.lt.md)
 
 ```python
@@ -21,7 +22,7 @@ add.save("first_model.off")      # or .obj (+ .mtl), .ply, .stl
 ```
 
 <p align="center">
-  <img src="docs/images/castle.png" width="98%" alt="The castle: an island in a transparent lake, walls of stone blocks, a gatehouse with a drawbridge, a palace with glass windows">
+  <a href="https://skfb.ly/pOnRS"><img src="docs/images/castle.png" width="98%" alt="The castle: an island in a transparent lake, walls of stone blocks, a gatehouse with a drawbridge, a palace with glass windows"></a>
   <img src="docs/images/castle_hall.png" width="49%" alt="Inside the castle: the throne hall and the feast">
   <img src="docs/images/castle_treasury.png" width="49%" alt="The treasury with a winged dragon guarding the gold">
   <img src="docs/images/castle_gate.png" width="49%" alt="The gatehouse from the drawbridge: portcullis, chains, guards">
@@ -33,7 +34,8 @@ add.save("first_model.off")      # or .obj (+ .mtl), .ply, .stl
 </p>
 
 Nobody drew any of these. Each is one short program in
-[`examples/`](examples/).
+[`examples/`](examples/). The castle can be turned round and explored in a
+browser: **[open it on Sketchfab](https://skfb.ly/pOnRS)**.
 
 ---
 
@@ -90,10 +92,10 @@ registered by someone else -- see [PUBLISHING.md](PUBLISHING.md).)
 | **Glass and pictures** | `transparent` / `opacity` for see-through surfaces and `texture` for image textures, both written to the `.mtl` file; `write_png` for pictures you compute yourself |
 | **Files** | write `.off`, `.obj` + `.mtl`, `.ply`, `.stl`; read `.off`, `.obj`, `.ply`; `obj_size` before writing; `stream` writes a model part by part, so it can be bigger than the memory of the computer |
 | **Checking** | `stats()` and `check()` — polygon count, colours, watertightness, volume, and the Sketchfab limits (50 MB, 50 materials) |
-| **Looking** | `tools/preview.py`, a software renderer that also has no dependencies; it streams a file too big to load (the 500 MB castle) |
+| **Looking** | `tools/preview.py`, a software renderer that also has no dependencies; it streams a file too big to load (the castle, over 500 MB) |
 
 235 public names, every one documented in English and Lithuanian with a
-runnable example, in one 7800-line file you can read.
+runnable example, in one 8000-line file you can read.
 
 ## Boolean operations, from scratch
 
@@ -176,38 +178,43 @@ of pulled boxes and prisms, [vertex tools](examples/40_vertex_tools.py), a
 letters](examples/42_pillow_letters.py), a [planet](examples/43_planet.py),
 a [geodesic dome](examples/44_geodesic_dome.py) house, [glass and
 textures](examples/45_glass_and_textures.py) -- and the
-[castle](examples/46_castle.py): an island in a transparent lake with schools
-of fish and a sunken boat, meadows of grass and flowers, an octagonal wall of individual stone blocks with eight
-hollow towers -- spiral stairs, doors onto the wall walk, lookouts on top
--- a gatehouse with a portcullis and a drawbridge hanging on real chains
-over a moat lined with stone that comes right up to the walls, piranhas in
-it, guns on the towers and over the gate with their gunners, a road paved
-with fieldstones from the bridge along the moat and gently down round the
-hill to a harbour where two great ships lie
-moored at a wharf -- clinker-built of planks -- and rowing boats are tied up all round the shore, a palace with glass windows, a timber porch,
-balconies, dormers and a roof of single tiles, a chapel with stained glass
-and an altar, a courtyard with a well, a fountain, a smithy, a kitchen with
-a hearth and a bread oven, log houses with hay lofts and a cottage, all
-furnished, a storehouse, a market, a stable, gardens, a field of rye,
-archery butts, a trebuchet, cannons, carts, barrels, crates, weapon racks,
-knights in armour, archers, townsfolk, horses, chickens and a dog,
-fishermen on the wharf, spruces, pines, birches, oaks, elms and limes on
-the slopes, gulls over the lake -- and, inside, the easter eggs: the great
-hall with the king on his throne, his counsellor, his fool and musicians, a
-feast for thirty-two guests, a chess study ("White to play and win") and a
-stair down to the vaulted wine cellar, the soldiers' dormitory upstairs, an attic
-where the guests sleep among old things, the chapel's attic with the
-vestments and the chalice, and in the big tower the treasury with a winged
-dragon breathing fire over the gold, the armoury and the lord's chamber
-above it; everyone who lives in the castle has a bed. There are no
-textures: every stone block, roof tile, cobblestone, pane of stained glass
-and coat of arms is geometry. `python3 46_castle.py` streams the model to
-`castle.off` (about 500 MB) and `castle.obj` at once, tidied on the way (no
-repeated vertices, no repeated, buried or overlapping faces), under 100
-colours; compressed with 7-Zip the `.obj` is under 100 MB, which is what
-Sketchfab takes. `python3 tools/coverage.py` lists which example uses which
-function; every public function is used by at least one, and every model
-fits the Sketchfab limits (`examples/build_all.py` checks).
+[castle](examples/46_castle.py): an island in a transparent lake with
+schools of fish, three sharks and a sunken boat, meadows of grass and
+flowers, an octagonal wall of individual stone blocks with eight hollow
+towers -- spiral stairs, doors onto the wall walk, lookouts on top -- a
+gatehouse with a portcullis and a drawbridge hanging on real chains over a
+moat lined with stone that comes right up to the walls, piranhas in it,
+guns on the towers and over the gate with their gunners, a road paved with
+fieldstones from the bridge along the moat and gently down round the hill
+to a harbour where two great ships, clinker-built of planks and with their
+crews aboard, lie moored at a wharf and rowing boats are tied up all round
+the shore, a palace with glass windows, a stone portico, stone balconies,
+dormers and a roof of single tiles, a chapel with stained glass, an altar
+and the royal graves behind it, a courtyard with a well, a fountain with
+Neptune, a dovecote, a smithy, a kitchen with a hearth and a bread oven,
+log houses with hay lofts and a cottage, all furnished, a storehouse, a
+market, a stable, gardens, a field of rye, archery butts, a trebuchet,
+cannons, carts, barrels, crates, weapon racks, knights in armour, archers,
+townsfolk, horses, chickens and a dog, fishermen on the wharf, spruces,
+pines, birches, oaks, elms and limes on the slopes with hares, foxes and
+wolves running among them, gulls over the lake -- and, inside, the easter
+eggs: the great hall with the king on his throne, his counsellor, his fool
+and musicians, a feast for thirty-two guests, a chess study ("White to
+play and win") and a stair down to the vaulted wine cellar, the soldiers'
+dormitory upstairs, an attic where the guests sleep among old things, the
+chapel's attic with the vestments and the chalice, and in the big tower
+the treasury with a winged dragon breathing fire over the gold, the
+armoury and the lord's chamber above it; everyone who lives in the castle
+has a bed. There are no textures: every stone block, roof tile,
+cobblestone, pane of stained glass and coat of arms is geometry.
+`python3 46_castle.py` streams the model to `castle.off` (over 500 MB) and
+`castle.obj` at once, tidied on the way (no repeated vertices, no
+repeated, buried or overlapping faces), under 100 colours; compressed with
+7-Zip the `.obj` is under 100 MB, which is what Sketchfab takes --
+**[the castle on Sketchfab](https://skfb.ly/pOnRS)**.
+`python3 tools/coverage.py` lists which example uses which function; every
+public function is used by at least one, and every model fits the
+Sketchfab limits (`examples/build_all.py` checks).
 
 ## Repository layout
 
@@ -260,10 +267,11 @@ Python 3.8 to 3.13.
 `save("model.obj")` writes an `.obj` and a `.mtl` (plus any texture images
 you used). Put them in one archive and upload it to
 [Sketchfab](https://sketchfab.com) for a model anyone can turn around in a
-browser. Sketchfab accepts up to 100 MB on the free plan and merges
-materials beyond 100; `check()` warns at the course's limits of 50 MB and
-50 colours, and `save("model.obj", colors=50)` reduces a colourful model to
-fit. For 3D printing, `save("model.stl")` after `clean(..., normals=True)`.
+browser, as [the castle](https://skfb.ly/pOnRS) is. Sketchfab accepts up to
+100 MB on the free plan and merges materials beyond 100; `check()` warns at
+the course's limits of 50 MB and 50 colours, and
+`save("model.obj", colors=50)` reduces a colourful model to fit. For 3D
+printing, `save("model.stl")` after `clean(..., normals=True)`.
 
 ## Publishing
 

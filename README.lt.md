@@ -7,6 +7,7 @@ geometrijos bibliotekos, nieko diegti nereikia.
 
 [Dokumentacija](https://akatasis.github.io/add3d/) &middot;
 [Galerija](https://akatasis.github.io/add3d/#gallery) &middot;
+[Pilis 3D Sketchfab'e](https://skfb.ly/pOnRS) &middot;
 [In English](README.md)
 
 ```python
@@ -21,7 +22,7 @@ add.save("pirmas_modelis.off")   # arba .obj (+ .mtl), .ply, .stl
 ```
 
 <p align="center">
-  <img src="docs/images/castle.png" width="98%" alt="Pilis: sala permatomame ežere, akmens blokų sienos, vartai su pakeliamu tiltu, rūmai su stiklo langais">
+  <a href="https://skfb.ly/pOnRS"><img src="docs/images/castle.png" width="98%" alt="Pilis: sala permatomame ežere, akmens blokų sienos, vartai su pakeliamu tiltu, rūmai su stiklo langais"></a>
   <img src="docs/images/castle_hall.png" width="49%" alt="Pilies viduje: sosto menė ir puota">
   <img src="docs/images/castle_treasury.png" width="49%" alt="Lobynas su sparnuotu drakonu ant aukso">
   <img src="docs/images/castle_gate.png" width="49%" alt="Vartai nuo pakeliamo tilto: grotos, grandinės, sargybiniai">
@@ -33,7 +34,8 @@ add.save("pirmas_modelis.off")   # arba .obj (+ .mtl), .ply, .stl
 </p>
 
 Nė vienas jų nenupieštas ranka. Kiekvienas – viena trumpa programa
-[`examples/`](examples/) aplanke.
+[`examples/`](examples/) aplanke. Pilį galima pasukioti ir apžiūrėti
+naršyklėje: **[atverkite ją Sketchfab'e](https://skfb.ly/pOnRS)**.
 
 ---
 
@@ -90,10 +92,10 @@ nes vardas `add` PyPI kataloge užimtas kito žmogaus tuščiu įrašu – žr.
 | **Stiklas ir paveikslėliai** | `transparent` / `opacity` permatomiems paviršiams ir `texture` paveikslėlių tekstūroms, abu įrašomi į `.mtl` failą; `write_png` patiems paskaičiuotiems paveikslėliams |
 | **Failai** | rašo `.off`, `.obj` + `.mtl`, `.ply`, `.stl`; skaito `.off`, `.obj`, `.ply`; `obj_size` dar prieš rašant; `stream` rašo modelį dalimis, todėl jis gali būti didesnis už kompiuterio atmintį |
 | **Tikrinimas** | `stats()` ir `check()` – daugiakampių skaičius, spalvos, uždarumas, tūris ir Sketchfab ribos (50 MB, 50 medžiagų) |
-| **Peržiūra** | `tools/preview.py` – atvaizdavimo įrankis, irgi be jokių priklausomybių; per didelį įkelti failą (500 MB pilį) jis skaito srautu |
+| **Peržiūra** | `tools/preview.py` – atvaizdavimo įrankis, irgi be jokių priklausomybių; per didelį įkelti failą (daugiau kaip 500 MB pilį) jis skaito srautu |
 
 235 viešų vardų, kiekvienas aprašytas angliškai ir lietuviškai su veikiančiu
-pavyzdžiu, viename 7800 eilučių faile, kurį galima perskaityti.
+pavyzdžiu, viename 8000 eilučių faile, kurį galima perskaityti.
 
 ## Loginės operacijos, parašytos nuo nulio
 
@@ -171,40 +173,43 @@ paruoštas](examples/41_sketchfab_ready.py) spalvingas modelis, [pagalvinės
 raidės](examples/42_pillow_letters.py), [planeta](examples/43_planet.py),
 [geodezinio kupolo namas](examples/44_geodesic_dome.py), [stiklas su
 tekstūromis](examples/45_glass_and_textures.py) -- ir
-[pilis](examples/46_castle.py): sala permatomame ežere su žuvų būriais ir
-nuskendusia valtimi, pievos su žole ir gėlėmis, aštuonkampė siena iš atskirų akmens blokų su
-aštuoniais tuščiaviduriais bokštais -- sraigtiniai laiptai, durys į sienos
-taką, apžvalgos aikštelės viršuje -- vartai su pakeliamomis grotomis ir
-tiltu, kabančiu ant tikrų grandinių, per akmenimis grįstą tvenkinį iki pat
-sienų, kuriame plaukioja piranijos, patrankos ant bokštų ir virš vartų su
-patrankininkais, lauko akmenimis grįstas kelias nuo tilto palei tvenkinį ir
-švelniai žemyn aplink kalvą į uostą, kur
-prie krantinės prišvartuoti du dideli laivai iš persidengiančių lentų, o aplink salą pririštos
-valtys, rūmai su stiklo langais, mediniu stogeliu virš įėjimo,
-balkonais, stoglangiais ir stogu iš atskirų čerpių, koplyčia su vitražais
-ir altoriumi, kiemas su šuliniu, fontanu, kalve, virtuve su židiniu ir
-duonkepe krosnimi, rąstiniais nameliais su šienaujomis ir trobele (visi
-įrengti viduje), sandėliu, turgumi, arklide, sodais, rugių lauku, šaudymo
-taikiniais, katapulta, patrankomis, vežimais, statinėmis, dėžėmis, ginklų
-stovais, riteriais šarvuose, lankininkais, miestiečiais, arkliais, vištomis
-ir šunimi, žvejais ant krantinės, eglėmis, pušimis, beržais, ąžuolais,
-guobomis ir liepomis šlaituose, kirais virš ežero -- o viduje siurprizai:
-didžioji menė su karaliumi soste, jo patarėju, juokdariu ir muzikantais,
-puota trisdešimt dviem svečiams, šachmatų etiudas („Baltieji pradeda ir
-laimi") ir laiptai žemyn į skliautuotą vyno rūsį, kareivių miegamasis antrame aukšte,
-palėpė, kur tarp senų daiktų miega svečiai, koplyčios pastogė su kunigo
-rūbais ir taure, o didžiajame bokšte -- lobynas su sparnuotu drakonu,
-ugnimi saugančiu auksą, virš jo ginklinė ir valdovo kambarys; kiekvienas
-pilies gyventojas turi lovą. Tekstūrų nėra: kiekvienas akmens blokas,
-čerpė, grindinio akmuo, vitražo stiklelis ir herbas -- daugiakampiai.
-`python3 46_castle.py` rašo modelį srautu iš karto į `castle.off` (apie 500
-MB) ir `castle.obj`, pakeliui sutvarkydamas (jokių pasikartojančių
-viršūnių, pasikartojančių, palaidotų ar persidengiančių sienų), mažiau nei
-100 spalvų; `.obj`, suglaudintas 7-Zip, telpa į 100 MB, kuriuos priima
-Sketchfab. `python3 tools/coverage.py` parodo, kuris pavyzdys kurią
-funkciją naudoja; kiekviena vieša funkcija panaudota bent viename, o
-kiekvienas modelis telpa į Sketchfab ribas (tikrina
-`examples/build_all.py`).
+[pilis](examples/46_castle.py): sala permatomame ežere su žuvų būriais,
+trimis rykliais ir nuskendusia valtimi, pievos su žole ir gėlėmis,
+aštuonkampė siena iš atskirų akmens blokų su aštuoniais tuščiaviduriais
+bokštais -- sraigtiniai laiptai, durys į sienos taką, apžvalgos aikštelės
+viršuje -- vartai su pakeliamomis grotomis ir tiltu, kabančiu ant tikrų
+grandinių, per akmenimis grįstą tvenkinį iki pat sienų, kuriame plaukioja
+piranijos, patrankos ant bokštų ir virš vartų su patrankininkais, lauko
+akmenimis grįstas kelias nuo tilto palei tvenkinį ir švelniai žemyn
+aplink kalvą į uostą, kur prie krantinės prišvartuoti du dideli laivai iš
+persidengiančių lentų su įgulomis, o aplink salą pririštos valtys, rūmai
+su stiklo langais, akmeniniu portiku, akmeniniais balkonais, stoglangiais
+ir stogu iš atskirų čerpių, koplyčia su vitražais, altoriumi ir
+karališkaisiais kapais už jos, kiemas su šuliniu, fontanu su Neptūnu,
+karvelide, kalve, virtuve su židiniu ir duonkepe krosnimi, rąstiniais
+nameliais su šieno pastogėmis ir trobele (visi įrengti viduje), sandėliu,
+turgumi, arklide, sodais, rugių lauku, šaudymo taikiniais, katapulta,
+patrankomis, vežimais, statinėmis, dėžėmis, ginklų stovais, riteriais
+šarvuose, lankininkais, miestiečiais, arkliais, vištomis ir šunimi,
+žvejais ant krantinės, eglėmis, pušimis, beržais, ąžuolais, guobomis ir
+liepomis šlaituose, tarp kurių bėgioja kiškiai, lapės ir vilkai, kirais
+virš ežero -- o viduje siurprizai: didžioji menė su karaliumi soste, jo
+patarėju, juokdariu ir muzikantais, puota trisdešimt dviem svečiams,
+šachmatų etiudas („Baltieji pradeda ir laimi") ir laiptai žemyn į
+skliautuotą vyno rūsį, kareivių miegamasis antrame aukšte, palėpė, kur
+tarp senų daiktų miega svečiai, koplyčios pastogė su kunigo rūbais ir
+taure, o didžiajame bokšte -- lobynas su sparnuotu drakonu, ugnimi
+saugančiu auksą, virš jo ginklinė ir valdovo kambarys; kiekvienas pilies
+gyventojas turi lovą. Tekstūrų nėra: kiekvienas akmens blokas, čerpė,
+grindinio akmuo, vitražo stiklelis ir herbas -- daugiakampiai.
+`python3 46_castle.py` rašo modelį srautu iš karto į `castle.off`
+(daugiau kaip 500 MB) ir `castle.obj`, pakeliui sutvarkydamas (jokių
+pasikartojančių viršūnių, pasikartojančių, palaidotų ar persidengiančių
+sienų), mažiau nei 100 spalvų; `.obj`, suglaudintas 7-Zip, telpa į 100 MB,
+kuriuos priima Sketchfab -- **[pilis Sketchfab'e](https://skfb.ly/pOnRS)**.
+`python3 tools/coverage.py` parodo, kuris pavyzdys kurią funkciją naudoja;
+kiekviena vieša funkcija panaudota bent viename, o kiekvienas modelis
+telpa į Sketchfab ribas (tikrina `examples/build_all.py`).
 
 ## Repozitorijos sandara
 
@@ -257,10 +262,11 @@ permatomumą bei tekstūras. Jie praeina su Python 3.8–3.13.
 `save("modelis.obj")` sukuria `.obj` ir `.mtl` failus (ir naudoja jūsų
 tekstūrų paveikslėlius). Sudėkite juos į vieną archyvą ir įkelkite į
 [Sketchfab](https://sketchfab.com) – modelį galės pasukioti bet kas
-naršyklėje. Nemokamas Sketchfab planas priima iki 100 MB, o medžiagas virš 100
-sulieja; `check()` įspėja ties kurso ribomis – 50 MB ir 50 spalvų, o
-`save("modelis.obj", colors=50)` sumažina spalvingą modelį, kad tilptų. 3D
-spausdinimui naudokite `save("modelis.stl")` po `clean(..., normals=True)`.
+naršyklėje, kaip [pilį](https://skfb.ly/pOnRS). Nemokamas Sketchfab planas
+priima iki 100 MB, o medžiagas virš 100 sulieja; `check()` įspėja ties
+kurso ribomis – 50 MB ir 50 spalvų, o `save("modelis.obj", colors=50)`
+sumažina spalvingą modelį, kad tilptų. 3D spausdinimui naudokite
+`save("modelis.stl")` po `clean(..., normals=True)`.
 
 ## Publikavimas
 

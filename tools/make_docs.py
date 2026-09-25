@@ -539,14 +539,22 @@ def _gallery_section():
            'viena programa iš <code>examples/</code> aplanko, ir kiekviena jų '
            'skirta skaityti.</span></p>',
            '<div class="gallery">']
-    for image, script, cap_en, cap_lt in content.GALLERY:
+    for image, script, cap_en, cap_lt, *online in content.GALLERY:
+        picture = '<img loading="lazy" src="images/%s" alt="%s">' % (
+            image, html.escape(cap_en))
+        more_en = more_lt = ""
+        if online:                       # the model itself, to turn round in 3D
+            url = html.escape(online[0])
+            picture = '<a href="%s">%s</a>' % (url, picture)
+            more_en = ' <a href="%s">Turn it round in 3D on Sketchfab.</a>' % url
+            more_lt = (' <a href="%s">Pasukiokite ją 3D Sketchfab\'e.</a>'
+                       % url)
         out.append(
-            '<figure><img loading="lazy" src="images/%s" alt="%s">'
-            '<figcaption><b>%s</b>'
-            '<span class="only-en">%s</span>'
-            '<span class="only-lt">%s</span></figcaption></figure>'
-            % (image, html.escape(cap_en), html.escape(script),
-               html.escape(cap_en), html.escape(cap_lt)))
+            '<figure>%s<figcaption><b>%s</b>'
+            '<span class="only-en">%s%s</span>'
+            '<span class="only-lt">%s%s</span></figcaption></figure>'
+            % (picture, html.escape(script), html.escape(cap_en), more_en,
+               html.escape(cap_lt), more_lt))
     out.append("</div></section>")
     return "\n".join(out)
 

@@ -15,6 +15,7 @@ const fs = require("fs");
 const ROOT = path.join(__dirname, "..");
 const IMG = path.join(ROOT, "docs", "images");
 const VERSION = "2.0";
+const SKETCHFAB = "https://skfb.ly/pOnRS";   // the castle, to turn round in 3D
 
 // ---------------------------------------------------------------- palette
 const BROWN = "8A4B1E";      // the colour of the documentation's accent
@@ -1033,8 +1034,8 @@ function build(lang) {
     const s = sheet(T("The castle: a model bigger than memory", "Pilis: modelis, didesnis už atmintį"),
                     T("46_castle.py, stream()", "46_castle.py, stream()"));
     picture(s, "castle.png", { x: M, y: 1.45, w: 5.3, h: 3.4,
-      caption: T("no textures, every stone a polygon: a 400 MB .off and an .obj that 7-Zip brings under 100 MB for Sketchfab",
-                 "be tekstūrų, kiekvienas akmuo – daugiakampis: 400 MB .off ir .obj, kurį 7-Zip suglaudina iki 100 MB Sketchfab") });
+      caption: T("no textures, every stone a polygon: an .off of over 500 MB and an .obj that 7-Zip brings under 100 MB for Sketchfab",
+                 "be tekstūrų, kiekvienas akmuo – daugiakampis: daugiau kaip 500 MB .off ir .obj, kurį 7-Zip suglaudina iki 100 MB Sketchfab'ui") });
     picture(s, "castle_hall.png", { x: 5.85, y: 1.45, w: 3.55, h: 1.55,
       caption: T("the throne hall and the feast", "sosto menė ir puota") });
     picture(s, "castle_treasury.png", { x: 5.85, y: 3.3, w: 3.55, h: 1.55,
@@ -1044,6 +1045,13 @@ function build(lang) {
       "wall_of_bricks(); out.add()   # tidied (no overlaps), written, cleared",
       "out.close()                   # fills in the OFF header (.mtl for .obj)",
     ], { x: M, y: 5.55, w: 9.1, h: 1.05, fontSize: 11 });
+    s.addText([
+      { text: T("The castle on Sketchfab, to turn round in 3D: ", "Pilis Sketchfab'e – pasukiokite ją 3D: "),
+        options: { color: MUTED } },
+      { text: SKETCHFAB.replace("https://", ""),
+        options: { color: BROWN, bold: true, hyperlink: { url: SKETCHFAB, tooltip: "Sketchfab" } } },
+    ], { x: M, y: 6.76, w: 7.4, h: 0.3, isTextBox: true, margin: 0, fontFace: BODY_FONT,
+         fontSize: 13, valign: "middle" });
   }
 
   // =========================================================== 28. export
@@ -1056,8 +1064,12 @@ function build(lang) {
       T("add.save(\"model.stl\")   # for 3D printing", "add.save(\"modelis.stl\")   # 3D spausdinimui"),
     ], { x: M, y: 1.6, w: 5.0, h: 1.65, fontSize: 12.5 });
     cards(s, [
-      ["Sketchfab", T("Put .obj and .mtl in one archive and upload -- anyone can turn the model in a browser.",
-                      "Sudėkite .obj ir .mtl į vieną archyvą ir įkelkite – modelį galės pasukioti bet kas naršyklėje.")],
+      ["Sketchfab", [
+        { text: T("Put .obj and .mtl in one archive and upload -- anyone can turn the model in a browser, like the castle: ",
+                  "Sudėkite .obj ir .mtl į vieną archyvą ir įkelkite – modelį galės pasukioti bet kas naršyklėje, kaip pilį: ") },
+        { text: SKETCHFAB.replace("https://", ""),
+          options: { color: BROWN, bold: true, hyperlink: { url: SKETCHFAB, tooltip: "Sketchfab" } } },
+      ]],
       [T("3D printing", "3D spausdinimas"), T("clean(..., normals=True), then save(\"m.stl\"). The surface must be closed.",
                                               "clean(..., normals=True), tada save(\"m.stl\"). Paviršius turi būti uždaras.")],
       [T("Preview without MeshLab", "Peržiūra be MeshLab"), T("python3 tools/preview.py model.off writes a PNG. No libraries either.",

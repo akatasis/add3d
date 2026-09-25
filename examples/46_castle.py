@@ -16,18 +16,21 @@ and level across, with a low stone wall on its outer side, to the harbour:
 a wharf on piles where two great ships are moored, clinker-built of
 planks, the king's with a ramp down from its side for a knight to lead his
 horse ashore, and a merchant's; rowing boats are tied up all round the
-shore. Inside: a palace with glass windows, a timber porch, balconies, dormers, a roof of
-single tiles and copper spires, a chapel with stained glass and an altar,
-and a courtyard full of life: a well, a fountain, a smithy, the kitchen
-and bakehouse with its hearth, table and beds, log houses for the castle's
-folk with hay lofts to sleep in, a half-timbered cottage, a storehouse, a
-market, a stable, gardens, a field of rye, archery butts, a trebuchet,
-cannons, carts, barrels, crates, planks, bricks, weapon racks, knights in
-armour with the castle's arms, archers and crossbowmen in mail, townsfolk,
-horses, chickens, a dog. Spruces, pines, birches, oaks, elms and limes
-grow in stands on the slopes, in meadows of grass and flowers; gulls wheel
-over the lake. The lake is transparent, so the schools of fish, the
-pebbles and the sunken boat can be seen through the water.
+shore. Inside: a palace with glass windows, a stone portico, stone
+balconies, dormers, a roof of single tiles and copper spires, a chapel
+with stained glass and an altar and the royal graves behind it, and a
+courtyard full of life: a well, a fountain with Neptune, a dovecote, a
+smithy, the kitchen and bakehouse with its hearth, table and beds, log
+houses for the castle's folk with hay lofts to sleep in, a half-timbered
+cottage, a storehouse, a market, a stable, gardens, a field of rye,
+archery butts, a trebuchet, cannons, carts, barrels, crates, planks,
+bricks, weapon racks, knights in armour with the castle's arms, archers
+and crossbowmen in mail, townsfolk, horses, chickens, a dog. Spruces,
+pines, birches, oaks, elms and limes grow in stands on the slopes, in
+meadows of grass and flowers, and hares, foxes and wolves run among them;
+gulls wheel over the lake. The lake is transparent, so the schools of
+fish, the sharks in the deep water, the pebbles and the sunken boat can be
+seen through the water.
 
 Easter eggs, for anyone who walks inside: the great hall with the king on
 his throne, his counsellor and his fool, musicians, a feast on the long
@@ -48,14 +51,15 @@ There are no image textures: every stone block, brick, plank, roof tile,
 cobblestone, pane of stained glass and coat of arms is geometry, drawn by
 this program.  Round things get many sides (``k_``), flat things few, so
 the detail goes where the eye goes.  The model is written *streaming*
-(``add.stream``) to two files at once -- ``castle.off`` (about 500 MB) and
+(``add.stream``) to two files at once -- ``castle.off`` (over 500 MB) and
 ``castle.obj`` (the same model with the water and the glass see-through;
 compressed with 7-Zip it is under 100 MB, which Sketchfab accepts) -- so
 it is never held in memory as a whole, and every part is tidied on the
 way: welded vertices, no repeated or buried faces, no overlapping faces
 that would flicker.  Fewer than 100 colours are used.  MeshLab opens the
-``.off`` in about 2.5 GB of memory (blades of grass and leaves share
-their root vertices to keep it there); Sketchfab takes the ``.obj``.
+``.off`` in about 3.4 GB of memory (blades of grass and leaves share
+their root vertices to keep it there); Sketchfab takes the ``.obj`` --
+the castle is there, to turn round in a browser: https://skfb.ly/pOnRS
 
     python3 46_castle.py              -> castle.off + castle.obj + castle.mtl
 

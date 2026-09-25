@@ -119,9 +119,10 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
   archive. Keep under 50 MB and 50 colours (`add.check()` tells you;
   `add.save("model.obj", colors=50)` reduces a colourful model). A model
   too big for memory is written with `add.stream("model.obj")` part by
-  part (the castle of example 46 is: a 400 MB `.off` and an `.obj` that
-  is under 100 MB once 7-Zip has compressed it). `save` and `stream` tidy
-  the model on the way out, so nothing flickers in the viewer.
+  part (the castle of example 46 is: an `.off` of over 500 MB and an `.obj`
+  that is under 100 MB once 7-Zip has compressed it -- [the castle on
+  Sketchfab](https://skfb.ly/pOnRS)). `save` and `stream` tidy the model on the way out, so
+  nothing flickers in the viewer.
 * **Paper**: `paper/paper.md` (+ `references.bib`) is written for a
   computer-science-education venue; the repository link and the DOI (if
   you archive a release on Zenodo) go into `CITATION.cff` too.

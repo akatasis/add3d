@@ -684,7 +684,10 @@ out.close()
 print(out.faces, "faces,", out.bytes / 1e6, "MB,", len(out.materials), "colours")
 ```
 
-!castle.png|The castle of example 46, written streaming to castle.off (about 500 MB) and castle.obj: no textures, every stone a polygon; the .obj is under 100 MB once 7-Zip has compressed it.
+!castle.png|The castle of example 46, written streaming to castle.off (over 500 MB) and castle.obj: no textures, every stone a polygon; the .obj is under 100 MB once 7-Zip has compressed it.
+
+The finished castle is on Sketchfab, where anyone can turn it round in a
+browser: [skfb.ly/pOnRS](https://skfb.ly/pOnRS).
 """),
 "lt": ("""# Receptai
 
@@ -1039,7 +1042,10 @@ out.close()
 print(out.faces, "sienų,", out.bytes / 1e6, "MB,", len(out.materials), "spalvų")
 ```
 
-!castle.png|46 pavyzdžio pilis, rašyta srautu į castle.off (apie 500 MB) ir castle.obj: be tekstūrų, kiekvienas akmuo -- daugiakampis; .obj, suglaudintas 7-Zip, telpa į 100 MB.
+!castle.png|46 pavyzdžio pilis, rašyta srautu į castle.off (daugiau kaip 500 MB) ir castle.obj: be tekstūrų, kiekvienas akmuo -- daugiakampis; .obj, suglaudintas 7-Zip, telpa į 100 MB.
+
+Baigta pilis įkelta į Sketchfab, kur ją naršyklėje gali pasukioti bet kas:
+[skfb.ly/pOnRS](https://skfb.ly/pOnRS).
 """),
 }),
 
@@ -1487,8 +1493,8 @@ GALLERY = [
      "townsfolk, log houses, carts and animals -- and, inside, the king in "
      "his throne hall with a feast, beds for everyone, an attic and a dragon "
      "on its treasure. No textures: every stone, tile and coat of arms is "
-     "geometry. Written streaming: a 500 MB .off, an .obj under 100 MB "
-     "compressed.",
+     "geometry. Written streaming: an .off of over 500 MB, an .obj under "
+     "100 MB compressed.",
      "Pilis: sala permatomame ežere, akmens blokų siena su aštuoniais "
      "tuščiaviduriais bokštais (viduje sraigtiniai laiptai), vartai su "
      "pakeliamomis grotomis ir tiltu ant grandinių per akmenimis grįstą tvenkinį su "
@@ -1498,7 +1504,8 @@ GALLERY = [
      "rąstinių namelių, vežimų ir gyvūnų -- o viduje karalius sosto menėje "
      "su puota, lovos visiems, palėpė ir drakonas ant lobio. Be tekstūrų: "
      "kiekvienas akmuo, čerpė ir herbas -- daugiakampiai. Rašyta srautu: "
-     "500 MB .off, .obj suglaudintas mažiau nei 100 MB."),
+     "daugiau kaip 500 MB .off, .obj suglaudintas mažiau nei 100 MB.",
+     "https://skfb.ly/pOnRS"),
     ("castle_hall.png", "46_castle.py",
      "Inside the castle: the great hall with the king's throne, the feast "
      "on the long tables and the chandeliers (a view from the .obj).",
