@@ -1,12 +1,14 @@
 """
-castle_photos.py -- forty-one photographs of the castle (examples/46_castle.py).
+castle_photos.py -- forty-nine photographs of the castle (examples/46_castle.py).
 
-Forty-one camera positions chosen the way a photographer would walk round
+Forty-nine camera positions chosen the way a photographer would walk round
 the finished model: the approach over the lake, the gatehouse, the walls,
 the courtyard and its trades, the palace inside and out, the donjon with the
 treasury, the chapel, the roofs, the harbour with its ships, the road up the
 hill, the log houses and the kitchen inside, the meadow outside the walls,
-a school of fish, the wood on the shore, the wine cellar, the armoury.
+a school of fish, the wood on the shore, the wine cellar, the armoury, the
+pigsty, the jousting knights, the dovecote, the chapel's rose window, the
+wreck in the lake, a cat by a kennel, the knot garden and the porch.
 Each is rendered with tools/preview.py (the big model is streamed) to
 ``<folder>/NN_name.png``.
 
@@ -26,7 +28,7 @@ import preview
 PHOTOS = [
     ("01_pilis_nuo_ezero", (72, 31.5, 98), (0, 13.5, 5), 33),                 # the castle on its hill, from the south-east
     ("02_priesaisrys_nuo_kranto", (48, 4, 150), (28, 11, 45), 32),           # from the far shore: the island, the road, the harbour
-    ("03_vartai_ir_pakeliamas_tiltas", (0, 14.5, 69.5), (0, 12.5, 48), 36),   # the gatehouse and the drawbridge
+    ("03_vartai_ir_pakeliamas_tiltas", (0, 12.8, 70), (0, 14.8, 40), 34),     # the gatehouse, "ADD 2.0", the drawbridge
     ("04_grandines_ir_grioviai", (-10, 12.5, 63), (0, 12, 52), 40),       # chains, moat and the gate arch
     ("05_piranijos_tvenkinyje", (-8.3, 10.8, 63.3), (-8.6, 9.3, 57.8), 40),    # piranhas in the moat, leaping by the gate towers
     ("06_siena_virs_skardzio", (-98, 25.5, -42), (-40, 17.5, -20), 40),       # the curtain wall on the cliff side
@@ -40,7 +42,7 @@ PHOTOS = [
     ("14_kalve", (-25, 12.5, 11), (-34, 11.3, 6), 45),                      # the smithy
     ("15_arklides", (17, 12.5, -32), (10, 11, -40), 45),                  # the stable and the horses
     ("16_patrankos_virs_vartu", (-2.2, 27.6, 58.5), (-0.4, 23.4, 50.3), 50),   # the guns on the roof over the gate, the moat below
-    ("17_katapulta", (36, 13, 25), (28, 11.5, 18), 45),                   # the trebuchet
+    ("17_trebusetas", (36, 13, 25), (28, 11.5, 18), 45),                  # the trebuchet
     ("18_sienos_takas", (34.9, 24.1, 34.9), (14, 22.3, 49), 45),          # along the wall walk to the gate towers
     ("19_patranka_bokste", (22.6, 29.2, 48.7), (20.4, 26.8, 54.6), 60),      # a tower top: its gun, the gunner, two shooters
     ("20_vartu_praejimas", (0, 12, 39), (0, 13, 53), 45),             # the gate passage and the portcullis
@@ -50,8 +52,8 @@ PHOTOS = [
     ("24_zidinys", (-8, 14, -16), (-20.8, 13.5, -16), 40),                # the fireplace
     ("25_sachmatu_etiudas", (17, 12.4, -9.5), (15.3, 11.1, -12.2), 30),   # the chess study: White to play and win
     ("26_koplycios_vidus", (28, 12.7, -9.6), (28, 12, -21), 45),        # inside the chapel
-    ("27_kareiviu_miegamasis", (0, 21.8, -8), (0, 20.9, -20), 42),        # the soldiers' dormitory
-    ("28_pastoge", (-6, 27, -16), (4, 25.8, -24), 45),                  # the attic and its junk
+    ("27_kareiviu_miegamasis", (12, 21.9, -5.5), (-2, 20.7, -19), 45),    # the soldiers' dormitory, its bays and groups
+    ("28_pastoge", (-14, 27.5, -10), (4, 25.5, -20), 46),               # the attic: the lords' beds, beds under the eaves
     ("29_lobynas_ir_drakonas", (-26.8, 13.2, -28.8), (-24.5, 12.1, -33.2), 44),  # the treasury and the dragon
     ("30_valdovo_kambarys", (-24.1, 30.8, -30.0), (-27.6, 29.9, -31.6), 42),  # the lord's chamber: the two four-posters
     ("31_uostas_ir_laivai", (127.4, 12, 72.5), (70, 6, 40), 32),          # the harbour: the wharf, the two ships, the road up
@@ -65,6 +67,14 @@ PHOTOS = [
     ("39_miskas_prie_kranto", (-52, 9, 76), (-44, 7, 57), 40),              # the wood on the shore: spruces, birches, oaks
     ("40_vyno_rusys", (17.2, 8.1, -18.2), (0.0, 7.2, -16.4), 40),           # the wine cellar: down the aisle to the great tun
     ("41_ginkline", (-27.6, 21.7, -33.5), (-20.0, 21.9, -33.2), 42),       # the armoury: swords on the wall, crossed under shields
+    ("42_kiauliu_aptvaras", (39.4, 12.7, -11), (43.4, 10.2, -14.6), 27),   # the pigsty and its pigs
+    ("43_riteriu_turnyras", (10, 13.5, 38), (10, 11, 30), 40),             # two knights jousting at the tilt
+    ("44_karvelide", (0.5, 12.2, -45), (-6, 12.5, -40), 38),              # the dovecote, doves about it
+    ("45_rozes_langas", (28.5, 18, 1.5), (28, 21, -9), 28),                # the rose window in the chapel's gable
+    ("46_nuskendusi_valtis", (66.5, 2, 76.5), (70.3, -1.6, 82.3), 22),     # the wreck and the sea chest through the water
+    ("47_katinas_ir_buda", (4.8, 10.6, 16.2), (6.2, 9.9, 18.3), 30),       # a cat watching the dog by its kennel
+    ("48_sodas", (-35, 14.5, -10.5), (-27.8, 10, -18), 40),                # the knot garden under the palace windows
+    ("49_romaninis_prieangis", (6, 13.5, 13), (0, 14.5, 0), 34),           # the porch: arches, cushion capitals, balconies
 ]
 
 

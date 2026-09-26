@@ -26,7 +26,7 @@ add.save("pirmas_modelis.off")   # arba .obj (+ .mtl), .ply, .stl
   <img src="docs/images/castle_hall.png" width="49%" alt="Pilies viduje: sosto menė ir puota">
   <img src="docs/images/castle_treasury.png" width="49%" alt="Lobynas su sparnuotu drakonu ant aukso">
   <img src="docs/images/castle_gate.png" width="49%" alt="Vartai nuo pakeliamo tilto: grotos, grandinės, sargybiniai">
-  <img src="docs/images/castle_yard.png" width="49%" alt="Kiemas iš viršaus nuo vartų">
+  <img src="docs/images/castle_yard.png" width="49%" alt="Kiemas: du riteriai turnyre prie užtvaros, fontanas, rūmai ir jų prieangis">
   <img src="docs/images/lighthouse.png" width="49%" alt="Švyturio sala">
   <img src="docs/images/football.png" width="49%" alt="Futbolo kamuolys iš ikosaedro">
   <img src="docs/images/glass_and_textures.png" width="49%" alt="Stiklas ir tekstūros">
@@ -174,7 +174,8 @@ raidės](examples/42_pillow_letters.py), [planeta](examples/43_planet.py),
 [geodezinio kupolo namas](examples/44_geodesic_dome.py), [stiklas su
 tekstūromis](examples/45_glass_and_textures.py) -- ir
 [pilis](examples/46_castle.py): sala permatomame ežere su žuvų būriais,
-trimis rykliais ir nuskendusia valtimi, pievos su žole ir gėlėmis,
+trimis rykliais ir nuskendusios valties liekanomis su aukso skrynia,
+pievos su žole ir gėlėmis,
 aštuonkampė siena iš atskirų akmens blokų su aštuoniais tuščiaviduriais
 bokštais -- sraigtiniai laiptai, durys į sienos taką, apžvalgos aikštelės
 viršuje -- vartai su pakeliamomis grotomis ir tiltu, kabančiu ant tikrų
@@ -183,21 +184,26 @@ piranijos, patrankos ant bokštų ir virš vartų su patrankininkais, lauko
 akmenimis grįstas kelias nuo tilto palei tvenkinį ir švelniai žemyn
 aplink kalvą į uostą, kur prie krantinės prišvartuoti du dideli laivai iš
 persidengiančių lentų su įgulomis, o aplink salą pririštos valtys, rūmai
-su stiklo langais, akmeniniu portiku, akmeniniais balkonais, stoglangiais
-ir stogu iš atskirų čerpių, koplyčia su vitražais, altoriumi ir
+su stiklo langais, romaninio stiliaus akmeniniu prieangiu, akmeniniais
+balkonais ant konsolių, stoglangiais ir stogu iš atskirų čerpių, koplyčia
+su vitražais, apvaliais rožės langais frontonuose, altoriumi ir
 karališkaisiais kapais už jos, kiemas su šuliniu, fontanu su Neptūnu,
-karvelide, kalve, virtuve su židiniu ir duonkepe krosnimi, rąstiniais
-nameliais su šieno pastogėmis ir trobele (visi įrengti viduje), sandėliu,
-turgumi, arklide, sodais, rugių lauku, šaudymo taikiniais, katapulta,
-patrankomis, vežimais, statinėmis, dėžėmis, ginklų stovais, riteriais
-šarvuose, lankininkais, miestiečiais, arkliais, vištomis ir šunimi,
+medine karvelide ir balandžiais ant stogų, kalve, virtuve su židiniu ir
+duonkepe krosnimi, rąstiniais nameliais su šieno pastogėmis ir trobele
+(visi įrengti viduje), sandėliu, turgumi, arklide, kiaulių aptvaru su
+kiaulėmis, šunų būdomis, katinais, gyvatvorių sodais, rugių lauku,
+šaudymo taikiniais, katapulta, patrankomis su patrankininkais, vežimais,
+statinėmis, dėžėmis, ginklų stovais, riteriais šarvuose pėsčiomis ir
+raitais (du rungiasi turnyre), lankininkais ir arbaletininkais -- kiekvienas
+vis kitokia poza, miestiečiais, arkliais, vištomis ir šunimis,
 žvejais ant krantinės, eglėmis, pušimis, beržais, ąžuolais, guobomis ir
 liepomis šlaituose, tarp kurių bėgioja kiškiai, lapės ir vilkai, kirais
 virš ežero -- o viduje siurprizai: didžioji menė su karaliumi soste, jo
 patarėju, juokdariu ir muzikantais, puota trisdešimt dviem svečiams,
 šachmatų etiudas („Baltieji pradeda ir laimi") ir laiptai žemyn į
-skliautuotą vyno rūsį, kareivių miegamasis antrame aukšte, palėpė, kur
-tarp senų daiktų miega svečiai, koplyčios pastogė su kunigo rūbais ir
+skliautuotą vyno rūsį, kareivių miegamasis antrame aukšte, įrengtas kaip
+tikras -- nišomis tarp lentinių pertvarų, palėpė, kur tarp senų daiktų
+miega svečiai (didikai -- lovose su baldakimais), koplyčios pastogė su kunigo rūbais ir
 taure, o didžiajame bokšte -- lobynas su sparnuotu drakonu, ugnimi
 saugančiu auksą, virš jo ginklinė ir valdovo kambarys; kiekvienas pilies
 gyventojas turi lovą. Tekstūrų nėra: kiekvienas akmens blokas, čerpė,
@@ -222,7 +228,7 @@ examples/            43 pavyzdinės programos su komentarais (studijos ir pilni 
   build_all.py       paleidžia visas, tikrina Sketchfab ribas, sugeneruoja paveikslėlius
 tools/
   preview.py         atvaizdavimo įrankis be priklausomybių
-  castle_photos.py   keturiasdešimt viena pilies nuotrauka, daryta su preview.py
+  castle_photos.py   keturiasdešimt devynios pilies nuotraukos, darytos su preview.py
   make_docs.py       sukuria docs/index.html iš kodo aprašymų ir docs/reference.py
   coverage.py        kuris pavyzdys kurią funkciją naudoja
 tests/

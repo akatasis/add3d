@@ -10,7 +10,7 @@ The check fails (exit code 1) when a model could not be uploaded to
 Sketchfab as an .obj: more than 50 MB or more than 50 colours (materials).
 Big "fine" variants (``--fine`` in the example) are not built here, and the
 castle (46) is built at a tenth of its density (``CASTLE_DENSITY=0.1``) --
-the full castle is a 400 MB .off (and an .obj meant to be uploaded
+the full castle is a 600 MB .off (and an .obj meant to be uploaded
 compressed with 7-Zip).
 """
 import os
@@ -79,8 +79,8 @@ VIEWS = {
 #: more pictures of one model: stem -> [(picture stem, render options)]
 EXTRA_VIEWS = {
     "castle": [
-        ("castle_gate", dict(eye=(0, 14.5, 60), at=(0, 12.5, 30), fov=34, size=(880, 620))),
-        ("castle_yard", dict(eye=(6, 37.5, 44), at=(-4, 11.5, 8), fov=38, size=(1100, 760))),
+        ("castle_gate", dict(eye=(0, 12.6, 67), at=(0, 14.6, 30), fov=32, size=(880, 620))),     # "ADD 2.0" over the arch
+        ("castle_yard", dict(eye=(16, 23, 40), at=(0, 12, 14), fov=38, size=(1100, 760))),      # the tilt, the porch
         ("castle_hall", dict(eye=(2, 15, -5), at=(0, 13, -27), fov=36, size=(1100, 760))),
         ("castle_treasury", dict(eye=(-26.8, 13.2, -28.8), at=(-24.5, 12.1, -33.2), fov=44, size=(880, 620))),
     ],
@@ -107,7 +107,7 @@ def main():
                      if n.endswith(".py") and n[0].isdigit())
     os.chdir(OUT)
     env = dict(os.environ)
-    env["CASTLE_DENSITY"] = env.get("CASTLE_DENSITY", "0.1")   # the full castle is ~400 MB; the docs get a lighter one
+    env["CASTLE_DENSITY"] = env.get("CASTLE_DENSITY", "0.1")   # the full castle is ~600 MB; the docs get a lighter one
     for name in scripts:
         t = time.time()
         p = subprocess.run([sys.executable, os.path.join(HERE, name)],
@@ -164,16 +164,38 @@ COMPRESSED = {"castle.off", "castle.obj"}
 MAX_COLORS_BIG = 100
 
 
+def big_stats(path):
+    """The numbers of the table for an .off too big to load (the castle: a
+    few GB in memory), read from the file line by line: its polygons, its
+    colours, and the size of the .obj written beside it."""
+    colours = set()
+    with open(path) as f:
+        f.readline()                                  # "OFF"
+        nv, nf = [int(v) for v in f.readline().split()[:2]]
+        for _ in range(nv):
+            f.readline()
+        for _ in range(nf):
+            p = f.readline().split()
+            colours.add(tuple(p[1 + int(p[0]):]))
+    obj = path[:-4] + ".obj"
+    size = os.path.getsize(obj) if os.path.exists(obj) else os.path.getsize(path)
+    return {"faces": nf, "colors": len(colours), "obj_bytes": size}
+
+
 def sketchfab_table():
     """Print one line per model: polygons, colours, .obj size, verdict."""
     import add
+    from tools import preview
     problems = []
     print()
     print("%-28s %9s %7s %9s  %s" % ("model", "polygons", "colours", ".obj MB",
                                       "Sketchfab"))
     for model in model_files():
-        M = add.load(os.path.join(OUT, model))
-        s = add.stats(M)
+        path = os.path.join(OUT, model)
+        if model.endswith(".off") and os.path.getsize(path) > preview.BIG_FILE:
+            s = big_stats(path)                       # (counted, not loaded)
+        else:
+            s = add.stats(add.load(path))
         mb = s["obj_bytes"] / 1e6
         colors = MAX_COLORS_BIG if model in COMPRESSED else MAX_COLORS
         ok = (mb <= MAX_MB or model in COMPRESSED) and s["colors"] <= colors

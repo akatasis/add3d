@@ -26,7 +26,7 @@ add.save("first_model.off")      # or .obj (+ .mtl), .ply, .stl
   <img src="docs/images/castle_hall.png" width="49%" alt="Inside the castle: the throne hall and the feast">
   <img src="docs/images/castle_treasury.png" width="49%" alt="The treasury with a winged dragon guarding the gold">
   <img src="docs/images/castle_gate.png" width="49%" alt="The gatehouse from the drawbridge: portcullis, chains, guards">
-  <img src="docs/images/castle_yard.png" width="49%" alt="The courtyard from above the gate">
+  <img src="docs/images/castle_yard.png" width="49%" alt="The courtyard: two knights jousting at the tilt, the fountain, the palace and its porch">
   <img src="docs/images/lighthouse.png" width="49%" alt="A lighthouse island">
   <img src="docs/images/football.png" width="49%" alt="A football from an icosahedron">
   <img src="docs/images/glass_and_textures.png" width="49%" alt="Glass and textures">
@@ -179,7 +179,8 @@ letters](examples/42_pillow_letters.py), a [planet](examples/43_planet.py),
 a [geodesic dome](examples/44_geodesic_dome.py) house, [glass and
 textures](examples/45_glass_and_textures.py) -- and the
 [castle](examples/46_castle.py): an island in a transparent lake with
-schools of fish, three sharks and a sunken boat, meadows of grass and
+schools of fish, three sharks and the wreck of a rowing boat beside a sea
+chest of gold, meadows of grass and
 flowers, an octagonal wall of individual stone blocks with eight hollow
 towers -- spiral stairs, doors onto the wall walk, lookouts on top -- a
 gatehouse with a portcullis and a drawbridge hanging on real chains over a
@@ -188,20 +189,25 @@ guns on the towers and over the gate with their gunners, a road paved with
 fieldstones from the bridge along the moat and gently down round the hill
 to a harbour where two great ships, clinker-built of planks and with their
 crews aboard, lie moored at a wharf and rowing boats are tied up all round
-the shore, a palace with glass windows, a stone portico, stone balconies,
-dormers and a roof of single tiles, a chapel with stained glass, an altar
-and the royal graves behind it, a courtyard with a well, a fountain with
-Neptune, a dovecote, a smithy, a kitchen with a hearth and a bread oven,
-log houses with hay lofts and a cottage, all furnished, a storehouse, a
-market, a stable, gardens, a field of rye, archery butts, a trebuchet,
-cannons, carts, barrels, crates, weapon racks, knights in armour, archers,
-townsfolk, horses, chickens and a dog, fishermen on the wharf, spruces,
+the shore, a palace with glass windows, a Romanesque porch of stone,
+stone balconies on corbels, dormers and a roof of single tiles, a chapel
+with stained glass, rose windows in its gables, an altar and the royal
+graves behind it, a courtyard with a well, a fountain with Neptune, a
+wooden dovecote with doves about the roofs, a smithy, a kitchen with a
+hearth and a bread oven, log houses with hay lofts and a cottage, all
+furnished, a storehouse, a market, a stable, a pigsty with its pigs,
+kennels, cats, knot gardens, a field of rye, archery butts, a trebuchet,
+cannons with their crews, carts, barrels, crates, weapon racks, knights
+in armour on foot and on horseback (two of them jousting at the tilt),
+archers and crossbowmen each in a stance of his own, townsfolk, horses,
+chickens and dogs, fishermen on the wharf, spruces,
 pines, birches, oaks, elms and limes on the slopes with hares, foxes and
 wolves running among them, gulls over the lake -- and, inside, the easter
 eggs: the great hall with the king on his throne, his counsellor, his fool
 and musicians, a feast for thirty-two guests, a chess study ("White to
 play and win") and a stair down to the vaulted wine cellar, the soldiers'
-dormitory upstairs, an attic where the guests sleep among old things, the
+dormitory upstairs, laid out in bays like a real one, an attic where the
+guests sleep among old things (the lords in four-posters), the
 chapel's attic with the vestments and the chalice, and in the big tower
 the treasury with a winged dragon breathing fire over the gold, the
 armoury and the lord's chamber above it; everyone who lives in the castle
@@ -227,7 +233,7 @@ examples/            43 commented example programs (studies and complete models)
   build_all.py       runs them all, checks the Sketchfab limits, renders the pictures
 tools/
   preview.py         dependency-free software renderer
-  castle_photos.py   forty-one photographs of the castle, taken with preview.py
+  castle_photos.py   forty-nine photographs of the castle, taken with preview.py
   make_docs.py       builds docs/index.html from the docstrings + docs/reference.py
   coverage.py        which example uses which function
 tests/
