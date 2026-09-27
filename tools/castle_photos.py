@@ -1,14 +1,16 @@
 """
-castle_photos.py -- forty-nine photographs of the castle (examples/46_castle.py).
+castle_photos.py -- fifty-five photographs of the castle (examples/46_castle.py).
 
-Forty-nine camera positions chosen the way a photographer would walk round
+Fifty-five camera positions chosen the way a photographer would walk round
 the finished model: the approach over the lake, the gatehouse, the walls,
 the courtyard and its trades, the palace inside and out, the donjon with the
 treasury, the chapel, the roofs, the harbour with its ships, the road up the
 hill, the log houses and the kitchen inside, the meadow outside the walls,
 a school of fish, the wood on the shore, the wine cellar, the armoury, the
 pigsty, the jousting knights, the dovecote, the chapel's rose window, the
-wreck in the lake, a cat by a kennel, the knot garden and the porch.
+wreck in the lake, a cat by a kennel, the knot garden, the porch, hands at
+the feast, a sleeping soldier, the cows, a privy, the chandeliers and the
+mooring lines.
 Each is rendered with tools/preview.py (the big model is streamed) to
 ``<folder>/NN_name.png``.
 
@@ -67,14 +69,20 @@ PHOTOS = [
     ("39_miskas_prie_kranto", (-52, 9, 76), (-44, 7, 57), 40),              # the wood on the shore: spruces, birches, oaks
     ("40_vyno_rusys", (17.2, 8.1, -18.2), (0.0, 7.2, -16.4), 40),           # the wine cellar: down the aisle to the great tun
     ("41_ginkline", (-27.6, 21.7, -33.5), (-20.0, 21.9, -33.2), 42),       # the armoury: swords on the wall, crossed under shields
-    ("42_kiauliu_aptvaras", (39.4, 12.7, -11), (43.4, 10.2, -14.6), 27),   # the pigsty and its pigs
-    ("43_riteriu_turnyras", (10, 13.5, 38), (10, 11, 30), 40),             # two knights jousting at the tilt
-    ("44_karvelide", (0.5, 12.2, -45), (-6, 12.5, -40), 38),              # the dovecote, doves about it
+    ("42_kiauliu_aptvaras", (39.4, 12.7, 6.1), (43.4, 10.2, 2.5), 27),     # the pigsty and its pigs
+    ("43_riteriu_turnyras", (13.5, 13.2, 42.5), (9.5, 11.2, 36.5), 40),    # two knights jousting at the tilt
+    ("44_karvelide", (0.5, 12.6, -39.5), (-5, 12.2, -46.2), 36),          # the dovecote, doves about it
     ("45_rozes_langas", (28.5, 18, 1.5), (28, 21, -9), 28),                # the rose window in the chapel's gable
     ("46_nuskendusi_valtis", (66.5, 2, 76.5), (70.3, -1.6, 82.3), 22),     # the wreck and the sea chest through the water
-    ("47_katinas_ir_buda", (4.8, 10.6, 16.2), (6.2, 9.9, 18.3), 30),       # a cat watching the dog by its kennel
+    ("47_katinas_ir_buda", (25.8, 11.8, 37.6), (28.5, 9.7, 39.2), 30),     # a cat watching the dog by its kennel
     ("48_sodas", (-35, 14.5, -10.5), (-27.8, 10, -18), 40),                # the knot garden under the palace windows
     ("49_romaninis_prieangis", (6, 13.5, 13), (0, 14.5, 0), 34),           # the porch: arches, cushion capitals, balconies
+    ("50_puotos_rankos", (7.0, 12.0, -14.2), (5.2, 11.35, -16.2), 32),     # hands at the feast: cups, knives, a chin on a fist
+    ("51_miegantis_kareivis", (-6.6, 21.4, -14.2), (-8.3, 20.3, -15.7), 35),   # a soldier asleep, his hands on the blanket
+    ("52_karves", (48, 11.2, -31), (40.5, 9.9, -36.5), 32),                # the cows grazing outside the walls
+    ("53_isviete", (-43.5, 11.0, 2.2), (-47.6, 10.8, 0), 36),              # a privy by the wall, its door ajar
+    ("54_sietynai", (-2.5, 14.2, -12.5), (0.2, 15.6, -16.0), 38),          # the great hall's chandeliers and columns
+    ("55_svartavimo_lynai", (119.69, 4.4, 48.16), (113.01, 3.1, 48.81), 50),  # the king's ship moored: a bow line, a breast line, an eye on a bollard
 ]
 
 
