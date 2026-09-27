@@ -158,6 +158,17 @@ def _frame(direction):
     return u, v, w
 
 
+def _total(values):
+    """The plain left-to-right sum of some numbers.  Python 3.12 made the
+    built-in ``sum`` of floats compensated, which changes the last digits of
+    some results; adding up in order gives the same numbers -- and the same
+    model files -- on every Python, and in add.hpp."""
+    s = 0
+    for x in values:
+        s = s + x
+    return s
+
+
 def _num(x):
     """Format a float the short way, so .off/.obj files stay small."""
     if x == int(x) and abs(x) < 1e15:
@@ -1151,7 +1162,7 @@ def _hull_faces(V, sides):
                 if key in found:
                     continue
                 # Sort the coplanar points into a proper ring.
-                centre = [sum(V[t][a] for t in on) / len(on) for a in range(3)]
+                centre = [_total(V[t][a] for t in on) / len(on) for a in range(3)]
                 u = _unit(_sub(V[on[0]], centre))
                 v = _cross(nrm, u)
                 on.sort(key=lambda t: math.atan2(
@@ -1195,7 +1206,7 @@ def remap(x, a0, a1, b0, b1):
 
 def distance(a, b):
     """Distance between two points (2D or 3D)."""
-    return math.sqrt(sum((a[i] - b[i]) ** 2 for i in range(len(a))))
+    return math.sqrt(_total((a[i] - b[i]) ** 2 for i in range(len(a))))
 
 
 def midpoint(a, b):
@@ -1206,7 +1217,7 @@ def midpoint(a, b):
 def direction(a, b):
     """The unit vector pointing from ``a`` to ``b``."""
     d = [b[i] - a[i] for i in range(len(a))]
-    n = math.sqrt(sum(c * c for c in d))
+    n = math.sqrt(_total(c * c for c in d))
     return d if n < EPS else [c / n for c in d]
 
 
@@ -2948,7 +2959,7 @@ def center(M=None):
     if not M.V:
         return [0.0, 0.0, 0.0]
     n = float(len(M.V))
-    return [sum(p[a] for p in M.V) / n for a in range(3)]
+    return [_total(p[a] for p in M.V) / n for a in range(3)]
 
 
 #: Private handle on :func:`center`, for functions whose own parameter is
@@ -3321,7 +3332,7 @@ def color_by(M, fn):
     out = M.copy()
     for i, f in enumerate(M.F):
         n = float(len(f))
-        p = [sum(M.V[k][a] for k in f) / n for a in range(3)]
+        p = [_total(M.V[k][a] for k in f) / n for a in range(3)]
         out.C[i] = rgb(fn(p))
     return out
 
@@ -3667,7 +3678,7 @@ def _not_finite(M):
     """The vertices with a coordinate that is not a finite number (NaN or
     infinite -- a division by zero somewhere).  Quick when there are none."""
     finite = math.isfinite
-    if finite(sum(p[0] + p[1] + p[2] for p in M.V)):
+    if finite(_total(p[0] + p[1] + p[2] for p in M.V)):
         return set()
     return set(i for i, p in enumerate(M.V) if not (finite(p[0]) and finite(p[1]) and finite(p[2])))
 
@@ -4824,7 +4835,7 @@ def mean_edge_length(M=None):
     """The average edge length -- the natural "unit" of a mesh.  A regular
     polyhedron has all edges equal, so this is *the* edge length there."""
     L = edge_lengths(M)
-    return sum(L) / len(L) if L else 0.0
+    return _total(L) / len(L) if L else 0.0
 
 
 def adjacency(M=None):
@@ -4871,7 +4882,7 @@ def mean_neighbor_distance(M, i):
     nb = adjacency(M)[i]
     if not nb:
         return 0.0
-    return sum(_norm(_sub(M.V[i], M.V[j])) for j in nb) / len(nb)
+    return _total(_norm(_sub(M.V[i], M.V[j])) for j in nb) / len(nb)
 
 
 def vertex_faces(M, i):
@@ -4901,7 +4912,7 @@ def face_center(M, i):
     M = as_mesh(M)
     f = M.F[i]
     n = float(len(f))
-    return [sum(M.V[k][a] for k in f) / n for a in range(3)]
+    return [_total(M.V[k][a] for k in f) / n for a in range(3)]
 
 
 def face_normal(M, i):
@@ -5025,7 +5036,7 @@ def refine(M, steps=1):
                 out.add_face([d, da, bd], c)
                 out.add_face([ab, bd, da], c)
             elif n >= 4:
-                centre = out.add_vertex([sum(M.V[k][a] for k in f) / float(n)
+                centre = out.add_vertex([_total(M.V[k][a] for k in f) / float(n)
                                          for a in range(3)])
                 m = [midpoint_index(f[t], f[(t + 1) % n]) for t in range(n)]
                 for t in range(n):
@@ -5375,7 +5386,7 @@ class _Solid(object):
             if self.polys else [0.0, 0.0, 0.0]
         self.lo, self.hi = lo, hi
         self.scale = max(1e-9, max(hi[a] - lo[a] for a in range(3)))
-        diagonal = math.sqrt(sum((hi[a] - lo[a]) ** 2 for a in range(3)))
+        diagonal = math.sqrt(_total((hi[a] - lo[a]) ** 2 for a in range(3)))
         self.grid = _BoxGrid(self.polys, max(diagonal, 1e-9)) if self.polys else None
         self.rays = []
 
@@ -5507,9 +5518,9 @@ def _keep_pieces(source, other, keep, flip, paint=None):
             continue
         for piece, flush in _split_against(poly, other):
             n = len(piece.pts)
-            centre = (sum(q[0] for q in piece.pts) / n,
-                      sum(q[1] for q in piece.pts) / n,
-                      sum(q[2] for q in piece.pts) / n)
+            centre = (_total(q[0] for q in piece.pts) / n,
+                      _total(q[1] for q in piece.pts) / n,
+                      _total(q[2] for q in piece.pts) / n)
             facing = other.facing_at(centre, piece.n, flush) if flush else None
             if facing is not None:
                 state = "same" if facing > 0 else "opp"
@@ -5873,7 +5884,7 @@ class _Topo(object):
     def centroid(self, f):
         p = self.F[f]
         n = float(len(p))
-        return [sum(self.V[v][a] for v in p) / n for a in range(3)]
+        return [_total(self.V[v][a] for v in p) / n for a in range(3)]
 
     def ordered_ring(self, v):
         """Neighbours and faces counter-clockwise around ``v``, or ``None``."""

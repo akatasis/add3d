@@ -1,0 +1,50 @@
+// 11 -- why a surface can look black, and the two ways to fix it.
+//
+// A parametric surface is a sheet with no thickness.  Every face points one
+// way; from the other side a renderer sees its back, which is usually drawn
+// black or not at all.  Students hit this the first time they look at a saddle
+// from underneath.
+//
+// Three copies of the same saddle:
+//
+//     left    the plain sheet         -- one good side, one dead side
+//     middle  ``double_sided=true``   -- every face also exists reversed;
+//                                        cheap, still zero thickness
+//     right   ``thickness=0.1``       -- a real solid: watertight, printable,
+//                                        correct from every angle
+#include "add.hpp"
+
+
+add::Point saddle(double u, double v) {
+    return {u, (v * v - u * u) / 2.0, v};
+}
+
+
+int main() {
+    add::parametric(saddle, -2, 2, 40, -2, 2, 40, "red");
+    add::Mesh plain = add::layer();
+
+    add::parametric(saddle, -2, 2, 40, -2, 2, 40, "gold", /*wrap_u=*/false, /*wrap_v=*/false, /*flip=*/false,
+                    /*thickness=*/0.0, /*double_sided=*/true);
+    add::Mesh both = add::layer();
+
+    add::parametric(saddle, -2, 2, 40, -2, 2, 40, "teal", /*wrap_u=*/false, /*wrap_v=*/false, /*flip=*/false,
+                    /*thickness=*/0.12);
+    add::Mesh solid = add::layer();
+
+    add::mesh(add::move(plain, {-5, 0, 0}));
+    add::mesh(both);
+    add::mesh(add::move(solid, {5, 0, 0}));
+
+    std::vector<std::pair<std::string, add::Mesh>> sheets = {{"plain sheet", plain}, {"double sided", both},
+                                                             {"solid shell", solid}};
+    for (const auto& [name, M] : sheets) {
+        add::Stats s = add::stats(M);
+        std::printf("%-14s %6d faces   closed: %s\n", name.c_str(), s.faces, s.closed ? "True" : "False");
+    }
+
+    // The same trick rescues a ribbon, a leaf or a flower petal -- anything you
+    // would otherwise have to look at from exactly the right side.
+    add::check();
+    add::save("two_sided.off");
+}

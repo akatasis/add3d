@@ -4,6 +4,9 @@ limits, and render a picture of each model.
 
     python3 examples/build_all.py            build models, check, thumbnails
     python3 examples/build_all.py --models   models and the check, no pictures
+    python3 examples/build_all.py --cpp      compile every C++ example (NN_*.cpp,
+                                             add.hpp) and check that it writes
+                                             byte for byte what its Python twin writes
 
 Output goes to ``examples/out/`` (models) and ``docs/images/`` (pictures).
 The check fails (exit code 1) when a model could not be uploaded to
@@ -97,7 +100,80 @@ def model_files():
     return sorted(offs + objs)
 
 
+def png_pixels(path):
+    """The header and the pixel rows of a PNG file (add.hpp stores the
+    picture uncompressed, add.py compresses it: the same picture)."""
+    import struct
+    import zlib
+    data = open(path, "rb").read()
+    i, idat, head = 8, b"", None
+    while i < len(data):
+        n = struct.unpack(">I", data[i:i + 4])[0]
+        tag, body = data[i + 4:i + 8], data[i + 8:i + 8 + n]
+        if tag == b"IHDR":
+            head = body
+        elif tag == b"IDAT":
+            idat += body
+        i += 12 + n
+    return head, zlib.decompress(idat)
+
+
+def cpp_check():
+    """Compile every C++ example and run it next to its Python twin, each in a
+    fresh folder; everything they write (and print) must be the same."""
+    import shutil
+    import tempfile
+    cxx = os.environ.get("CXX", "g++")
+    stems = sorted(n[:-4] for n in os.listdir(HERE) if n.endswith(".cpp") and n[0].isdigit())
+    failed = []
+    for stem in stems:
+        t = time.time()
+        work = tempfile.mkdtemp(prefix="add_example_")
+        py_dir, cpp_dir = os.path.join(work, "py"), os.path.join(work, "cpp")
+        os.makedirs(py_dir)
+        os.makedirs(cpp_dir)
+        exe = os.path.join(work, stem + ".exe")
+        p = subprocess.run([cxx, "-std=c++17", "-O2", "-I", HERE, os.path.join(HERE, stem + ".cpp"), "-o", exe],
+                           capture_output=True, text=True)
+        if p.returncode:
+            print("%-34s COMPILE ERROR\n%s" % (stem + ".cpp", p.stderr[-2000:]))
+            failed.append(stem)
+            continue
+        a = subprocess.run([sys.executable, os.path.join(HERE, stem + ".py")], cwd=py_dir,
+                           capture_output=True, text=True)
+        b = subprocess.run([exe], cwd=cpp_dir, capture_output=True, text=True)
+        problems = []
+        if a.returncode or b.returncode:
+            problems.append("exit status: python %s, c++ %s" % (a.returncode, b.returncode))
+        if a.stdout != b.stdout:
+            problems.append("they print different text")
+        names = sorted(set(os.listdir(py_dir)) | set(os.listdir(cpp_dir)))
+        for name in names:
+            pa, pb = os.path.join(py_dir, name), os.path.join(cpp_dir, name)
+            if not (os.path.exists(pa) and os.path.exists(pb)):
+                problems.append("%s only from %s" % (name, "c++" if os.path.exists(pb) else "python"))
+            elif name.lower().endswith(".png"):
+                if png_pixels(pa) != png_pixels(pb):
+                    problems.append(name + ": other pixels")
+            elif open(pa, "rb").read() != open(pb, "rb").read():
+                problems.append(name + " differs")
+        shutil.rmtree(work, ignore_errors=True)
+        if problems:
+            failed.append(stem)
+        print("%-34s %s %6.1fs  %s" % (stem + ".cpp", "FAIL" if problems else "same",
+                                        time.time() - t, "; ".join(problems) if problems
+                                        else "%d file%s" % (len(names), "" if len(names) == 1 else "s")))
+    print()
+    if failed:
+        print("C++ examples that differ from their Python twins:", ", ".join(failed))
+        return 1
+    print("all %d C++ examples write byte for byte what their Python twins write" % len(stems))
+    return 0
+
+
 def main():
+    if "--cpp" in sys.argv:
+        return cpp_check()
     models_only = "--models" in sys.argv
     for folder in (OUT, IMAGES):
         if not os.path.isdir(folder):

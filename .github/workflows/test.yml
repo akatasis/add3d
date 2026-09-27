@@ -49,3 +49,30 @@ jobs:
         run: |
           python tools/make_docs.py
           git diff --exit-code docs/index.html
+
+  cpp:
+    # add.hpp, the C++ twin: the same calls must write the same files
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cxx: [g++, clang++]
+    env:
+      CXX: ${{ matrix.cxx }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: add.hpp and examples/add.hpp are in sync with _cpp/
+        run: python build.py --check
+
+      - name: every function writes the same files in C++ as in Python
+        run: python tests/cpp/run_parity.py
+
+      - name: every documentation example builds the same model in C++
+        run: python tests/cpp/run_docs.py
+
+      - name: every example program writes the same files in C++
+        run: python examples/build_all.py --cpp

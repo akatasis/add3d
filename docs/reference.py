@@ -216,7 +216,7 @@ EXAMPLES = {
     "remap": "print(add.remap(5, 0, 10, -1, 1))            # 0.0",
     "distance": "print(add.distance([0, 0, 0], [3, 4, 0]))     # 5.0",
     "midpoint": "print(add.midpoint([0, 0, 0], [2, 2, 2]))     # [1.0, 1.0, 1.0]",
-    "direction": "print(add.direction([0, 0, 0], [0, 5, 0]))    # (0.0, 1.0, 0.0)",
+    "direction": "print(add.direction([0, 0, 0], [0, 5, 0]))    # [0.0, 1.0, 0.0]",
     "rotate_point": "pin = add.rotate_point([1, 0, 0], [0, 0, 1], add.pi / 2)\nprint([round(c, 6) for c in pin])              # [0, 1, 0]",
     "shade": 'dark = add.shade("gold", 0.6)\nadd.box([0, 0, 0], 1, "gold")\nadd.box([1.5, 0, 0], 1, dark)',
     "chaikin": "outline = add.chaikin([[0, 0], [2, 0], [2, 2], [0, 2]], 3, closed=True)\nadd.prism(outline, 1, \"teal\")             # a rounded square bar",
@@ -290,7 +290,7 @@ EXPLAIN_LT.update({
     "column": "Klasikinė kolona, stovinti ant taško base (apačios centras).",
     "bricks": "Siena iš perslinktų plytų, prasidedanti taške origin.",
     "tree": "Paprastas medis, stovintis ant taško at: kamienas ir laja "
-            "(kind – „round“, „cone“ ir kt.).",
+            "(kind – „round“, „pine“ arba „palm“).",
     "pixels": "Pikselinis menas 3D: eilučių sąrašas tampa spalvotų kubelių "
               "bloku; raidės žymi paletės spalvas.",
     "heightmap": "Kubelių kolonos: heights[i][j] kubelių, sudėtų kolonoje (i, j) – "
@@ -365,7 +365,7 @@ EXAMPLES.update({
     "roof": 'add.cuboid([0, 1, 0], [4, 2, 3], "brown")\nadd.roof([0, 2, 0], [4, 3], 1.2, [120, 40, 30], overhang=0.3)',
     "column": 'add.column([0, 0, 0], 4, 0.4, "white")',
     "bricks": 'add.bricks([0, 0, 0], 6, 3, color="brown")',
-    "tree": 'add.tree([0, 0, 0], 4)\nadd.tree([3, 0, 0], 3, kind="cone")',
+    "tree": 'add.tree([0, 0, 0], 4)\nadd.tree([3, 0, 0], 3, kind="pine")',
     "pixels": 'add.pixels(["..r..",\n            ".rrr.",\n            "rrrrr",\n            "..g..",\n            "..g.."], 0.5, color="red")',
     "heightmap": 'add.heightmap([[1, 2, 3], [2, 4, 2], [3, 2, 1]], 0.8, color="green")',
     "polyline": 'add.polyline([[0, 0, 0], [2, 1, 0], [3, 3, 1], [1, 4, 0]], 0.15, 12, "sky", smooth=2)',
@@ -531,7 +531,7 @@ EXAMPLES.update({
     "color_by": 'M = add.make(add.sphere, [0, 0, 0], 2, 20)\nadd.mesh(add.color_by(M, lambda p: add.hsv((p[1] + 2) / 4.0)))',
     "color_gradient": 'M = add.make(add.cylinder, [0, 0, 0], [0, 5, 0], 1, 32)\nadd.mesh(add.color_gradient(M, "navy", "white"))',
     "color_random": 'M = add.make(add.dodecahedron, [0, 0, 0], 2)\nadd.mesh(add.color_random(M, seed=3))',
-    "palette": 'M = add.make(add.sphere, [0, 0, 0], 2, 10)\nM = add.color_by(M, lambda p: "red" if p[1] > 0 else "blue")\nprint(add.palette(M))                 # [((255, 0, 0), 640), ((0, 0, 255), 640)]',
+    "palette": 'M = add.make(add.sphere, [0, 0, 0], 2, 10)\nM = add.color_by(M, lambda p: "red" if p[1] > 0 else "blue")\nprint(add.palette(M))                 # [((0, 0, 255), 656), ((255, 0, 0), 624)]',
     "limit_colors": 'M = add.make(add.sphere, [0, 0, 0], 2, 20)\nM = add.color_by(M, lambda p: add.hsv(p[1] / 4.0))\nprint(len(add.palette(M)))\nfew = add.limit_colors(M, 50)\nprint(len(add.palette(few)))          # 50\nadd.save("few.obj", few)',
 
     "repeat": 'brick = add.make(add.box, [0, 0, 0], 0.9, "red")\nspiral = add.repeat(brick, 40, lambda X, i: add.move(add.rotateY(X, i * 0.3), [3, i * 0.2, 0]))\nadd.mesh(spiral)',

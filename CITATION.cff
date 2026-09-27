@@ -20,6 +20,7 @@ keywords:
   - computer science education
   - parametric surfaces
   - Python
+  - C++
 abstract: >-
   add.py is a single-file, dependency-free Python module for building 3D
   models from program code alone. It provides primitives, the regular
@@ -27,6 +28,8 @@ abstract: >-
   ones, sweeps and lathes, mesh boolean operations implemented from scratch,
   classical and generalised Catmull-Clark subdivision, vertex-level tools,
   mesh repair and validation, transparency and image textures, and export to
-  OFF, OBJ (+MTL), PLY and STL. It is used in a university course in which
-  students must create a 3D model without using any modelling software or
-  mesh library.
+  OFF, OBJ (+MTL), PLY and STL. Its C++ twin, add.hpp, is the same library as
+  one header file that uses only the C++17 standard library and writes the
+  same model files, byte for byte, for the same calls. It is used in a
+  university course in which students must create a 3D model without using
+  any modelling software or mesh library.

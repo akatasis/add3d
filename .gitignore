@@ -15,6 +15,11 @@ examples/out/
 !tests/legacy/letters/*.off
 !tests/legacy/numbers/*.off
 
+# compiled C++ programs (examples/NN_name.cpp)
+*.exe
+*.o
+a.out
+
 # local previews
 preview.png
 demo.png

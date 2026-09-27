@@ -20,10 +20,11 @@ DOCS_URL = "https://akatasis.github.io/add3d/"
 UI = {
     "title": {"en": "add.py", "lt": "add.py"},
     "tagline": {
-        "en": "Build 3D models with nothing but Python code.",
-        "lt": "3D modeliai, sukurti vien tik programiniu kodu.",
+        "en": "Build 3D models with nothing but code &mdash; in Python or in C++.",
+        "lt": "3D modeliai, sukurti vien tik programiniu kodu &mdash; Python arba C++.",
     },
     "nav_start": {"en": "Start here", "lt": "Nuo ko pradėti"},
+    "nav_cpp": {"en": "C++", "lt": "C++"},
     "nav_concepts": {"en": "How it works", "lt": "Kaip tai veikia"},
     "nav_gallery": {"en": "Gallery", "lt": "Galerija"},
     "nav_cookbook": {"en": "Recipes", "lt": "Receptai"},
@@ -172,6 +173,185 @@ PNG paveikslėlį.
 Išsaugokite `.obj` formatu -- gausite `.obj` ir `.mtl` failus. Abu sudėkite į
 vieną archyvą ir įkelkite į [Sketchfab](https://sketchfab.com): modelį galės
 pasukioti bet kas naršyklėje.
+"""),
+}),
+
+("cpp", {
+"en": ("""# C++
+
+Everything above works in C++ too. `add.hpp` is the same library as one
+header file: every function of `add.py` under the same name, with the same
+parameters in the same order and the same defaults, using nothing but the
+C++17 standard library. Download [`add.hpp`](https://raw.githubusercontent.com/akatasis/add3d/main/add.hpp),
+put it next to your program and `#include "add.hpp"`.
+
+```
+#include "add.hpp"
+
+int main() {
+    add::box({0, 0, 0}, 2, "red");
+    add::sphere({3, 0, 0}, 1, 20, "blue");
+    add::cylinder({0, 2, 0}, {3, 2, 0}, 0.3, 24, "gold");
+
+    add::check();
+    add::save("first_model.off");
+}
+```
+
+```
+g++ -std=c++17 -O2 first_model.cpp -o first_model
+./first_model
+```
+
+(`clang++` takes the same options.) The program writes the very same
+`first_model.off` as the Python program in *Start here* -- byte for byte.
+
+## The same model from the same calls
+
+The C++ functions compute what the Python ones compute, in the same order:
+the same random numbers for the same `add::seed(7)`, the same rounding, the
+same order of vertices and faces, the same numbers written the same way. So
+a model can be started in Python and finished in C++, or the other way
+round, and a teacher can mark both with the same file. The tests check this
+for every function (`tests/cpp/`), for every documentation example (each
+function in the reference below has its example in both languages), and for
+every example program: 42 of the programs in `examples/` have a C++ twin
+(`NN_name.cpp` next to `NN_name.py`), and `python3 examples/build_all.py
+--cpp` compiles each and compares the files it writes with the Python ones.
+
+## From Python to C++
+
+| Python | C++ |
+|---|---|
+| `import add` | `#include "add.hpp"` |
+| a point `[1, 2, 3]` | `{1, 2, 3}` (an `add::Point`; `p[0]` or `p.x`) |
+| a colour `"red"`, `[255, 0, 0]`, `"#ff0000"` | the same: `"red"`, `{255, 0, 0}`, `"#ff0000"` |
+| `add.sweep(P, path, closed=True)` | no keywords: every argument in order, `add::sweep(P, path, 0, 1, 100, add::DEFAULT_COLOR, true)` |
+| `add.bbox()` (no mesh: the scene) | `add::bbox()` -- the overload without the mesh |
+| `lambda t: [t, 0, 0]` | `[](double t) { return add::Point{t, 0, 0}; }` |
+| `add.make(add.box, [0, 0, 0], 2)` | `add::make([] { add::box({0, 0, 0}, 2); })` |
+| `M.V`, `M.F`, `M.C` | the same fields of an `add::Mesh` |
+| `add.union(a, b)` | `add::union_(a, b)` (`union` is a C++ keyword) |
+| `add.seed(7)`, `add.randint(1, 6)` | `add::seed(7)`, `add::randint(1, 6)` -- the same numbers |
+| `print(add.center(M))` | `std::cout << add::center(M)` -- prints `[1.0, 2.0, 3.0]`, as Python does |
+| `add.sin`, `add.pi`, `add.sqrt` | `add::sin`, `add::pi`, `add::sqrt` |
+
+The reference below gives the C++ declaration of every function (its
+parameter types and defaults) next to the Python one.
+
+## Byte for byte on every computer
+
+The header asks the compiler to keep every multiplication and addition
+separate (it switches off the fused multiply-add, which rounds once instead
+of twice). On a computer with an ARM processor -- a Mac with Apple Silicon,
+for instance -- compile your own program with `-ffp-contract=off` as well,
+so that the arithmetic in *your* formulas is done exactly as Python does it:
+
+```
+clang++ -std=c++17 -O2 -ffp-contract=off model.cpp -o model
+```
+
+On an ordinary x86-64 PC this makes no difference.
+
+## Working on the library
+
+`add.hpp` is generated, as `add.py` is: the sections live in `_cpp/`, and
+`python3 build.py` assembles both files (and their copies in `examples/`).
+
+```
+python3 tests/cpp/run_parity.py      # every function: C++ and Python, the same files
+python3 tests/cpp/run_docs.py        # every documentation example in both languages
+python3 examples/build_all.py --cpp  # every example program in both languages
+```
+"""),
+"lt": ("""# C++
+
+Viskas, kas aprašyta aukščiau, veikia ir C++ kalba. `add.hpp` yra ta pati
+biblioteka viename antraštės faile: kiekviena `add.py` funkcija tuo pačiu
+vardu, su tais pačiais parametrais ta pačia tvarka ir tomis pačiomis
+numatytosiomis reikšmėmis; naudojama tik standartinė C++17 biblioteka.
+Atsisiųskite [`add.hpp`](https://raw.githubusercontent.com/akatasis/add3d/main/add.hpp),
+padėkite šalia savo programos ir parašykite `#include "add.hpp"`.
+
+```
+#include "add.hpp"
+
+int main() {
+    add::box({0, 0, 0}, 2, "red");
+    add::sphere({3, 0, 0}, 1, 20, "blue");
+    add::cylinder({0, 2, 0}, {3, 2, 0}, 0.3, 24, "gold");
+
+    add::check();
+    add::save("pirmas_modelis.off");
+}
+```
+
+```
+g++ -std=c++17 -O2 pirmas_modelis.cpp -o pirmas_modelis
+./pirmas_modelis
+```
+
+(`clang++` priima tas pačias parinktis.) Programa įrašo lygiai tą patį
+failą, kaip Python programa skyriuje *Nuo ko pradėti* -- baitas į baitą.
+
+## Tie patys kvietimai -- tas pats modelis
+
+C++ funkcijos skaičiuoja tą patį, ką Python funkcijos, ir ta pačia tvarka:
+tie patys atsitiktiniai skaičiai po to paties `add::seed(7)`, tas pats
+apvalinimas, ta pati viršūnių ir sienų tvarka, tie patys skaičiai, įrašyti
+taip pat. Todėl modelį galima pradėti Python, o baigti C++ (arba atvirkščiai),
+o dėstytojas abu gali vertinti pagal tą patį failą. Testai tai tikrina
+kiekvienai funkcijai (`tests/cpp/`), kiekvienam dokumentacijos pavyzdžiui
+(žemiau kiekviena funkcija turi pavyzdį abiem kalbomis) ir kiekvienai
+pavyzdinei programai: 42 programos iš `examples/` turi C++ dvynę
+(`NN_vardas.cpp` šalia `NN_vardas.py`), o `python3 examples/build_all.py
+--cpp` sukompiliuoja kiekvieną ir palygina jos įrašytus failus su Python.
+
+## Iš Python į C++
+
+| Python | C++ |
+|---|---|
+| `import add` | `#include "add.hpp"` |
+| taškas `[1, 2, 3]` | `{1, 2, 3}` (`add::Point`; `p[0]` arba `p.x`) |
+| spalva `"red"`, `[255, 0, 0]`, `"#ff0000"` | tas pats: `"red"`, `{255, 0, 0}`, `"#ff0000"` |
+| `add.sweep(P, path, closed=True)` | vardinių argumentų nėra: visi argumentai iš eilės, `add::sweep(P, path, 0, 1, 100, add::DEFAULT_COLOR, true)` |
+| `add.bbox()` (be tinklo: scena) | `add::bbox()` -- funkcijos variantas be tinklo |
+| `lambda t: [t, 0, 0]` | `[](double t) { return add::Point{t, 0, 0}; }` |
+| `add.make(add.box, [0, 0, 0], 2)` | `add::make([] { add::box({0, 0, 0}, 2); })` |
+| `M.V`, `M.F`, `M.C` | tie patys `add::Mesh` laukai |
+| `add.union(a, b)` | `add::union_(a, b)` (`union` -- C++ bazinis žodis) |
+| `add.seed(7)`, `add.randint(1, 6)` | `add::seed(7)`, `add::randint(1, 6)` -- tie patys skaičiai |
+| `print(add.center(M))` | `std::cout << add::center(M)` -- išspausdina `[1.0, 2.0, 3.0]`, kaip Python |
+| `add.sin`, `add.pi`, `add.sqrt` | `add::sin`, `add::pi`, `add::sqrt` |
+
+Žemiau esančiame funkcijų sąraše šalia Python aprašo pateikta ir kiekvienos
+funkcijos C++ deklaracija (parametrų tipai ir numatytosios reikšmės).
+
+## Baitas į baitą bet kuriame kompiuteryje
+
+Antraštės failas liepia kompiliatoriui daugybą ir sudėtį visada atlikti
+atskirai (išjungia sulietą daugybą-sudėtį, kuri apvalina vieną kartą, o ne
+du). Kompiuteryje su ARM procesoriumi -- pavyzdžiui, Mac su Apple Silicon --
+savo programą kompiliuokite ir su `-ffp-contract=off`, kad ir *jūsų*
+formulės būtų skaičiuojamos lygiai taip, kaip Python:
+
+```
+clang++ -std=c++17 -O2 -ffp-contract=off modelis.cpp -o modelis
+```
+
+Įprastame x86-64 kompiuteryje tai nieko nekeičia.
+
+## Kaip keisti biblioteką
+
+`add.hpp`, kaip ir `add.py`, yra sugeneruojamas: jo skyriai yra `_cpp/`
+aplanke, o `python3 build.py` sudeda abu failus (ir jų kopijas `examples/`
+aplanke).
+
+```
+python3 tests/cpp/run_parity.py      # kiekviena funkcija: C++ ir Python, tie patys failai
+python3 tests/cpp/run_docs.py        # kiekvienas dokumentacijos pavyzdys abiem kalbomis
+python3 examples/build_all.py --cpp  # kiekviena pavyzdinė programa abiem kalbomis
+```
 """),
 }),
 

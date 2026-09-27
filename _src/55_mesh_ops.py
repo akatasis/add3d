@@ -169,7 +169,7 @@ def mean_edge_length(M=None):
     """The average edge length -- the natural "unit" of a mesh.  A regular
     polyhedron has all edges equal, so this is *the* edge length there."""
     L = edge_lengths(M)
-    return sum(L) / len(L) if L else 0.0
+    return _total(L) / len(L) if L else 0.0
 
 
 def adjacency(M=None):
@@ -216,7 +216,7 @@ def mean_neighbor_distance(M, i):
     nb = adjacency(M)[i]
     if not nb:
         return 0.0
-    return sum(_norm(_sub(M.V[i], M.V[j])) for j in nb) / len(nb)
+    return _total(_norm(_sub(M.V[i], M.V[j])) for j in nb) / len(nb)
 
 
 def vertex_faces(M, i):
@@ -246,7 +246,7 @@ def face_center(M, i):
     M = as_mesh(M)
     f = M.F[i]
     n = float(len(f))
-    return [sum(M.V[k][a] for k in f) / n for a in range(3)]
+    return [_total(M.V[k][a] for k in f) / n for a in range(3)]
 
 
 def face_normal(M, i):
@@ -370,7 +370,7 @@ def refine(M, steps=1):
                 out.add_face([d, da, bd], c)
                 out.add_face([ab, bd, da], c)
             elif n >= 4:
-                centre = out.add_vertex([sum(M.V[k][a] for k in f) / float(n)
+                centre = out.add_vertex([_total(M.V[k][a] for k in f) / float(n)
                                          for a in range(3)])
                 m = [midpoint_index(f[t], f[(t + 1) % n]) for t in range(n)]
                 for t in range(n):

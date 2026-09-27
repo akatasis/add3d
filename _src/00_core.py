@@ -158,6 +158,17 @@ def _frame(direction):
     return u, v, w
 
 
+def _total(values):
+    """The plain left-to-right sum of some numbers.  Python 3.12 made the
+    built-in ``sum`` of floats compensated, which changes the last digits of
+    some results; adding up in order gives the same numbers -- and the same
+    model files -- on every Python, and in add.hpp."""
+    s = 0
+    for x in values:
+        s = s + x
+    return s
+
+
 def _num(x):
     """Format a float the short way, so .off/.obj files stay small."""
     if x == int(x) and abs(x) < 1e15:

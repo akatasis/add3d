@@ -179,8 +179,8 @@ function build(lang) {
       x: M, y: 1.25, w: W - 2 * M, h: 1.0, isTextBox: true, margin: 0,
       fontFace: TITLE_FONT, fontSize: 54, bold: true, color: WHITE,
     });
-    s.addText(T("Build 3D models with nothing but Python code",
-                "Trimačiai modeliai, sukurti vien tik programiniu kodu"), {
+    s.addText(T("Build 3D models with nothing but code -- in Python or in C++",
+                "Trimačiai modeliai, sukurti vien tik programiniu kodu – Python arba C++"), {
       x: M, y: 2.25, w: W - 2 * M, h: 0.5, isTextBox: true, margin: 0,
       fontFace: BODY_FONT, fontSize: 19, color: "E9C9AE",
     });
@@ -227,8 +227,10 @@ function build(lang) {
         T("check() watches the 50 MB / 50 colour limits; glass (transparent) and image textures go into the .mtl.",
           "check() prižiūri 50 MB / 50 spalvų ribas; stiklas (transparent) ir tekstūros įrašomi į .mtl.")],
     ], { h: 1.28 });
-    note(s, T("Everything written for 1.2 keeps working without a single change; only import add is needed.",
-              "Viskas, kas parašyta senajai 1.2 versijai, veikia be jokių pataisymų; užtenka import add."));
+    note(s, T("Everything written for 1.2 keeps working without a single change -- and all of it now comes for C++ "
+              + "too: add.hpp, one header, the same functions, the same models.",
+              "Viskas, kas parašyta senajai 1.2 versijai, veikia be jokių pataisymų – o visa tai dabar yra ir C++ "
+              + "kalbai: add.hpp, vienas antraštės failas, tos pačios funkcijos, tie patys modeliai."));
     s.addNotes(T("The key message: nothing has to be rewritten. For students and for anyone interested.",
                  "Svarbiausia žinia: nieko perrašinėti nereikia. Studentams ir visiems besidomintiems."));
   }
@@ -438,6 +440,96 @@ function build(lang) {
     });
     note(s, T("The examples in examples/ are written this way: import add and nothing else.",
               "Visi examples/ pavyzdžiai parašyti taip: import add ir daugiau nieko."));
+  }
+
+  // =========================================================== 9b. the same model in C++
+  {
+    const s = sheet(T("The same model in C++", "Tas pats modelis C++ kalba"), "C++");
+    const label = (text, x) => s.addText(text, {
+      x: x, y: 1.5, w: 2.0, h: 0.26, isTextBox: true, margin: 0,
+      fontFace: MONO, fontSize: 11, bold: true, color: BROWN,
+    });
+    label("Python", M);
+    label("C++", M + 4.2);
+    code(s, [
+      "import add", "",
+      "add.box([0, 0, 0], 2, \"red\")",
+      "add.sphere([3, 0, 0], 1, 20, \"blue\")",
+      "add.cylinder([0, 2, 0], [3, 2, 0],",
+      "             0.3, 24, \"gold\")", "",
+      T("add.save(\"first.off\")", "add.save(\"pirmas.off\")"),
+    ], { x: M, y: 1.8, w: 4.0, h: 2.95, fontSize: 11 });
+    code(s, [
+      "#include \"add.hpp\"", "",
+      "int main() {",
+      "    add::box({0, 0, 0}, 2, \"red\");",
+      "    add::sphere({3, 0, 0}, 1, 20, \"blue\");",
+      "    add::cylinder({0, 2, 0}, {3, 2, 0},",
+      "                  0.3, 24, \"gold\");",
+      T("    add::save(\"first.off\");", "    add::save(\"pirmas.off\");"),
+      "}",
+    ], { x: M + 4.2, y: 1.8, w: 4.56, h: 2.95, fontSize: 11 });
+    s.addShape(pres.ShapeType.roundRect, {
+      x: M, y: 4.98, w: W - 2 * M, h: 1.5, rectRadius: 0.05, fill: { color: SAND },
+    });
+    s.addText([
+      { text: T("Byte for byte the same file. ", "Baitas į baitą tas pats failas. "),
+        options: { bold: true, color: BROWN } },
+      { text: T("add.hpp is the whole library as one header, using only the C++17 standard library: "
+                + "every function of add.py, with the same name, parameters and defaults.",
+                "add.hpp – visa biblioteka viename antraštės faile, naudojanti tik standartinę C++17 "
+                + "biblioteką: kiekviena add.py funkcija tuo pačiu vardu, su tais pačiais parametrais "
+                + "ir numatytosiomis reikšmėmis."), options: { breakLine: true } },
+      mono(T("g++ -std=c++17 -O2 first.cpp -o first && ./first",
+             "g++ -std=c++17 -O2 pirmas.cpp -o pirmas && ./pirmas"), { color: INK }),
+    ], {
+      x: M + 0.25, y: 5.12, w: W - 2 * M - 0.5, h: 1.25, isTextBox: true, margin: 0,
+      fontFace: BODY_FONT, fontSize: 13, color: INK, valign: "top", paraSpaceAfter: 6,
+    });
+    s.addNotes(T("For students who write C++: the same library, the same functions, the same numbers -- "
+                 + "and the same file as the Python program writes. 42 of the example programs have a .cpp twin.",
+                 "Studentams, kurie rašo C++: ta pati biblioteka, tos pačios funkcijos, tie patys skaičiai – "
+                 + "ir tas pats failas, kurį įrašo Python programa. 42 pavyzdinės programos turi .cpp dvynę."));
+  }
+
+  // =========================================================== 9c. from Python to C++
+  {
+    const s = sheet(T("From Python to C++", "Iš Python į C++"), "C++");
+    const rows = [
+      ["import add", "#include \"add.hpp\""],
+      ["[1, 2, 3]", "{1, 2, 3}"],
+      ["add.bend(M, 0.4, around=2)", "add::bend(M, 0.4, 1, 2)"],
+      ["add.bbox()", "add::bbox()"],
+      ["lambda t: [t, 0, 0]", "[](double t) { return add::Point{t, 0, 0}; }"],
+      ["add.make(add.box, [0, 0, 0], 2)", "add::make([] { add::box({0, 0, 0}, 2); })"],
+      ["M.V, M.F, M.C", "M.V, M.F, M.C"],
+      ["add.union(a, b)", "add::union_(a, b)"],
+      ["print(add.center(M))", "std::cout << add::center(M);"],
+    ];
+    const head = (t) => ({ text: t, options: { bold: true, color: WHITE, fill: { color: BROWN }, fontSize: 12 } });
+    const tableRows = [[head("Python"), head("C++")]]
+      .concat(rows.map(r => [
+        { text: r[0], options: { fontFace: MONO, fontSize: 11 } },
+        { text: r[1], options: { fontFace: MONO, fontSize: 11, color: BROWN } },
+      ]));
+    s.addTable(tableRows, {
+      x: M, y: 1.55, w: W - 2 * M, colW: [3.46, 5.3],
+      border: { type: "solid", color: LINE, pt: 0.75 },
+      fontFace: BODY_FONT, color: INK, valign: "middle", rowH: 0.33, margin: 0.06,
+    });
+    s.addText(T("No keyword arguments: give them in order (bend: angle, axis, around). A mesh left out means "
+                + "the scene, as in Python. union is a C++ keyword, so it is union_. Points and colours print as "
+                + "Python prints them.",
+                "Vardinių argumentų nėra: jie duodami iš eilės (bend: kampas, ašis, around). Praleistas tinklas "
+                + "reiškia sceną, kaip ir Python. union – C++ bazinis žodis, todėl union_. Taškai ir spalvos "
+                + "spausdinami taip pat, kaip Python."), {
+      x: M, y: 5.05, w: W - 2 * M, h: 0.62, isTextBox: true, margin: 0,
+      fontFace: BODY_FONT, fontSize: 12.5, color: INK, valign: "top",
+    });
+    note(s, T("Tested for every function, all 235 documentation examples and 42 example programs, with GCC and Clang. "
+              + "On ARM (a Mac with Apple Silicon) compile with -ffp-contract=off too.",
+              "Patikrinta kiekvienai funkcijai, visiems 235 dokumentacijos pavyzdžiams ir 42 pavyzdinėms programoms, "
+              + "su GCC ir Clang. ARM kompiuteryje (Mac su Apple Silicon) kompiliuokite ir su -ffp-contract=off."));
   }
 
   // =========================================================== 10. primitives
@@ -1104,9 +1196,9 @@ function build(lang) {
       caption: T("17_fractals.py -- Menger sponge, Sierpinski, a tree", "17_fractals.py – Mengerio kempinė, Sierpinskis, medis") });
     picture(s, "city.png", { x: M, y: 4.55, w: 4.3, h: 2.1 });
     picture(s, "example4.png", { x: 5.1, y: 4.55, w: 4.28, h: 2.1 });
-    s.addNotes(T("42 example programs; every public function is used by at least one of them "
+    s.addNotes(T("43 example programs, 42 of them also in C++; every public function is used by at least one of them "
                  + "(python3 tools/coverage.py), and every model fits the Sketchfab limits.",
-                 "42 pavyzdinės programos; kiekviena vieša funkcija panaudota bent vienoje "
+                 "43 pavyzdinės programos, 42 iš jų – ir C++ kalba; kiekviena vieša funkcija panaudota bent vienoje "
                  + "(python3 tools/coverage.py), ir kiekvienas modelis telpa į Sketchfab ribas."));
   }
 
@@ -1161,8 +1253,8 @@ function build(lang) {
       fontFace: TITLE_FONT, fontSize: 38, bold: true, color: WHITE,
     });
     s.addText([
-      { text: T("The module, the examples, the tests and the documentation\n",
-                "Modulis, pavyzdžiai, testai ir dokumentacija\n"),
+      { text: T("add.py and add.hpp, the examples, the tests and the documentation\n",
+                "add.py ir add.hpp, pavyzdžiai, testai ir dokumentacija\n"),
         options: { color: "E9C9AE", breakLine: true } },
       { text: "github.com/…/add3d\n\n", options: { fontFace: MONO, fontSize: 17, color: WHITE, breakLine: true } },
       { text: T("Documentation in English and Lithuanian\n", "Dokumentacija angliškai ir lietuviškai\n"),

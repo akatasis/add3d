@@ -185,6 +185,6 @@ The three-line sphere function, then three renders as R goes 0, 0.4, 2. "Two ang
 `city.png`. "Two loops over street blocks, a die-roll per building. Twenty thousand polygons out of a hundred lines. Change the seed and you get a town nobody has ever seen."
 
 **5. One file, free, runs on a school laptop. (2:35–3:00)** [Vienas failas, nemokamas, veikia mokykloje]
-The project address and the six-line triangle. "One Python file, two imports, MIT licence, nothing to install. Start with a triangle. It takes about ten minutes."
+The project address and the six-line triangle. "One Python file, two imports, MIT licence, nothing to install -- and the same library as one C++ header, if you prefer C++. Start with a triangle. It takes about ten minutes."
 
 If you have only one slide, make it number 3. The sphere-to-doughnut is the whole idea in forty-five seconds.

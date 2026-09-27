@@ -10,6 +10,7 @@ import add
 
 def example1():
     """A stepped pyramid of little cubes, mirrored top and bottom."""
+    add.seed(1)                     # the same colours on every run (and in C++)
     m = 10
     for k in range(m):
         for i in range(m - k):
@@ -25,6 +26,7 @@ def example1():
 
 def example2():
     """The same pyramid, built from hollow cube frames."""
+    add.seed(2)
     m = 10
     for k in range(m):
         for i in range(m - k):
@@ -97,6 +99,7 @@ def example4():
 
 def example5():
     """A tetrahedral stack of spheres."""
+    add.seed(5)
     m = 7
     for i in range(m):
         for j in range(m - i):

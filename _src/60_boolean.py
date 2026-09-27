@@ -248,7 +248,7 @@ class _Solid(object):
             if self.polys else [0.0, 0.0, 0.0]
         self.lo, self.hi = lo, hi
         self.scale = max(1e-9, max(hi[a] - lo[a] for a in range(3)))
-        diagonal = math.sqrt(sum((hi[a] - lo[a]) ** 2 for a in range(3)))
+        diagonal = math.sqrt(_total((hi[a] - lo[a]) ** 2 for a in range(3)))
         self.grid = _BoxGrid(self.polys, max(diagonal, 1e-9)) if self.polys else None
         self.rays = []
 
@@ -380,9 +380,9 @@ def _keep_pieces(source, other, keep, flip, paint=None):
             continue
         for piece, flush in _split_against(poly, other):
             n = len(piece.pts)
-            centre = (sum(q[0] for q in piece.pts) / n,
-                      sum(q[1] for q in piece.pts) / n,
-                      sum(q[2] for q in piece.pts) / n)
+            centre = (_total(q[0] for q in piece.pts) / n,
+                      _total(q[1] for q in piece.pts) / n,
+                      _total(q[2] for q in piece.pts) / n)
             facing = other.facing_at(centre, piece.n, flush) if flush else None
             if facing is not None:
                 state = "same" if facing > 0 else "opp"

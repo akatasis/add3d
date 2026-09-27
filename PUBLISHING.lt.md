@@ -81,19 +81,25 @@ antras darbas tikrina, ar `add.py` ir `examples/add.py` sutampa su `_src/`,
 ar veikia visi pavyzdžiai ir telpa į Sketchfab ribas, ar kiekviena vieša
 funkcija panaudota bent viename pavyzdyje (`tools/coverage.py --strict`), ar
 veikia kiekvienas dokumentacijos pavyzdys (`tests/test_docs.py`) ir ar
-`docs/index.html` atitinka kodo aprašymus. Ką nors pakeitę `_src/` aplanke,
-prieš commit'ą paleiskite `python3 build.py` ir `python3 tools/make_docs.py`;
-naujai viešai funkcijai dar reikia lietuviško paaiškinimo ir pavyzdžio faile
-`docs/reference.py`, kitaip dokumentacija nesigeneruoja.
+`docs/index.html` atitinka kodo aprašymus; trečias darbas sukompiliuoja C++
+dvynį `add.hpp` su GCC ir su Clang ir tikrina, ar kiekviena funkcija,
+kiekvienas dokumentacijos pavyzdys ir kiekviena pavyzdinė programa C++
+kalba įrašo tuos pačius failus kaip Python (`tests/cpp/run_parity.py`,
+`tests/cpp/run_docs.py`, `examples/build_all.py --cpp`). Ką nors pakeitę
+`_src/` aplanke (ar jo dvynyje `_cpp/`), prieš commit'ą paleiskite
+`python3 build.py` ir `python3 tools/make_docs.py`; naujai viešai funkcijai
+dar reikia lietuviško paaiškinimo ir pavyzdžio faile `docs/reference.py` bei
+C++ pavyzdžio faile `docs/reference_cpp.py`, kitaip dokumentacija
+nesigeneruoja.
 
 **Aprašymas ir raktažodžiai.** Siūlomas aprašymas:
 
-> Build 3D models with nothing but Python code. One file, no dependencies,
-> mesh booleans from scratch.
+> Build 3D models with nothing but code, in Python or C++. One file, no
+> dependencies, mesh booleans from scratch.
 
-Raktažodžiai (*topics*): `3d`, `python`, `geometry`, `csg`,
+Raktažodžiai (*topics*): `3d`, `python`, `cpp`, `geometry`, `csg`,
 `computational-geometry`, `education`, `parametric-surfaces`,
-`mesh-processing`, `teaching`, `no-dependencies`.
+`mesh-processing`, `teaching`, `no-dependencies`, `header-only`.
 
 ## 4. Išleidimas PyPI kataloge (neprivaloma)
 
@@ -110,7 +116,7 @@ python3 -m twine upload dist/*        # reikia PyPI paskyros ir API rakto
 Jei abejojate, pirmiausia išbandykite `test.pypi.org`
 (`twine upload --repository testpypi dist/*`). Versijos numeris įrašytas
 `_src/00_core.py` (`__version__`), `pyproject.toml`, `CITATION.cff` ir
-`docs/content.py`.
+`docs/content.py` (o C++ – `_cpp/00_core.hpp`).
 
 ## 5. Dalijimasis ne tik GitHub
 
@@ -134,9 +140,10 @@ Jei abejojate, pirmiausia išbandykite `test.pypi.org`
 | Aplankas | Kas viduje |
 |---|---|
 | `add.py` | pati biblioteka – vienintelis failas, kurio reikia studentams |
-| `_src/` + `build.py` | dalys, iš kurių surenkamas `add.py` |
-| `examples/` | 43 pavyzdinės programos su komentarais ir `add.py` kopija |
-| `tests/` | 94 vienetiniai testai, add.py 1.2 suderinamumo testas ir dokumentacijos pavyzdžių paleidiklis |
+| `add.hpp` | ta pati biblioteka C++ kalbai (vienas antraštės failas, C++17) |
+| `_src/`, `_cpp/` + `build.py` | dalys, iš kurių surenkami `add.py` ir `add.hpp` |
+| `examples/` | 43 pavyzdinės programos su komentarais (42 – ir C++ kalba), `add.py` ir `add.hpp` kopijos |
+| `tests/` | 94 vienetiniai testai, add.py 1.2 suderinamumo testas, dokumentacijos pavyzdžių paleidiklis ir C++ atitikties testai (`tests/cpp/`) |
 | `tools/` | `preview.py` (peržiūra), `make_docs.py`, `coverage.py` |
 | `docs/` | dokumentacijos svetainė (EN/LT) ir paveikslėliai |
 | `slides/` | paskaitos skaidrės (.pptx, .pdf ir generatorius) |
@@ -146,11 +153,14 @@ Jei abejojate, pirmiausia išbandykite `test.pypi.org`
 ## Greitas patikrinimas prieš keliant
 
 ```bash
-python3 build.py --check          # add.py ir examples/add.py atnaujinti
-python3 tests/test_add.py         # 93 passed, 0 failed
+python3 build.py --check          # add.py, add.hpp ir jų kopijos atnaujinti
+python3 tests/test_add.py         # 94 passed, 0 failed
 python3 tests/test_legacy.py      # all legacy models reproduce
 python3 tests/test_docs.py        # 235 documentation examples ran
 python3 tools/coverage.py --strict
 python3 tools/make_docs.py        # docs/index.html
 python3 examples/build_all.py --models   # visi pavyzdžiai telpa į Sketchfab ribas
+python3 tests/cpp/run_parity.py   # C++: kiekviena funkcija įrašo tuos pačius failus
+python3 tests/cpp/run_docs.py     # C++: 235 dokumentacijos pavyzdžiai
+python3 examples/build_all.py --cpp      # C++: 42 pavyzdinės programos
 ```

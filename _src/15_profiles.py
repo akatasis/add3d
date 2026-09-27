@@ -35,7 +35,7 @@ def remap(x, a0, a1, b0, b1):
 
 def distance(a, b):
     """Distance between two points (2D or 3D)."""
-    return math.sqrt(sum((a[i] - b[i]) ** 2 for i in range(len(a))))
+    return math.sqrt(_total((a[i] - b[i]) ** 2 for i in range(len(a))))
 
 
 def midpoint(a, b):
@@ -46,7 +46,7 @@ def midpoint(a, b):
 def direction(a, b):
     """The unit vector pointing from ``a`` to ``b``."""
     d = [b[i] - a[i] for i in range(len(a))]
-    n = math.sqrt(sum(c * c for c in d))
+    n = math.sqrt(_total(c * c for c in d))
     return d if n < EPS else [c / n for c in d]
 
 

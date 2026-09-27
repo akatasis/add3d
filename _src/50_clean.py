@@ -73,7 +73,7 @@ def _not_finite(M):
     """The vertices with a coordinate that is not a finite number (NaN or
     infinite -- a division by zero somewhere).  Quick when there are none."""
     finite = math.isfinite
-    if finite(sum(p[0] + p[1] + p[2] for p in M.V)):
+    if finite(_total(p[0] + p[1] + p[2] for p in M.V)):
         return set()
     return set(i for i, p in enumerate(M.V) if not (finite(p[0]) and finite(p[1]) and finite(p[2])))
 

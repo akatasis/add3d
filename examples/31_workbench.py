@@ -115,8 +115,8 @@ add.glyph("Z", [7.0, 2.3, 3], [1, 0, 0], [0, 1, 0], 0.6, 0.04, "navy")
 everything = add.scene()                                 # the live scene object
 print("scene so far:", everything)
 print("colours:", len(add.palette()), " .obj size: %.2f MB" % (add.obj_size() / 1e6))
-add.save("workbench.obj", colors=50)                     # .obj + .mtl, scene stays
-add.save("workbench.ply")
+add.save("workbench.obj", add.scene(), colors=50)        # .obj + .mtl; given a mesh, the scene stays
+add.save("workbench.ply", add.scene())                   # (without one, save() empties the scene)
 add.obj("workbench_copy.obj")                            # add.py 1.2 style: writes and clears
 print("after obj(): scene is", add.scene())
 os.remove("workbench_copy.obj")

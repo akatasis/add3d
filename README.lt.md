@@ -1,12 +1,14 @@
 # add.py
 
-**3D modeliai, sukurti vien tik programiniu kodu.**
+**3D modeliai, sukurti vien tik programiniu kodu – Python arba C++.**
 
-Vienas failas. Tik `math` ir `random`. Jokios modeliavimo programos, jokios
-geometrijos bibliotekos, nieko diegti nereikia.
+Vienas failas: [`add.py`](add.py), tik `math` ir `random`, – arba C++ kalbai
+[`add.hpp`](add.hpp), tik standartinė biblioteka. Jokios modeliavimo
+programos, jokios geometrijos bibliotekos, nieko diegti nereikia.
 
 [Dokumentacija](https://akatasis.github.io/add3d/) &middot;
 [Galerija](https://akatasis.github.io/add3d/#gallery) &middot;
+[C++](#c) &middot;
 [Pilis 3D Sketchfab'e](https://skfb.ly/pOnRS) &middot;
 [In English](README.md)
 
@@ -19,6 +21,22 @@ add.cylinder([0, 2, 0], [3, 2, 0], 0.3, 24, "gold")
 
 add.check()                      # 5198 daugiakampiai, 3 spalvos, uždaras
 add.save("pirmas_modelis.off")   # arba .obj (+ .mtl), .ply, .stl
+```
+
+Tas pats modelis C++ kalba – tos pačios funkcijos ir lygiai tas pats failas,
+baitas į baitą:
+
+```cpp
+#include "add.hpp"
+
+int main() {
+    add::box({0, 0, 0}, 2, "red");
+    add::sphere({3, 0, 0}, 1, 20, "blue");
+    add::cylinder({0, 2, 0}, {3, 2, 0}, 0.3, 24, "gold");
+
+    add::check();
+    add::save("pirmas_modelis.off");
+}
 ```
 
 <p align="center">
@@ -34,8 +52,9 @@ add.save("pirmas_modelis.off")   # arba .obj (+ .mtl), .ply, .stl
 </p>
 
 Nė vienas jų nenupieštas ranka. Kiekvienas – viena trumpa programa
-[`examples/`](examples/) aplanke. Pilį galima pasukioti ir apžiūrėti
-naršyklėje: **[atverkite ją Sketchfab'e](https://skfb.ly/pOnRS)**.
+[`examples/`](examples/) aplanke, visos, išskyrus pilį, – ir Python, ir C++
+kalba. Pilį galima pasukioti ir apžiūrėti naršyklėje: **[atverkite ją
+Sketchfab'e](https://skfb.ly/pOnRS)**.
 
 ---
 
@@ -73,6 +92,49 @@ dokumentaciją. (Modulis vadinasi `add.py`; repozitorija ir paketas – `add3d`,
 nes vardas `add` PyPI kataloge užimtas kito žmogaus tuščiu įrašu – žr.
 [PUBLISHING.lt.md](PUBLISHING.lt.md).)
 
+C++ kalbai atsisiųskite [`add.hpp`](add.hpp), padėkite šalia savo programos,
+parašykite `#include "add.hpp"` ir kompiliuokite bet kuriuo C++17
+kompiliatoriumi:
+
+```bash
+curl -O https://raw.githubusercontent.com/akatasis/add3d/main/add.hpp
+g++ -std=c++17 -O2 modelis.cpp -o modelis && ./modelis      # arba clang++
+```
+
+## C++
+
+`add.hpp` yra ta pati biblioteka C++ kalbai – vienas antraštės failas,
+naudojantis tik standartinę C++17 biblioteką. Kiekviena `add.py` funkcija
+čia yra tuo pačiu vardu, su tais pačiais parametrais ta pačia tvarka ir
+tomis pačiomis numatytosiomis reikšmėmis, ir skaičiuoja tą patį ta pačia
+tvarka: tie patys atsitiktiniai skaičiai po to paties `seed`, tas pats
+apvalinimas, tos pačios viršūnės ir sienos ta pačia tvarka, tie patys
+skaitmenys faile. **C++ ir Python programos, kurios kviečia tas pačias
+funkcijas, įrašo baitas į baitą tuos pačius `.off` ir `.obj` failus**, todėl
+modelį galima pradėti viena kalba, o baigti kita, o abu įvertinti pagal tą
+patį failą. Testai tai tikrina kiekvienai funkcijai, kiekvienam
+dokumentacijos pavyzdžiui ir kiekvienai pavyzdinei programai.
+
+| Python | C++ |
+|---|---|
+| `import add` | `#include "add.hpp"` |
+| taškas `[1, 2, 3]` | `{1, 2, 3}` (`add::Point`: `p[0]` arba `p.x`) |
+| spalva `"red"`, `[255, 0, 0]` | `"red"`, `{255, 0, 0}` |
+| vardiniai argumentai: `add.sweep(P, path, closed=True)` | visi argumentai iš eilės: `add::sweep(P, path, 0, 1, 100, add::DEFAULT_COLOR, true)` |
+| be tinklo (scena): `add.bbox()` | variantas be tinklo: `add::bbox()` |
+| `lambda t: [t, 0, 0]` | `[](double t) { return add::Point{t, 0, 0}; }` |
+| `add.make(add.box, [0, 0, 0], 2)` | `add::make([] { add::box({0, 0, 0}, 2); })` |
+| `add.union(a, b)` | `add::union_(a, b)` (`union` – C++ bazinis žodis) |
+| `print(add.center(M))` | `std::cout << add::center(M)` – irgi išspausdina `[1.0, 2.0, 3.0]` |
+
+[Dokumentacijoje](https://akatasis.github.io/add3d/#cpp) pateikta kiekvienos
+funkcijos C++ deklaracija ir kiekvienas pavyzdys abiem kalbomis; 42
+programos iš [`examples/`](examples/) turi C++ dvynę (`NN_vardas.cpp` šalia
+`NN_vardas.py`). Kompiuteryje su ARM procesoriumi (pvz., Mac su Apple
+Silicon) kompiliuokite ir su `-ffp-contract=off`, kad jūsų formulėse
+daugyba ir sudėtis nebūtų sulietos į vieną apvalinimą; įprastame x86-64
+kompiuteryje tai nieko nekeičia.
+
 ## Kas viduje
 
 | | |
@@ -95,7 +157,8 @@ nes vardas `add` PyPI kataloge užimtas kito žmogaus tuščiu įrašu – žr.
 | **Peržiūra** | `tools/preview.py` – atvaizdavimo įrankis, irgi be jokių priklausomybių; per didelį įkelti failą (daugiau kaip 500 MB pilį) jis skaito srautu |
 
 235 viešų vardų, kiekvienas aprašytas angliškai ir lietuviškai su veikiančiu
-pavyzdžiu, viename 8000 eilučių faile, kurį galima perskaityti.
+pavyzdžiu Python ir C++ kalbomis, viename 8000 eilučių faile, kurį galima
+perskaityti, – ir jo C++ dvynys, vienas 10 000 eilučių antraštės failas.
 
 ## Loginės operacijos, parašytos nuo nulio
 
@@ -182,8 +245,9 @@ viršuje -- vartai su pakeliamomis grotomis ir tiltu, kabančiu ant tikrų
 grandinių, per akmenimis grįstą tvenkinį iki pat sienų, kuriame plaukioja
 piranijos, patrankos ant bokštų ir virš vartų su patrankininkais, lauko
 akmenimis grįstas kelias nuo tilto palei tvenkinį ir švelniai žemyn
-aplink kalvą į uostą, kur prie krantinės prišvartuoti du dideli laivai iš
-persidengiančių lentų su įgulomis, o aplink salą pririštos valtys, rūmai
+aplink kalvą į uostą, kur prie krantinės trijų sruogų lynais prišvartuoti
+du dideli laivai iš persidengiančių lentų su įgulomis, o aplink salą
+pririštos valtys, rūmai
 su stiklo langais, romaninio stiliaus akmeniniu prieangiu, akmeniniais
 balkonais ant konsolių, stoglangiais ir stogu iš atskirų čerpių, koplyčia
 su vitražais, apvaliais rožės langais frontonuose, altoriumi ir
@@ -191,15 +255,17 @@ karališkaisiais kapais už jos, kiemas su šuliniu, fontanu su Neptūnu,
 medine karvelide ir balandžiais ant stogų, kalve, virtuve su židiniu ir
 duonkepe krosnimi, rąstiniais nameliais su šieno pastogėmis ir trobele
 (visi įrengti viduje), sandėliu, turgumi, arklide, kiaulių aptvaru su
-kiaulėmis, šunų būdomis, katinais, gyvatvorių sodais, rugių lauku,
+kiaulėmis, šunų būdomis, katinais, išvietėmis prie šešių sienų,
+gyvatvorių sodais, rugių lauku,
 šaudymo taikiniais, katapulta, patrankomis su patrankininkais, vežimais,
 statinėmis, dėžėmis, ginklų stovais, riteriais šarvuose pėsčiomis ir
 raitais (du rungiasi turnyre), lankininkais ir arbaletininkais -- kiekvienas
 vis kitokia poza, miestiečiais, arkliais, vištomis ir šunimis,
-žvejais ant krantinės, eglėmis, pušimis, beržais, ąžuolais, guobomis ir
+už sienų besiganančiomis karvėmis, žvejais ant krantinės, eglėmis, pušimis, beržais, ąžuolais, guobomis ir
 liepomis šlaituose, tarp kurių bėgioja kiškiai, lapės ir vilkai, kirais
-virš ežero -- o viduje siurprizai: didžioji menė su karaliumi soste, jo
-patarėju, juokdariu ir muzikantais, puota trisdešimt dviem svečiams,
+virš ežero -- o viduje siurprizai: didžioji menė su akmeninėmis
+kolonomis ir paauksuotais sietynais, karaliumi soste, jo patarėju,
+juokdariu ir muzikantais, puota trisdešimt dviem svečiams,
 šachmatų etiudas („Baltieji pradeda ir laimi") ir laiptai žemyn į
 skliautuotą vyno rūsį, kareivių miegamasis antrame aukšte, įrengtas kaip
 tikras -- nišomis tarp lentinių pertvarų, palėpė, kur tarp senų daiktų
@@ -221,32 +287,39 @@ telpa į Sketchfab ribas (tikrina `examples/build_all.py`).
 
 ```
 add.py               biblioteka – vienintelis failas, kurio jums reikia
+add.hpp              ta pati biblioteka C++ kalbai (vienas antraštės failas, C++17)
 _src/                dalys, iš kurių surenkamas add.py
-build.py             sujungia _src/*.py į add.py
+_cpp/                dalys, iš kurių surenkamas add.hpp
+build.py             surenka add.py iš _src/ ir add.hpp iš _cpp/
 examples/            43 pavyzdinės programos su komentarais (studijos ir pilni modeliai)
-  add.py             bibliotekos kopija, kad pavyzdžiai veiktų tokie, kokie yra
+  NN_vardas.cpp      NN_vardas.py C++ dvynė (visos, išskyrus pilį)
+  add.py, add.hpp    bibliotekos kopijos, kad pavyzdžiai veiktų tokie, kokie yra
   build_all.py       paleidžia visas, tikrina Sketchfab ribas, sugeneruoja paveikslėlius
 tools/
   preview.py         atvaizdavimo įrankis be priklausomybių
-  castle_photos.py   keturiasdešimt devynios pilies nuotraukos, darytos su preview.py
-  make_docs.py       sukuria docs/index.html iš kodo aprašymų ir docs/reference.py
+  castle_photos.py   penkiasdešimt penkios pilies nuotraukos, darytos su preview.py
+  make_docs.py       sukuria docs/index.html iš kodo aprašymų, docs/reference.py
+                     ir docs/reference_cpp.py
   coverage.py        kuris pavyzdys kurią funkciją naudoja
 tests/
   test_add.py        94 vienetiniai testai
   test_legacy.py     paleidžia add.py 1.2 modelius ir tikrina sienų skaičių
   test_docs.py       paleidžia kiekvienos aprašytos funkcijos pavyzdį
   legacy/            tie modeliai, nepakeisti
+  cpp/               C++ testai: kiekviena funkcija ir kiekvienas dokumentacijos
+                     pavyzdys abiem kalbomis, palyginami failas po failo
 docs/                dokumentacijos svetainė (lietuvių ir anglų kalbomis)
   reference.py       lietuviškas paaiškinimas ir pavyzdys kiekvienai funkcijai
+  reference_cpp.py   tie patys pavyzdžiai C++ kalba
 paper/               mokslinis straipsnis apie sandarą ir algoritmus
 outreach/            populiarinimo vaizdo įrašo scenarijus ir pranešimo planas
 slides/              paskaitos skaidrės
 ```
 
-Jei keičiate biblioteką, keiskite failus `_src/` aplanke ir paleiskite
-`python3 build.py` – `add.py` (ir jo kopija `examples/` aplanke) yra
-generuojamas. Jis laikomas repozitorijoje tam, kad studentui reikėtų tik
-vieno failo.
+Jei keičiate biblioteką, keiskite failus `_src/` aplanke (ir jų dvynius
+`_cpp/` aplanke) ir paleiskite `python3 build.py` – `add.py` ir `add.hpp`
+(ir jų kopijos `examples/` aplanke) yra generuojami. Jie laikomi
+repozitorijoje tam, kad studentui reikėtų tik vieno failo.
 
 ## Testai
 
@@ -255,13 +328,19 @@ python3 tests/test_add.py        # 94 vienetiniai testai
 python3 tests/test_legacy.py     # add.py 1.2 modeliai
 python3 tests/test_docs.py       # 235 dokumentacijos pavyzdžiai
 python3 examples/build_all.py    # visi pavyzdžiai, Sketchfab patikra, paveikslėliai
+
+python3 tests/cpp/run_parity.py      # C++: kiekviena funkcija, tie patys failai kaip Python
+python3 tests/cpp/run_docs.py        # C++: 235 dokumentacijos pavyzdžiai
+python3 examples/build_all.py --cpp  # C++: 42 pavyzdinės programos
 ```
 
 Vienetiniai testai tikrina kiekvienos figūros analitinį tūrį – sferą pagal
 4/3·πr³, torą pagal 2π²Rr² – kad kiekvienas uždaras kūnas tikrai uždaras, kad
 apibendrintas dalijimas su n = 2, 4, 8 sutampa su klasikiniu Catmull–Clark ir
 kiekvienam n duoda Eulerio charakteristiką 2, ir kad `.obj` failai išsaugo
-permatomumą bei tekstūras. Jie praeina su Python 3.8–3.13.
+permatomumą bei tekstūras. Jie praeina su Python 3.8–3.13. C++ testai
+kompiliuojami su GCC ir Clang ir kiekvieną C++ įrašytą failą baitas į baitą
+palygina su Python įrašytu (vien funkcijų testai – daugiau kaip 1300 failų).
 
 ## Kaip pasidalinti modeliu
 

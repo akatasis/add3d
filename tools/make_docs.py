@@ -23,8 +23,10 @@ sys.path.insert(0, ROOT)
 
 import content                                                    # noqa: E402
 import reference                                                  # noqa: E402
+import reference_cpp                                              # noqa: E402
 
 SOURCE = os.path.join(ROOT, "add.py")
+CPP_SOURCES = os.path.join(ROOT, "_cpp")
 OUTPUT = os.path.join(ROOT, "docs", "index.html")
 
 SECTION_RE = re.compile(r"^#\s+(\d+)\.\s+(.+?)\s*$")
@@ -139,6 +141,171 @@ def _literal(node):
 
 
 # ---------------------------------------------------------------------------
+#  reading add.hpp: the declarations of the C++ twin
+# ---------------------------------------------------------------------------
+
+#: Python names whose C++ twin is called differently.
+CPP_NAME = {"union": "union_"}
+
+
+def read_cpp_api():
+    """{name: [declaration, ...]} of the public C++ functions, types and
+    constants, read out of the declaration part of every ``_cpp/*.hpp``
+    (what comes before ``//@@definitions``; ``namespace detail`` skipped)."""
+    found = {}
+    for name in sorted(os.listdir(CPP_SOURCES)):
+        if name.endswith(".hpp"):
+            with open(os.path.join(CPP_SOURCES, name), encoding="utf-8") as f:
+                text = f.read().split("//@@definitions")[0]
+            for key, decl in _cpp_declarations(text):
+                found.setdefault(key, []).append(decl)
+    return found
+
+
+def _skip_literal(text, i):
+    quote, j = text[i], i + 1
+    while j < len(text) and text[j] != quote:
+        j += 2 if text[j] == "\\" else 1
+    return j + 1
+
+
+def _cpp_code(text):
+    """The text without comments and preprocessor lines."""
+    out, i = [], 0
+    while i < len(text):
+        c = text[i]
+        if c in "\"'":
+            j = _skip_literal(text, i)
+            out.append(text[i:j])
+            i = j
+        elif text.startswith("//", i):
+            j = text.find("\n", i)
+            i = len(text) if j < 0 else j
+        elif text.startswith("/*", i):
+            i = text.find("*/", i) + 2
+        else:
+            out.append(c)
+            i += 1
+    return "\n".join("" if line.lstrip().startswith("#") else line
+                     for line in "".join(out).split("\n"))
+
+
+def _skip_block(text, i):
+    depth = 0
+    while i < len(text):
+        c = text[i]
+        if c in "\"'":
+            i = _skip_literal(text, i)
+            continue
+        depth += (c == "{") - (c == "}")
+        i += 1
+        if depth == 0:
+            return i
+    return i
+
+
+def _cpp_declarations(text):
+    """(name, declaration) for everything at the top level of namespace add."""
+    text = _cpp_code(text)
+    stack, buf, paren, i, out = [], [], 0, 0, []
+
+    def head():
+        h = re.sub(r"\s+", " ", "".join(buf)).strip()
+        h = re.sub(r"\(\s+", "(", h)
+        return re.sub(r"\s+\)", ")", h)
+
+    while i < len(text):
+        c = text[i]
+        if c in "\"'":
+            j = _skip_literal(text, i)
+            buf.append(text[i:j])
+            i = j
+            continue
+        paren += (c == "(") - (c == ")")
+        if paren == 0 and c == "{":
+            h = head()
+            m = re.match(r"^namespace (\w+)$", h)
+            if m:
+                stack.append(m.group(1))
+                buf, i = [], i + 1
+                continue
+            if re.search(r"=\s*[\w:<>]*$", h):               # an initializer: {...}
+                buf.append(" {...}")
+                i = _skip_block(text, i)
+                continue
+            m = re.match(r"^(?:template ?<.*?> ?)?(struct|class) (\w+)", h)
+            i = _skip_block(text, i)
+            if m and "(" not in h:
+                if stack == ["add"]:
+                    out.append((m.group(2), "%s %s" % (m.group(1), m.group(2))))
+                i = text.find(";", i) + 1
+            elif stack == ["add"]:
+                out.extend(_cpp_declaration(h))
+            buf = []
+            continue
+        if paren == 0 and c == "}":
+            stack.pop()
+            buf, i = [], i + 1
+            continue
+        if paren == 0 and c == ";":
+            if stack == ["add"]:
+                out.extend(_cpp_declaration(head()))
+            buf, i = [], i + 1
+            continue
+        buf.append(c)
+        i += 1
+    return out
+
+
+def _wrap_declaration(decl, width=92):
+    """A long declaration with one parameter per line, lined up after the "("."""
+    if len(decl) <= width or "(" not in decl:
+        return decl
+    start = decl.index("(") + 1
+    params, depth, cur = [], 0, ""
+    for ch in decl[start:-1]:
+        if ch in "(<{[":
+            depth += 1
+        elif ch in ")>}]":
+            depth -= 1
+        if ch == "," and depth == 0:
+            params.append(cur.strip())
+            cur = ""
+        else:
+            cur += ch
+    params.append(cur.strip())
+    lines, line = [], decl[:start]
+    for i, p in enumerate(params):
+        piece = p + ("," if i < len(params) - 1 else ")")
+        if len(line) + len(piece) + 1 > width and line.strip() and line != decl[:start]:
+            lines.append(line.rstrip())
+            line = " " * start + piece
+        else:
+            line += ("" if line.endswith("(") else " ") + piece
+    lines.append(line)
+    return "\n".join(lines)
+
+
+def _cpp_declaration(h):
+    h = re.sub(r"^template ?<[^>]*(<[^>]*>[^>]*)*> ?", "", h)
+    m = re.match(r"^using (\w+) = (.*)$", h)
+    if m:
+        return [(m.group(1), h)]
+    if not h.startswith("inline "):
+        return []
+    body = h[len("inline "):]
+    if body.startswith("constexpr "):
+        body = body[len("constexpr "):]
+    m = re.match(r"^(.*?)\b(\w+) = (.*)$", body)
+    if m and "(" not in m.group(1):
+        return [(m.group(2), body)]                          # a constant
+    m = re.match(r"^(.*?)\b(operator\S*|\w+) ?\((.*)\)( const)?$", body)
+    if not m or m.group(2).startswith("operator") or m.group(1).rstrip().endswith("::"):
+        return []                                            # (operators, Color::parse)
+    return [(m.group(2), "%s %s(%s)" % (m.group(1).strip(), m.group(2), m.group(3)))]
+
+
+# ---------------------------------------------------------------------------
 #  tiny markdown
 # ---------------------------------------------------------------------------
 
@@ -153,8 +320,9 @@ def inline(text):
     text = re.sub(r"(?<![*\w])\*([^*\n]+)\*(?!\w)", r"<em>\1</em>", text)
     text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)",
                   r'<a href="\2">\1</a>', text)
-    text = re.sub(r"(?<!-)--(?!-)", "&mdash;", text)
-    return text
+    parts = re.split(r"(<code>.*?</code>)", text)             # (not inside code:
+    return "".join(p if p.startswith("<code>") else          # build_all.py --cpp)
+                   re.sub(r"(?<!-)--(?!-)", "&mdash;", p) for p in parts)
 
 
 def markdown(source):
@@ -335,6 +503,9 @@ main{max-width:1140px;margin:0 auto;padding:0 16px 96px}
   border-radius:20px;padding:3px 11px;color:var(--muted);background:var(--card)}
 section{padding-top:40px}
 .used{font-size:.86em;color:#6b6b6b;margin-top:10px}
+.fn .body p.lang{font-family:var(--mono);font-size:11.5px;color:var(--muted);
+  margin:10px 0 3px;text-transform:uppercase;letter-spacing:.06em}
+pre.code.decl{font-size:12.5px}
 h2{font-size:clamp(23px,3.6vw,30px);margin:8px 0 12px;letter-spacing:-.01em}
 h3{font-size:19px;margin:28px 0 8px}
 h4{font-size:16px;margin:20px 0 6px;color:var(--muted)}
@@ -461,8 +632,8 @@ def build():
     w('<meta charset="utf-8">')
     w('<meta name="viewport" content="width=device-width,initial-scale=1">')
     w("<title>add.py %s &mdash; 3D models from code</title>" % content.VERSION)
-    w('<meta name="description" content="add.py: build 3D models with '
-      'nothing but Python code. No libraries, no modelling program.">')
+    w('<meta name="description" content="add.py and add.hpp: build 3D models with '
+      'nothing but code, in Python or in C++. No libraries, no modelling program.">')
     w("<style>%s</style>" % CSS)
     w("</head><body>")
 
@@ -470,7 +641,7 @@ def build():
     w('<header><div class="bar">')
     w('<a class="brand" href="#top">add<span>.py</span></a>')
     w("<nav>")
-    for anchor, key in (("start", "nav_start"), ("concepts", "nav_concepts"),
+    for anchor, key in (("start", "nav_start"), ("cpp", "nav_cpp"), ("concepts", "nav_concepts"),
                         ("gallery", "nav_gallery"), ("cookbook", "nav_cookbook"),
                         ("reference", "nav_reference"), ("upgrade", "nav_upgrade"),
                         ("faq", "nav_faq")):
@@ -491,14 +662,16 @@ def build():
       '<span class="only-lt">%s</span></p>'
       % (content.UI["tagline"]["en"], content.UI["tagline"]["lt"]))
     w('<p class="lead" style="font-size:16px"><span class="only-en">'
-      "One file. Only <code>math</code> and <code>random</code>. "
+      "One file: <code>add.py</code>, only <code>math</code> and <code>random</code> "
+      "&mdash; or, for C++, <code>add.hpp</code>, only the standard library. "
       "No modelling program, no mesh library, no install."
       '</span><span class="only-lt">'
-      "Vienas failas. Tik <code>math</code> ir <code>random</code>. "
+      "Vienas failas: <code>add.py</code>, tik <code>math</code> ir <code>random</code> "
+      "&mdash; arba C++ kalbai <code>add.hpp</code>, tik standartinė biblioteka. "
       "Jokios modeliavimo programos, jokios geometrijos bibliotekos, "
       "nieko diegti nereikia.</span></p>")
     w('<div class="badges">')
-    for text in ("v%s" % content.VERSION, "MIT", "Python 3",
+    for text in ("v%s" % content.VERSION, "MIT", "Python 3", "C++17",
                  "%d functions" % sum(len(e) for _, e in api),
                  "0 dependencies"):
         w('<span class="badge">%s</span>' % text)
@@ -535,9 +708,12 @@ def _gallery_section():
            '<span class="only-lt">Galerija</span></h2>',
            '<p><span class="only-en">Every picture below was made by one '
            'script in <code>examples/</code>, and every script is meant to be '
-           'read.</span><span class="only-lt">Kiekvienas paveikslėlis sukurtas '
+           'read. All but the castle also come as a C++ program '
+           '(<code>.cpp</code>) that writes the same model.</span>'
+           '<span class="only-lt">Kiekvienas paveikslėlis sukurtas '
            'viena programa iš <code>examples/</code> aplanko, ir kiekviena jų '
-           'skirta skaityti.</span></p>',
+           'skirta skaityti. Visos, išskyrus pilį, yra ir C++ programos '
+           '(<code>.cpp</code>), kurios sukuria tą patį modelį.</span></p>',
            '<div class="gallery">']
     for image, script, cap_en, cap_lt, *online in content.GALLERY:
         picture = '<img loading="lazy" src="images/%s" alt="%s">' % (
@@ -549,11 +725,17 @@ def _gallery_section():
             more_en = ' <a href="%s">Turn it round in 3D on Sketchfab.</a>' % url
             more_lt = (' <a href="%s">Pasukiokite ją 3D Sketchfab\'e.</a>'
                        % url)
+        source = '<a href="%s/blob/main/examples/%s">%s</a>' % (
+            content.REPO_URL, script, html.escape(script))
+        twin = script[:-3] + ".cpp"
+        if os.path.exists(os.path.join(ROOT, "examples", twin)):
+            source += ' &middot; <a href="%s/blob/main/examples/%s">.cpp</a>' % (
+                content.REPO_URL, twin)
         out.append(
             '<figure>%s<figcaption><b>%s</b>'
             '<span class="only-en">%s%s</span>'
             '<span class="only-lt">%s%s</span></figcaption></figure>'
-            % (picture, html.escape(script), html.escape(cap_en), more_en,
+            % (picture, source, html.escape(cap_en), more_en,
                html.escape(cap_lt), more_lt))
     out.append("</div></section>")
     return "\n".join(out)
@@ -569,6 +751,7 @@ def _reference_section(api):
            'aria-label="%s"></div>'
            % (content.UI["search"]["en"], content.UI["search"]["en"])]
     used = coverage.usage()
+    cpp_api = read_cpp_api()
     for title, entries in api:
         number, _, name = title.partition(". ")
         title_lt = content.SECTION_TITLES_LT.get(name, name)
@@ -586,11 +769,25 @@ def _reference_section(api):
             if body_en:
                 body += '<div class="only-en">%s</div>' % body_en
             body += '<div class="only-lt"><p>%s</p></div>' % inline(explain_lt)
+            cpp_name = CPP_NAME.get(name, name)
+            if cpp_name in cpp_api:
+                body += ('<h4>C++</h4><pre class="code decl"><code>%s</code></pre>'
+                         % html.escape("\n".join(_wrap_declaration(d) for d in cpp_api[cpp_name])))
+            else:
+                note_en, note_lt = reference_cpp.NO_CPP[name]
+                body += ('<h4>C++</h4><p><span class="only-en">%s</span>'
+                         '<span class="only-lt">%s</span></p>'
+                         % (inline(note_en), inline(note_lt)))
             body += ('<h4><span class="only-en">Example</span>'
                      '<span class="only-lt">Pavyzdys</span></h4>'
+                     '<p class="lang">Python</p>'
                      '<pre class="code"><button class="copy" title="copy">'
                      '&#128203;</button><code>%s</code></pre>'
-                     % html.escape(reference.EXAMPLES[name]))
+                     '<p class="lang">C++</p>'
+                     '<pre class="code"><button class="copy" title="copy">'
+                     '&#128203;</button><code>%s</code></pre>'
+                     % (html.escape(reference.EXAMPLES[name]),
+                        html.escape(reference_cpp.EXAMPLES[name])))
             scripts = used.get(name, [])
             if scripts:
                 links = ", ".join(
@@ -607,7 +804,7 @@ def _reference_section(api):
                     '<span class="sum only-en">%s</span>'
                     '<span class="sum only-lt">%s</span>'
                     % (name, html.escape(e["signature"]),
-                       html.escape(summary_en), html.escape(summary_lt)))
+                       inline(summary_en), inline(summary_lt)))
             out.append('<details class="fn" id="fn-%s" data-search="%s">'
                        '<summary>%s</summary><div class="body">%s</div>'
                        '</details>'
@@ -635,6 +832,8 @@ def completeness(api):
                 problems.append("no Lithuanian explanation: " + e["name"])
             if e["name"] not in reference.EXAMPLES:
                 problems.append("no example: " + e["name"])
+            if e["name"] not in reference_cpp.EXAMPLES:
+                problems.append("no C++ example: " + e["name"])
     return problems
 
 
@@ -647,5 +846,5 @@ if __name__ == "__main__":
     page, api = build()
     total = sum(len(e) for _, e in api)
     print("docs/index.html written: %d KB, %d entries in %d groups, every one "
-          "with an explanation in both languages and an example"
+          "with an explanation in both languages and an example in Python and in C++"
           % (len(page) // 1024, total, len(api)))

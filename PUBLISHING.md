@@ -81,19 +81,24 @@ checks that `add.py` and `examples/add.py` match `_src/`, that every
 example runs and stays within the Sketchfab limits, that every public
 function is used by an example (`tools/coverage.py --strict`), that every
 documented example runs (`tests/test_docs.py`) and that `docs/index.html`
-matches the docstrings. After editing anything in `_src/`, run `python3
-build.py` and `python3 tools/make_docs.py` before committing; a new public
-function also needs its Lithuanian explanation and example in
-`docs/reference.py`, or the documentation build refuses.
+matches the docstrings; a third job compiles the C++ twin `add.hpp` with
+GCC and with Clang and checks that every function, every documentation
+example and every example program writes the same files in C++ as in
+Python (`tests/cpp/run_parity.py`, `tests/cpp/run_docs.py`,
+`examples/build_all.py --cpp`). After editing anything in `_src/` (or its
+twin in `_cpp/`), run `python3 build.py` and `python3 tools/make_docs.py`
+before committing; a new public function also needs its Lithuanian
+explanation and example in `docs/reference.py`, its C++ example in
+`docs/reference_cpp.py`, or the documentation build refuses.
 
 **Description and topics.** Suggested description:
 
-> Build 3D models with nothing but Python code. One file, no dependencies,
-> mesh booleans from scratch.
+> Build 3D models with nothing but code, in Python or C++. One file, no
+> dependencies, mesh booleans from scratch.
 
-Topics: `3d`, `python`, `geometry`, `csg`, `computational-geometry`,
+Topics: `3d`, `python`, `cpp`, `geometry`, `csg`, `computational-geometry`,
 `education`, `parametric-surfaces`, `mesh-processing`, `teaching`,
-`no-dependencies`.
+`no-dependencies`, `header-only`.
 
 ## 4. Releasing on PyPI (optional)
 
@@ -110,7 +115,8 @@ python3 -m twine upload dist/*        # needs a PyPI account and an API token
 
 Test first on `test.pypi.org` (`twine upload --repository testpypi dist/*`)
 if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
-`pyproject.toml`, `CITATION.cff` and `docs/content.py`.
+`pyproject.toml`, `CITATION.cff` and `docs/content.py` (and, for C++, in
+`_cpp/00_core.hpp`).
 
 ## 5. Sharing beyond GitHub
 
@@ -134,9 +140,10 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
 | Folder | Contents |
 |---|---|
 | `add.py` | the library -- the only file students need |
-| `_src/` + `build.py` | the sections `add.py` is assembled from |
-| `examples/` | 43 commented example programs and a copy of `add.py` |
-| `tests/` | 94 unit tests, the add.py 1.2 compatibility fixture and the documentation-example runner |
+| `add.hpp` | the same library for C++ (one header, C++17) |
+| `_src/`, `_cpp/` + `build.py` | the sections `add.py` and `add.hpp` are assembled from |
+| `examples/` | 43 commented example programs (42 of them also in C++) and copies of `add.py` and `add.hpp` |
+| `tests/` | 94 unit tests, the add.py 1.2 compatibility fixture, the documentation-example runner and the C++ parity tests (`tests/cpp/`) |
 | `tools/` | `preview.py` (renderer), `make_docs.py`, `coverage.py` |
 | `docs/` | the documentation site (EN/LT) and its pictures |
 | `slides/` | the lecture slides (.pptx, .pdf and the generator) |
@@ -146,11 +153,14 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
 ## Quick check before pushing
 
 ```bash
-python3 build.py --check          # add.py and examples/add.py are up to date
-python3 tests/test_add.py         # 93 passed, 0 failed
+python3 build.py --check          # add.py, add.hpp and their copies are up to date
+python3 tests/test_add.py         # 94 passed, 0 failed
 python3 tests/test_legacy.py      # all legacy models reproduce
 python3 tests/test_docs.py        # 235 documentation examples ran
 python3 tools/coverage.py --strict
 python3 tools/make_docs.py        # docs/index.html
 python3 examples/build_all.py --models   # every example fits the Sketchfab limits
+python3 tests/cpp/run_parity.py   # C++: every function writes the same files
+python3 tests/cpp/run_docs.py     # C++: the 235 documentation examples
+python3 examples/build_all.py --cpp      # C++: the 42 example programs
 ```

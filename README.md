@@ -1,12 +1,14 @@
 # add.py
 
-**Build 3D models with nothing but Python code.**
+**Build 3D models with nothing but code — in Python or in C++.**
 
-One file. Only `math` and `random`. No modelling program, no mesh library,
-nothing to install.
+One file: [`add.py`](add.py), only `math` and `random` — or, for C++,
+[`add.hpp`](add.hpp), only the standard library. No modelling program, no
+mesh library, nothing to install.
 
 [Documentation](https://akatasis.github.io/add3d/) &middot;
 [Gallery](https://akatasis.github.io/add3d/#gallery) &middot;
+[C++](#c) &middot;
 [The castle in 3D on Sketchfab](https://skfb.ly/pOnRS) &middot;
 [Lietuviškai](README.lt.md)
 
@@ -19,6 +21,22 @@ add.cylinder([0, 2, 0], [3, 2, 0], 0.3, 24, "gold")
 
 add.check()                      # 5198 polygons, 3 colours, closed surface
 add.save("first_model.off")      # or .obj (+ .mtl), .ply, .stl
+```
+
+The same model in C++ — the same functions, and the very same file, byte
+for byte:
+
+```cpp
+#include "add.hpp"
+
+int main() {
+    add::box({0, 0, 0}, 2, "red");
+    add::sphere({3, 0, 0}, 1, 20, "blue");
+    add::cylinder({0, 2, 0}, {3, 2, 0}, 0.3, 24, "gold");
+
+    add::check();
+    add::save("first_model.off");
+}
 ```
 
 <p align="center">
@@ -34,8 +52,9 @@ add.save("first_model.off")      # or .obj (+ .mtl), .ply, .stl
 </p>
 
 Nobody drew any of these. Each is one short program in
-[`examples/`](examples/). The castle can be turned round and explored in a
-browser: **[open it on Sketchfab](https://skfb.ly/pOnRS)**.
+[`examples/`](examples/) — all but the castle in Python and in C++. The
+castle can be turned round and explored in a browser: **[open it on
+Sketchfab](https://skfb.ly/pOnRS)**.
 
 ---
 
@@ -73,6 +92,47 @@ too. (The module is `add.py`; the repository and the package are called
 `add3d`, because the name `add` on PyPI is held by an empty placeholder
 registered by someone else -- see [PUBLISHING.md](PUBLISHING.md).)
 
+For C++, download [`add.hpp`](add.hpp) instead, put it next to your
+program, `#include "add.hpp"` and compile with any C++17 compiler:
+
+```bash
+curl -O https://raw.githubusercontent.com/akatasis/add3d/main/add.hpp
+g++ -std=c++17 -O2 model.cpp -o model && ./model      # or clang++
+```
+
+## C++
+
+`add.hpp` is the same library for C++, one header file that uses nothing but
+the C++17 standard library. Every function of `add.py` is there under the
+same name, with the same parameters in the same order and the same
+defaults, and it computes the same thing in the same order — the same
+random numbers after the same `seed`, the same rounding, the same vertices
+and faces in the same order, the same digits in the file. **A C++ program
+and a Python program that make the same calls write byte for byte the same
+`.off` and `.obj` files**, so a model can be started in one language and
+finished in the other, and one file marks both. The tests check this for
+every function, for every documentation example and for every example
+program.
+
+| Python | C++ |
+|---|---|
+| `import add` | `#include "add.hpp"` |
+| a point `[1, 2, 3]` | `{1, 2, 3}` (an `add::Point`: `p[0]` or `p.x`) |
+| a colour `"red"`, `[255, 0, 0]` | `"red"`, `{255, 0, 0}` |
+| keyword arguments: `add.sweep(P, path, closed=True)` | every argument in order: `add::sweep(P, path, 0, 1, 100, add::DEFAULT_COLOR, true)` |
+| no mesh (the scene): `add.bbox()` | the overload without the mesh: `add::bbox()` |
+| `lambda t: [t, 0, 0]` | `[](double t) { return add::Point{t, 0, 0}; }` |
+| `add.make(add.box, [0, 0, 0], 2)` | `add::make([] { add::box({0, 0, 0}, 2); })` |
+| `add.union(a, b)` | `add::union_(a, b)` (`union` is a keyword) |
+| `print(add.center(M))` | `std::cout << add::center(M)` — prints `[1.0, 2.0, 3.0]` too |
+
+The [documentation](https://akatasis.github.io/add3d/#cpp) gives the C++
+declaration of every function and every example in both languages; 42 of
+the programs in [`examples/`](examples/) have a C++ twin (`NN_name.cpp` next
+to `NN_name.py`). On an ARM computer (a Mac with Apple Silicon, say) compile
+with `-ffp-contract=off` too, so that no multiply and add in your own
+formulas is fused into one rounding; on an x86-64 PC it makes no difference.
+
 ## What you get
 
 | | |
@@ -95,7 +155,8 @@ registered by someone else -- see [PUBLISHING.md](PUBLISHING.md).)
 | **Looking** | `tools/preview.py`, a software renderer that also has no dependencies; it streams a file too big to load (the castle, over 500 MB) |
 
 235 public names, every one documented in English and Lithuanian with a
-runnable example, in one 8000-line file you can read.
+runnable example in Python and in C++, in one 8000-line file you can read —
+and its C++ twin, one 10,000-line header.
 
 ## Boolean operations, from scratch
 
@@ -188,23 +249,24 @@ moat lined with stone that comes right up to the walls, piranhas in it,
 guns on the towers and over the gate with their gunners, a road paved with
 fieldstones from the bridge along the moat and gently down round the hill
 to a harbour where two great ships, clinker-built of planks and with their
-crews aboard, lie moored at a wharf and rowing boats are tied up all round
-the shore, a palace with glass windows, a Romanesque porch of stone,
+crews aboard, lie moored at a wharf by ropes laid of three strands and
+rowing boats are tied up all round the shore, a palace with glass windows, a Romanesque porch of stone,
 stone balconies on corbels, dormers and a roof of single tiles, a chapel
 with stained glass, rose windows in its gables, an altar and the royal
 graves behind it, a courtyard with a well, a fountain with Neptune, a
 wooden dovecote with doves about the roofs, a smithy, a kitchen with a
 hearth and a bread oven, log houses with hay lofts and a cottage, all
 furnished, a storehouse, a market, a stable, a pigsty with its pigs,
-kennels, cats, knot gardens, a field of rye, archery butts, a trebuchet,
+kennels, cats, a privy by each of six walls, knot gardens, a field of rye, archery butts, a trebuchet,
 cannons with their crews, carts, barrels, crates, weapon racks, knights
 in armour on foot and on horseback (two of them jousting at the tilt),
 archers and crossbowmen each in a stance of his own, townsfolk, horses,
-chickens and dogs, fishermen on the wharf, spruces,
+chickens and dogs, cows grazing outside the walls, fishermen on the wharf, spruces,
 pines, birches, oaks, elms and limes on the slopes with hares, foxes and
 wolves running among them, gulls over the lake -- and, inside, the easter
-eggs: the great hall with the king on his throne, his counsellor, his fool
-and musicians, a feast for thirty-two guests, a chess study ("White to
+eggs: the great hall, its stone columns and gilded chandeliers, with the
+king on his throne, his counsellor, his fool and musicians, a feast for
+thirty-two guests, a chess study ("White to
 play and win") and a stair down to the vaulted wine cellar, the soldiers'
 dormitory upstairs, laid out in bays like a real one, an attic where the
 guests sleep among old things (the lords in four-posters), the
@@ -226,31 +288,39 @@ Sketchfab limits (`examples/build_all.py` checks).
 
 ```
 add.py               the library — this is the only file you need
+add.hpp              the same library for C++ (one header, C++17)
 _src/                the sections add.py is assembled from
-build.py             concatenates _src/*.py into add.py
+_cpp/                the sections add.hpp is assembled from
+build.py             assembles add.py from _src/ and add.hpp from _cpp/
 examples/            43 commented example programs (studies and complete models)
-  add.py             a copy of the library, so the examples run as they are
+  NN_name.cpp        the C++ twin of NN_name.py (all but the castle)
+  add.py, add.hpp    copies of the library, so the examples run as they are
   build_all.py       runs them all, checks the Sketchfab limits, renders the pictures
 tools/
   preview.py         dependency-free software renderer
-  castle_photos.py   forty-nine photographs of the castle, taken with preview.py
-  make_docs.py       builds docs/index.html from the docstrings + docs/reference.py
+  castle_photos.py   fifty-five photographs of the castle, taken with preview.py
+  make_docs.py       builds docs/index.html from the docstrings, docs/reference.py
+                     and docs/reference_cpp.py
   coverage.py        which example uses which function
 tests/
   test_add.py        94 unit tests
   test_legacy.py     runs the add.py 1.2 models and checks the face counts
   test_docs.py       runs the example of every documented function
   legacy/            those models, unedited
+  cpp/               the C++ tests: every function and every documentation
+                     example in both languages, compared file by file
 docs/                the documentation site (English and Lithuanian)
   reference.py       a Lithuanian explanation and an example for every function
+  reference_cpp.py   the same examples in C++
 paper/               a paper describing the design and the algorithms
 outreach/            a video script and a talk outline
 slides/              lecture slides
 ```
 
-If you edit the library, edit the files in `_src/` and run `python3
-build.py`; `add.py` (and its copy in `examples/`) is generated. It ships in
-the repository so that a student only ever needs one file.
+If you edit the library, edit the files in `_src/` (and their twins in
+`_cpp/`) and run `python3 build.py`; `add.py` and `add.hpp` (and their
+copies in `examples/`) are generated. They ship in the repository so that a
+student only ever needs one file.
 
 ## Running the tests
 
@@ -259,6 +329,10 @@ python3 tests/test_add.py        # 94 unit tests
 python3 tests/test_legacy.py     # the add.py 1.2 models
 python3 tests/test_docs.py       # the 235 documentation examples
 python3 examples/build_all.py    # every example, the Sketchfab check, pictures
+
+python3 tests/cpp/run_parity.py      # C++: every function, the same files as Python
+python3 tests/cpp/run_docs.py        # C++: the 235 documentation examples
+python3 examples/build_all.py --cpp  # C++: the 42 example programs
 ```
 
 The unit tests check the analytic volume of every primitive — a sphere
@@ -266,7 +340,9 @@ against 4/3·πr³, a torus against 2π²Rr² — that every closed shape really
 closed, that the generalised subdivision reproduces classical Catmull–Clark
 for n = 2, 4, 8 and gives Euler characteristic 2 for every n, and that
 `.obj` files round-trip with their opacity and textures. They pass on
-Python 3.8 to 3.13.
+Python 3.8 to 3.13. The C++ tests compile with GCC and Clang and compare
+every file the C++ writes with the one Python writes (over 1300 files from
+the functions alone), byte for byte.
 
 ## Sharing a model
 

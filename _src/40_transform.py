@@ -26,7 +26,7 @@ def center(M=None):
     if not M.V:
         return [0.0, 0.0, 0.0]
     n = float(len(M.V))
-    return [sum(p[a] for p in M.V) / n for a in range(3)]
+    return [_total(p[a] for p in M.V) / n for a in range(3)]
 
 
 #: Private handle on :func:`center`, for functions whose own parameter is
@@ -399,7 +399,7 @@ def color_by(M, fn):
     out = M.copy()
     for i, f in enumerate(M.F):
         n = float(len(f))
-        p = [sum(M.V[k][a] for k in f) / n for a in range(3)]
+        p = [_total(M.V[k][a] for k in f) / n for a in range(3)]
         out.C[i] = rgb(fn(p))
     return out
 

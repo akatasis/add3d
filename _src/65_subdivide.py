@@ -88,7 +88,7 @@ class _Topo(object):
     def centroid(self, f):
         p = self.F[f]
         n = float(len(p))
-        return [sum(self.V[v][a] for v in p) / n for a in range(3)]
+        return [_total(self.V[v][a] for v in p) / n for a in range(3)]
 
     def ordered_ring(self, v):
         """Neighbours and faces counter-clockwise around ``v``, or ``None``."""

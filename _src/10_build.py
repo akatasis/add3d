@@ -531,7 +531,7 @@ def _hull_faces(V, sides):
                 if key in found:
                     continue
                 # Sort the coplanar points into a proper ring.
-                centre = [sum(V[t][a] for t in on) / len(on) for a in range(3)]
+                centre = [_total(V[t][a] for t in on) / len(on) for a in range(3)]
                 u = _unit(_sub(V[on[0]], centre))
                 v = _cross(nrm, u)
                 on.sort(key=lambda t: math.atan2(
