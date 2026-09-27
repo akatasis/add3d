@@ -799,6 +799,11 @@ CASE(fix_normals) {
     O.add_face({3, 2, 7, 6}, "green");
     O.add_face({2, 3, 6}, "white");                            // a third face on edge 2-3
     dump(add::fix_normals(O));
+    Mesh U;
+    cuboid_polys(U, {500, 0, 0}, {1, 2, 3}, "red");            // corners not shared, far from the origin,
+    std::reverse(U.F[0].begin(), U.F[0].end());                // two faces the wrong way
+    std::reverse(U.F[4].begin(), U.F[4].end());
+    dump(add::fix_normals(U));
 }
 
 // -- clean ----------------------------------------------------------------------------

@@ -298,7 +298,7 @@ examples/            43 commented example programs (studies and complete models)
   build_all.py       runs them all, checks the Sketchfab limits, renders the pictures
 tools/
   preview.py         dependency-free software renderer
-  castle_photos.py   fifty-five photographs of the castle, taken with preview.py
+  castle_photos.py   sixty-two photographs of the castle, taken with preview.py
   make_docs.py       builds docs/index.html from the docstrings, docs/reference.py
                      and docs/reference_cpp.py
   coverage.py        which example uses which function

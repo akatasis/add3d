@@ -820,21 +820,75 @@ def triangulate(M=None):
     return out
 
 
+def _weld_map(V, tol=1e-7):
+    """For every vertex the index of the first one lying on it (within
+    ``tol``, the way :func:`_weld` would merge them), the mesh unchanged."""
+    lookup = {}
+    rep = [0] * len(V)
+    for i, p in enumerate(V):
+        found = None
+        keys = _cell_keys(p, tol)
+        for key in keys:
+            j = lookup.get(key)
+            if j is not None:
+                q = V[j]
+                if (abs(q[0] - p[0]) <= tol and abs(q[1] - p[1]) <= tol
+                        and abs(q[2] - p[2]) <= tol):
+                    found = j
+                    break
+        if found is None:
+            found = i
+            for key in keys:
+                lookup.setdefault(key, found)
+        rep[i] = found
+    return rep
+
+
+def _piece_volume(M, faces, rep):
+    """Six times the signed volume of the faces ``faces`` of ``M``, measured
+    from their own middle (the same for a closed piece wherever it is
+    measured from; for an open one it says whether it faces away from its
+    middle), and the size of the piece, cubed."""
+    corners = sorted({rep[i] for fi in faces for i in M.F[fi]})
+    n = float(len(corners))
+    c = [_total(M.V[i][a] for i in corners) / n for a in range(3)]
+    size = max(max(M.V[i][a] for i in corners) - min(M.V[i][a] for i in corners) for a in range(3))
+    total = 0.0
+    for fi in faces:
+        f = M.F[fi]
+        if len(f) < 3:
+            continue
+        a = _sub(M.V[f[0]], c)
+        for t in range(1, len(f) - 1):
+            b, d = _sub(M.V[f[t]], c), _sub(M.V[f[t + 1]], c)
+            total += (a[0] * (b[1] * d[2] - b[2] * d[1])
+                      - a[1] * (b[0] * d[2] - b[2] * d[0])
+                      + a[2] * (b[0] * d[1] - b[1] * d[0]))
+    return total, size ** 3
+
+
 def fix_normals(M=None, outward=True):
     """Make every face of a copy point the same way -- and, if the model is
     closed, point outward.
 
     Faces are walked from neighbour to neighbour: two faces that share an edge
-    must run along it in opposite directions.  Each connected piece is then
-    flipped as a whole if its volume came out negative.
+    must run along it in opposite directions.  Corners lying on one another
+    count as one, so a model whose faces each have their own copies of their
+    corners (built with ``add_polygon``) is walked just the same; an edge of
+    three faces or more (two solids touching along it) is not walked over.
+    Each connected piece is then flipped as a whole if its volume came out
+    negative -- measured from its own middle, so that a lone flat face is
+    left the way it was made.
     """
     M = as_mesh(M).copy()
+    rep = _weld_map(M.V)
     edge_faces = {}
     for i, f in enumerate(M.F):
         n = len(f)
         for t in range(n):
-            a, b = f[t], f[(t + 1) % n]
-            edge_faces.setdefault((a, b) if a < b else (b, a), []).append(i)
+            a, b = rep[f[t]], rep[f[(t + 1) % n]]
+            if a != b:
+                edge_faces.setdefault((a, b) if a < b else (b, a), []).append(i)
 
     visited = [False] * len(M.F)
     for start in range(len(M.F)):
@@ -848,16 +902,20 @@ def fix_normals(M=None, outward=True):
             f = M.F[i]
             n = len(f)
             for t in range(n):
-                a, b = f[t], f[(t + 1) % n]
-                key = (a, b) if a < b else (b, a)
-                for j in edge_faces.get(key, ()):
+                a, b = rep[f[t]], rep[f[(t + 1) % n]]
+                if a == b:
+                    continue
+                around = edge_faces[(a, b) if a < b else (b, a)]
+                if len(around) != 2:               # (an open edge, or one of three faces or more)
+                    continue
+                for j in around:
                     if visited[j]:
                         continue
                     g = M.F[j]
                     m = len(g)
                     same = False
                     for s in range(m):
-                        if g[s] == a and g[(s + 1) % m] == b:
+                        if rep[g[s]] == a and rep[g[(s + 1) % m]] == b:
                             same = True
                             break
                     if same:                       # neighbour disagrees
@@ -868,9 +926,8 @@ def fix_normals(M=None, outward=True):
                     component.append(j)
                     stack.append(j)
         if outward:
-            part = Mesh(M.V, [M.F[i] for i in component],
-                        [M.C[i] for i in component])
-            if _signed_volume(part, 0) < 0:
+            volume, size3 = _piece_volume(M, component, rep)
+            if volume < -1e-9 * size3:
                 for i in component:
                     M.F[i].reverse()
                     if M.UV is not None and M.UV[i] is not None:

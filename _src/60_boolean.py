@@ -603,9 +603,9 @@ def cut(M, point=(0, 0, 0), normal=(0, 1, 0), cap=True, color=None):
                 if abs(_dot(n, a) - w) < 1e-9 and abs(_dot(n, b) - w) < 1e-9:
                     rim.append((a, b))
     if cap and rim:
-        for loop in _loops(rim):
-            if len(loop) >= 3:
-                out.add_polygon(loop, color if color is not None else
+        for loop in _loops(rim):                   # (the rim runs the way the faces round it do;
+            if len(loop) >= 3:                     #  the cap runs back along it, facing out)
+                out.add_polygon(loop[::-1], color if color is not None else
                                 (M.C[0] if M.C else None))
     _weld(out, 1e-7)
     _drop_degenerate(out)

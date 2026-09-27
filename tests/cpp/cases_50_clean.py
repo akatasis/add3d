@@ -762,6 +762,11 @@ def fix_normals():
     O.add_face([3, 2, 7, 6], "green")
     O.add_face([2, 3, 6], "white")                          # a third face on edge 2-3
     dump(add.fix_normals(O))
+    U = add.Mesh()
+    cuboid_polys(U, [500, 0, 0], [1, 2, 3], "red")         # corners not shared, far from the origin,
+    U.F[0].reverse()                                        # two faces the wrong way
+    U.F[4].reverse()
+    dump(add.fix_normals(U))
 
 
 # -- clean --------------------------------------------------------------------

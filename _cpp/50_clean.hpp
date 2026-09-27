@@ -7,6 +7,12 @@ namespace add {
 namespace detail {
 //: Merge vertices closer than ``tol`` (in place).  Returns how many went.
 inline int weld(Mesh& M, double tol = 1e-7);
+//: For every vertex the index of the first one lying on it (within ``tol``, the way weld
+//: would merge them), the mesh unchanged.
+inline std::vector<int> weld_map(const std::vector<Point>& V, double tol = 1e-7);
+//: Six times the signed volume of the faces ``faces`` measured from their own middle, and
+//: the size of the piece, cubed (see fix_normals).
+inline std::pair<double, double> piece_volume(const Mesh& M, const std::vector<int>& faces, const std::vector<int>& rep);
 //: Keep only the faces whose index is in ``keep`` (in place); how many went.
 inline int keep_faces(Mesh& M, const std::vector<int>& keep);
 //: The vertices with a coordinate that is not a finite number.
@@ -233,6 +239,67 @@ inline int weld(Mesh& M, double tol) {
     for (Face& f : M.F)
         for (int& i : f) i = remap[i];
     return removed;
+}
+
+inline std::vector<int> weld_map(const std::vector<Point>& V, double tol) {
+    std::unordered_map<CellKey, int, CellKeyHash> lookup;
+    std::vector<int> rep(V.size(), 0);
+    for (size_t i = 0; i < V.size(); ++i) {
+        const Point& p = V[i];
+        int found = -1;
+        std::vector<CellKey> keys = cell_keys(p, tol);
+        for (const CellKey& key : keys) {
+            auto it = lookup.find(key);
+            if (it != lookup.end()) {
+                const Point& q = V[it->second];
+                if (std::fabs(q[0] - p[0]) <= tol && std::fabs(q[1] - p[1]) <= tol && std::fabs(q[2] - p[2]) <= tol) {
+                    found = it->second;
+                    break;
+                }
+            }
+        }
+        if (found < 0) {
+            found = (int)i;
+            for (const CellKey& key : keys) lookup.emplace(key, found);
+        }
+        rep[i] = found;
+    }
+    return rep;
+}
+
+inline std::pair<double, double> piece_volume(const Mesh& M, const std::vector<int>& faces, const std::vector<int>& rep) {
+    std::set<int> corners;
+    for (int fi : faces)
+        for (int i : M.F[fi]) corners.insert(rep[i]);
+    double n = (double)corners.size();
+    double c[3], size = 0.0;
+    for (int a = 0; a < 3; ++a) {
+        double s = 0.0, lo = 0.0, hi = 0.0;
+        bool first = true;
+        for (int i : corners) {
+            double v = M.V[i][a];
+            s = s + v;
+            if (first || v < lo) lo = v;
+            if (first || v > hi) hi = v;
+            first = false;
+        }
+        c[a] = s / n;
+        if (a == 0 || hi - lo > size) size = hi - lo;
+    }
+    double total = 0.0;
+    for (int fi : faces) {
+        const Face& f = M.F[fi];
+        if (f.size() < 3) continue;
+        double a[3] = {M.V[f[0]][0] - c[0], M.V[f[0]][1] - c[1], M.V[f[0]][2] - c[2]};
+        for (size_t t = 1; t + 1 < f.size(); ++t) {
+            double b[3] = {M.V[f[t]][0] - c[0], M.V[f[t]][1] - c[1], M.V[f[t]][2] - c[2]};
+            double d[3] = {M.V[f[t + 1]][0] - c[0], M.V[f[t + 1]][1] - c[1], M.V[f[t + 1]][2] - c[2]};
+            total += (a[0] * (b[1] * d[2] - b[2] * d[1])
+                      - a[1] * (b[0] * d[2] - b[2] * d[0])
+                      + a[2] * (b[0] * d[1] - b[1] * d[0]));
+        }
+    }
+    return {total, std::pow(size, 3.0)};
 }
 
 inline int keep_faces(Mesh& M, const std::vector<int>& keep) {
@@ -1171,13 +1238,14 @@ inline Mesh triangulate() { return triangulate(scene()); }
 
 inline Mesh fix_normals(const Mesh& M0, bool outward) {
     Mesh M = M0;
+    std::vector<int> rep = detail::weld_map(M.V);            // (corners lying on one another count as one)
     std::map<std::pair<int, int>, std::vector<int>> edge_faces;
     for (size_t i = 0; i < M.F.size(); ++i) {
         const Face& f = M.F[i];
         size_t n = f.size();
         for (size_t t = 0; t < n; ++t) {
-            int a = f[t], b = f[(t + 1) % n];
-            edge_faces[a < b ? std::make_pair(a, b) : std::make_pair(b, a)].push_back((int)i);
+            int a = rep[f[t]], b = rep[f[(t + 1) % n]];
+            if (a != b) edge_faces[a < b ? std::make_pair(a, b) : std::make_pair(b, a)].push_back((int)i);
         }
     }
 
@@ -1193,16 +1261,17 @@ inline Mesh fix_normals(const Mesh& M0, bool outward) {
             const Face& f = M.F[i];                            // (only unvisited neighbours are turned round)
             size_t n = f.size();
             for (size_t t = 0; t < n; ++t) {
-                int a = f[t], b = f[(t + 1) % n];
-                auto it = edge_faces.find(a < b ? std::make_pair(a, b) : std::make_pair(b, a));
-                if (it == edge_faces.end()) continue;
-                for (int j : it->second) {
+                int a = rep[f[t]], b = rep[f[(t + 1) % n]];
+                if (a == b) continue;
+                const std::vector<int>& around = edge_faces[a < b ? std::make_pair(a, b) : std::make_pair(b, a)];
+                if (around.size() != 2) continue;              // (an open edge, or one of three faces or more)
+                for (int j : around) {
                     if (visited[j]) continue;
                     Face& g = M.F[j];
                     size_t m = g.size();
                     bool same = false;
                     for (size_t s = 0; s < m; ++s)
-                        if (g[s] == a && g[(s + 1) % m] == b) {
+                        if (rep[g[s]] == a && rep[g[(s + 1) % m]] == b) {
                             same = true;
                             break;
                         }
@@ -1217,15 +1286,8 @@ inline Mesh fix_normals(const Mesh& M0, bool outward) {
             }
         }
         if (outward) {
-            Mesh part;                                         // (add.py's part shares M.V: so does this one)
-            part.V.swap(M.V);
-            for (int i : component) {
-                part.F.push_back(M.F[i]);
-                part.C.push_back(M.C[i]);
-            }
-            double sv = detail::signed_volume(part, 0);
-            M.V.swap(part.V);
-            if (sv < 0) {
+            std::pair<double, double> pv = detail::piece_volume(M, component, rep);
+            if (pv.first < -1e-9 * pv.second) {
                 for (int i : component) {
                     std::reverse(M.F[i].begin(), M.F[i].end());
                     if (M.has_uv) std::reverse(M.UV[i].begin(), M.UV[i].end());

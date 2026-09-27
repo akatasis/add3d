@@ -861,8 +861,9 @@ inline Mesh cut(const Mesh& M, const Point& point, const Point& normal, bool cap
         }
     }
     if (cap && !rim.empty()) {
-        for (const Points& loop : loops(rim))
-            if (loop.size() >= 3) out.add_polygon(loop, color ? *color : (!M.C.empty() ? M.C[0] : DEFAULT_COLOR));
+        for (const Points& loop : loops(rim))              // (the rim runs the way the faces round it do;
+            if (loop.size() >= 3)                          //  the cap runs back along it, facing out)
+                out.add_polygon(Points(loop.rbegin(), loop.rend()), color ? *color : (!M.C.empty() ? M.C[0] : DEFAULT_COLOR));
     }
     detail::weld(out, 1e-7);
     detail::drop_degenerate(out);

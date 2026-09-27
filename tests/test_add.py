@@ -457,6 +457,14 @@ def test_fix_normals():
     M.F[3].reverse()
     F = add.fix_normals(M)
     check_volume(F, 8.0)
+    U = add.Mesh()                                 # the same box far away, each face with corners of
+    for i, f in enumerate(M.F):                    # its own (add_polygon), two of them the wrong way
+        U.add_polygon([[M.V[j][0] + 500.0, M.V[j][1], M.V[j][2]] for j in f], "red")
+    F = add.fix_normals(U)
+    check_volume(F, 8.0)
+    L = add.Mesh()                                 # a lone flat face stays the way it was made
+    L.add_polygon([[900, 0, 0], [901, 0, 0], [901, 1, 0]], "red")
+    assert add.fix_normals(L).F[0] == [0, 1, 2]
 
 
 def test_stats_and_check():
@@ -568,6 +576,9 @@ def test_cut_plane():
     H = add.cut(M, [0, 0, 0], [0, 1, 0])
     assert closed(H), add.stats(H)
     check_volume(H, add.volume(M) / 2.0, 0.02)
+    H = add.cut(M, [0, 0.5, 0.2], [0, 1, 0.3])     # the cap faces out: the same volume wherever it
+    check_volume(add.move(H, [4, -3, 7]), add.volume(H), 1e-9)   # is measured from
+    assert add.volume(H) > 0
 
 
 def test_inside():

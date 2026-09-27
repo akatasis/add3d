@@ -1,7 +1,7 @@
 """
-castle_photos.py -- fifty-five photographs of the castle (examples/46_castle.py).
+castle_photos.py -- sixty-two photographs of the castle (examples/46_castle.py).
 
-Fifty-five camera positions chosen the way a photographer would walk round
+Sixty-two camera positions chosen the way a photographer would walk round
 the finished model: the approach over the lake, the gatehouse, the walls,
 the courtyard and its trades, the palace inside and out, the donjon with the
 treasury, the chapel, the roofs, the harbour with its ships, the road up the
@@ -42,7 +42,7 @@ PHOTOS = [
     ("12_sulinys_ir_fontanas", (-4, 13, 30), (5, 10.5, 14), 40),       # the fountain before the palace, the well
     ("13_turgus", (-3, 13, 37), (-12, 11.3, 30), 45),                   # the market
     ("14_kalve", (-25, 12.5, 11), (-34, 11.3, 6), 45),                      # the smithy
-    ("15_arklides", (17, 12.5, -32), (10, 11, -40), 45),                  # the stable and the horses
+    ("15_arklides", (16.5, 12.6, -35.5), (10, 11, -44.8), 42),            # the stable and the horses, by the north wall
     ("16_patrankos_virs_vartu", (-2.2, 27.6, 58.5), (-0.4, 23.4, 50.3), 50),   # the guns on the roof over the gate, the moat below
     ("17_trebusetas", (36, 13, 25), (28, 11.5, 18), 45),                  # the trebuchet
     ("18_sienos_takas", (34.9, 24.1, 34.9), (14, 22.3, 49), 45),          # along the wall walk to the gate towers
@@ -69,7 +69,7 @@ PHOTOS = [
     ("39_miskas_prie_kranto", (-52, 9, 76), (-44, 7, 57), 40),              # the wood on the shore: spruces, birches, oaks
     ("40_vyno_rusys", (17.2, 8.1, -18.2), (0.0, 7.2, -16.4), 40),           # the wine cellar: down the aisle to the great tun
     ("41_ginkline", (-27.6, 21.7, -33.5), (-20.0, 21.9, -33.2), 42),       # the armoury: swords on the wall, crossed under shields
-    ("42_kiauliu_aptvaras", (39.4, 12.7, 6.1), (43.4, 10.2, 2.5), 27),     # the pigsty and its pigs
+    ("42_kiauliu_aptvaras", (40.0, 13.0, 8.0), (46.0, 10.3, 2.6), 28),     # the pigsty and its pigs, by the east wall
     ("43_riteriu_turnyras", (13.5, 13.2, 42.5), (9.5, 11.2, 36.5), 40),    # two knights jousting at the tilt
     ("44_karvelide", (0.5, 12.6, -39.5), (-5, 12.2, -46.2), 36),          # the dovecote, doves about it
     ("45_rozes_langas", (28.5, 18, 1.5), (28, 21, -9), 28),                # the rose window in the chapel's gable
@@ -83,6 +83,13 @@ PHOTOS = [
     ("53_isviete", (-43.5, 11.0, 2.2), (-47.6, 10.8, 0), 36),              # a privy by the wall, its door ajar
     ("54_sietynai", (-2.5, 14.2, -12.5), (0.2, 15.6, -16.0), 38),          # the great hall's chandeliers and columns
     ("55_svartavimo_lynai", (119.69, 4.4, 48.16), (113.01, 3.1, 48.81), 50),  # the king's ship moored: a bow line, a breast line, an eye on a bollard
+    ("56_laivo_vairas", (126.94, 4.1, 34.24), (121.34, 3.0, 37.66), 30),       # the merchant's stern: the rudder on its pintles, the tiller's port
+    ("57_lobis_laivo_triume", (105.74, 1.55, 50.09), (106.54, 0.7, 52.05), 32),  # in the king's ship's hold: the chest of gold, coins spilt
+    ("58_kranas_ir_statines", (117.23, 6.9, 42.29), (114.84, 6.3, 36.44), 24),   # the crane lowering three barrels in a net; the master
+    ("59_voratinklis", (-6.95, 25.28, -28.92), (-7.75, 25.26, -28.99), 36),      # a cobweb under the eaves in the attic, the spider at its hub
+    ("60_boksto_durys", (-40.9, 11.0, 17.9), (-45.62, 10.9, 18.89), 30),         # a tower's doorway, lined with dressed stone, its leaves open
+    ("61_pele", (-0.57, 25.08, -20.73), (-0.93, 24.99, -20.95), 14),             # a mouse in the attic: two eyes, four whiskers a side
+    ("62_egles", (-51.5, 6.5, 73.5), (-45.8, 7.2, 66.7), 32),                     # a spruce in the wood by the shore: its tiers of branches
 ]
 
 
