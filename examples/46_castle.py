@@ -16353,7 +16353,7 @@ def dovecote(at):
     OUT = [(spot(0, 3, 0.0, AB + 0.1), 135, "perch", 10), (spot(1, 0, 0.05, AB + 0.1), 90, "perch", 11),
            (spot(2, 1, 0.0, AB + 0.09), 135, "sit", 12), (spot(1, 4, 0.1, AB + 0.1), 270, "peck", 13),
            ([0.0, LF, 0.39], 90, "perch", 16), ([0.39 / C8 * add.cos(PI * 0.875), LF, 0.39 / C8 * add.sin(PI * 0.875)], 67.5, "sit", 15)]
-    FLY = [((250, 2.2, 4.6), 340, 17), ((305, 2.4, 5.5), 215, 21), ((20, 2.15, 3.3), 110, 19)]
+    FLY = [((160, 2.2, 4.6), 250, 17), ((100, 2.4, 5.5), 10, 21), ((20, 2.15, 3.3), 110, 19)]   # (on the open side, off the wall)
 
     def at_dove(o, psi, q):                                             # a point q = (x, z) of a dove at o facing psi
         c, s_ = add.cos(psi * PI / 180), add.sin(psi * PI / 180)
