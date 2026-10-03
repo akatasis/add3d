@@ -462,12 +462,14 @@ def overlap_groups():
         record(u)
         record(v)
         record(n)
-        for area, i, pts, bb, flipped in polys:
+        for area, i, pts, bb, flipped, (pn, pd) in polys:
             record(area)
             record(i)
             record(pts)
             record(list(bb))
             record(flipped)
+            record(list(pn))
+            record(pd)
     T = turned(M, 0.4, 0.9)
     groups = add._overlap_groups(T, 1e-3)
     record(len(groups))
@@ -565,6 +567,20 @@ def cut_overlaps():
     N = turned(overlap_scene(), 1.1, 0.35)
     record(add._cut_overlaps(N, 1e-3))
     dump(N)
+
+
+@case
+def cut_overlaps_far():
+    """Faces cut in turned planes far from the origin: every piece back on its own face."""
+    for ax, ay, off in ((0.4, 0.9, (80.0, 20.0, -60.0)), (-0.26, 1.3, (106.7, 1.1, 51.85))):
+        N = turned(overlap_scene(), ax, ay)
+        for p in N.V:
+            p[0] += off[0]
+            p[1] += off[1]
+            p[2] += off[2]
+        record(add._cut_overlaps(N, 1e-3))
+        dump(N)
+        dump(add.clean(N, tol=1e-6))
 
 
 @case
@@ -1082,6 +1098,21 @@ def save_overlaps():
     M = overlap_scene()
     save_file("off", M)
     save_file("obj", turned(M, 0.2, 0.1))
+
+
+@case
+def far_parallel():
+    """The two sides of a carpet rolled up, 26 m from the origin: 2 cm apart,
+    their normals a thousandth apart -- one plane group, but not one plane:
+    nothing to cut."""
+    M = add.Mesh()
+    M.add_polygon([[-5.859319166666668, 25.41101511643242, -22.55], [-5.800258244217379, 25.370928592655986, -22.55], [-5.800258244217379, 25.370928592655986, -22.5], [-5.859319166666668, 25.41101511643242, -22.5]], "red")
+    M.add_polygon([[-5.847989166666668, 25.428924521782683, -22.5], [-5.784235204555692, 25.385551560890924, -22.5], [-5.784235204555692, 25.385551560890924, -22.55], [-5.847989166666668, 25.428924521782683, -22.55]], "blue")
+    record(len(add._overlap_groups(M, 1e-3)))
+    record(add.overlaps(M))
+    info_M = add.clean(M, report=True)
+    record_report(info_M[1])
+    save_mesh(info_M[0], "clean")
 
 
 if __name__ == "__main__":

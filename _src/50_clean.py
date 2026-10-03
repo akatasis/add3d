@@ -570,8 +570,13 @@ def _overlap_groups(M, tol):
     """Faces grouped by their plane -- whichever way they face: a slab
     standing on a floor overlaps it just as a tile laid on it does -- each
     as a counter-clockwise 2D polygon in the plane's frame:
-    ``{key: (u, v, n, [(area, index, pts2d, bbox, flipped), ...])}``, where
-    ``flipped`` says the face looks the other way than the frame's normal."""
+    ``{key: (u, v, n, [(area, index, pts2d, bbox, flipped, plane), ...])}``,
+    where ``flipped`` says the face looks the other way than the frame's
+    normal and ``plane`` is the face's own (normal, distance).  (Two faces
+    in one group need not lie in one plane: far from the origin a
+    thousandth's turn of the normal moves a plane's distance by
+    centimetres -- see _same_plane.)"""
+    planes = {}
     groups = {}
     for i, f in enumerate(M.F):
         if len(f) < 3:
@@ -588,6 +593,7 @@ def _overlap_groups(M, tol):
             c[1] += p[1]
             c[2] += p[2]
         d = _dot(n, c) / len(f)
+        planes[i] = (n, d)
         nk = (round(n[0], 3), round(n[1], 3), round(n[2], 3))
         if nk < (0.0, 0.0, 0.0) or nk == (0.0, 0.0, 0.0) and n[2] < 0:   # one key for both sides of a plane
             nk, d = (-nk[0] + 0.0, -nk[1] + 0.0, -nk[2] + 0.0), -d
@@ -609,9 +615,25 @@ def _overlap_groups(M, tol):
                 area2 = -area2
             xs = [p[0] for p in pts]
             ys = [p[1] for p in pts]
-            polys.append((area2 / 2.0, i, pts, (min(xs), min(ys), max(xs), max(ys)), flipped))
+            polys.append((area2 / 2.0, i, pts, (min(xs), min(ys), max(xs), max(ys)), flipped, planes[i]))
         out[key] = (u, v, n, polys)
     return out
+
+
+def _same_plane(M, i, pi, k, pk, tol):
+    """Do faces ``i`` and ``k`` of ``M`` (their own planes ``pi`` and ``pk``,
+    (normal, distance)) lie in one plane, every corner of each within
+    ``tol`` of the other's plane?  Grouped by a rounded normal and a
+    rounded distance, two faces a couple of centimetres apart -- the two
+    sides of a carpet rolled up, a soffit and the stones over it -- can
+    fall into one group when they turn by less than a thousandth from
+    each other and lie tens of metres from the origin; cutting one back
+    by the other then makes a hole."""
+    for f, (n, d) in ((M.F[i], pk), (M.F[k], pi)):
+        for j in f:
+            if abs(_dot(n, M.V[j]) - d) > tol:
+                return False
+    return True
 
 
 def _convex_overlap2(A, B):
@@ -678,7 +700,9 @@ def _overlap_scan(M, tol, cut):
                 for cy in range(y0, y1 + 1):
                     grid.setdefault((cx, cy), []).append(entry)
 
-        for area, i, pts, bb, flipped in polys:
+        plane = {}
+        for area, i, pts, bb, flipped, pl in polys:
+            plane[i] = pl
             x0, y0, x1, y1 = cells(bb)
             seen = set()
             candidates = list(big)
@@ -693,6 +717,8 @@ def _overlap_scan(M, tol, cut):
             changed = False
             for k, kbb in candidates:
                 if bb[0] >= kbb[2] or bb[2] <= kbb[0] or bb[1] >= kbb[3] or bb[3] <= kbb[1]:
+                    continue
+                if not _same_plane(M, i, pl, k, plane[k], 1.5 * tol):
                     continue
                 kpieces = drawn[k]
                 if flip[k] != flipped:               # back to back: remember the contact
@@ -763,7 +789,24 @@ def _cut_overlaps(M, tol=1e-3):
     new_F, new_C, new_UV = [], [], []
     for i, (pieces, u, v, n, d, flipped) in replaced.items():
         f = M.F[i]
-        base = [n[0] * d, n[1] * d, n[2] * d]        # a point of the plane
+        # The pieces go back onto the face's own plane, not onto the group's:
+        # the group's normal is rounded to a thousandth and its distance to a
+        # millimetre, so a piece put there would stand off its face by up to
+        # a thousandth of its distance from the origin (5 cm, 50 m away) --
+        # a floating ring over a crown, planes crossing at a ship's stem.
+        # Each point (s, t) of the frame is moved along ``n`` until it lies
+        # on the face; a corner of the face comes back where it was.
+        nf = _face_normal(M, f)
+        ln = _norm(nf)
+        nf = (nf[0] / ln, nf[1] / ln, nf[2] / ln)
+        df = 0.0
+        for k in f:
+            df += _dot(nf, M.V[k])
+        df /= len(f)
+        nn = _dot(nf, n)                             # (near 1 or -1: the face lies in the group's plane)
+        corners = {}
+        for k in f:
+            corners.setdefault((_dot(M.V[k], u), _dot(M.V[k], v)), k)
         # texture coordinates: the affine map of the original corners, if any
         uv = M.UV[i] if M.UV is not None else None
         affine = None
@@ -782,9 +825,14 @@ def _cut_overlaps(M, tol=1e-3):
             idx = []
             piece_uv = [] if affine else None
             for s_, t_ in piece:
-                idx.append(M.add_vertex([base[0] + u[0] * s_ + v[0] * t_,
-                                         base[1] + u[1] * s_ + v[1] * t_,
-                                         base[2] + u[2] * s_ + v[2] * t_]))
+                k = corners.get((s_, t_))
+                if k is not None:                    # a corner of the face: the very point
+                    p = M.V[k]
+                    idx.append(M.add_vertex([p[0], p[1], p[2]]))
+                else:
+                    q = [u[0] * s_ + v[0] * t_, u[1] * s_ + v[1] * t_, u[2] * s_ + v[2] * t_]
+                    h = (df - _dot(nf, q)) / nn
+                    idx.append(M.add_vertex([q[0] + n[0] * h, q[1] + n[1] * h, q[2] + n[2] * h]))
                 if affine:
                     a, b, c, ua, ub, uc, det = affine
                     l1 = ((s_ - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (t_ - a[1])) / det

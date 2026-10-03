@@ -1323,6 +1323,25 @@ def test_off_small_faces():
             assert add.stats(back)["closed"]
 
 
+def test_cut_faces_stay_in_their_planes():
+    """A face cut back by clean() stays in its own plane however far from
+    the origin and however turned it is: its pieces are not moved onto the
+    plane its group was keyed by (a normal rounded to a thousandth, a
+    distance to a millimetre) -- which, 110 m out, lifted the top of a
+    crown's band 5 cm over the crown."""
+    band = add.make(add.pipe, [0, 0, 0], [0, 0.05, 0], 0.08, 0.072, 24, "gold")
+    point = add.make(add.cuboid, [0.076, 0.075, 0], [0.008, 0.05, 0.03], "gold")   # standing on its top
+    M = add.merge([band, point])
+    for axis, ang, off in (([1, 0, 0], 0.0, [0, 0, 0]), ([0.3, 0, 0.95], 0.26, [106.7, 1.1, 51.85]),
+                           ([-0.7, 0.1, 0.2], 1.9, [-80.0, 40.0, 120.0])):
+        X = add.move(add.rotate(M, axis, ang), off)
+        C, info = add.clean(X, tol=1e-6, report=True)
+        assert info["faces_cut"] >= 2
+        B = add.rotate(add.move(C, [-off[0], -off[1], -off[2]]), axis, -ang)
+        assert all(min(abs(p[1] - h) for h in (0.0, 0.05, 0.1)) < 1e-9 for p in B.V)
+        assert abs(add.area(C) - (add.area(M) - 2 * 0.008 * 0.03)) < 1e-4    # (the patch out of both)
+
+
 def test_overlaps_and_pinched_faces():
     """clean() cuts back coplanar overlapping faces (the cause of flicker),
     splits faces pinched at a vertex, and save() does the same on the way

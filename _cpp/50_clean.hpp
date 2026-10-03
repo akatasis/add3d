@@ -58,13 +58,15 @@ inline std::optional<std::vector<std::array<int, 3>>> ear_triangles(const Profil
 inline bool is_concave(const Mesh& M, const Face& f, std::optional<Point> n = std::nullopt);
 //: Cut every face that is not convex into triangles (in place); how many faces were cut.
 inline int split_concave(Mesh& M);
-//: One face of a plane group: add.py's ``(area, index, pts2d, bbox, flipped)``.
+//: One face of a plane group: add.py's ``(area, index, pts2d, bbox, flipped, plane)``.
 struct PlanePoly {
     double area = 0.0;
     int index = 0;
     Profile pts;
     std::array<double, 4> bb{};
     bool flipped = false;
+    Point pn{0.0, 0.0, 0.0};                     // the face's own plane: its normal ...
+    double pd = 0.0;                             // ... and distance
 };
 //: Faces lying in one plane (either way round): the key, the plane's frame and the faces.
 struct PlaneGroup {
@@ -74,6 +76,9 @@ struct PlaneGroup {
 };
 //: Faces grouped by their plane, in the order add.py's dict keeps them (groups of one left out).
 inline std::vector<PlaneGroup> overlap_groups(const Mesh& M, double tol);
+//: Do faces i and k lie in one plane, every corner of each within ``tol`` of the other's
+//: plane?  (One group can hold faces centimetres apart far from the origin: add.py's _same_plane.)
+inline bool same_plane(const Mesh& M, const PlanePoly& A, const PlanePoly& B, double tol);
 //: Twice the area of the intersection of two convex counter-clockwise polygons.
 inline double convex_overlap2(const Profile& A, const Profile& B);
 //: ``pieces`` with every polygon of ``others`` taken away; nothing (add.py: None) when
@@ -748,6 +753,7 @@ inline std::vector<PlaneGroup> overlap_groups(const Mesh& M, double tol) {
     // equal to an earlier one -- 0.0 and -0.0 are equal -- joins that one's group).
     std::map<std::array<double, 4>, size_t> where;
     std::vector<std::pair<std::array<double, 4>, std::vector<int>>> groups;
+    std::map<int, std::pair<Point, double>> planes;            // each face's own plane
     for (size_t i = 0; i < M.F.size(); ++i) {
         const Face& f = M.F[i];
         if (f.size() < 3) continue;
@@ -763,6 +769,7 @@ inline std::vector<PlaneGroup> overlap_groups(const Mesh& M, double tol) {
             c[2] += p[2];
         }
         double d = dot(n, c) / (double)f.size();
+        planes[(int)i] = {n, d};
         std::array<double, 3> nk = {py_round(n[0], 3), py_round(n[1], 3), py_round(n[2], 3)};
         bool below = false;                                    // nk < (0, 0, 0) as Python compares tuples
         for (int a = 0; a < 3; ++a)
@@ -816,11 +823,21 @@ inline std::vector<PlaneGroup> overlap_groups(const Mesh& M, double tol) {
             P.pts = std::move(pts);
             P.bb = {x0, y0, x1, y1};
             P.flipped = flipped;
+            P.pn = planes[i].first;
+            P.pd = planes[i].second;
             G.polys.push_back(std::move(P));
         }
         out.push_back(std::move(G));
     }
     return out;
+}
+
+inline bool same_plane(const Mesh& M, const PlanePoly& A, const PlanePoly& B, double tol) {
+    for (int k : M.F[A.index])
+        if (std::fabs(dot(B.pn, M.V[k]) - B.pd) > tol) return false;
+    for (int k : M.F[B.index])
+        if (std::fabs(dot(A.pn, M.V[k]) - A.pd) > tol) return false;
+    return true;
 }
 
 inline double convex_overlap2(const Profile& A, const Profile& B) {
@@ -873,6 +890,7 @@ inline OverlapScan overlap_scan(const Mesh& M, double tol, bool cut) {
         std::map<int, std::vector<Profile>> current;           // face -> its pieces now
         std::map<int, bool> flip;
         std::map<int, std::array<double, 4>> box;              // face -> its bounding box
+        std::map<int, const PlanePoly*> poly_of;               // face -> its entry (its own plane)
         std::vector<std::pair<int, std::vector<int>>> contacts;   // bigger face -> smaller faces on its back
         std::map<int, size_t> contacts_at;
 
@@ -910,6 +928,7 @@ inline OverlapScan overlap_scan(const Mesh& M, double tol, bool cut) {
             for (int k : candidates) {
                 const std::array<double, 4>& kbb = box[k];
                 if (bb[0] >= kbb[2] || bb[2] <= kbb[0] || bb[1] >= kbb[3] || bb[3] <= kbb[1]) continue;
+                if (!same_plane(M, P, *poly_of[k], 1.5 * tol)) continue;
                 const std::vector<Profile>& kpieces = drawn[k];
                 if (flip[k] != flipped) {                      // back to back: remember the contact
                     bool any = false;
@@ -976,6 +995,7 @@ inline OverlapScan overlap_scan(const Mesh& M, double tol, bool cut) {
             current[i] = keep_pieces ? pieces : own;
             flip[i] = flipped;
             box[i] = bb;
+            poly_of[i] = &P;
             keep(i, bb);
         }
         for (const auto& contact : contacts) {                 // the patches where solids touch
@@ -1026,9 +1046,21 @@ inline int cut_overlaps(Mesh& M, double tol) {
         int i = r.first;
         const CutFace& R = r.second;
         const Point &u = R.u, &v = R.v, &n = R.n;
-        double d = R.d;
         const Face f = M.F[i];
-        Point base{n[0] * d, n[1] * d, n[2] * d};              // a point of the plane
+        // The pieces go back onto the face's own plane, not onto the group's: the
+        // group's normal is rounded to a thousandth and its distance to a millimetre,
+        // so a piece put there would stand off its face by up to a thousandth of its
+        // distance from the origin.  Each point (s, t) of the frame is moved along
+        // ``n`` until it lies on the face; a corner of the face comes back where it was.
+        Point nf = face_normal(M, f);
+        double ln = norm(nf);
+        nf = {nf[0] / ln, nf[1] / ln, nf[2] / ln};
+        double df = 0.0;
+        for (int k : f) df += dot(nf, M.V[k]);
+        df /= (double)f.size();
+        double nn = dot(nf, n);                                // (near 1 or -1: the face lies in the group's plane)
+        std::map<std::pair<double, double>, int> corners;
+        for (int k : f) corners.emplace(std::make_pair(dot(M.V[k], u), dot(M.V[k], v)), k);
         // texture coordinates: the affine map of the original corners, if any
         const std::vector<Point2>* uv = M.has_uv && !M.UV[i].empty() ? &M.UV[i] : nullptr;
         std::optional<Affine> affine;
@@ -1052,9 +1084,15 @@ inline int cut_overlaps(Mesh& M, double tol) {
             std::vector<Point2> piece_uv;
             for (const Point2& st : piece) {
                 double s_ = st[0], t_ = st[1];
-                idx.push_back(M.add_vertex({base[0] + u[0] * s_ + v[0] * t_,
-                                            base[1] + u[1] * s_ + v[1] * t_,
-                                            base[2] + u[2] * s_ + v[2] * t_}));
+                auto at = corners.find(std::make_pair(s_, t_));
+                if (at != corners.end()) {                     // a corner of the face: the very point
+                    const Point p = M.V[at->second];
+                    idx.push_back(M.add_vertex({p[0], p[1], p[2]}));
+                } else {
+                    Point q{u[0] * s_ + v[0] * t_, u[1] * s_ + v[1] * t_, u[2] * s_ + v[2] * t_};
+                    double h = (df - dot(nf, q)) / nn;
+                    idx.push_back(M.add_vertex({q[0] + n[0] * h, q[1] + n[1] * h, q[2] + n[2] * h}));
+                }
                 if (affine) {
                     const Affine& A = *affine;
                     const Point2 &a = A.a, &b = A.b, &c = A.c, &ua = A.ua, &ub = A.ub, &uc = A.uc;

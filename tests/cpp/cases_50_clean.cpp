@@ -500,6 +500,8 @@ CASE(overlap_groups) {
             record(P.pts);
             record_list(P.bb);
             record(P.flipped);
+            record(P.pn);
+            record(P.pd);
         }
     }
     Mesh T = turned(M, 0.4, 0.9);
@@ -603,6 +605,21 @@ CASE(cut_overlaps) {
     Mesh N = turned(overlap_scene(), 1.1, 0.35);
     record(add::detail::cut_overlaps(N, 1e-3));
     dump(N);
+}
+
+CASE(cut_overlaps_far) {
+    struct Turn { double ax, ay, off[3]; };
+    for (const Turn& t : {Turn{0.4, 0.9, {80.0, 20.0, -60.0}}, Turn{-0.26, 1.3, {106.7, 1.1, 51.85}}}) {
+        Mesh N = turned(overlap_scene(), t.ax, t.ay);
+        for (Point& p : N.V) {
+            p[0] += t.off[0];
+            p[1] += t.off[1];
+            p[2] += t.off[2];
+        }
+        record(add::detail::cut_overlaps(N, 1e-3));
+        dump(N);
+        dump(add::clean(N, 1e-6));
+    }
 }
 
 CASE(cut_overlaps_uv) {
@@ -1101,4 +1118,20 @@ CASE(save_overlaps) {
     Mesh M = overlap_scene();
     save_file("off", M);
     save_file("obj", turned(M, 0.2, 0.1));
+}
+
+//: The two sides of a carpet rolled up, 26 m from the origin: 2 cm apart, their normals a
+//: thousandth apart -- one plane group, but not one plane: nothing to cut.
+CASE(far_parallel) {
+    Mesh M;
+    M.add_polygon({{-5.859319166666668, 25.41101511643242, -22.55}, {-5.800258244217379, 25.370928592655986, -22.55}, {-5.800258244217379, 25.370928592655986, -22.5}, {-5.859319166666668, 25.41101511643242, -22.5}},
+                  add::rgb("red"));
+    M.add_polygon({{-5.847989166666668, 25.428924521782683, -22.5}, {-5.784235204555692, 25.385551560890924, -22.5}, {-5.784235204555692, 25.385551560890924, -22.55}, {-5.847989166666668, 25.428924521782683, -22.55}},
+                  add::rgb("blue"));
+    record(add::detail::overlap_groups(M, 1e-3).size());
+    record(add::overlaps(M));
+    add::CleanReport info;
+    Mesh C = add::clean(M, 1e-7, true, true, true, true, true, false, &info);
+    record_report(info);
+    save_mesh(C, "clean");
 }
