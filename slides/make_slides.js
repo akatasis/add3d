@@ -487,9 +487,9 @@ function build(lang) {
       fontFace: BODY_FONT, fontSize: 13, color: INK, valign: "top", paraSpaceAfter: 6,
     });
     s.addNotes(T("For students who write C++: the same library, the same functions, the same numbers -- "
-                 + "and the same file as the Python program writes. 42 of the example programs have a .cpp twin.",
+                 + "and the same file as the Python program writes. All 43 example programs have a .cpp twin (the castle's: its Python, translated).",
                  "Studentams, kurie rašo C++: ta pati biblioteka, tos pačios funkcijos, tie patys skaičiai – "
-                 + "ir tas pats failas, kurį įrašo Python programa. 42 pavyzdinės programos turi .cpp dvynę."));
+                 + "ir tas pats failas, kurį įrašo Python programa. Visos 43 pavyzdinės programos turi .cpp dvynę (pilies – išversta jos Python programa)."));
   }
 
   // =========================================================== 9c. from Python to C++
@@ -526,9 +526,9 @@ function build(lang) {
       x: M, y: 5.05, w: W - 2 * M, h: 0.62, isTextBox: true, margin: 0,
       fontFace: BODY_FONT, fontSize: 12.5, color: INK, valign: "top",
     });
-    note(s, T("Tested for every function, all 235 documentation examples and 42 example programs, with GCC and Clang. "
+    note(s, T("Tested for every function, all 235 documentation examples and 43 example programs, with GCC and Clang. "
               + "On ARM (a Mac with Apple Silicon) compile with -ffp-contract=off too.",
-              "Patikrinta kiekvienai funkcijai, visiems 235 dokumentacijos pavyzdžiams ir 42 pavyzdinėms programoms, "
+              "Patikrinta kiekvienai funkcijai, visiems 235 dokumentacijos pavyzdžiams ir 43 pavyzdinėms programoms, "
               + "su GCC ir Clang. ARM kompiuteryje (Mac su Apple Silicon) kompiliuokite ir su -ffp-contract=off."));
   }
 
@@ -1126,8 +1126,8 @@ function build(lang) {
     const s = sheet(T("The castle: a model bigger than memory", "Pilis: modelis, didesnis už atmintį"),
                     T("46_castle.py, stream()", "46_castle.py, stream()"));
     picture(s, "castle.png", { x: M, y: 1.45, w: 5.3, h: 3.4,
-      caption: T("no textures, every stone a polygon: an .off of over 500 MB and an .obj that 7-Zip brings under 100 MB for Sketchfab",
-                 "be tekstūrų, kiekvienas akmuo – daugiakampis: daugiau kaip 500 MB .off ir .obj, kurį 7-Zip suglaudina iki 100 MB Sketchfab'ui") });
+      caption: T("no textures, every stone a polygon: an .off of about 1 GB and an .obj that 7-Zip brings under 100 MB for Sketchfab",
+                 "be tekstūrų, kiekvienas akmuo – daugiakampis: apie 1 GB .off ir .obj, kurį 7-Zip suglaudina iki 100 MB Sketchfab'ui") });
     picture(s, "castle_hall.png", { x: 5.85, y: 1.45, w: 3.55, h: 1.55,
       caption: T("the throne hall and the feast", "sosto menė ir puota") });
     picture(s, "castle_treasury.png", { x: 5.85, y: 3.3, w: 3.55, h: 1.55,

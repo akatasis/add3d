@@ -52,9 +52,9 @@ int main() {
 </p>
 
 Nobody drew any of these. Each is one short program in
-[`examples/`](examples/) — all but the castle in Python and in C++. The
-castle can be turned round and explored in a browser: **[open it on
-Sketchfab](https://skfb.ly/pOnRS)**.
+[`examples/`](examples/), in Python and in C++ (the castle's C++ is its
+Python translated). The castle can be turned round and explored in a
+browser: **[open it on Sketchfab](https://skfb.ly/pOnRS)**.
 
 ---
 
@@ -127,9 +127,14 @@ program.
 | `print(add.center(M))` | `std::cout << add::center(M)` — prints `[1.0, 2.0, 3.0]` too |
 
 The [documentation](https://akatasis.github.io/add3d/#cpp) gives the C++
-declaration of every function and every example in both languages; 42 of
-the programs in [`examples/`](examples/) have a C++ twin (`NN_name.cpp` next
-to `NN_name.py`). On an ARM computer (a Mac with Apple Silicon, say) compile
+declaration of every function and every example in both languages; every
+program in [`examples/`](examples/) has a C++ twin (`NN_name.cpp` next to
+`NN_name.py`). The castle's, [`46_castle.cpp`](examples/46_castle.cpp), is
+not written by hand: [`tools/py2cpp/py2cpp.py`](tools/py2cpp/py2cpp.py)
+translates `46_castle.py` statement by statement onto a small runtime with
+Python's rules for its values, and the castle comes out byte for byte the
+same, five times faster (`g++ -std=c++17 -O1 -fno-exceptions 46_castle.cpp`;
+the compiler needs about 5 GB of memory for it). On an ARM computer (a Mac with Apple Silicon, say) compile
 with `-ffp-contract=off` too, so that no multiply and add in your own
 formulas is fused into one rounding; on an x86-64 PC it makes no difference.
 
@@ -152,7 +157,7 @@ formulas is fused into one rounding; on an x86-64 PC it makes no difference.
 | **Glass and pictures** | `transparent` / `opacity` for see-through surfaces and `texture` for image textures, both written to the `.mtl` file; `write_png` for pictures you compute yourself |
 | **Files** | write `.off`, `.obj` + `.mtl`, `.ply`, `.stl`; read `.off`, `.obj`, `.ply`; `obj_size` before writing; `stream` writes a model part by part, so it can be bigger than the memory of the computer |
 | **Checking** | `stats()` and `check()` — polygon count, colours, watertightness, volume, and the Sketchfab limits (50 MB, 50 materials) |
-| **Looking** | `tools/preview.py`, a software renderer that also has no dependencies; it streams a file too big to load (the castle, over 500 MB) |
+| **Looking** | `tools/preview.py`, a software renderer that also has no dependencies; it streams a file too big to load (the castle, about 1 GB) |
 
 235 public names, every one documented in English and Lithuanian with a
 runnable example in Python and in C++, in one 8000-line file you can read —
@@ -275,7 +280,7 @@ the treasury with a winged dragon breathing fire over the gold, the
 armoury and the lord's chamber above it; everyone who lives in the castle
 has a bed. There are no textures: every stone block, roof tile,
 cobblestone, pane of stained glass and coat of arms is geometry.
-`python3 46_castle.py` streams the model to `castle.off` (over 500 MB) and
+`python3 46_castle.py` streams the model to `castle.off` (about 1 GB) and
 `castle.obj` at once, tidied on the way (no repeated vertices, no
 repeated, buried or overlapping faces), under 100 colours; compressed with
 7-Zip the `.obj` is under 100 MB, which is what Sketchfab takes --
@@ -293,7 +298,7 @@ _src/                the sections add.py is assembled from
 _cpp/                the sections add.hpp is assembled from
 build.py             assembles add.py from _src/ and add.hpp from _cpp/
 examples/            43 commented example programs (studies and complete models)
-  NN_name.cpp        the C++ twin of NN_name.py (all but the castle)
+  NN_name.cpp        the C++ twin of NN_name.py (46_castle.cpp: 46_castle.py translated)
   add.py, add.hpp    copies of the library, so the examples run as they are
   build_all.py       runs them all, checks the Sketchfab limits, renders the pictures
 tools/
@@ -302,8 +307,9 @@ tools/
   make_docs.py       builds docs/index.html from the docstrings, docs/reference.py
                      and docs/reference_cpp.py
   coverage.py        which example uses which function
+  py2cpp/            translates the castle into C++ (46_castle.py -> 46_castle.cpp)
 tests/
-  test_add.py        94 unit tests
+  test_add.py        95 unit tests
   test_legacy.py     runs the add.py 1.2 models and checks the face counts
   test_docs.py       runs the example of every documented function
   legacy/            those models, unedited
@@ -325,14 +331,14 @@ student only ever needs one file.
 ## Running the tests
 
 ```bash
-python3 tests/test_add.py        # 94 unit tests
+python3 tests/test_add.py        # 95 unit tests
 python3 tests/test_legacy.py     # the add.py 1.2 models
 python3 tests/test_docs.py       # the 235 documentation examples
 python3 examples/build_all.py    # every example, the Sketchfab check, pictures
 
 python3 tests/cpp/run_parity.py      # C++: every function, the same files as Python
 python3 tests/cpp/run_docs.py        # C++: the 235 documentation examples
-python3 examples/build_all.py --cpp  # C++: the 42 example programs
+python3 examples/build_all.py --cpp  # C++: the 43 example programs (the castle's quick run)
 ```
 
 The unit tests check the analytic volume of every primitive — a sphere

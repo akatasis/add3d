@@ -125,7 +125,7 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
   archive. Keep under 50 MB and 50 colours (`add.check()` tells you;
   `add.save("model.obj", colors=50)` reduces a colourful model). A model
   too big for memory is written with `add.stream("model.obj")` part by
-  part (the castle of example 46 is: an `.off` of over 500 MB and an `.obj`
+  part (the castle of example 46 is: an `.off` of about 1 GB and an `.obj`
   that is under 100 MB once 7-Zip has compressed it -- [the castle on
   Sketchfab](https://skfb.ly/pOnRS)). `save` and `stream` tidy the model on the way out, so
   nothing flickers in the viewer.
@@ -143,7 +143,7 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
 | `add.hpp` | the same library for C++ (one header, C++17) |
 | `_src/`, `_cpp/` + `build.py` | the sections `add.py` and `add.hpp` are assembled from |
 | `examples/` | 43 commented example programs (42 of them also in C++) and copies of `add.py` and `add.hpp` |
-| `tests/` | 94 unit tests, the add.py 1.2 compatibility fixture, the documentation-example runner and the C++ parity tests (`tests/cpp/`) |
+| `tests/` | 95 unit tests, the add.py 1.2 compatibility fixture, the documentation-example runner and the C++ parity tests (`tests/cpp/`) |
 | `tools/` | `preview.py` (renderer), `make_docs.py`, `coverage.py` |
 | `docs/` | the documentation site (EN/LT) and its pictures |
 | `slides/` | the lecture slides (.pptx, .pdf and the generator) |
@@ -162,5 +162,5 @@ python3 tools/make_docs.py        # docs/index.html
 python3 examples/build_all.py --models   # every example fits the Sketchfab limits
 python3 tests/cpp/run_parity.py   # C++: every function writes the same files
 python3 tests/cpp/run_docs.py     # C++: the 235 documentation examples
-python3 examples/build_all.py --cpp      # C++: the 42 example programs
+python3 examples/build_all.py --cpp      # C++: the 43 example programs (the castle's quick run)
 ```

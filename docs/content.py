@@ -215,9 +215,11 @@ a model can be started in Python and finished in C++, or the other way
 round, and a teacher can mark both with the same file. The tests check this
 for every function (`tests/cpp/`), for every documentation example (each
 function in the reference below has its example in both languages), and for
-every example program: 42 of the programs in `examples/` have a C++ twin
-(`NN_name.cpp` next to `NN_name.py`), and `python3 examples/build_all.py
---cpp` compiles each and compares the files it writes with the Python ones.
+every example program: all 43 programs in `examples/` have a C++ twin
+(`NN_name.cpp` next to `NN_name.py`; the castle's, `46_castle.cpp`, is its
+Python translated by `tools/py2cpp/py2cpp.py`), and `python3
+examples/build_all.py --cpp` compiles each and compares the files it writes
+with the Python ones.
 
 ## From Python to C++
 
@@ -303,9 +305,11 @@ taip pat. Todėl modelį galima pradėti Python, o baigti C++ (arba atvirkščia
 o dėstytojas abu gali vertinti pagal tą patį failą. Testai tai tikrina
 kiekvienai funkcijai (`tests/cpp/`), kiekvienam dokumentacijos pavyzdžiui
 (žemiau kiekviena funkcija turi pavyzdį abiem kalbomis) ir kiekvienai
-pavyzdinei programai: 42 programos iš `examples/` turi C++ dvynę
-(`NN_vardas.cpp` šalia `NN_vardas.py`), o `python3 examples/build_all.py
---cpp` sukompiliuoja kiekvieną ir palygina jos įrašytus failus su Python.
+pavyzdinei programai: visos 43 programos iš `examples/` turi C++ dvynę
+(`NN_vardas.cpp` šalia `NN_vardas.py`; pilies `46_castle.cpp` -- tai jos
+Python programa, išversta `tools/py2cpp/py2cpp.py`), o `python3
+examples/build_all.py --cpp` sukompiliuoja kiekvieną ir palygina jos
+įrašytus failus su Python.
 
 ## Iš Python į C++
 
@@ -864,7 +868,7 @@ out.close()
 print(out.faces, "faces,", out.bytes / 1e6, "MB,", len(out.materials), "colours")
 ```
 
-!castle.png|The castle of example 46, written streaming to castle.off (over 500 MB) and castle.obj: no textures, every stone a polygon; the .obj is under 100 MB once 7-Zip has compressed it.
+!castle.png|The castle of example 46, written streaming to castle.off (about 1 GB) and castle.obj: no textures, every stone a polygon; the .obj is under 100 MB once 7-Zip has compressed it.
 
 The finished castle is on Sketchfab, where anyone can turn it round in a
 browser: [skfb.ly/pOnRS](https://skfb.ly/pOnRS).
@@ -1222,7 +1226,7 @@ out.close()
 print(out.faces, "sienų,", out.bytes / 1e6, "MB,", len(out.materials), "spalvų")
 ```
 
-!castle.png|46 pavyzdžio pilis, rašyta srautu į castle.off (daugiau kaip 500 MB) ir castle.obj: be tekstūrų, kiekvienas akmuo -- daugiakampis; .obj, suglaudintas 7-Zip, telpa į 100 MB.
+!castle.png|46 pavyzdžio pilis, rašyta srautu į castle.off (apie 1 GB) ir castle.obj: be tekstūrų, kiekvienas akmuo -- daugiakampis; .obj, suglaudintas 7-Zip, telpa į 100 MB.
 
 Baigta pilis įkelta į Sketchfab, kur ją naršyklėje gali pasukioti bet kas:
 [skfb.ly/pOnRS](https://skfb.ly/pOnRS).
@@ -1674,7 +1678,7 @@ GALLERY = [
      "houses, a pigsty, a dovecote, carts and animals -- and, inside, the king in "
      "his throne hall with a feast, beds for everyone, an attic and a dragon "
      "on its treasure. No textures: every stone, tile and coat of arms is "
-     "geometry. Written streaming: an .off of over 500 MB, an .obj under "
+     "geometry. Written streaming: an .off of about 1 GB, an .obj under "
      "100 MB compressed.",
      "Pilis: sala permatomame ežere, akmens blokų siena su aštuoniais "
      "tuščiaviduriais bokštais (viduje sraigtiniai laiptai), vartai su "
@@ -1686,7 +1690,7 @@ GALLERY = [
      "rąstinių namelių, kiaulių aptvaro, karvelidės, vežimų ir gyvūnų -- o viduje karalius sosto menėje "
      "su puota, lovos visiems, palėpė ir drakonas ant lobio. Be tekstūrų: "
      "kiekvienas akmuo, čerpė ir herbas -- daugiakampiai. Rašyta srautu: "
-     "daugiau kaip 500 MB .off, .obj suglaudintas mažiau nei 100 MB.",
+     "apie 1 GB .off, .obj suglaudintas mažiau nei 100 MB.",
      "https://skfb.ly/pOnRS"),
     ("castle_hall.png", "46_castle.py",
      "Inside the castle: the great hall with the king's throne, the feast "

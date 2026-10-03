@@ -74,5 +74,8 @@ jobs:
       - name: every documentation example builds the same model in C++
         run: python tests/cpp/run_docs.py
 
-      - name: every example program writes the same files in C++
+      - name: examples/46_castle.cpp is examples/46_castle.py translated
+        run: python tools/py2cpp/py2cpp.py --check
+
+      - name: every example program writes the same files in C++ (the castle as its quick run)
         run: python examples/build_all.py --cpp

@@ -52,8 +52,8 @@ int main() {
 </p>
 
 Nė vienas jų nenupieštas ranka. Kiekvienas – viena trumpa programa
-[`examples/`](examples/) aplanke, visos, išskyrus pilį, – ir Python, ir C++
-kalba. Pilį galima pasukioti ir apžiūrėti naršyklėje: **[atverkite ją
+[`examples/`](examples/) aplanke, ir Python, ir C++ kalba (pilies C++ –
+išversta jos Python programa). Pilį galima pasukioti ir apžiūrėti naršyklėje: **[atverkite ją
 Sketchfab'e](https://skfb.ly/pOnRS)**.
 
 ---
@@ -128,9 +128,14 @@ dokumentacijos pavyzdžiui ir kiekvienai pavyzdinei programai.
 | `print(add.center(M))` | `std::cout << add::center(M)` – irgi išspausdina `[1.0, 2.0, 3.0]` |
 
 [Dokumentacijoje](https://akatasis.github.io/add3d/#cpp) pateikta kiekvienos
-funkcijos C++ deklaracija ir kiekvienas pavyzdys abiem kalbomis; 42
-programos iš [`examples/`](examples/) turi C++ dvynę (`NN_vardas.cpp` šalia
-`NN_vardas.py`). Kompiuteryje su ARM procesoriumi (pvz., Mac su Apple
+funkcijos C++ deklaracija ir kiekvienas pavyzdys abiem kalbomis; kiekviena
+programa iš [`examples/`](examples/) turi C++ dvynę (`NN_vardas.cpp` šalia
+`NN_vardas.py`). Pilies [`46_castle.cpp`](examples/46_castle.cpp) ranka
+nerašyta: [`tools/py2cpp/py2cpp.py`](tools/py2cpp/py2cpp.py) išverčia
+`46_castle.py` sakinį po sakinio, ant nedidelio vykdymo sluoksnio su Python
+reikšmių taisyklėmis, ir pilis išeina baitas į baitą ta pati, penkis kartus
+greičiau (`g++ -std=c++17 -O1 -fno-exceptions 46_castle.cpp`; kompiliatoriui
+tam reikia apie 5 GB atminties). Kompiuteryje su ARM procesoriumi (pvz., Mac su Apple
 Silicon) kompiliuokite ir su `-ffp-contract=off`, kad jūsų formulėse
 daugyba ir sudėtis nebūtų sulietos į vieną apvalinimą; įprastame x86-64
 kompiuteryje tai nieko nekeičia.
@@ -154,7 +159,7 @@ kompiuteryje tai nieko nekeičia.
 | **Stiklas ir paveikslėliai** | `transparent` / `opacity` permatomiems paviršiams ir `texture` paveikslėlių tekstūroms, abu įrašomi į `.mtl` failą; `write_png` patiems paskaičiuotiems paveikslėliams |
 | **Failai** | rašo `.off`, `.obj` + `.mtl`, `.ply`, `.stl`; skaito `.off`, `.obj`, `.ply`; `obj_size` dar prieš rašant; `stream` rašo modelį dalimis, todėl jis gali būti didesnis už kompiuterio atmintį |
 | **Tikrinimas** | `stats()` ir `check()` – daugiakampių skaičius, spalvos, uždarumas, tūris ir Sketchfab ribos (50 MB, 50 medžiagų) |
-| **Peržiūra** | `tools/preview.py` – atvaizdavimo įrankis, irgi be jokių priklausomybių; per didelį įkelti failą (daugiau kaip 500 MB pilį) jis skaito srautu |
+| **Peržiūra** | `tools/preview.py` – atvaizdavimo įrankis, irgi be jokių priklausomybių; per didelį įkelti failą (apie 1 GB pilį) jis skaito srautu |
 
 235 viešų vardų, kiekvienas aprašytas angliškai ir lietuviškai su veikiančiu
 pavyzdžiu Python ir C++ kalbomis, viename 8000 eilučių faile, kurį galima
@@ -275,7 +280,7 @@ saugančiu auksą, virš jo ginklinė ir valdovo kambarys; kiekvienas pilies
 gyventojas turi lovą. Tekstūrų nėra: kiekvienas akmens blokas, čerpė,
 grindinio akmuo, vitražo stiklelis ir herbas -- daugiakampiai.
 `python3 46_castle.py` rašo modelį srautu iš karto į `castle.off`
-(daugiau kaip 500 MB) ir `castle.obj`, pakeliui sutvarkydamas (jokių
+(apie 1 GB) ir `castle.obj`, pakeliui sutvarkydamas (jokių
 pasikartojančių viršūnių, pasikartojančių, palaidotų ar persidengiančių
 sienų), mažiau nei 100 spalvų; `.obj`, suglaudintas 7-Zip, telpa į 100 MB,
 kuriuos priima Sketchfab -- **[pilis Sketchfab'e](https://skfb.ly/pOnRS)**.
@@ -292,7 +297,7 @@ _src/                dalys, iš kurių surenkamas add.py
 _cpp/                dalys, iš kurių surenkamas add.hpp
 build.py             surenka add.py iš _src/ ir add.hpp iš _cpp/
 examples/            43 pavyzdinės programos su komentarais (studijos ir pilni modeliai)
-  NN_vardas.cpp      NN_vardas.py C++ dvynė (visos, išskyrus pilį)
+  NN_vardas.cpp      NN_vardas.py C++ dvynė (46_castle.cpp – išversta 46_castle.py)
   add.py, add.hpp    bibliotekos kopijos, kad pavyzdžiai veiktų tokie, kokie yra
   build_all.py       paleidžia visas, tikrina Sketchfab ribas, sugeneruoja paveikslėlius
 tools/
@@ -301,8 +306,9 @@ tools/
   make_docs.py       sukuria docs/index.html iš kodo aprašymų, docs/reference.py
                      ir docs/reference_cpp.py
   coverage.py        kuris pavyzdys kurią funkciją naudoja
+  py2cpp/            išverčia pilį į C++ (46_castle.py -> 46_castle.cpp)
 tests/
-  test_add.py        94 vienetiniai testai
+  test_add.py        95 vienetiniai testai
   test_legacy.py     paleidžia add.py 1.2 modelius ir tikrina sienų skaičių
   test_docs.py       paleidžia kiekvienos aprašytos funkcijos pavyzdį
   legacy/            tie modeliai, nepakeisti
@@ -324,14 +330,14 @@ repozitorijoje tam, kad studentui reikėtų tik vieno failo.
 ## Testai
 
 ```bash
-python3 tests/test_add.py        # 94 vienetiniai testai
+python3 tests/test_add.py        # 95 vienetiniai testai
 python3 tests/test_legacy.py     # add.py 1.2 modeliai
 python3 tests/test_docs.py       # 235 dokumentacijos pavyzdžiai
 python3 examples/build_all.py    # visi pavyzdžiai, Sketchfab patikra, paveikslėliai
 
 python3 tests/cpp/run_parity.py      # C++: kiekviena funkcija, tie patys failai kaip Python
 python3 tests/cpp/run_docs.py        # C++: 235 dokumentacijos pavyzdžiai
-python3 examples/build_all.py --cpp  # C++: 42 pavyzdinės programos
+python3 examples/build_all.py --cpp  # C++: 43 pavyzdinės programos (pilis – greita)
 ```
 
 Vienetiniai testai tikrina kiekvienos figūros analitinį tūrį – sferą pagal

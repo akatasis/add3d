@@ -125,7 +125,7 @@ Jei abejojate, pirmiausia išbandykite `test.pypi.org`
   viename archyve. Neviršykite 50 MB ir 50 spalvų (`add.check()` pasako;
   `add.save("modelis.obj", colors=50)` sumažina spalvingą modelį). Į
   atmintį netelpantis modelis rašomas dalimis su `add.stream("modelis.obj")`
-  (taip rašoma 46 pavyzdžio pilis: daugiau kaip 500 MB `.off` ir `.obj`,
+  (taip rašoma 46 pavyzdžio pilis: apie 1 GB `.off` ir `.obj`,
   kuris suglaudintas 7-Zip telpa į 100 MB -- [pilis
   Sketchfab'e](https://skfb.ly/pOnRS)). `save` ir `stream` modelį pakeliui sutvarko, todėl
   peržiūroje niekas nemirga.
@@ -143,7 +143,7 @@ Jei abejojate, pirmiausia išbandykite `test.pypi.org`
 | `add.hpp` | ta pati biblioteka C++ kalbai (vienas antraštės failas, C++17) |
 | `_src/`, `_cpp/` + `build.py` | dalys, iš kurių surenkami `add.py` ir `add.hpp` |
 | `examples/` | 43 pavyzdinės programos su komentarais (42 – ir C++ kalba), `add.py` ir `add.hpp` kopijos |
-| `tests/` | 94 vienetiniai testai, add.py 1.2 suderinamumo testas, dokumentacijos pavyzdžių paleidiklis ir C++ atitikties testai (`tests/cpp/`) |
+| `tests/` | 95 vienetiniai testai, add.py 1.2 suderinamumo testas, dokumentacijos pavyzdžių paleidiklis ir C++ atitikties testai (`tests/cpp/`) |
 | `tools/` | `preview.py` (peržiūra), `make_docs.py`, `coverage.py` |
 | `docs/` | dokumentacijos svetainė (EN/LT) ir paveikslėliai |
 | `slides/` | paskaitos skaidrės (.pptx, .pdf ir generatorius) |
@@ -162,5 +162,5 @@ python3 tools/make_docs.py        # docs/index.html
 python3 examples/build_all.py --models   # visi pavyzdžiai telpa į Sketchfab ribas
 python3 tests/cpp/run_parity.py   # C++: kiekviena funkcija įrašo tuos pačius failus
 python3 tests/cpp/run_docs.py     # C++: 235 dokumentacijos pavyzdžiai
-python3 examples/build_all.py --cpp      # C++: 42 pavyzdinės programos
+python3 examples/build_all.py --cpp      # C++: 43 pavyzdinės programos (pilis - greita)
 ```

@@ -15,10 +15,11 @@ examples/out/
 !tests/legacy/letters/*.off
 !tests/legacy/numbers/*.off
 
-# compiled C++ programs (examples/NN_name.cpp)
+# compiled C++ programs (examples/NN_name.cpp; the castle: g++ ... -o castle)
 *.exe
 *.o
 a.out
+castle
 
 # local previews
 preview.png

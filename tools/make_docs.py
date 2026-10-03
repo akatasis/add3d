@@ -708,12 +708,14 @@ def _gallery_section():
            '<span class="only-lt">Galerija</span></h2>',
            '<p><span class="only-en">Every picture below was made by one '
            'script in <code>examples/</code>, and every script is meant to be '
-           'read. All but the castle also come as a C++ program '
-           '(<code>.cpp</code>) that writes the same model.</span>'
+           'read. Each also comes as a C++ program (<code>.cpp</code>) '
+           'that writes the same model -- the castle\'s is its Python, '
+           'translated by <code>tools/py2cpp</code>.</span>'
            '<span class="only-lt">Kiekvienas paveikslėlis sukurtas '
            'viena programa iš <code>examples/</code> aplanko, ir kiekviena jų '
-           'skirta skaityti. Visos, išskyrus pilį, yra ir C++ programos '
-           '(<code>.cpp</code>), kurios sukuria tą patį modelį.</span></p>',
+           'skirta skaityti. Kiekviena yra ir C++ programa (<code>.cpp</code>), '
+           'kuri sukuria tą patį modelį -- pilies C++ yra išversta jos Python '
+           'programa (<code>tools/py2cpp</code>).</span></p>',
            '<div class="gallery">']
     for image, script, cap_en, cap_lt, *online in content.GALLERY:
         picture = '<img loading="lazy" src="images/%s" alt="%s">' % (

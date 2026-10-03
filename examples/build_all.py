@@ -7,13 +7,14 @@ limits, and render a picture of each model.
     python3 examples/build_all.py --cpp      compile every C++ example (NN_*.cpp,
                                              add.hpp) and check that it writes
                                              byte for byte what its Python twin writes
+                                             (the castle: its quick run, ~25 minutes)
 
 Output goes to ``examples/out/`` (models) and ``docs/images/`` (pictures).
 The check fails (exit code 1) when a model could not be uploaded to
 Sketchfab as an .obj: more than 50 MB or more than 50 colours (materials).
 Big "fine" variants (``--fine`` in the example) are not built here, and the
 castle (46) is built at a tenth of its density (``CASTLE_DENSITY=0.1``) --
-the full castle is a 600 MB .off (and an .obj meant to be uploaded
+the full castle is a 1 GB .off (and an .obj meant to be uploaded
 compressed with 7-Zip).
 """
 import os
@@ -118,6 +119,14 @@ def png_pixels(path):
     return head, zlib.decompress(idat)
 
 
+def untimed(text):
+    """What a program printed, less the seconds it says it took (the castle
+    prints them after every part)."""
+    import re
+    text = re.sub(r"(?m)\s+\d+s$", "", text)
+    return re.sub(r"(?m), \d+ s$", "", text)
+
+
 def cpp_check():
     """Compile every C++ example and run it next to its Python twin, each in a
     fresh folder; everything they write (and print) must be the same."""
@@ -128,24 +137,27 @@ def cpp_check():
     failed = []
     for stem in stems:
         t = time.time()
+        castle = stem == "46_castle"                    # (the castle: built as its quick run, and a big file
+        flags = ["-O1", "-fno-exceptions"] if castle else ["-O2"]   # to compile -- see its first lines)
+        env = dict(os.environ, CASTLE_DENSITY="0.1") if castle else None
         work = tempfile.mkdtemp(prefix="add_example_")
         py_dir, cpp_dir = os.path.join(work, "py"), os.path.join(work, "cpp")
         os.makedirs(py_dir)
         os.makedirs(cpp_dir)
         exe = os.path.join(work, stem + ".exe")
-        p = subprocess.run([cxx, "-std=c++17", "-O2", "-I", HERE, os.path.join(HERE, stem + ".cpp"), "-o", exe],
+        p = subprocess.run([cxx, "-std=c++17"] + flags + ["-I", HERE, os.path.join(HERE, stem + ".cpp"), "-o", exe],
                            capture_output=True, text=True)
         if p.returncode:
             print("%-34s COMPILE ERROR\n%s" % (stem + ".cpp", p.stderr[-2000:]))
             failed.append(stem)
             continue
         a = subprocess.run([sys.executable, os.path.join(HERE, stem + ".py")], cwd=py_dir,
-                           capture_output=True, text=True)
-        b = subprocess.run([exe], cwd=cpp_dir, capture_output=True, text=True)
+                           capture_output=True, text=True, env=env)
+        b = subprocess.run([exe], cwd=cpp_dir, capture_output=True, text=True, env=env)
         problems = []
         if a.returncode or b.returncode:
             problems.append("exit status: python %s, c++ %s" % (a.returncode, b.returncode))
-        if a.stdout != b.stdout:
+        if untimed(a.stdout) != untimed(b.stdout):
             problems.append("they print different text")
         names = sorted(set(os.listdir(py_dir)) | set(os.listdir(cpp_dir)))
         for name in names:
@@ -183,7 +195,7 @@ def main():
                      if n.endswith(".py") and n[0].isdigit())
     os.chdir(OUT)
     env = dict(os.environ)
-    env["CASTLE_DENSITY"] = env.get("CASTLE_DENSITY", "0.1")   # the full castle is ~600 MB; the docs get a lighter one
+    env["CASTLE_DENSITY"] = env.get("CASTLE_DENSITY", "0.1")   # the full castle is ~1 GB; the docs get a lighter one
     for name in scripts:
         t = time.time()
         p = subprocess.run([sys.executable, os.path.join(HERE, name)],
