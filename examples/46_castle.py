@@ -3345,6 +3345,7 @@ def by_terrace(x, z, margin=0.0):
 GATE_X = 10.5                                          # the gatehouse takes the middle of the south wall
 GATE_W = 7.0
 GATE_Z0, GATE_Z1 = 47.0, 53.0                          # the gate passage, from the courtyard out to the landing
+EARTH_R = 49.1                                         # the yard's earth: to 0.3 under the curtain wall's inner face
 BRIDGE_X = 2.45                                        # half the width of the drawbridge's bed on its two seats,
 BRIDGE_Z0, BRIDGE_Z1 = MOAT[2] - 1.0, MOAT[3] + 1.0    # and its two ends: the landing's edge, the far bank
 DECK, HINGE_R = 2.3, 0.07                              # half the width of its deck, and the radius of the knuckles
@@ -3985,7 +3986,8 @@ STONES = [shade_of("stone_dark", 0), shade_of("stone_dark", 1), shade_of("stone_
 COBBLE_DOME = ((1.0, -0.02), (1.0, 0.03), (0.93, 0.065), (0.78, 0.095), (0.5, 0.115))   # a cobble's rings: how far out, how high
 
 
-def cobble_pack(sample, area, inside, y, seed=0, radii=(0.2, 0.15, 0.11, 0.08), gap=0.015, colours=None, more=(), edge=(), cut=None):
+def cobble_pack(sample, area, inside, y, seed=0, radii=(0.2, 0.15, 0.11, 0.08), gap=0.015, colours=None, more=(), edge=(), cut=None,
+                laid=None):
     """Cobbles set close, as a paver sets them: stones of several sizes
     thrown down at random over an ``area`` (square metres) -- ``sample(s,
     t)`` turns two numbers in 0..1 into a point (x, z) of it -- the biggest
@@ -4002,7 +4004,9 @@ def cobble_pack(sample, area, inside, y, seed=0, radii=(0.2, 0.15, 0.11, 0.08), 
     take, cut straight along masonry it is set against (see kerb_cut) --
     nor over the edge, less a joint all round: so they fill the ground,
     each a worn dome of its own irregular shape, of one of the ``colours``,
-    its foot at ``y`` (a height, or a function of (x, z)).  Returns how many."""
+    its foot at ``y`` (a height, or a function of (x, z)).  Returns how many.
+    (``laid``: a test of (x, z) and a list -- the stones whose middles pass
+    it go into the list too, to stand something on them: see lift_onto.)"""
     colours = colours or STONES
     cell = 0.5                                         # (as big as the biggest stone and its joint: 2 * 0.2 * 1.12 + gap)
     assert cell >= 2 * radii[0] * 1.12 + gap
@@ -4059,8 +4063,67 @@ def cobble_pack(sample, area, inside, y, seed=0, radii=(0.2, 0.15, 0.11, 0.08), 
                 M.add_face([lo0, lo0 + n, lo1 + n, lo1], None)
         for j in range(n):
             M.add_face([top, (len(COBBLE_DOME) - 1) * n + (j + 1) % n, (len(COBBLE_DOME) - 1) * n + j], None)
-        add.mesh(add.color(M, colours[int(hash2(a, k, seed + 6) * len(colours)) % len(colours)]))
+        cobble = add.color(M, colours[int(hash2(a, k, seed + 6) * len(colours)) % len(colours)])
+        add.mesh(cobble)
+        if laid is not None and laid[0](x, z):
+            laid[1].append(cobble)
     return len(stones)
+
+
+def height_over(t, x, z):
+    """How high the triangle ``t`` (three points, and the box round them in
+    XZ) is over (x, z) -- or None, if (x, z) is not under it (or it stands
+    on edge)."""
+    a, b, c, x0, x1, z0, z1 = t
+    if x < x0 or x > x1 or z < z0 or z > z1:
+        return None
+    d = (b[0] - a[0]) * (c[2] - a[2]) - (c[0] - a[0]) * (b[2] - a[2])
+    if abs(d) < 1e-12:
+        return None
+    u = ((x - a[0]) * (c[2] - a[2]) - (c[0] - a[0]) * (z - a[2])) / d
+    v = ((b[0] - a[0]) * (z - a[2]) - (x - a[0]) * (b[2] - a[2])) / d
+    if u < -1e-9 or v < -1e-9 or u + v > 1.0 + 1e-9:
+        return None
+    return a[1] + u * (b[1] - a[1]) + v * (c[1] - a[1])
+
+
+def boxed_triangles(M, f, out):
+    """The face ``f`` of ``M`` as a fan of triangles, each with the box round
+    it in XZ (see height_over), onto ``out``."""
+    for j in range(1, len(f) - 1):
+        a, b, c = M.V[f[0]], M.V[f[j]], M.V[f[j + 1]]
+        out.append((a, b, c, min(a[0], b[0], c[0]), max(a[0], b[0], c[0]), min(a[2], b[2], c[2]), max(a[2], b[2], c[2])))
+
+
+def lift_onto(K, under, reach=0.1, margin=0.002):
+    """How far to raise the figure ``K``, stood a little low on the meshes
+    ``under`` (cobbles: see cobble_pack's ``laid``), for it to stand on
+    them: its underside clear of their tops -- their surface under each
+    point of K within ``reach`` of its lowest, and K's over each point of
+    theirs, the most either way -- and a hair (``margin``) more.  So it
+    rests on the highest stones under its feet, as one does."""
+    lo = min(v[1] for v in K.V)
+    kt, ut = [], []
+    for f in K.F:                                                           # the figure's triangles near its foot,
+        if min(K.V[i][1] for i in f) < lo + reach:
+            boxed_triangles(K, f, kt)
+    for M in under:                                                         # and all of theirs
+        for f in M.F:
+            boxed_triangles(M, f, ut)
+    lift = 0.0
+    for t in kt:                                                            # each point of the figure's over their
+        for p in (t[0], t[1], t[2]):                                        # triangles, and each of theirs under
+            for s in ut:                                                    # its
+                h = height_over(s, p[0], p[2])
+                if h is not None and h - p[1] > lift:
+                    lift = h - p[1]
+    for s in ut:
+        for p in (s[0], s[1], s[2]):
+            for t in kt:
+                h = height_over(t, p[0], p[2])
+                if h is not None and p[1] - h > lift:
+                    lift = p[1] - h
+    return lift + margin
 
 
 def convex_in(poly, x, z, margin=0.0):
@@ -5021,10 +5084,12 @@ for r, piece in enumerate(runs(QUAY, lambda x, z: not (abs(x) < BRIDGE_X + 0.05 
     course(piece, G - 0.28, G + 0.15, 0.02, 0.55, 3000 + r, COPING, lengths=(0.7, 1.1), gap=0.04, rough=0.02)
 CORE = inset(LANDING, 0.3, keep=(0,))                                             # the pier's core, and its top: the
 add.mesh(solid(CORE, MOAT_Y - 0.25, G - 0.28, P["mortar"]))                       # bed of the paving, up to the hinge
-HINGE_GAP = BRIDGE_Z0 - HINGE_R - 0.005                                           # of the bridge and beside its deck
-add.mesh(solid(clip_half(CORE, 0, 1, HINGE_GAP), G - 0.28, G + 0.02, P["mortar"]))
-for sx in (-1, 1):
-    add.mesh(solid(clip_half(clip_half(CORE, 0, -1, -HINGE_GAP), -sx, 0, -DECK - 0.005), G - 0.28, G + 0.02, P["mortar"]))
+HINGE_GAP = BRIDGE_Z0 - HINGE_R - 0.005                                           # of the bridge and beside its deck --
+add.mesh(solid(clip_half(CORE, 0, 1, HINGE_GAP), G - 0.28, G + 0.02, P["earth_dark"]))   # earth, as the passage's floor
+for sx in (-1, 1):                                                                # and the yard's are, the cobbles on
+    add.mesh(solid(clip_half(clip_half(CORE, 0, -1, -HINGE_GAP), -sx, 0, -DECK - 0.005), G - 0.28, G + 0.02, P["earth_dark"]))   # it
+                                                                                  # theirs, laid on from them (see the
+                                                                                  # gatehouse)
 for z0, z1, top in ((BRIDGE_Z0 + HINGE_R + 0.005, 56.0, G - 0.052),                # the seats: three dressed stones each,
                     (MOAT[3], BRIDGE_Z1, G - 0.08)):                               # right up under the bridge -- under the
     y0 = G - 0.28 - (COURSE_H - 0.025)                                            # leaf of its hinge, and under the iron
@@ -5918,7 +5983,12 @@ def slope_frame(x, z):
 
 
 def on_landslide(x, z, r):
-    """Is (x, z) on the landslide, and all round it ``r`` out?"""
+    """Is (x, z) on the landslide, and all round it ``r`` out?  (Not where
+    the castle stands: beside the south front the land drops into the
+    moat under the walls, the gate towers and the gate's passage, and is
+    steep there too -- but nothing lies or grows under them.)"""
+    if octagon_r(x, z) < 51.5 + r or (z > 45.0 and castle_depth(x, z) > -0.5 - r):
+        return False
     return all(land_colour(x + r * dx, z + r * dz) in LANDSLIDE for dx, dz in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)))
 
 
@@ -10159,20 +10229,13 @@ for s in (-1, 1):                                      # the gate towers stand i
                                                                                  # lowest a little under the floor)
         M = add.move(add.pop(), [-GATE_W / 2, 0, 0])
         add.mesh(add.move(add.rotateY(M, add.pi / 2 - side * add.pi / 2), [s * 7, 0, 50]))
-# the paved passage, and the landing before the gate paved the same way (the landing's pier: see the moat's stonework)
-PAVE = G + 0.1                                         # top of the paving: level with the cobblestones
-add.cuboid([0, (G - 0.3 + G + 0.025) / 2, (GATE_Z0 + GATE_Z1) / 2], [7.0, 0.325, GATE_Z1 - GATE_Z0], P["mortar"])   # (over the
-cobble_pack(lambda s_, t_: (-7 + 14 * s_, GATE_Z0 + 0.075 + (BRIDGE_Z0 + 1.0 - GATE_Z0 - 0.075) * t_), 14 * (BRIDGE_Z0 + 1 - GATE_Z0),   # earth)
-            lambda x, z: (abs(x) < 2.45 and z > GATE_Z0 - 1e-6 if z < GATE_Z1 else landing_depth(x, z, False) > 0.62 and
-                          (abs(x) < 3.3 or z > GATE_FRONT + 0.15) and (z < BRIDGE_Z0 - 0.09 or abs(x) > DECK + 0.16)),
-            G + 0.02, seed=5, radii=(0.16, 0.12, 0.09, 0.065),          # cobbles: the passage and the landing, right up to the
-            more=[(lambda s_, t_: (-2.45 + 4.9 * s_, GATE_Z0 + 0.3 * t_), 4.9 * 0.3)],   # bridge's hinge -- and from the
-            cut=lambda x, z, poly: clip_half(poly, 0, -1, -GATE_Z0) if z < GATE_Z0 + 0.5 else poly)   # passage's mouth (thrown
-                                                                          # at again along it), the stones there cut straight
-                                                                          # along it, where the road's cobbles are laid up to
-                                                                          # it, cut the same way (see KERBS): one joint
-                                                                          # between, about as between any two of them
-flush("gatehouse")
+# the passage's floor: the yard's earth run on under the gate, out to the landing (whose pier's top is earth too: see
+# the moat's stonework) -- the cobbles on it are laid with the square's and the road's, from the road on through the
+# gate and over the landing in one, so that no joint runs across the way where the one paving would meet the other
+# (see "the ground of the yard")
+add.cuboid([0, (G - 0.3 + G + 0.02) / 2, (EARTH_R + GATE_Z1) / 2], [7.0, 0.32, GATE_Z1 - EARTH_R], P["earth_dark"])   # (on
+flush("gatehouse")                                     # from where the yard's earth ends, level with it, as dark as it is
+                                                       # by the wall: see earth_shade)
 
 # the portcullis, drawn up to the springing of the arch -- a rider passes under its teeth -- into its slot: a square
 # mesh of iron bars 0.4 apart, the ends of its cross bars in the grooves of the jambs
@@ -10288,10 +10351,6 @@ for s, hole in zip((-1, 1), CHAIN_HOLES):
     chain(_at(ca, d, 0.121 + 0.14 + 0.01), _at(hole, d, 0.8), twist=1)                                    # through it, and the chain
 flush("drawbridge and chains")
 
-# two guards on the landing, and one on the wall walk
-armour([-3.4, PAVE, GATE_Z1 + 1.4], add.pi * 0.08)
-armour([3.4, PAVE, GATE_Z1 + 1.4], -add.pi * 0.08, weapon="sword", pose="shoulder", seed=2)
-flush("guards")
 
 
 # --------------------------------------------------------------------------
@@ -14194,7 +14253,7 @@ def lute():
     add.cuboid([0, 0.004, 0.33], [0.052, 0.026, 0.3], P["wood_dark"])                         # the neck
     for i in range(6):
         add.cuboid([0, 0.019, 0.22 + 0.04 * i], [0.054, 0.004, 0.005], P["bone"])            # frets
-    add.cuboid([0, 0.019, 0.09], [0.034, 0.003, 0.42], P["linen"])                          # the strings
+    add.cuboid([0, 0.019, 0.175], [0.034, 0.003, 0.59], P["linen"])                         # the strings, bridge to nut
     box = add.make(add.cuboid, [0, 0, 0.075], [0.058, 0.03, 0.15], P["wood_dark"])
     add.mesh(add.move(add.rotateX(box, 1.2, [0, 0, 0]), [0, 0.0, 0.48]))                       # the peg box, bent back
     for i in range(4):
@@ -14252,8 +14311,11 @@ def musician(at, facing, kind):
         strings = lambda p: _dot(vsub(p, at_(0, 0.0205, 0)), u)                # bends), the hand hanging from the wrist
         arms = (("grip", resting_hand(at_(0.08, 0.11, 0.01), _times(side, -1.0), -1, strings, 0.07, gap=0.008, up=u),
                  [-0.94, -0.34, 0.0], "wrist"),                                # over the strings by the rose; the left hand
-                ("grip", (at_(0, 0.004, 0.34), _times(z, -1.0), u, 0.031), [1, -1, -0.3]))   # round the neck halfway up it,
+                ("grip", (at_(-0.008, -0.001, 0.34), z, side, 0.031), [1, -1, -0.3]))   # round the neck halfway up it,
                                                                                 # the thumb behind, the fingers over the frets
+                                                                                # on the strings (the palm under the neck, the
+                                                                                # fingers coming up round its edge, as a
+                                                                                # guitar's are)
         add.mesh(person("sit", P["leaf"], seat=seat, arms=arms, hat=True, lean=0.05))
         add.mesh(placed(lute(), body, side, u, z))
         M = add.pop()
@@ -14271,7 +14333,9 @@ def musician(at, facing, kind):
         add.mesh(person("stand", P["blue"], arms=arms, head=("cap", P["red"])))
         add.mesh(placed(recorder(), mouth, side, u, z))
     else:
-        S0, B = [-0.03, 1.17, 0.38], [0.22, 1.1, 0.2]                                         # the stick, its knob on the drum
+        S0, B = [-0.03, 1.17, 0.38], [0.218, 1.0703, 0.1762]                                  # the stick, its knob on the drum's
+                                                                                              # head, inside the hoop (it was on
+                                                                                              # the hoop, sunk into it)
         e = vunit(vsub(B, S0))
         drum = sd_capsule([0.245, 1.0, 0.12], [0.415, 1.0, 0.12], 0.152)
         arms = (("grip", rod_grip(_at(S0, e, 0.06), e, [0.0, -0.3, 1.0], -1, 0.009, [0, -1, 0]), [-1, -0.5, -0.4]),   # (the elbow
@@ -16328,7 +16392,10 @@ for k, x in enumerate((-15.5, -12.8, -6.0, -3.5, 3.0, 6.0, 9.0, 12.5, 15.5)):  #
     if k not in (1, 7):                                                         # beds' feet, with gaps where the steps
         attic_put("pallet", x, KZ1 - 6.55, add.pi / 2 if k % 2 else -add.pi / 2, sleeper=k == 4, blanket=AB[k % 6])   # come down
 attic_put("bed", -10.3, KZ0 + 6.4, add.pi / 2, sleeper=False, blanket=AB[2])   # from the dormers; and one more bed among the
-                                                                                # old things, clear of the north dormers' steps
+                                                                                # old things, clear of the north dormers' steps;
+for k, (x, z, f) in enumerate(((-17.5, -11.1, add.pi / 2), (6.5, -11.6, add.pi / 2), (9.5, -11.6, -add.pi / 2),   # five more
+                               (-5.5, -20.1, add.pi / 2), (12.0, -21.1, -add.pi / 2))):                          # pallets, made
+    attic_put("pallet", x, z, f, sleeper=False, blanket=AB[(k + 3) % 6])       # up for the guests who stay on to dance
 mice = []
 for x, z, f in ((-7.9, -23.9, 0.4), (4.1, -12.2, 2.1), (8.2, -16.55, -0.8), (-3.9, -7.2, 3.9), (14.6, -16.55, 1.3),
                 (-13.1, -12.0, 4.8), (HATCH[0] + 3, HATCH[1] + 0.25, 1.2), (-10.6, -16.55, 2.6), (11.8, -7.3, 5.5),
@@ -17879,8 +17946,8 @@ def on_footprint(x, z):
 
 def on_plaza(x, z):
     """Is (x, z) on the cobbled square (and on along the palace's front to
-    its plinth: see KERBS) or the road from the gate?"""
-    return ((PLAZA[0] < x < PLAZA[1] and PLAZA[2] < z < PLAZA[3]) or (abs(x) < ROAD_X and PLAZA[3] - 0.1 <= z < GATE_Z0 + 0.5)
+    its plinth: see KERBS) or the road from the gate (and on through it)?"""
+    return ((PLAZA[0] < x < PLAZA[1] and PLAZA[2] < z < PLAZA[3]) or (abs(x) < ROAD_X and PLAZA[3] - 0.1 <= z < GATE_Z1)
             or (KX0 - PL < x < KX1 + PL and KZ1 + PL <= z <= PLAZA[2]))
 
 
@@ -18006,7 +18073,7 @@ def earth_shade(x, z):
     return P["earth_light"] if v < 0.38 else P["earth_dark"] if v > 0.68 else P["earth"]
 
 
-EARTH_EDGE = octagon_outline(49.1)                     # the earth runs 0.3 under the curtain wall's inner face
+EARTH_EDGE = octagon_outline(EARTH_R)                  # the earth runs 0.3 under the curtain wall's inner face
 
 
 def earth_yard(spacing=1.5, sectors=96, r_of=EARTH_EDGE):
@@ -25444,9 +25511,10 @@ flush("privies (at %s)" % ", ".join("(%.1f, %.1f)" % p_ for p_ in PRIVIES))
 
 
 # the ground of the yard, laid last, round everything that stands on it (see record_low): the cobbled square and the
-# road from the gate, the flagged paths -- whole stones, flush with the yard's footing, under the feet of the folk and
-# the beasts and the things that stand on them, cut off along the square, the road and the buildings -- stones lying
-# about, and grass on all the rest of the earth, as close as a blade can grow without touching anything
+# road from the gate (on through it and over the landing to the bridge), the flagged paths -- whole stones, flush with
+# the yard's footing, under the feet of the folk and the beasts and the things that stand on them, cut off along the
+# square, the road and the buildings -- stones lying about, and grass on all the rest of the earth, as close as a
+# blade can grow without touching anything
 def paving_free(x, z, h=0.2):
     """Is the ground at (x, z) free for a cobble or a flagstone: nothing
     recorded there lower than ``h`` over it?"""
@@ -25458,8 +25526,7 @@ def paving_free(x, z, h=0.2):
 # and short of the corner towers (round which the cobbles keep off what is recorded, as everywhere) -- the steps up
 # to its door and the bases of the porch's pedestals
 KERBS = ([(-17.2, -3.85, KZ0, KZ1 + PL + 0.08), (-3.85, 3.85, KZ0, KZ1 + PL), (3.85, 17.2, KZ0, KZ1 + PL + 0.08),
-          (-STEP_HW, STEP_HW, KZ1 + PL - 0.1, STEP_Z)] + [(s_ * 3.4 - 0.545, s_ * 3.4 + 0.545, PZ - 0.545, PZ + 0.545) for s_ in (-1, 1)]
-         + [(-ROAD_X - 0.5, ROAD_X + 0.5, GATE_Z0, GATE_Z1)])   # -- and the gate's passage, paved on its own (see the gatehouse)
+          (-STEP_HW, STEP_HW, KZ1 + PL - 0.1, STEP_Z)] + [(s_ * 3.4 - 0.545, s_ * 3.4 + 0.545, PZ - 0.545, PZ + 0.545) for s_ in (-1, 1)])
 
 
 def by_kerb(x, z, d):
@@ -25489,17 +25556,54 @@ def kerb_ground(s, t, d=0.25):
     return (x, z) if by_kerb(x, z, d) else (1e3, 1e3)
 
 
-square = lambda x, z: (on_plaza(x, z) and octagon_r(x, z) < 48.55 and not on_footprint(x, z) and (abs(x) < ROAD_X or z < PLAZA[3])
+gate_way = lambda x, z: ((abs(x) < 2.45 and (abs(x) - 2.5) ** 2 + (z - GATE_Z0 - 0.6) ** 2 > 0.11 ** 2) if z < GATE_Z1 + 0.3 else
+                         landing_depth(x, z, False) > 0.62 and (abs(x) < 3.23 or z > GATE_FRONT + 0.15) and
+                         (z < BRIDGE_Z0 - 0.09 or abs(x) > DECK + 0.16))          # the gate's passage, between its walls and
+                                                                                   # out past its outer jambs (and clear of
+                                                                                   # the hinge pins of its leaves), and the
+                                                                                   # landing, up to its kerbs, the gate
+                                                                                   # towers' stones and the bridge's hinge
+                                                                                   # (the guards stand on these cobbles: see
+                                                                                   # below)
+square = lambda x, z: (gate_way(x, z) if z >= GATE_Z0 else
+                       on_plaza(x, z) and octagon_r(x, z) < 48.55 and not on_footprint(x, z) and (abs(x) < ROAD_X or z < PLAZA[3])
                        and (not by_kerb(x, z, 0.0074) if by_kerb(x, z, 0.06) else paving_free(x, z)))   # (by the KERBS, up to
 A_SQ, A_RD = (PLAZA[1] - PLAZA[0]) * (PLAZA[3] - PLAZA[2]), 2 * ROAD_X * (GATE_Z0 + 0.8 - PLAZA[3])   # them: what is recorded
-n = cobble_pack(lambda s_, t_: ((PLAZA[0] + (PLAZA[1] - PLAZA[0]) * s_ * (A_SQ + A_RD) / A_SQ, PLAZA[2] + (PLAZA[3] - PLAZA[2]) * t_)
-                                if s_ < A_SQ / (A_SQ + A_RD) else                                        # there is theirs) -- the
-                                (-ROAD_X + 2 * ROAD_X * (s_ * (A_SQ + A_RD) - A_SQ) / A_RD, PLAZA[3] + (GATE_Z0 + 0.8 - PLAZA[3]) * t_)),
-                A_SQ + A_RD, square, G + 0.02, seed=9, radii=(0.16, 0.12, 0.09, 0.065),                  # square and the road, and
-                more=[(kerb_ground, (FRONT[1] - FRONT[0]) * (FRONT[3] - FRONT[2]))], edge=(0.045,), cut=kerb_cut)   # along the
-flush("cobbles: the square and the road (%d)" % n, clean=False)                         # KERBS thrown at again, and with
+A_GW = 14.0 * (BRIDGE_Z0 + 1.0 - GATE_Z0 - 0.8)                                                    # there is theirs)
+
+
+def plaza_ground(s, t):
+    """A sampler for cobble_pack: (s, t) in 0..1 to a point of the square,
+    of the road or of the gate's way (its passage and the landing before
+    it, out to the bridge), each as often as it is big -- one ground, so
+    that the stones of the one are laid on into the other with no joint
+    across the way between them."""
+    a = s * (A_SQ + A_RD + A_GW)
+    if a < A_SQ:
+        return (PLAZA[0] + (PLAZA[1] - PLAZA[0]) * a / A_SQ, PLAZA[2] + (PLAZA[3] - PLAZA[2]) * t)
+    if a < A_SQ + A_RD:
+        return (-ROAD_X + 2 * ROAD_X * (a - A_SQ) / A_RD, PLAZA[3] + (GATE_Z0 + 0.8 - PLAZA[3]) * t)
+    return (-7.0 + 14.0 * (a - A_SQ - A_RD) / A_GW, GATE_Z0 + 0.8 + (BRIDGE_Z0 + 1.0 - GATE_Z0 - 0.8) * t)
+
+
+GUARDS = ((-3.4, add.pi * 0.08), (3.4, -add.pi * 0.08))                               # (two guards on the landing: below)
+UNDER_GUARDS = []
+n = cobble_pack(plaza_ground, A_SQ + A_RD + A_GW, square, G + 0.02, seed=9, radii=(0.16, 0.12, 0.09, 0.065),   # the square,
+                more=[(kerb_ground, (FRONT[1] - FRONT[0]) * (FRONT[3] - FRONT[2]))], edge=(0.045,), cut=kerb_cut,   # the road
+                laid=(lambda x, z: abs(z - GATE_Z1 - 1.4) < 0.7 and any(abs(x - gx) < 0.7 for gx, gf in GUARDS), UNDER_GUARDS))
+flush("cobbles: the square, the road and the gate's way (%d)" % n, clean=False)         # and the gate's way, and along the
+                                                                                         # KERBS thrown at again, and with
                                                                                          # smaller stones still, into the
                                                                                          # gaps left along them
+for k, (gx, gf) in enumerate(GUARDS):                  # the two guards on the landing, standing on its cobbles: stood
+    add.push()                                         # on their bed and raised onto the highest of the stones under
+    if k == 0:                                         # their boots (and the spear's butt)
+        armour([gx, G + 0.02, GATE_Z1 + 1.4], gf)
+    else:
+        armour([gx, G + 0.02, GATE_Z1 + 1.4], gf, weapon="sword", pose="shoulder", seed=2)
+    K = add.pop()
+    add.mesh(add.move(K, [0, lift_onto(K, UNDER_GUARDS), 0]))
+flush("guards on the landing")
 
 
 def low_under(poly, cx, cz, r):
