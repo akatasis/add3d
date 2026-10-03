@@ -73,7 +73,7 @@ PHOTOS = [
     ("43_riteriu_turnyras", (13.5, 13.2, 42.5), (9.5, 11.2, 36.5), 40),    # two knights jousting at the tilt
     ("44_karvelide", (0.5, 12.6, -39.5), (-5, 12.2, -46.2), 36),          # the dovecote, doves about it
     ("45_rozes_langas", (28.5, 18, 1.5), (28, 21, -9), 28),                # the rose window in the chapel's gable
-    ("46_nuskendusi_valtis", (66.5, 2, 76.5), (70.3, -1.6, 82.3), 22),     # the wreck and the sea chest through the water
+    ("46_nuskendusi_valtis", (66.5, 1.2, 76.5), (70.3, -1.6, 82.3), 22),   # the wreck and the sea chest, under the water (lily pads above)
     ("47_katinas_ir_buda", (25.8, 11.8, 37.6), (28.5, 9.7, 39.2), 30),     # a cat watching the dog by its kennel
     ("48_sodas", (-35, 14.5, -10.5), (-27.8, 10, -18), 40),                # the knot garden under the palace windows
     ("49_romaninis_prieangis", (6, 13.5, 13), (0, 14.5, 0), 34),           # the porch: arches, cushion capitals, balconies
