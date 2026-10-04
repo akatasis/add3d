@@ -26993,12 +26993,16 @@ CAPTAIN_SWORD = ([0.215, 0.93, -0.01], [0.3, 0.2, -0.24])                     # 
 def captain(at, facing=0.0):
     """The master of a ship: a coat of dark blue to the knee with gold at
     its hems, black hose and boots, a red chaperon, a black beard; his
-    right arm out, pointing the way, a rolled chart in his left hand held
-    out before him, the elbow out at his side; his sword at his left hip,
-    its scabbard hung from his belt by two straps."""
-    c0, c1 = [0.13, 1.1, 0.4], [0.33, 1.02, 0.17]                                   # the chart, rolled
+    right arm out, pointing the way, a rolled chart in his left fist held
+    out before him, the elbow out at his side, the wrist straight (the
+    chart across the fist, the palm up); his sword at his left hip, its
+    scabbard hung from his belt by two straps."""
+    W, pole = [0.158, 1.013, 0.217], [1.0, -0.35, -0.5]                             # the left wrist, the elbow out at his
+    a = vunit(vsub(W, joint([0.19, 1.42, 0.0], W, 0.3, 0.27, pole)))                # side (as person bends it from the
+    chart = hand_at_wrist(W, a, [0, 1, 0], 1, 0.035)                                 # shoulder), the fist straight on from
+    c0, c1 = _at(chart[0], chart[1], -0.12), _at(chart[0], chart[1], 0.195)          # the forearm; the chart, rolled
     arms = (([-0.22, 1.46, 0.5], [0.0, 0.25, 1], [-1, -0.2, -0.1], [0, -1, 0], 0.015, (0.6, 0.015, 0.015, 0.015)),   # (the finger
-            ("grip", rod_grip(_mix(c0, c1, 0.55), vsub(c1, c0), [-0.3, 0.2, 1.0], 1, 0.035, [0, 1, 0]), [1.0, -0.35, -0.5]))   # pointing)
+            ("grip", chart, pole))                                                                                          # pointing)
     add.push()
     add.mesh(person("stand", P["blue"], trim=P["gold"], hose=P["black"], beard=P["black"], hair=P["black"], head=("chaperon", P["red"]),
                     arms=arms))
@@ -27031,9 +27035,10 @@ def sailor(at, facing=0.0, task="coil", seed=0):
         A, B = [-0.12, 1.36, 0.25], [0.1, 0.07, 1.0]                              # the mop's handle, in both fists
         on = lambda t: [A[k] + (B[k] - A[k]) * t for k in range(3)]
         d = vunit(vsub(B, A))
-        arms = (("grip", rod_grip(on(0.06), d, [0.4, 0.2, 1.0], -1, 0.02), None),   # (the left fist a little below the right:
-                ("grip", rod_grip(on(0.17), d, [-0.3, 0.2, 1.0], 1, 0.02), None))   #  within reach, the arm across his chest)
-        add.mesh(person("stand", tunic, hose=P["wood"], head=("cap", cap), shoes=bare, arms=arms, lean=0.12))
+        up = lambda g_: (g_[0], _times(g_[1], -1.0), _times(g_[2], -1.0), g_[3])   # (each fist turned half round about
+        arms = (("grip", up(rod_grip(on(0.06), d, [0.4, 0.2, 1.0], -1, 0.02)), None),   # its wrist, the thumb up the
+                ("grip", up(rod_grip(on(0.17), d, [-1.0, 0.0, 0.7], 1, 0.02)), None))   # handle; the left a little below
+        add.mesh(person("stand", tunic, hose=P["wood"], head=("cap", cap), shoes=bare, arms=arms, lean=0.12))   # the right)
         add.cylinder(A, B, 0.02, 6, P["wood"])
         add.ellipsoid([B[0], 0.05, B[2]], [0.16, 0.05, 0.13], 4, P["rope"])
         for i in range(6):                                                           # its yarns spread on the boards
@@ -27210,13 +27215,11 @@ def bird_cage(hook, kind=0, facing=0.0):
     add.torus([hook[0], hook[1] - 0.0265, hook[2]], 0.02, 0.005, 8, 3, P["iron"], axis=(1, 0, 0))             # the screw eye
 
 
-def hammock(a, b, sag=0.55, width=0.85, colour=None, sleeper=None):
+def hammock(a, b, sag=0.55, width=0.85, colour=None):
     """A sailor's hammock of canvas slung between two hooks ``a`` and ``b``
     (screwed into beams overhead): at each end a lanyard down to an iron
     ring and seven clews fanning out from the ring to the canvas, which
-    hangs between them in a deep curve and closes round whoever lies in it.
-    With ``sleeper`` (the colour of his blanket) a man asleep in it: his
-    head on a rolled jacket at the ``a`` end, the blanket over him."""
+    hangs between them in a deep curve, empty (its sailor on watch)."""
     colour = colour or P["linen"]
     d = vunit(vsub(b, a))
     side_ = vunit(vcross(d, [0, 1, 0]))
@@ -27244,39 +27247,6 @@ def hammock(a, b, sag=0.55, width=0.85, colour=None, sleeper=None):
         add.torus(ring, 0.035, 0.008, 8, 3, P["iron"], axis=side_)
         add.cylinder([ring[0], ring[1] + 0.035, ring[2]], [hook_[0], hook_[1] - 0.04, hook_[2]], 0.009, 4, P["rope"])
         add.torus([hook_[0], hook_[1] - 0.0245, hook_[2]], 0.018, 0.005, 8, 3, P["iron"], axis=side_)
-    if sleeper:
-        rings = []                                                                # the blanket over him, lying in the canvas,
-        for i in range(2, 8):                                                     # and his head on a rolled jacket
-            u = i / 8.0
-            w = width / 2 * (0.3 + 0.7 * add.sin(add.pi * u))
-            h = 0.06 + 0.2 * add.sin(add.pi * u)
-            hump = 0.13 * min(1.0, 3 * add.sin(add.pi * (u - 0.2) / 0.8))
-            rings.append([at_(u, 0.8 * w * add.cos(add.pi * j / 6), h * (0.8 * add.cos(add.pi * j / 6) / 0.97) ** 2 + 0.024 + hump * add.sin(add.pi * j / 6))
-                          for j in range(7)])
-        add.loft(rings, sleeper)
-        Lc = e1 - e0
-
-        def inside(u, x):                                                            # (how high the canvas's inner face
-            u = min(1.0, max(0.0, u))                                                # is, over its middle line)
-            w, h = width / 2 * (0.3 + 0.7 * add.sin(add.pi * u)), 0.06 + 0.2 * add.sin(add.pi * u)
-            return -sag * add.sin(add.pi * u) + h * (x / (0.97 * w)) ** 2 + 0.012 + 0.004
-        jy = 0.0                                                                     # the rolled jacket, lying on the
-        while any(jy - sag * add.sin(add.pi * 0.1) + 0.06 * add.sin(q) < inside(0.1 + 0.06 * add.cos(q) / Lc, x)   # canvas where it
-                  for q in (2 * add.pi * i / 16 for i in range(16)) for x in (-0.12, -0.06, 0.0, 0.06, 0.12)):   # curves up, and his
-            jy += 0.002
-        add.cylinder(at_(0.1, -0.12, jy), at_(0.1, 0.12, jy), 0.06, 8, P["wood"])
-        sag_ = lambda u: -sag * add.sin(add.pi * u)                                   # head on it, asleep (in a frame at
-        O = at_(0.17, 0.0, 0.0)                                                      # the canvas's middle there: x
-                                                                                     # across, y up, z along)
-        def rest(p):                                                                 # (the jacket and the canvas)
-            canvas = p[1] - (inside(0.17 + p[2] / Lc, p[0]) - sag_(0.17))
-            jacket = vlen([0.0, p[1] - (jy + sag_(0.1) - sag_(0.17)), p[2] + 0.07 * Lc]) - 0.06
-            return min(canvas, jacket)
-        n_ = vsub(at_(0.25 + 0.06 / Lc, 0.0, 0.08), O)                             # (his neck goes in under the blanket)
-        add.push()
-        lying_head(P["wood_dark"], None, lambda p: rest([p[0] * LIFE, p[1] * LIFE, p[2] * LIFE]) / LIFE, [0.0, 0.0],
-                   neck=[_dot(n_, side_) * -1.0 / LIFE, n_[1] / LIFE, _dot(n_, d) / LIFE])
-        add.mesh(frame_mesh(add.stretch(add.pop(), [LIFE] * 3, (0, 0, 0)), O, _times(side_, -1.0), [0, 1, 0], d))
 
 
 def treasure(at, facing=0.0, s=0.7, seed=0):
@@ -28839,11 +28809,11 @@ def ship(at, forward, L=24.0, B=7.2, seed=0, crew=(), band=None, shields=False, 
     def room(x0_, x1_):
         """How far out from the middle line a thing may stand on the floor between ``x0_`` and ``x1_``."""
         return min(floor_w(t_at(x0_ + (x1_ - x0_) * q / 4.0)) for q in range(5)) - 0.06
-    # the crew's quarters aft: two hammocks between the through-beams, one slept in, sea chests, water casks, a lantern
+    # the crew's quarters aft: two hammocks between the through-beams (the crew on deck), sea chests, water casks, a lantern
     xa6, xa9 = xs(STATION(6)), xs(STATION(9))
     ya6, ya9 = 1.1 + 0.45 * STATION(6) ** 2 - 0.13, 1.1 + 0.45 * STATION(9) ** 2 - 0.13
-    for sz, sl in ((1, (P["blue"], P["red"])[seed % 2]), (-1, None)):
-        hammock([xa6 + 0.08, ya6, sz * 1.2], [xa9 - 0.08, ya9, sz * 1.2], 0.5, 0.85, P["linen"], sl)
+    for sz in (1, -1):
+        hammock([xa6 + 0.08, ya6, sz * 1.2], [xa9 - 0.08, ya9, sz * 1.2], 0.5, 0.85, P["linen"])
     zc = room(-6.5, -5.6) - 0.3
     chest([-6.05, FL + 0.0065, zc], add.pi, False, 0.55)
     chest([-6.05, FL + 0.0065, -zc], 0.0, False, 0.55)
