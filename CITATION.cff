@@ -5,9 +5,7 @@ type: software
 authors:
   - family-names: Sabaliauskas
     given-names: Martynas
-    affiliation: "Vilnius University, Faculty of Mathematics and Informatics,
-      Institute of Data Science and Digital Technologies"
-    email: martynas.sabaliauskas@mif.vu.lt
+    email: akatasis@gmail.com
 version: "2.0"
 date-released: "2026-09-22"
 license: MIT

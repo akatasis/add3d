@@ -45,7 +45,7 @@ function build(lang) {
   const pres = new pptxgen();
   pres.layout = "LAYOUT_4x3";
   pres.author = "Martynas Sabaliauskas";
-  pres.company = T("Vilnius University, MIF", "Vilniaus universitetas, MIF");
+  pres.company = T("Martynas Sabaliauskas", "Martynas Sabaliauskas");
   pres.title = "add.py " + VERSION;
   const OUT = path.join(__dirname, "add_py_2026_" + lang + ".pptx");
 
@@ -1126,8 +1126,8 @@ function build(lang) {
     const s = sheet(T("The castle: a model bigger than memory", "Pilis: modelis, didesnis už atmintį"),
                     T("46_castle.py, stream()", "46_castle.py, stream()"));
     picture(s, "castle.png", { x: M, y: 1.45, w: 5.3, h: 3.4,
-      caption: T("no textures, every stone a polygon: an .off of about 1 GB and an .obj that 7-Zip brings under 100 MB for Sketchfab",
-                 "be tekstūrų, kiekvienas akmuo – daugiakampis: apie 1 GB .off ir .obj, kurį 7-Zip suglaudina iki 100 MB Sketchfab'ui") });
+      caption: T("no textures, every stone a polygon: an .off of about 1 GB and an .obj that 7-Zip packs into about 100 MB for Sketchfab",
+                 "be tekstūrų, kiekvienas akmuo – daugiakampis: apie 1 GB .off ir .obj, kurį 7-Zip suglaudina į ~100 MB Sketchfab'ui") });
     picture(s, "castle_hall.png", { x: 5.85, y: 1.45, w: 3.55, h: 1.55,
       caption: T("the throne hall and the feast", "sosto menė ir puota") });
     picture(s, "castle_treasury.png", { x: 5.85, y: 3.3, w: 3.55, h: 1.55,
@@ -1261,7 +1261,7 @@ function build(lang) {
         options: { color: "E9C9AE", breakLine: true } },
       { text: "…github.io/add3d\n\n", options: { fontFace: MONO, fontSize: 17, color: WHITE, breakLine: true } },
       { text: T("Questions\n", "Klausimai\n"), options: { color: "E9C9AE", breakLine: true } },
-      { text: "akatasis@gmail.com  ·  martynas.sabaliauskas@mif.vu.lt", options: { fontSize: 15, color: WHITE } },
+      { text: "akatasis@gmail.com", options: { fontSize: 15, color: WHITE } },
     ], {
       x: M, y: 2.25, w: 5.6, h: 3.4, isTextBox: true, margin: 0,
       fontFace: BODY_FONT, fontSize: 14, lineSpacing: 22, valign: "top",

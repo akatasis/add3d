@@ -79,7 +79,8 @@ def branch(start, direction, length, radius, depth):
     for _ in range(3):
         d = [direction[i] + add.uniform(-0.65, 0.65) for i in range(3)]
         d[1] += 0.45
-        n = add.sqrt(sum(a * a for a in d))
+        n = add.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2])     # (written out: sum() adds floats
+                                                                #  differently from Python 3.12 on)
         d = [a / n for a in d]
         branch(end, d, length * add.uniform(0.6, 0.8), radius * 0.68,
                depth - 1)

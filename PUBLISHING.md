@@ -126,7 +126,7 @@ if in doubt. The version number lives in `_src/00_core.py` (`__version__`),
   `add.save("model.obj", colors=50)` reduces a colourful model). A model
   too big for memory is written with `add.stream("model.obj")` part by
   part (the castle of example 46 is: an `.off` of about 1 GB and an `.obj`
-  that is under 100 MB once 7-Zip has compressed it -- [the castle on
+  of about 100 MB once 7-Zip has compressed it -- [the castle on
   Sketchfab](https://skfb.ly/pOnRS)). `save` and `stream` tidy the model on the way out, so
   nothing flickers in the viewer.
 * **Paper**: `paper/paper.md` (+ `references.bib`) is written for a

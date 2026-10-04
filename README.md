@@ -283,7 +283,7 @@ cobblestone, pane of stained glass and coat of arms is geometry.
 `python3 46_castle.py` streams the model to `castle.off` (about 1 GB) and
 `castle.obj` at once, tidied on the way (no repeated vertices, no
 repeated, buried or overlapping faces), under 100 colours; compressed with
-7-Zip the `.obj` is under 100 MB, which is what Sketchfab takes --
+7-Zip the `.obj` comes to about 100 MB, for Sketchfab --
 **[the castle on Sketchfab](https://skfb.ly/pOnRS)**.
 `python3 tools/coverage.py` lists which example uses which function; every
 public function is used by at least one, and every model fits the
@@ -377,5 +377,4 @@ If `add.py` is useful in your teaching or research, see
 
 ---
 
-Martynas Sabaliauskas, Vilnius University, Faculty of Mathematics and
-Informatics, Institute of Data Science and Digital Technologies.
+Martynas Sabaliauskas &middot; akatasis@gmail.com

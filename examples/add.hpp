@@ -2,7 +2,7 @@
 //  add.hpp -- build 3D models with nothing but C++ code.
 // ============================================================================
 //
-//  Version 2.0  |  Martynas Sabaliauskas (VU MIF DMSTI)  |  MIT licence
+//  Version 2.0  |  Martynas Sabaliauskas (akatasis@gmail.com)  |  MIT licence
 //
 //  The C++ twin of add.py: the same tiny, dependency-free 3D modelling
 //  kernel for teaching, as one header file.  Only the C++17 standard
