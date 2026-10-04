@@ -5033,7 +5033,7 @@ Py cloth_bolts(Py at, Py facing = MISSING_ARG, Py colours = MISSING_ARG, Py leng
 Py hanging_lantern(Py ring, Py name = MISSING_ARG);
 Py parrot(Py at, Py facing = MISSING_ARG, Py kind = MISSING_ARG, Py s = MISSING_ARG);
 Py bird_cage(Py hook, Py kind = MISSING_ARG, Py facing = MISSING_ARG);
-Py hammock(Py a__p, Py b, Py sag__p = MISSING_ARG, Py width__p = MISSING_ARG, Py colour = MISSING_ARG, Py sleeper = MISSING_ARG);
+Py hammock(Py a__p, Py b, Py sag__p = MISSING_ARG, Py width = MISSING_ARG, Py colour = MISSING_ARG);
 Py treasure(Py at, Py facing = MISSING_ARG, Py s = MISSING_ARG, Py seed = MISSING_ARG);
 Py rum_stillage(Py at, Py facing = MISSING_ARG, Py n = MISSING_ARG, Py r = MISSING_ARG, Py h = MISSING_ARG, Py seed = MISSING_ARG);
 Py spyglass(Py dy = MISSING_ARG);
@@ -46252,35 +46252,42 @@ Py scarecrow(Py at, Py facing) {
 
 // The master of a ship: a coat of dark blue to the knee with gold at
 // its hems, black hose and boots, a red chaperon, a black beard; his
-// right arm out, pointing the way, a rolled chart in his left hand held
-// out before him, the elbow out at his side; his sword at his left hip,
-// its scabbard hung from his belt by two straps.
+// right arm out, pointing the way, a rolled chart in his left fist held
+// out before him, the elbow out at his side, the wrist straight (the
+// chart across the fist, the palm up); his sword at his left hip, its
+// scabbard hung from his belt by two straps.
 Py captain(Py at, Py facing) {
     if (facing.missing()) facing = Py(0.0);
+    Py W;
     Py a;
     Py arms;
     Py c0;
     Py c1;
+    Py chart;
     Py d;
     Py down;
     Py edge;
     Py p_;
+    Py pole;
     Py q_;
     Py tip;
     Py top;
-    { Py _t14055 = tuple({list({Py(0.13), Py(1.1), Py(0.4)}), list({Py(0.33), Py(1.02), Py(0.17)})}); Vec _u14056 = unpack(_t14055, 2); c0 = _u14056[0]; c1 = _u14056[1]; }  // the chart, rolled
-    arms = tuple({tuple({list({Py(-0.22), Py(1.46), Py(0.5)}), list({Py(0.0), Py(0.25), Py(1)}), list({Py(-1), Py(-0.2), Py(-0.1)}), list({Py(0), Py(-1), Py(0)}), Py(0.015), K(tuple({Py(0.6), Py(0.015), Py(0.015), Py(0.015)}))}), tuple({S("grip"), rod_grip(_mix(c0, c1, Py(0.55)), vsub(c1, c0), list({Py(-0.3), Py(0.2), Py(1.0)}), Py(1), Py(0.035), list({Py(0), Py(1), Py(0)})), list({Py(1.0), Py(-0.35), Py(-0.5)})})});  // (the finger pointing)
+    { Py _t14055 = tuple({list({Py(0.158), Py(1.013), Py(0.217)}), list({Py(1.0), Py(-0.35), Py(-0.5)})}); Vec _u14056 = unpack(_t14055, 2); W = _u14056[0]; pole = _u14056[1]; }  // the left wrist, the elbow out at his
+    a = vunit(vsub(W, joint(list({Py(0.19), Py(1.42), Py(0.0)}), W, Py(0.3), Py(0.27), pole)));  // side (as person bends it from the
+    chart = hand_at_wrist(W, a, list({Py(0), Py(1), Py(0)}), Py(1), Py(0.035));  // shoulder), the fist straight on from
+    { Py _t14057 = tuple({_at(chart[0], chart[1], Py(-0.12)), _at(chart[0], chart[1], Py(0.195))}); Vec _u14058 = unpack(_t14057, 2); c0 = _u14058[0]; c1 = _u14058[1]; }  // the forearm; the chart, rolled
+    arms = tuple({tuple({list({Py(-0.22), Py(1.46), Py(0.5)}), list({Py(0.0), Py(0.25), Py(1)}), list({Py(-1), Py(-0.2), Py(-0.1)}), list({Py(0), Py(-1), Py(0)}), Py(0.015), K(tuple({Py(0.6), Py(0.015), Py(0.015), Py(0.015)}))}), tuple({S("grip"), chart, pole})});  // (the finger pointing)
     addpy::push();
     addpy::mesh(person(S("stand"), P[S("blue")], MISSING_ARG, MISSING_ARG, MISSING_ARG, arms, P[S("black")], P[S("black")], MISSING_ARG, MISSING_ARG, MISSING_ARG, P[S("gold")], MISSING_ARG, P[S("black")], tuple({S("chaperon"), P[S("red")]})));
     addpy::cylinder(c0, c1, Py(0.035), Py(10), P[S("linen")]);
-    { Py _t14057 = CAPTAIN_SWORD; Vec _u14058 = unpack(_t14057, 2); top = _u14058[0]; tip = _u14058[1]; }  // the sword in its scabbard, hung from
+    { Py _t14059 = CAPTAIN_SWORD; Vec _u14060 = unpack(_t14059, 2); top = _u14060[0]; tip = _u14060[1]; }  // the sword in its scabbard, hung from
     scabbard(True, MISSING_ARG, tuple({top, tip}));  // the belt by two straps: to the locket,
     d = vunit(vsub(top, tip));  // and to a ring a hand lower
-    for (Py _v14059 : each(K(tuple({K(tuple({Py(0.35), Py(0.05), Py(0.03)})), K(tuple({Py(-0.55), Py(0.2), Py(-0.03)}))})))) {
-        Vec _u14060 = unpack(_v14059, 3);
-        a = _u14060[0];
-        down = _u14060[1];
-        edge = _u14060[2];
+    for (Py _v14061 : each(K(tuple({K(tuple({Py(0.35), Py(0.05), Py(0.03)})), K(tuple({Py(-0.55), Py(0.2), Py(-0.03)}))})))) {
+        Vec _u14062 = unpack(_v14061, 3);
+        a = _u14062[0];
+        down = _u14062[1];
+        edge = _u14062[2];
         p_ = on_rings(TUNIC, Py(1.005), a, Py(2.3), Py(0.017))[0];  // (from under the belt's lower edge)
         q_ = _plus(tuple({_at(top, d, -down), list({Py(0.0), Py(0.0), edge})}));
         addpy::beam(list({p_[0], Py(0.985), p_[2]}), q_, Py(0.022), Py(0.004), P[S("wood_dark")], list({Py(1), Py(0), Py(0)}));
@@ -46307,25 +46314,27 @@ Py sailor(Py at, Py facing, Py task, Py seed) {
     Py i;
     Py on;
     Py tunic;
+    Py up;
     tunic = tuple({P[S("linen")], P[S("blue")], P[S("red")]})[mod(seed, Py(3))];
     cap = tuple({P[S("red")], P[S("blue")], P[S("wood_dark")]})[mod(seed + 1, Py(3))];
     bare = tuple({SHOE, tuple({P[S("skin")], P[S("skin")]})});
     addpy::push();
     if (task == S("coil")) {
-        arms = [&](Each _it14061) { Py s; Py _r14062 = list(); for (Py _x14063 : _it14061) { s = _x14063; L_(_r14062)->v.push_back(tuple({S("grip"), rod_grip(list({s * 0.155, Py(1.0), Py(0.345)}), list({Py(0), Py(1), Py(0)}), list({Py(0), Py(0), Py(1)}), s, Py(0.052), list({-s, Py(0), Py(0)})), None})); } return _r14062; }(each(K(tuple({Py(-1), Py(1)}))));
+        arms = [&](Each _it14063) { Py s; Py _r14064 = list(); for (Py _x14065 : _it14063) { s = _x14065; L_(_r14064)->v.push_back(tuple({S("grip"), rod_grip(list({s * 0.155, Py(1.0), Py(0.345)}), list({Py(0), Py(1), Py(0)}), list({Py(0), Py(0), Py(1)}), s, Py(0.052), list({-s, Py(0), Py(0)})), None})); } return _r14064; }(each(K(tuple({Py(-1), Py(1)}))));
         addpy::mesh(person(S("stand"), tunic, MISSING_ARG, MISSING_ARG, MISSING_ARG, arms, P[S("wood")], MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, tuple({S("cap"), cap}), MISSING_ARG, MISSING_ARG, bare));  // (round its sides)
         addpy::torus(list({Py(0), Py(1.0), Py(0.33)}), Py(0.16), Py(0.035), Py(14), Py(6), P[S("rope")], K(tuple({Py(0), Py(0), Py(1)})));
         addpy::torus(list({Py(0), Py(1.0), Py(0.36)}), Py(0.15), Py(0.03), Py(14), Py(6), P[S("rope")], K(tuple({Py(0), Py(0), Py(1)})));
     } else {
-        { Py _t14064 = tuple({list({Py(-0.12), Py(1.36), Py(0.25)}), list({Py(0.1), Py(0.07), Py(1.0)})}); Vec _u14065 = unpack(_t14064, 2); (*A__c) = _u14065[0]; (*B__c) = _u14065[1]; }  // the mop's handle, in both fists
-        on = func(sig("lambda", {"t"}, {MISSING_ARG}, 1), [A__c, B__c](Vec& _A_) -> Py { Py t = _A_[0]; return [&](Range _it14066) { Py k; Py _r14067 = list(); for (Py _x14068 : _it14066) { k = _x14068; L_(_r14067)->v.push_back((*A__c)[k] + ((*B__c)[k] - (*A__c)[k]) * t); } return _r14067; }(range(Py(3))); });
+        { Py _t14066 = tuple({list({Py(-0.12), Py(1.36), Py(0.25)}), list({Py(0.1), Py(0.07), Py(1.0)})}); Vec _u14067 = unpack(_t14066, 2); (*A__c) = _u14067[0]; (*B__c) = _u14067[1]; }  // the mop's handle, in both fists
+        on = func(sig("lambda", {"t"}, {MISSING_ARG}, 1), [A__c, B__c](Vec& _A_) -> Py { Py t = _A_[0]; return [&](Range _it14068) { Py k; Py _r14069 = list(); for (Py _x14070 : _it14068) { k = _x14070; L_(_r14069)->v.push_back((*A__c)[k] + ((*B__c)[k] - (*A__c)[k]) * t); } return _r14069; }(range(Py(3))); });
         d = vunit(vsub((*B__c), (*A__c)));
-        arms = tuple({tuple({S("grip"), rod_grip(call(on, {Py(0.06)}), d, list({Py(0.4), Py(0.2), Py(1.0)}), Py(-1), Py(0.02)), None}), tuple({S("grip"), rod_grip(call(on, {Py(0.17)}), d, list({Py(-0.3), Py(0.2), Py(1.0)}), Py(1), Py(0.02)), None})});  // (the left fist a little below the right: within reach, the arm across his chest)
-        addpy::mesh(person(S("stand"), tunic, MISSING_ARG, MISSING_ARG, MISSING_ARG, arms, P[S("wood")], MISSING_ARG, MISSING_ARG, Py(0.12), MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, tuple({S("cap"), cap}), MISSING_ARG, MISSING_ARG, bare));
+        up = func(sig("lambda", {"g_"}, {MISSING_ARG}, 1), [](Vec& _A_) -> Py { Py g_ = _A_[0]; return tuple({g_[0], _times(g_[1], Py(-1.0)), _times(g_[2], Py(-1.0)), g_[3]}); });  // (each fist turned half round about
+        arms = tuple({tuple({S("grip"), call(up, {rod_grip(call(on, {Py(0.06)}), d, list({Py(0.4), Py(0.2), Py(1.0)}), Py(-1), Py(0.02))}), None}), tuple({S("grip"), call(up, {rod_grip(call(on, {Py(0.17)}), d, list({Py(-1.0), Py(0.0), Py(0.7)}), Py(1), Py(0.02))}), None})});  // its wrist, the thumb up the handle; the left a little below
+        addpy::mesh(person(S("stand"), tunic, MISSING_ARG, MISSING_ARG, MISSING_ARG, arms, P[S("wood")], MISSING_ARG, MISSING_ARG, Py(0.12), MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, tuple({S("cap"), cap}), MISSING_ARG, MISSING_ARG, bare));  // the right)
         addpy::cylinder((*A__c), (*B__c), Py(0.02), Py(6), P[S("wood")]);
         addpy::ellipsoid(list({(*B__c)[0], Py(0.05), (*B__c)[2]}), list({Py(0.16), Py(0.05), Py(0.13)}), Py(4), P[S("rope")]);
-        for (Py _v14069 : range(Py(6))) {  // its yarns spread on the boards
-            i = _v14069;
+        for (Py _v14071 : range(Py(6))) {  // its yarns spread on the boards
+            i = _v14071;
             a = 2 * addpy::pi * i / 6;
             addpy::capsule(list({(*B__c)[0], Py(0.05), (*B__c)[2]}), list({(*B__c)[0] + 0.24 * addpy::cos(a), Py(0.02), (*B__c)[2] + 0.2 * addpy::sin(a)}), Py(0.018), Py(5), P[S("rope")]);
         }
@@ -46360,11 +46369,11 @@ Py hold_cask(Py at, Py r__p, Py h__p, Py facing, Py lying, Py seed__p, Py dark) 
     auto rc__c = std::make_shared<Py>();
     auto wood__c = std::make_shared<Py>();
     Py yh;
-    { Py _t14070 = K(tuple({Py(12), Py(0.025), Py(0.035)})); Vec _u14071 = unpack(_t14070, 3); (*k__c) = _u14071[0]; (*T__c) = _u14071[1]; yh = _u14071[2]; }
+    { Py _t14072 = K(tuple({Py(12), Py(0.025), Py(0.035)})); Vec _u14073 = unpack(_t14072, 3); (*k__c) = _u14073[0]; (*T__c) = _u14073[1]; yh = _u14073[2]; }
     (*rc__c) = 0.86 * (*r__c);
     R = func(sig("lambda", {"f"}, {MISSING_ARG}, 1), [r__c](Vec& _A_) -> Py { Py f = _A_[0]; return (*r__c) * (0.86 + 0.14 * (1 - pow_(2 * f - 1, Py(2)))); });
     (*HOOPS__c) = K(tuple({K(tuple({Py(0.05), Py(0.11)})), K(tuple({Py(0.2), Py(0.28)})), K(tuple({Py(0.72), Py(0.8)})), K(tuple({Py(0.89), Py(0.95)}))}));
-    prof = list({list({Py(0.0), yh}), list({(*rc__c) - (*T__c), yh}), list({(*rc__c) - (*T__c), Py(0.0)}), list({(*rc__c), Py(0.0)})}) + [&](Each _it14072) { Py f; Py _r14073 = list(); for (Py _x14074 : _it14072) { f = _x14074; L_(_r14073)->v.push_back(list({call(R, {f}), f * (*h__c)})); } return _r14073; }(each(K(tuple({Py(0.05), Py(0.11), Py(0.2), Py(0.28), Py(0.5), Py(0.72), Py(0.8), Py(0.89), Py(0.95)})))) + list({list({(*rc__c), (*h__c)}), list({(*rc__c) - (*T__c), (*h__c)}), list({(*rc__c) - (*T__c), (*h__c) - yh}), list({Py(0.0), (*h__c) - yh})});
+    prof = list({list({Py(0.0), yh}), list({(*rc__c) - (*T__c), yh}), list({(*rc__c) - (*T__c), Py(0.0)}), list({(*rc__c), Py(0.0)})}) + [&](Each _it14074) { Py f; Py _r14075 = list(); for (Py _x14076 : _it14074) { f = _x14076; L_(_r14075)->v.push_back(list({call(R, {f}), f * (*h__c)})); } return _r14075; }(each(K(tuple({Py(0.05), Py(0.11), Py(0.2), Py(0.28), Py(0.5), Py(0.72), Py(0.8), Py(0.89), Py(0.95)})))) + list({list({(*rc__c), (*h__c)}), list({(*rc__c) - (*T__c), (*h__c)}), list({(*rc__c) - (*T__c), (*h__c) - yh}), list({Py(0.0), (*h__c) - yh})});
     addpy::push();
     lathe(prof, list({Py(0), Py(0), Py(0)}), (*k__c), P[S("wood")]);
     (*wood__c) = (truthy(dark) ? S("wood_dark") : S("wood"));
@@ -46373,11 +46382,11 @@ Py hold_cask(Py at, Py r__p, Py h__p, Py facing, Py lying, Py seed__p, Py dark) 
         Py f;
         Py rq;
         // Iron on the hoops, a shade to each stave, light boards on the heads.
-        { Py _t14075 = tuple({addpy::sqrt(q[0] * q[0] + q[2] * q[2]), q[1] / (*h__c)}); Vec _u14076 = unpack(_t14075, 2); rq = _u14076[0]; f = _u14076[1]; }
+        { Py _t14077 = tuple({addpy::sqrt(q[0] * q[0] + q[2] * q[2]), q[1] / (*h__c)}); Vec _u14078 = unpack(_t14077, 2); rq = _u14078[0]; f = _u14078[1]; }
         if (rq < ((*rc__c) - (*T__c) - 0.003)) {
             return shade_of(S("wood_light"), (*seed__c));
         }
-        if ((rq > ((*rc__c) - 0.004)) && ([&](Each _it14077) -> bool { Py a; Py b; for (Py _x14081 : _it14077) { Vec _u14082 = unpack(_x14081, 2); a = _u14082[0]; b = _u14082[1]; if (([&]() -> bool { Py _t14078 = a; Py _t14079 = f; if (!(_t14078 < _t14079)) return false; Py _t14080 = b; return _t14079 < _t14080; }())) return true; } return false; }(each((*HOOPS__c))))) {
+        if ((rq > ((*rc__c) - 0.004)) && ([&](Each _it14079) -> bool { Py a; Py b; for (Py _x14083 : _it14079) { Vec _u14084 = unpack(_x14083, 2); a = _u14084[0]; b = _u14084[1]; if (([&]() -> bool { Py _t14080 = a; Py _t14081 = f; if (!(_t14080 < _t14081)) return false; Py _t14082 = b; return _t14081 < _t14082; }())) return true; } return false; }(each((*HOOPS__c))))) {
             return P[S("iron")];
         }
         return shade_of((*wood__c), int_(mod(addpy::atan2(q[2], q[0]) + 2 * addpy::pi, 2 * addpy::pi) / (2 * addpy::pi / (*k__c))) + (*seed__c));
@@ -46396,7 +46405,7 @@ Py hold_cask(Py at, Py r__p, Py h__p, Py facing, Py lying, Py seed__p, Py dark) 
 Py stone_jug(Py at, Py colour, Py s) {
     if (colour.missing()) colour = None;
     if (s.missing()) s = Py(1.0);
-    colour = [&]() -> Py { Py _t14083 = colour; if (truthy(_t14083)) return _t14083; _t14083 = P[S("brick")]; return _t14083; }();
+    colour = [&]() -> Py { Py _t14085 = colour; if (truthy(_t14085)) return _t14085; _t14085 = P[S("brick")]; return _t14085; }();
     lathe(list({list({Py(0.0), Py(0.0)}), list({Py(0.12), Py(0.0)}), list({Py(0.17), Py(0.08)}), list({Py(0.19), Py(0.2)}), list({Py(0.17), Py(0.32)}), list({Py(0.1), Py(0.4)}), list({Py(0.075), Py(0.45)}), list({Py(0.085), Py(0.5)}), list({Py(0.065), Py(0.5)}), list({Py(0.06), Py(0.46)}), list({Py(0.0), Py(0.46)})}), at, Py(10), colour, s);
     addpy::cylinder(list({at[0], at[1] + 0.455 * s, at[2]}), list({at[0], at[1] + 0.52 * s, at[2]}), 0.055 * s, Py(8), P[S("wood_light")]);  // the cork
     addpy::polyline(list({list({at[0] + 0.07 * s, at[1] + 0.47 * s, at[2]}), list({at[0] + 0.15 * s, at[1] + 0.47 * s, at[2]}), list({at[0] + 0.2 * s, at[1] + 0.38 * s, at[2]}), list({at[0] + 0.175 * s, at[1] + 0.29 * s, at[2]})}), 0.016 * s, Py(4), colour);
@@ -46409,7 +46418,7 @@ Py grain_sack(Py at, Py facing, Py colour, Py s) {
     if (facing.missing()) facing = Py(0.0);
     if (colour.missing()) colour = None;
     if (s.missing()) s = Py(1.0);
-    colour = [&]() -> Py { Py _t14084 = colour; if (truthy(_t14084)) return _t14084; _t14084 = P[S("sand")]; return _t14084; }();
+    colour = [&]() -> Py { Py _t14086 = colour; if (truthy(_t14086)) return _t14086; _t14086 = P[S("sand")]; return _t14086; }();
     addpy::push();
     lathe(list({list({Py(0.0), Py(0.0)}), list({Py(0.17), Py(0.0)}), list({Py(0.24), Py(0.05)}), list({Py(0.27), Py(0.18)}), list({Py(0.26), Py(0.34)}), list({Py(0.2), Py(0.47)}), list({Py(0.08), Py(0.56)}), list({Py(0.06), Py(0.6)}), list({Py(0.1), Py(0.68)}), list({Py(0.0), Py(0.66)})}), list({Py(0), Py(0), Py(0)}), Py(10), colour, s);
     addpy::torus(list({Py(0), 0.58 * s, Py(0)}), 0.064 * s, 0.012 * s, Py(10), Py(3), P[S("rope")]);
@@ -46454,21 +46463,21 @@ Py cloth_bolts(Py at, Py facing, Py colours, Py length, Py r, Py rows) {
     Py w;
     Py y;
     Py z;
-    colours = [&]() -> Py { Py _t14085 = colours; if (truthy(_t14085)) return _t14085; _t14085 = tuple({P[S("red")], P[S("blue")], P[S("linen")], P[S("purple")], P[S("cushion")], P[S("leaf_dark")], P[S("rose")], P[S("white")], P[S("wine")]}); return _t14085; }();
+    colours = [&]() -> Py { Py _t14087 = colours; if (truthy(_t14087)) return _t14087; _t14087 = tuple({P[S("red")], P[S("blue")], P[S("linen")], P[S("purple")], P[S("cushion")], P[S("leaf_dark")], P[S("rose")], P[S("white")], P[S("wine")]}); return _t14087; }();
     addpy::push();
     w = 2 * r + 0.004;
-    for (Py _v14086 : each(K(tuple({Py(-1), Py(1)})))) {  // the pallet: two timbers across
-        sz = _v14086;
+    for (Py _v14088 : each(K(tuple({Py(-1), Py(1)})))) {  // the pallet: two timbers across
+        sz = _v14088;
         addpy::cuboid(list({sz * (length / 2 - 0.2), Py(0.04), Py(0)}), list({Py(0.12), Py(0.08), rows[0] * w + 0.1}), P[S("wood_dark")]);
     }
     c = Py(0);
-    for (Py _v14087 : each(enumerate_(rows, Py(0)))) {
-        Vec _u14088 = unpack(_v14087, 2);
-        j = _u14088[0];
-        m = _u14088[1];
+    for (Py _v14089 : each(enumerate_(rows, Py(0)))) {
+        Vec _u14090 = unpack(_v14089, 2);
+        j = _u14090[0];
+        m = _u14090[1];
         y = 0.08 + r + 0.001 + j * w * addpy::sqrt(Py(3)) / 2;
-        for (Py _v14089 : range(m)) {
-            i = _v14089;
+        for (Py _v14091 : range(m)) {
+            i = _v14091;
             z = (i - (m - 1) / 2.0) * w;
             addpy::cylinder(list({(-length) / 2, y, z}), list({length / 2, y, z}), r, Py(10), colours[mod(c, len(colours))]);
             addpy::cylinder(list({(-length) / 2 - 0.05, y, z}), list({length / 2 + 0.05, y, z}), Py(0.025), Py(6), P[S("wood_light")]);  // the core
@@ -46489,19 +46498,19 @@ Py hanging_lantern(Py ring, Py name) {
     Py x;
     Py y;
     Py z;
-    { Py _t14090 = tuple({ring[0], ring[1] - LANTERN_RING, ring[2]}); Vec _u14091 = unpack(_t14090, 3); x = _u14091[0]; y = _u14091[1]; z = _u14091[2]; }
+    { Py _t14092 = tuple({ring[0], ring[1] - LANTERN_RING, ring[2]}); Vec _u14093 = unpack(_t14092, 3); x = _u14093[0]; y = _u14093[1]; z = _u14093[2]; }
     addpy::cuboid(list({x, y + 0.02, z}), list({Py(0.3), Py(0.04), Py(0.3)}), P[name]);
-    for (Py _v14092 : each(K(tuple({Py(-1), Py(1)})))) {
-        sx = _v14092;
-        for (Py _v14093 : each(K(tuple({Py(-1), Py(1)})))) {
-            sz = _v14093;
+    for (Py _v14094 : each(K(tuple({Py(-1), Py(1)})))) {
+        sx = _v14094;
+        for (Py _v14095 : each(K(tuple({Py(-1), Py(1)})))) {
+            sz = _v14095;
             addpy::cuboid(list({x + sx * 0.14, y + 0.23, z + sz * 0.14}), list({Py(0.025), Py(0.38), Py(0.025)}), P[name]);
         }
     }
-    for (Py _v14094 : each(K(tuple({K(tuple({Py(1), Py(0)})), K(tuple({Py(-1), Py(0)})), K(tuple({Py(0), Py(1)})), K(tuple({Py(0), Py(-1)}))})))) {
-        Vec _u14095 = unpack(_v14094, 2);
-        sx = _u14095[0];
-        sz = _u14095[1];
+    for (Py _v14096 : each(K(tuple({K(tuple({Py(1), Py(0)})), K(tuple({Py(-1), Py(0)})), K(tuple({Py(0), Py(1)})), K(tuple({Py(0), Py(-1)}))})))) {
+        Vec _u14097 = unpack(_v14096, 2);
+        sx = _u14097[0];
+        sz = _u14097[1];
         addpy::cuboid(list({x + sx * 0.14, y + 0.23, z + sz * 0.14}), list({(truthy(sz) ? Py(0.255) : Py(0.006)), Py(0.38), (truthy(sx) ? Py(0.255) : Py(0.006))}), GLASS);
     }
     addpy::mesh(addpy::move(addpy::rotateY(addpy::make([&] { addpy::cone(list({Py(0), Py(0.42), Py(0)}), list({Py(0), Py(0.6), Py(0)}), Py(0.24), Py(4), P[name]); }), addpy::pi / 4), list({x, y, z})));
@@ -46533,14 +46542,14 @@ Py parrot(Py at, Py facing, Py kind, Py s) {
     Py sd;
     Py tip;
     Py x;
-    { Py _t14096 = (kind == 0 ? tuple({P[S("red")], P[S("dandelion")], P[S("blue")], P[S("blue")], P[S("white")]}) : tuple({P[S("leaf")], P[S("leaf")], P[S("blue")], P[S("dandelion")], P[S("dandelion")]})); Vec _u14097 = unpack(_t14096, 5); body = _u14097[0]; cover = _u14097[1]; flight = _u14097[2]; tip = _u14097[3]; face = _u14097[4]; }
+    { Py _t14098 = (kind == 0 ? tuple({P[S("red")], P[S("dandelion")], P[S("blue")], P[S("blue")], P[S("white")]}) : tuple({P[S("leaf")], P[S("leaf")], P[S("blue")], P[S("dandelion")], P[S("dandelion")]})); Vec _u14099 = unpack(_t14098, 5); body = _u14099[0]; cover = _u14099[1]; flight = _u14099[2]; tip = _u14099[3]; face = _u14099[4]; }
     addpy::push();
-    for (Py _v14098 : each(K(tuple({Py(-1), Py(1)})))) {
-        sd = _v14098;
+    for (Py _v14100 : each(K(tuple({Py(-1), Py(1)})))) {
+        sd = _v14100;
         x = sd * 0.024;
         addpy::cylinder(list({x, Py(0.01), Py(-0.004)}), list({sd * 0.02, Py(0.055), Py(-0.01)}), Py(0.009), Py(5), P[S("rock")]);  // the legs,
-        for (Py _v14099 : each(K(tuple({Py(-1), Py(1)})))) {  // the toes round the bar
-            dz = _v14099;
+        for (Py _v14101 : each(K(tuple({Py(-1), Py(1)})))) {  // the toes round the bar
+            dz = _v14101;
             addpy::polyline(list({list({x - sd * 0.006, Py(0.006), Py(0.0)}), list({x, Py(0.004), dz * 0.016}), list({x + sd * 0.004, Py(-0.012), dz * 0.017})}), Py(0.004), Py(4), P[S("rock")]);
         }
     }
@@ -46550,8 +46559,8 @@ Py parrot(Py at, Py facing, Py kind, Py s) {
     if (kind == 1) {
         addpy::ellipsoid(list({Py(0), Py(0.262), Py(0.045)}), list({Py(0.03), Py(0.014), Py(0.028)}), Py(2), P[S("red")]);  // (the Amazon's red brow)
     }
-    for (Py _v14100 : each(K(tuple({Py(-1), Py(1)})))) {
-        sd = _v14100;
+    for (Py _v14102 : each(K(tuple({Py(-1), Py(1)})))) {
+        sd = _v14102;
         addpy::ellipsoid(list({sd * 0.03, Py(0.222), Py(0.055)}), list({Py(0.012), Py(0.022), Py(0.018)}), Py(2), face);  // the bare cheeks,
         addpy::sphere(list({sd * 0.037, Py(0.236), Py(0.05)}), Py(0.008), Py(2), P[S("black")]);  // the eyes
         W = addpy::make([&] { addpy::ellipsoid(list({Py(0), Py(0), Py(0)}), list({Py(0.017), Py(0.05), Py(0.04)}), Py(2), cover); });  // the wings, folded:
@@ -46583,15 +46592,15 @@ Py bird_cage(Py hook, Py kind, Py facing) {
     Py top;
     Py y;
     addpy::push();
-    { Py _t14101 = K(tuple({Py(0.285), Py(0.81)})); Vec _u14102 = unpack(_t14101, 2); R = _u14102[0]; H = _u14102[1]; }
+    { Py _t14103 = K(tuple({Py(0.285), Py(0.81)})); Vec _u14104 = unpack(_t14103, 2); R = _u14104[0]; H = _u14104[1]; }
     addpy::cylinder(list({Py(0), Py(0), Py(0)}), list({Py(0), Py(0.035), Py(0)}), Py(0.3), Py(16), P[S("wood_dark")]);  // the tray
-    for (Py _v14103 : each(K(tuple({Py(0.045), Py(0.3), Py(0.55)})))) {  // the hoops
-        y = _v14103;
+    for (Py _v14105 : each(K(tuple({Py(0.045), Py(0.3), Py(0.55)})))) {  // the hoops
+        y = _v14105;
         addpy::torus(list({Py(0), y, Py(0)}), R, Py(0.007), Py(12), Py(3), P[S("iron")]);
     }
-    for (Py _v14104 : range(Py(12))) {  // the wires
-        i = _v14104;
-        { Py _t14105 = tuple({addpy::cos(2 * addpy::pi * (i + 0.5) / 12), addpy::sin(2 * addpy::pi * (i + 0.5) / 12)}); Vec _u14106 = unpack(_t14105, 2); c = _u14106[0]; s = _u14106[1]; }
+    for (Py _v14106 : range(Py(12))) {  // the wires
+        i = _v14106;
+        { Py _t14107 = tuple({addpy::cos(2 * addpy::pi * (i + 0.5) / 12), addpy::sin(2 * addpy::pi * (i + 0.5) / 12)}); Vec _u14108 = unpack(_t14107, 2); c = _u14108[0]; s = _u14108[1]; }
         addpy::polyline(list({list({R * c, Py(0.035), R * s}), list({R * c, Py(0.55), R * s}), list({0.25 * c, Py(0.68), 0.25 * s}), list({0.16 * c, Py(0.77), 0.16 * s}), list({0.05 * c, H, 0.05 * s})}), Py(0.006), Py(3), P[S("iron")]);
     }
     addpy::torus(list({Py(0), H, Py(0)}), Py(0.05), Py(0.009), Py(10), Py(3), P[S("iron")]);  // the crown ring
@@ -46610,37 +46619,25 @@ Py bird_cage(Py hook, Py kind, Py facing) {
 // A sailor's hammock of canvas slung between two hooks ``a`` and ``b``
 // (screwed into beams overhead): at each end a lanyard down to an iron
 // ring and seven clews fanning out from the ring to the canvas, which
-// hangs between them in a deep curve and closes round whoever lies in it.
-// With ``sleeper`` (the colour of his blanket) a man asleep in it: his
-// head on a rolled jacket at the ``a`` end, the blanket over him.
-Py hammock(Py a__p, Py b, Py sag__p, Py width__p, Py colour, Py sleeper) {
+// hangs between them in a deep curve, empty (its sailor on watch).
+Py hammock(Py a__p, Py b, Py sag__p, Py width, Py colour) {
     auto a__c = std::make_shared<Py>(a__p);
     if (sag__p.missing()) sag__p = Py(0.55);
     auto sag__c = std::make_shared<Py>(sag__p);
-    if (width__p.missing()) width__p = Py(0.85);
-    auto width__c = std::make_shared<Py>(width__p);
+    if (width.missing()) width = Py(0.85);
     if (colour.missing()) colour = None;
-    if (sleeper.missing()) sleeper = None;
     Py L___;
-    auto Lc__c = std::make_shared<Py>();
-    Py O;
     Py at_;
     auto d__c = std::make_shared<Py>();
     auto e0__c = std::make_shared<Py>();
     auto e1__c = std::make_shared<Py>();
     Py h;
     Py hook_;
-    Py hump;
     Py i;
     Py inner;
-    auto inside__c = std::make_shared<Py>();
-    auto jy__c = std::make_shared<Py>();
-    Py n_;
     Py outer;
-    auto rest__c = std::make_shared<Py>();
     Py ring;
     Py rings;
-    auto sag___c = std::make_shared<Py>();
     Py sgn;
     auto side___c = std::make_shared<Py>();
     auto top__c = std::make_shared<Py>();
@@ -46648,81 +46645,39 @@ Py hammock(Py a__p, Py b, Py sag__p, Py width__p, Py colour, Py sleeper) {
     Py v;
     Py vs;
     Py w;
-    colour = [&]() -> Py { Py _t14107 = colour; if (truthy(_t14107)) return _t14107; _t14107 = P[S("linen")]; return _t14107; }();
+    colour = [&]() -> Py { Py _t14109 = colour; if (truthy(_t14109)) return _t14109; _t14109 = P[S("linen")]; return _t14109; }();
     (*d__c) = vunit(vsub(b, (*a__c)));
     (*side___c) = vunit(vcross((*d__c), list({Py(0), Py(1), Py(0)})));
     L___ = vlen(vsub(b, (*a__c)));
-    { Py _t14108 = tuple({Py(0.42), L___ - 0.42}); Vec _u14109 = unpack(_t14108, 2); (*e0__c) = _u14109[0]; (*e1__c) = _u14109[1]; }  // (the canvas's ends, along the line)
+    { Py _t14110 = tuple({Py(0.42), L___ - 0.42}); Vec _u14111 = unpack(_t14110, 2); (*e0__c) = _u14111[0]; (*e1__c) = _u14111[1]; }  // (the canvas's ends, along the line)
     (*top__c) = min2((*a__c)[1], b[1]) - 0.36;  // (their height)
     at_ = func(sig("lambda", {"u", "v", "dy"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG}, 3), [a__c, d__c, e0__c, e1__c, sag__c, side___c, top__c](Vec& _A_) -> Py { Py u = _A_[0]; Py v = _A_[1]; Py dy = _A_[2]; return list({(*a__c)[0] + (*d__c)[0] * ((*e0__c) + ((*e1__c) - (*e0__c)) * u) + (*side___c)[0] * v, (*top__c) - (*sag__c) * addpy::sin(addpy::pi * u) + dy, (*a__c)[2] + (*d__c)[2] * ((*e0__c) + ((*e1__c) - (*e0__c)) * u) + (*side___c)[2] * v}); });
     rings = list({});
-    for (Py _v14110 : range(Py(17))) {  // (close enough together that the canvas
-        i = _v14110;
+    for (Py _v14112 : range(Py(17))) {  // (close enough together that the canvas
+        i = _v14112;
         u = i / 16.0;  // follows its curve: nothing lies in it)
-        w = (*width__c) / 2 * (0.3 + 0.7 * addpy::sin(addpy::pi * u));
+        w = width / 2 * (0.3 + 0.7 * addpy::sin(addpy::pi * u));
         h = 0.06 + 0.2 * addpy::sin(addpy::pi * u);
         vs = list({Py(-1.0), Py(-0.66), Py(-0.33), Py(0.0), Py(0.33), Py(0.66), Py(1.0)});
-        outer = [&](Each _it14111) { Py v; Py _r14112 = list(); for (Py _x14113 : _it14111) { v = _x14113; L_(_r14112)->v.push_back(call(at_, {u, w * v, h * v * v})); } return _r14112; }(each(vs));
-        inner = [&](Each _it14114) { Py v; Py _r14115 = list(); for (Py _x14116 : _it14114) { v = _x14116; L_(_r14115)->v.push_back(call(at_, {u, w * v * 0.97, h * v * v + 0.012})); } return _r14115; }(each(slice(vs, None, None, Py(-1))));
+        outer = [&](Each _it14113) { Py v; Py _r14114 = list(); for (Py _x14115 : _it14113) { v = _x14115; L_(_r14114)->v.push_back(call(at_, {u, w * v, h * v * v})); } return _r14114; }(each(vs));
+        inner = [&](Each _it14116) { Py v; Py _r14117 = list(); for (Py _x14118 : _it14116) { v = _x14118; L_(_r14117)->v.push_back(call(at_, {u, w * v * 0.97, h * v * v + 0.012})); } return _r14117; }(each(slice(vs, None, None, Py(-1))));
         rings.append(outer + inner);
     }
     addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft(rings, colour); })));
-    for (Py _v14117 : each(tuple({tuple({(*a__c), Py(0.0)}), tuple({b, Py(1.0)})}))) {  // the clews, the ring, the lanyard, the hook
-        Vec _u14118 = unpack(_v14117, 2);
-        hook_ = _u14118[0];
-        u = _u14118[1];
+    for (Py _v14119 : each(tuple({tuple({(*a__c), Py(0.0)}), tuple({b, Py(1.0)})}))) {  // the clews, the ring, the lanyard, the hook
+        Vec _u14120 = unpack(_v14119, 2);
+        hook_ = _u14120[0];
+        u = _u14120[1];
         sgn = (u == 0 ? Py(1) : Py(-1));
         ring = list({hook_[0] + (*d__c)[0] * sgn * 0.16, (*top__c) + 0.12, hook_[2] + (*d__c)[2] * sgn * 0.16});
-        w = (*width__c) / 2 * 0.3;
-        for (Py _v14119 : each(K(tuple({Py(-1.0), Py(-0.66), Py(-0.33), Py(0.0), Py(0.33), Py(0.66), Py(1.0)})))) {
-            v = _v14119;
+        w = width / 2 * 0.3;
+        for (Py _v14121 : each(K(tuple({Py(-1.0), Py(-0.66), Py(-0.33), Py(0.0), Py(0.33), Py(0.66), Py(1.0)})))) {
+            v = _v14121;
             addpy::cylinder(ring, call(at_, {u, w * v, 0.06 * v * v + 0.006}), Py(0.005), Py(3), P[S("rope")]);
         }
         addpy::torus(ring, Py(0.035), Py(0.008), Py(8), Py(3), P[S("iron")], (*side___c));
         addpy::cylinder(list({ring[0], ring[1] + 0.035, ring[2]}), list({hook_[0], hook_[1] - 0.04, hook_[2]}), Py(0.009), Py(4), P[S("rope")]);
         addpy::torus(list({hook_[0], hook_[1] - 0.0245, hook_[2]}), Py(0.018), Py(0.005), Py(8), Py(3), P[S("iron")], (*side___c));
-    }
-    if (truthy(sleeper)) {
-        rings = list({});  // the blanket over him, lying in the canvas,
-        for (Py _v14120 : range(Py(2), Py(8))) {  // and his head on a rolled jacket
-            i = _v14120;
-            u = i / 8.0;
-            w = (*width__c) / 2 * (0.3 + 0.7 * addpy::sin(addpy::pi * u));
-            h = 0.06 + 0.2 * addpy::sin(addpy::pi * u);
-            hump = 0.13 * min2(Py(1.0), 3 * addpy::sin(addpy::pi * (u - 0.2) / 0.8));
-            rings.append([&](Range _it14121) { Py j; Py _r14122 = list(); for (Py _x14123 : _it14121) { j = _x14123; L_(_r14122)->v.push_back(call(at_, {u, 0.8 * w * addpy::cos(addpy::pi * j / 6), h * pow_(0.8 * addpy::cos(addpy::pi * j / 6) / 0.97, Py(2)) + 0.024 + hump * addpy::sin(addpy::pi * j / 6)})); } return _r14122; }(range(Py(7))));
-        }
-        addpy::loft(rings, sleeper);
-        (*Lc__c) = (*e1__c) - (*e0__c);
-        (*inside__c) = func(sig("inside", {"u", "x"}, {MISSING_ARG, MISSING_ARG}, 2), [sag__c, width__c](Vec& _A_) -> Py {
-            Py u = _A_[0];
-            Py x = _A_[1];
-            Py h;
-            Py w;
-            u = min2(Py(1.0), max2(Py(0.0), u));  // is, over its middle line)
-            { Py _t14124 = tuple({(*width__c) / 2 * (0.3 + 0.7 * addpy::sin(addpy::pi * u)), 0.06 + 0.2 * addpy::sin(addpy::pi * u)}); Vec _u14125 = unpack(_t14124, 2); w = _u14125[0]; h = _u14125[1]; }
-            return (-(*sag__c)) * addpy::sin(addpy::pi * u) + h * pow_(x / (0.97 * w), Py(2)) + 0.012 + 0.004;
-        });
-        (*jy__c) = Py(0.0);  // the rolled jacket, lying on the
-        while ([&](Each _it14126) -> bool { Py q; Py x; for (Py _x14130 : _it14126) { q = _x14130; for (Py _x14131 : each(K(tuple({Py(-0.12), Py(-0.06), Py(0.0), Py(0.06), Py(0.12)})))) { x = _x14131; if (((*jy__c) - (*sag__c) * addpy::sin(addpy::pi * 0.1) + 0.06 * addpy::sin(q) < call((*inside__c), {0.1 + 0.06 * addpy::cos(q) / (*Lc__c), x}))) return true; } } return false; }(each([&](Range _it14127) { Py i; Py _r14128 = list(); for (Py _x14129 : _it14127) { i = _x14129; L_(_r14128)->v.push_back(2 * addpy::pi * i / 16); } return _r14128; }(range(Py(16)))))) {  // canvas where it curves up, and his
-            iadd((*jy__c), Py(0.002));
-        }
-        [&] { Py _a14132 = call(at_, {Py(0.1), Py(-0.12), (*jy__c)}); Py _a14133 = call(at_, {Py(0.1), Py(0.12), (*jy__c)}); Py _a14134 = Py(0.06); Py _a14135 = Py(8); Py _a14136 = P[S("wood")]; return addpy::cylinder(_a14132, _a14133, _a14134, _a14135, _a14136); }();
-        (*sag___c) = func(sig("lambda", {"u"}, {MISSING_ARG}, 1), [sag__c](Vec& _A_) -> Py { Py u = _A_[0]; return (-(*sag__c)) * addpy::sin(addpy::pi * u); });  // head on it, asleep (in a frame at
-        O = call(at_, {Py(0.17), Py(0.0), Py(0.0)});  // the canvas's middle there: x
-        // across, y up, z along)
-        (*rest__c) = func(sig("rest", {"p"}, {MISSING_ARG}, 1), [Lc__c, inside__c, jy__c, sag___c](Vec& _A_) -> Py {
-            Py p = _A_[0];
-            Py canvas;
-            Py jacket;
-            canvas = p[1] - ([&] { Py _t14137 = call((*inside__c), {0.17 + p[2] / (*Lc__c), p[0]}); Py _t14138 = call((*sag___c), {Py(0.17)}); return _t14137 - _t14138; }());
-            jacket = vlen(list({Py(0.0), p[1] - ([&] { Py _t14139 = (*jy__c) + call((*sag___c), {Py(0.1)}); Py _t14140 = call((*sag___c), {Py(0.17)}); return _t14139 - _t14140; }()), p[2] + 0.07 * (*Lc__c)})) - 0.06;
-            return min2(canvas, jacket);
-        });
-        n_ = vsub(call(at_, {0.25 + 0.06 / (*Lc__c), Py(0.0), Py(0.08)}), O);  // (his neck goes in under the blanket)
-        addpy::push();
-        lying_head(P[S("wood_dark")], None, func(sig("lambda", {"p"}, {MISSING_ARG}, 1), [rest__c](Vec& _A_) -> Py { Py p = _A_[0]; return call((*rest__c), {list({p[0] * LIFE, p[1] * LIFE, p[2] * LIFE})}) / LIFE; }), list({Py(0.0), Py(0.0)}), MISSING_ARG, list({_dot(n_, (*side___c)) * Py(-1.0) / LIFE, n_[1] / LIFE, _dot(n_, (*d__c)) / LIFE}));
-        addpy::mesh(frame_mesh(addpy::stretch(addpy::pop(), list({LIFE}) * 3, K(tuple({Py(0), Py(0), Py(0)}))), O, _times((*side___c), Py(-1.0)), list({Py(0), Py(1), Py(0)}), (*d__c)));
     }
     return None;
 }
@@ -46792,9 +46747,9 @@ Py treasure(Py at, Py facing, Py s, Py seed) {
     addpy::push();
     chest(list({Py(0), 0.01 * s + 0.001, Py(0)}), Py(0.0), True, s, S("gold"));
     (*y0____c) = 0.81 * s + 0.001;  // (the chest's top: the brim)
-    { Py _t14141 = tuple({0.74 * s, 0.44 * s, Py(0.15)}); Vec _u14142 = unpack(_t14141, 3); (*A__c) = _u14142[0]; (*Bz__c) = _u14142[1]; (*Hm__c) = _u14142[2]; }
-    { Py _t14143 = tuple({0.8 * s - 0.034, 0.5 * s - 0.034}); Vec _u14144 = unpack(_t14143, 2); X_ = _u14144[0]; Z_ = _u14144[1]; }  // (no coin over the brim's edge)
-    { Py _t14145 = K(tuple({Py(0.03), Py(0.004), Py(0.002), Py(0.007)})); Vec _u14146 = unpack(_t14145, 4); RC = _u14146[0]; TC = _u14146[1]; GAP = _u14146[2]; LAY = _u14146[3]; }  // a coin's radius and thickness; the layers
+    { Py _t14122 = tuple({0.74 * s, 0.44 * s, Py(0.15)}); Vec _u14123 = unpack(_t14122, 3); (*A__c) = _u14123[0]; (*Bz__c) = _u14123[1]; (*Hm__c) = _u14123[2]; }
+    { Py _t14124 = tuple({0.8 * s - 0.034, 0.5 * s - 0.034}); Vec _u14125 = unpack(_t14124, 2); X_ = _u14125[0]; Z_ = _u14125[1]; }  // (no coin over the brim's edge)
+    { Py _t14126 = K(tuple({Py(0.03), Py(0.004), Py(0.002), Py(0.007)})); Vec _u14127 = unpack(_t14126, 4); RC = _u14127[0]; TC = _u14127[1]; GAP = _u14127[2]; LAY = _u14127[3]; }  // a coin's radius and thickness; the layers
     (*mound__c) = func(sig("mound", {"x", "z"}, {MISSING_ARG, MISSING_ARG}, 2), [A__c, Bz__c, Hm__c, y0____c](Vec& _A_) -> Py {
         Py x = _A_[0];
         Py z = _A_[1];
@@ -46814,28 +46769,28 @@ Py treasure(Py at, Py facing, Py s, Py seed) {
         Py off = _A_[3];
         Py n;
         Py y;
-        { Py _t14147 = call((*mound__c), {x, z}); Vec _u14148 = unpack(_t14147, 2); y = _u14148[0]; n = _u14148[1]; }  // the heap ``off`` out along its normal)
+        { Py _t14128 = call((*mound__c), {x, z}); Vec _u14129 = unpack(_t14128, 2); y = _u14129[0]; n = _u14129[1]; }  // the heap ``off`` out along its normal)
         if (n[1] < 0.99999) {
             M = addpy::rotate(M, vunit(vcross(list({Py(0), Py(1), Py(0)}), n)), addpy::acos(max2(Py(-1.0), min2(Py(1.0), n[1]))));
         }
         return addpy::move(M, list({x + n[0] * off, y + n[1] * off, z + n[2] * off}));
     });
     coin = addpy::make([&] { addpy::cylinder(list({Py(0), Py(0), Py(0)}), list({Py(0), TC, Py(0)}), RC, Py(8), P[S("gold")]); });
-    for (Py _v14149 : range(Py(6))) {
-        layer = _v14149;
-        { Py _t14150 = tuple({list({}), dict({})}); Vec _u14151 = unpack(_t14150, 2); placed = _u14151[0]; grid = _u14151[1]; }
-        for (Py _v14152 : range(Py(2000))) {
-            k = _v14152;
-            { Py _t14153 = tuple({X_ * (2 * hash2(k, layer, seed + 61) - 1), Z_ * (2 * hash2(k, layer, seed + 62) - 1)}); Vec _u14154 = unpack(_t14153, 2); x = _u14154[0]; z = _u14154[1]; }
-            { Py _t14155 = call((*mound__c), {x, z}); Vec _u14156 = unpack(_t14155, 2); y = _u14156[0]; n = _u14156[1]; }
+    for (Py _v14130 : range(Py(6))) {
+        layer = _v14130;
+        { Py _t14131 = tuple({list({}), dict({})}); Vec _u14132 = unpack(_t14131, 2); placed = _u14132[0]; grid = _u14132[1]; }
+        for (Py _v14133 : range(Py(2000))) {
+            k = _v14133;
+            { Py _t14134 = tuple({X_ * (2 * hash2(k, layer, seed + 61) - 1), Z_ * (2 * hash2(k, layer, seed + 62) - 1)}); Vec _u14135 = unpack(_t14134, 2); x = _u14135[0]; z = _u14135[1]; }
+            { Py _t14136 = call((*mound__c), {x, z}); Vec _u14137 = unpack(_t14136, 2); y = _u14137[0]; n = _u14137[1]; }
             off = 0.001 + LAY * layer;
             c = list({x + n[0] * off, y + n[1] * off, z + n[2] * off});
             if ((abs_(c[0]) > X_) || (abs_(c[2]) > Z_)) {
                 continue;
             }
             g = tuple({int_(floordiv(c[0], Py(0.07))), int_(floordiv(c[2], Py(0.07)))});
-            near__ = [&](Each _it14157) { Py i; Py j; Py q; Py _r14158 = list(); for (Py _x14159 : _it14157) { i = _x14159; for (Py _x14160 : each(K(tuple({Py(-1), Py(0), Py(1)})))) { j = _x14160; for (Py _x14161 : each(grid.get(tuple({g[0] + i, g[1] + j}), tuple({})))) { q = _x14161; L_(_r14158)->v.push_back(q); } } } return _r14158; }(each(K(tuple({Py(-1), Py(0), Py(1)}))));
-            if ([&](Each _it14162) -> bool { Py q; for (Py _x14163 : _it14162) { q = _x14163; if (((pow_(c[0] - q[0], Py(2)) + pow_(c[1] - q[1], Py(2)) + pow_(c[2] - q[2], Py(2))) < (pow_(2 * RC + GAP, Py(2))))) return true; } return false; }(each(near__))) {
+            near__ = [&](Each _it14138) { Py i; Py j; Py q; Py _r14139 = list(); for (Py _x14140 : _it14138) { i = _x14140; for (Py _x14141 : each(K(tuple({Py(-1), Py(0), Py(1)})))) { j = _x14141; for (Py _x14142 : each(grid.get(tuple({g[0] + i, g[1] + j}), tuple({})))) { q = _x14142; L_(_r14139)->v.push_back(q); } } } return _r14139; }(each(K(tuple({Py(-1), Py(0), Py(1)}))));
+            if ([&](Each _it14143) -> bool { Py q; for (Py _x14144 : _it14143) { q = _x14144; if (((pow_(c[0] - q[0], Py(2)) + pow_(c[1] - q[1], Py(2)) + pow_(c[2] - q[2], Py(2))) < (pow_(2 * RC + GAP, Py(2))))) return true; } return false; }(each(near__))) {
                 continue;
             }
             grid.setdefault(g, list({})).append(c);
@@ -46845,13 +46800,13 @@ Py treasure(Py at, Py facing, Py s, Py seed) {
     TOP = 0.001 + LAY * 5 + TC;  // (the top of the last layer, over the heap)
     gems = tuple({P[S("red")], P[S("blue")], P[S("leaf")], P[S("purple")], P[S("white")]});
     spots = list({});
-    for (Py _v14164 : range(Py(40))) {  // jewels lying on the gold
-        i = _v14164;
+    for (Py _v14145 : range(Py(40))) {  // jewels lying on the gold
+        i = _v14145;
         if (len(spots) >= 11) {
             break;
         }
-        { Py _t14165 = tuple({0.8 * (*A__c) * (2 * hash2(i, seed, Py(71)) - 1), 0.75 * (*Bz__c) * (2 * hash2(i, seed, Py(72)) - 1)}); Vec _u14166 = unpack(_t14165, 2); x = _u14166[0]; z = _u14166[1]; }
-        if (((pow_(x / (*A__c), Py(2)) + pow_(z / (*Bz__c), Py(2))) > 0.7) || ([&](Each _it14167) -> bool { Py u; Py v; for (Py _x14168 : _it14167) { Vec _u14169 = unpack(_x14168, 2); u = _u14169[0]; v = _u14169[1]; if (((pow_(x - u, Py(2)) + pow_(z - v, Py(2))) < (pow_(Py(0.09), Py(2))))) return true; } return false; }(each(spots))) || ((pow_(x + 0.12, Py(2)) + pow_(z - 0.02, Py(2))) < (pow_(Py(0.14), Py(2)))) || ((pow_(x - 0.12 * s, Py(2)) + pow_(z + 0.08 * s, Py(2))) < (pow_(Py(0.1), Py(2)))) || (([&]() -> bool { Py _t14170 = Py(0.17); Py _t14171 = x; if (!(_t14170 < _t14171)) return false; Py _t14172 = Py(0.36); return _t14171 < _t14172; }()) && (z > Py(-0.05)))) {  // (clear of the crown, the goblet, the pearls)
+        { Py _t14146 = tuple({0.8 * (*A__c) * (2 * hash2(i, seed, Py(71)) - 1), 0.75 * (*Bz__c) * (2 * hash2(i, seed, Py(72)) - 1)}); Vec _u14147 = unpack(_t14146, 2); x = _u14147[0]; z = _u14147[1]; }
+        if (((pow_(x / (*A__c), Py(2)) + pow_(z / (*Bz__c), Py(2))) > 0.7) || ([&](Each _it14148) -> bool { Py u; Py v; for (Py _x14149 : _it14148) { Vec _u14150 = unpack(_x14149, 2); u = _u14150[0]; v = _u14150[1]; if (((pow_(x - u, Py(2)) + pow_(z - v, Py(2))) < (pow_(Py(0.09), Py(2))))) return true; } return false; }(each(spots))) || ((pow_(x + 0.12, Py(2)) + pow_(z - 0.02, Py(2))) < (pow_(Py(0.14), Py(2)))) || ((pow_(x - 0.12 * s, Py(2)) + pow_(z + 0.08 * s, Py(2))) < (pow_(Py(0.1), Py(2)))) || (([&]() -> bool { Py _t14151 = Py(0.17); Py _t14152 = x; if (!(_t14151 < _t14152)) return false; Py _t14153 = Py(0.36); return _t14152 < _t14153; }()) && (z > Py(-0.05)))) {  // (clear of the crown, the goblet, the pearls)
             continue;
         }
         spots.append(tuple({x, z}));
@@ -46860,14 +46815,14 @@ Py treasure(Py at, Py facing, Py s, Py seed) {
     }
     addpy::push();  // a crown lying on it: a band of gold, six
     addpy::pipe(list({Py(0), Py(0), Py(0)}), list({Py(0), Py(0.05), Py(0)}), Py(0.08), Py(0.072), Py(24), P[S("gold")]);  // points round its rim, a stone in front of
-    for (Py _v14173 : range(Py(6))) {  // each
-        j = _v14173;
-        { Py _t14174 = tuple({2 * addpy::pi * j / 6, Py(0.28)}); Vec _u14175 = unpack(_t14174, 2); a = _u14175[0]; da = _u14175[1]; }
+    for (Py _v14154 : range(Py(6))) {  // each
+        j = _v14154;
+        { Py _t14155 = tuple({2 * addpy::pi * j / 6, Py(0.28)}); Vec _u14156 = unpack(_t14155, 2); a = _u14156[0]; da = _u14156[1]; }
         Q = addpy::Mesh();
-        v_ = [&](Each _it14176) { Py b_; Py r_; Py y_; Py _r14177 = list(); for (Py _x14178 : _it14176) { r_ = _x14178; for (Py _x14179 : each(tuple({tuple({a - da, Py(0.05)}), tuple({a + da, Py(0.05)}), tuple({a, Py(0.1)})}))) { Vec _u14180 = unpack(_x14179, 2); b_ = _u14180[0]; y_ = _u14180[1]; L_(_r14177)->v.push_back(mesh_add_vertex(Q, list({r_ * addpy::cos(b_), y_, r_ * addpy::sin(b_)}))); } } return _r14177; }(each(K(tuple({Py(0.072), Py(0.08)}))));
-        for (Py _v14181 : each(K(tuple({K(tuple({Py(0), Py(1), Py(2)})), K(tuple({Py(5), Py(4), Py(3)})), K(tuple({Py(0), Py(3), Py(4), Py(1)})), K(tuple({Py(1), Py(4), Py(5), Py(2)})), K(tuple({Py(2), Py(5), Py(3), Py(0)}))})))) {
-            f_ = _v14181;
-            mesh_add_face(Q, [&](Each _it14182) { Py i_; Py _r14183 = list(); for (Py _x14184 : _it14182) { i_ = _x14184; L_(_r14183)->v.push_back(v_[i_]); } return _r14183; }(each(f_)), P[S("gold")]);
+        v_ = [&](Each _it14157) { Py b_; Py r_; Py y_; Py _r14158 = list(); for (Py _x14159 : _it14157) { r_ = _x14159; for (Py _x14160 : each(tuple({tuple({a - da, Py(0.05)}), tuple({a + da, Py(0.05)}), tuple({a, Py(0.1)})}))) { Vec _u14161 = unpack(_x14160, 2); b_ = _u14161[0]; y_ = _u14161[1]; L_(_r14158)->v.push_back(mesh_add_vertex(Q, list({r_ * addpy::cos(b_), y_, r_ * addpy::sin(b_)}))); } } return _r14158; }(each(K(tuple({Py(0.072), Py(0.08)}))));
+        for (Py _v14162 : each(K(tuple({K(tuple({Py(0), Py(1), Py(2)})), K(tuple({Py(5), Py(4), Py(3)})), K(tuple({Py(0), Py(3), Py(4), Py(1)})), K(tuple({Py(1), Py(4), Py(5), Py(2)})), K(tuple({Py(2), Py(5), Py(3), Py(0)}))})))) {
+            f_ = _v14162;
+            mesh_add_face(Q, [&](Each _it14163) { Py i_; Py _r14164 = list(); for (Py _x14165 : _it14163) { i_ = _x14165; L_(_r14164)->v.push_back(v_[i_]); } return _r14164; }(each(f_)), P[S("gold")]);
         }
         addpy::mesh(addpy::fix_normals(Q));
         addpy::octahedron(list({0.0875 * addpy::cos(a), Py(0.025), 0.0875 * addpy::sin(a)}), Py(0.0075), gems[mod(j, Py(2))]);
@@ -46877,44 +46832,44 @@ Py treasure(Py at, Py facing, Py s, Py seed) {
     addpy::mesh(call(on_heap, {goblet_, 0.12 * s, Py(-0.08) * s, TOP}));  // a goblet standing in it
     PR = Py(0.009);  // a string of pearls: over the heap and the
     path = list({});  // brim, and hanging down the front in a loop
-    for (Py _v14185 : range(Py(24))) {
-        i = _v14185;
+    for (Py _v14166 : range(Py(24))) {
+        i = _v14166;
         u = i / 23.0;
-        { Py _t14186 = tuple({0.22 + 0.08 * u, (Z_ + 0.02) * u}); Vec _u14187 = unpack(_t14186, 2); x = _u14187[0]; z = _u14187[1]; }
+        { Py _t14167 = tuple({0.22 + 0.08 * u, (Z_ + 0.02) * u}); Vec _u14168 = unpack(_t14167, 2); x = _u14168[0]; z = _u14168[1]; }
         z = min2(z, Z_);
-        { Py _t14188 = call((*mound__c), {x, z}); Vec _u14189 = unpack(_t14188, 2); y = _u14189[0]; n = _u14189[1]; }
+        { Py _t14169 = call((*mound__c), {x, z}); Vec _u14170 = unpack(_t14169, 2); y = _u14170[0]; n = _u14170[1]; }
         path.append(list({x + n[0] * (TOP + PR), y + n[1] * (TOP + PR), z + n[2] * (TOP + PR)}));
     }
     zf = 0.5 * s + PR + 0.004;  // (its front face, and the lock clear of it)
     edge = list({path[Py(-1)][0], (*y0____c) + PR, 0.5 * s + PR});
-    loop = [&](Each _it14190) { Py u; Py _r14194 = list(); for (Py _x14195 : _it14190) { u = _x14195; L_(_r14194)->v.push_back(list({0.3 + 0.12 * (1 - addpy::cos(addpy::pi * u)) / 2, (*y0____c) - 0.02 - 0.12 * addpy::sin(addpy::pi * u), zf})); } return _r14194; }(each([&](Range _it14191) { Py i; Py _r14192 = list(); for (Py _x14193 : _it14191) { i = _x14193; L_(_r14192)->v.push_back(i / 16.0); } return _r14192; }(range(Py(17)))));
+    loop = [&](Each _it14171) { Py u; Py _r14175 = list(); for (Py _x14176 : _it14171) { u = _x14176; L_(_r14175)->v.push_back(list({0.3 + 0.12 * (1 - addpy::cos(addpy::pi * u)) / 2, (*y0____c) - 0.02 - 0.12 * addpy::sin(addpy::pi * u), zf})); } return _r14175; }(each([&](Range _it14172) { Py i; Py _r14173 = list(); for (Py _x14174 : _it14172) { i = _x14174; L_(_r14173)->v.push_back(i / 16.0); } return _r14173; }(range(Py(17)))));
     iadd(path, (list({edge}) + loop + list({list({loop[Py(-1)][0], (*y0____c) + PR, 0.5 * s + PR})})));
-    { Py _t14196 = tuple({list({path[0]}), Py(0.0)}); Vec _u14197 = unpack(_t14196, 2); pts = _u14197[0]; acc = _u14197[1]; }  // (pearls a hair apart along it)
-    for (Py _v14198 : each(zip_({path, slice(path, Py(1), None)}))) {
-        Vec _u14199 = unpack(_v14198, 2);
-        p0 = _u14199[0];
-        p1 = _u14199[1];
+    { Py _t14177 = tuple({list({path[0]}), Py(0.0)}); Vec _u14178 = unpack(_t14177, 2); pts = _u14178[0]; acc = _u14178[1]; }  // (pearls a hair apart along it)
+    for (Py _v14179 : each(zip_({path, slice(path, Py(1), None)}))) {
+        Vec _u14180 = unpack(_v14179, 2);
+        p0 = _u14180[0];
+        p1 = _u14180[1];
         L___ = vlen(vsub(p1, p0));
         t_ = Py(0.0);
         while ((t_ + (2 * PR + 0.001 - acc)) <= L___) {
             iadd(t_, (2 * PR + 0.001 - acc));
             acc = Py(0.0);
-            pts.append([&](Range _it14200) { Py k; Py _r14201 = list(); for (Py _x14202 : _it14200) { k = _x14202; L_(_r14201)->v.push_back(p0[k] + (p1[k] - p0[k]) * t_ / L___); } return _r14201; }(range(Py(3))));
+            pts.append([&](Range _it14181) { Py k; Py _r14182 = list(); for (Py _x14183 : _it14181) { k = _x14183; L_(_r14182)->v.push_back(p0[k] + (p1[k] - p0[k]) * t_ / L___); } return _r14182; }(range(Py(3))));
         }
         iadd(acc, (L___ - t_));
     }
-    for (Py _v14203 : each(pts)) {
-        q = _v14203;
+    for (Py _v14184 : each(pts)) {
+        q = _v14184;
         addpy::sphere(q, PR, Py(3), P[S("white")]);
     }
     spilt = list({});
-    for (Py _v14204 : range(Py(40))) {  // and spilt on the floor before it
-        i = _v14204;
+    for (Py _v14185 : range(Py(40))) {  // and spilt on the floor before it
+        i = _v14185;
         if (len(spilt) >= 12) {
             break;
         }
-        { Py _t14205 = tuple({(hash2(i, seed, Py(81)) - 0.5) * 1.3 * s, 0.53 * s + 0.05 + 0.4 * pow_(hash2(i, seed, Py(82)), Py(1.5))}); Vec _u14206 = unpack(_t14205, 2); x = _u14206[0]; z = _u14206[1]; }
-        if ([&](Each _it14207) -> bool { Py a_; Py b_; for (Py _x14208 : _it14207) { Vec _u14209 = unpack(_x14208, 2); a_ = _u14209[0]; b_ = _u14209[1]; if (!((pow_(x - a_, Py(2)) + pow_(z - b_, Py(2))) > (pow_(Py(0.078), Py(2))))) return false; } return true; }(each(spilt))) {
+        { Py _t14186 = tuple({(hash2(i, seed, Py(81)) - 0.5) * 1.3 * s, 0.53 * s + 0.05 + 0.4 * pow_(hash2(i, seed, Py(82)), Py(1.5))}); Vec _u14187 = unpack(_t14186, 2); x = _u14187[0]; z = _u14187[1]; }
+        if ([&](Each _it14188) -> bool { Py a_; Py b_; for (Py _x14189 : _it14188) { Vec _u14190 = unpack(_x14189, 2); a_ = _u14190[0]; b_ = _u14190[1]; if (!((pow_(x - a_, Py(2)) + pow_(z - b_, Py(2))) > (pow_(Py(0.078), Py(2))))) return false; } return true; }(each(spilt))) {
             spilt.append(tuple({x, z}));
             addpy::mesh(addpy::move(addpy::rotateY(coin, 3 * hash2(i, seed, Py(83))), list({x, Py(0.001), z})));
         }
@@ -46949,18 +46904,18 @@ Py rum_stillage(Py at, Py facing, Py n, Py r, Py h, Py seed) {
     addpy::push();
     span = n * (2 * r + 0.06);
     zt = Py(0.3);  // the timbers under the casks, either side
-    for (Py _v14210 : each(K(tuple({Py(-1), Py(1)})))) {
-        sz = _v14210;
+    for (Py _v14191 : each(K(tuple({Py(-1), Py(1)})))) {
+        sz = _v14191;
         addpy::cuboid(list({Py(0), Py(0.07), sz * zt}), list({span + 0.2, Py(0.14), Py(0.12)}), P[S("wood_dark")]);
     }
     Rt = r * (0.86 + 0.14 * (1 - pow_(2 * (0.5 + (zt - 0.06) / h) - 1, Py(2))));  // (their girth over the timbers' inner edges)
     yc = 0.14 + addpy::sqrt(max2(Py(0.0), Rt * Rt - 0.0)) + 0.004;
-    for (Py _v14211 : range(n)) {
-        i = _v14211;
+    for (Py _v14192 : range(n)) {
+        i = _v14192;
         x = (i - (n - 1) / 2.0) * (2 * r + 0.06);
         hold_cask(list({x, yc - r, Py(0)}), r, h, Py(0.0), True, seed + i, True);
-        for (Py _v14212 : each(K(tuple({Py(-1), Py(1)})))) {  // the mark on each head
-            dz = _v14212;
+        for (Py _v14193 : each(K(tuple({Py(-1), Py(1)})))) {  // the mark on each head
+            dz = _v14193;
             zz = dz * (h / 2 - 0.035 + 0.003);
             addpy::cuboid(list({x, yc, zz}), list({Py(0.14), Py(0.02), Py(0.004)}), P[S("red")]);
             addpy::cuboid(list({x, yc + 0.03, zz}), list({Py(0.02), Py(0.1), Py(0.004)}), P[S("red")]);
@@ -47001,21 +46956,21 @@ Py spyglass(Py dy) {
     Py r1;
     Py s0;
     Py s1;
-    { Py _t14213 = tuple({HEAD_GROW, 1.575 + dy}); Vec _u14214 = unpack(_t14213, 2); (*g__c) = _u14214[0]; py__ = _u14214[1]; }
+    { Py _t14194 = tuple({HEAD_GROW, 1.575 + dy}); Vec _u14195 = unpack(_t14194, 2); (*g__c) = _u14195[0]; py__ = _u14195[1]; }
     (*eye__c) = list({Py(-0.03) * (*g__c), py__ + (1.685 + dy - py__) * (*g__c), 0.008 + (Py(0.092) - 0.008) * (*g__c)});
     (*d__c) = vunit(list({Py(0.0), Py(0.035), Py(1.0)}));
     at = func(sig("lambda", {"sv"}, {MISSING_ARG}, 1), [d__c, eye__c, g__c](Vec& _A_) -> Py { Py sv = _A_[0]; return _at((*eye__c), (*d__c), 0.011 * (*g__c) + 0.004 + sv); });  // (sv along it from the eyecup)
     addpy::push();
-    for (Py _v14215 : each(tuple({tuple({Py(0.0), Py(0.012), Py(0.0135), Py(0.012), P[S("gold")]}), tuple({Py(0.012), Py(0.045), Py(0.0115), Py(0.0115), P[S("gold")]}), tuple({Py(0.045), Py(0.1), Py(0.015), Py(0.015), P[S("gold")]}), tuple({Py(0.1), Py(0.108), Py(0.017), Py(0.017), P[S("gold")]}), tuple({Py(0.108), Py(0.17), Py(0.018), Py(0.018), P[S("gold")]}), tuple({Py(0.17), Py(0.179), Py(0.0205), Py(0.0205), P[S("gold")]}), tuple({Py(0.179), Py(0.2), Py(0.026), Py(0.026), P[S("gold")]}), tuple({Py(0.2), Py(0.48), Py(0.024), Py(0.024), P[S("wood_dark")]}), tuple({Py(0.48), Py(0.5), Py(0.026), Py(0.026), P[S("gold")]}), tuple({Py(0.5), Py(0.57), Py(0.028), Py(0.029), P[S("gold")]})}))) {  // eyecup, eyepiece, draw tubes and their rims, the barrel in leather, the hood
-        Vec _u14216 = unpack(_v14215, 5);
-        s0 = _u14216[0];
-        s1 = _u14216[1];
-        r0 = _u14216[2];
-        r1 = _u14216[3];
-        col = _u14216[4];
-        [&] { Py _a14217 = call(at, {s0}); Py _a14218 = call(at, {s1}); Py _a14219 = Py(14); return addpy::frustum(_a14217, _a14218, r0, r1, _a14219, col); }();
+    for (Py _v14196 : each(tuple({tuple({Py(0.0), Py(0.012), Py(0.0135), Py(0.012), P[S("gold")]}), tuple({Py(0.012), Py(0.045), Py(0.0115), Py(0.0115), P[S("gold")]}), tuple({Py(0.045), Py(0.1), Py(0.015), Py(0.015), P[S("gold")]}), tuple({Py(0.1), Py(0.108), Py(0.017), Py(0.017), P[S("gold")]}), tuple({Py(0.108), Py(0.17), Py(0.018), Py(0.018), P[S("gold")]}), tuple({Py(0.17), Py(0.179), Py(0.0205), Py(0.0205), P[S("gold")]}), tuple({Py(0.179), Py(0.2), Py(0.026), Py(0.026), P[S("gold")]}), tuple({Py(0.2), Py(0.48), Py(0.024), Py(0.024), P[S("wood_dark")]}), tuple({Py(0.48), Py(0.5), Py(0.026), Py(0.026), P[S("gold")]}), tuple({Py(0.5), Py(0.57), Py(0.028), Py(0.029), P[S("gold")]})}))) {  // eyecup, eyepiece, draw tubes and their rims, the barrel in leather, the hood
+        Vec _u14197 = unpack(_v14196, 5);
+        s0 = _u14197[0];
+        s1 = _u14197[1];
+        r0 = _u14197[2];
+        r1 = _u14197[3];
+        col = _u14197[4];
+        [&] { Py _a14198 = call(at, {s0}); Py _a14199 = call(at, {s1}); Py _a14200 = Py(14); return addpy::frustum(_a14198, _a14199, r0, r1, _a14200, col); }();
     }
-    [&] { Py _a14220 = call(at, {Py(0.566)}); Py _a14221 = call(at, {Py(0.5695)}); Py _a14222 = Py(0.0245); Py _a14223 = Py(14); Py _a14224 = P[S("slate")]; return addpy::cylinder(_a14220, _a14221, _a14222, _a14223, _a14224); }();  // (the object glass, in the hood's mouth)
+    [&] { Py _a14201 = call(at, {Py(0.566)}); Py _a14202 = call(at, {Py(0.5695)}); Py _a14203 = Py(0.0245); Py _a14204 = Py(14); Py _a14205 = P[S("slate")]; return addpy::cylinder(_a14201, _a14202, _a14203, _a14204, _a14205); }();  // (the object glass, in the hood's mouth)
     M = addpy::pop();
     arms = tuple({tuple({S("grip"), rod_grip(call(at, {Py(0.14)}), (*d__c), list({Py(0.75), Py(1.0), Py(0.0)}), Py(-1), Py(0.018), list({Py(1), Py(0), Py(0)})), None}), tuple({S("grip"), rod_grip(call(at, {Py(0.33)}), (*d__c), list({Py(-1.0), Py(0.1), Py(0.0)}), Py(1), Py(0.024), list({Py(0), Py(1), Py(0)})), None})});
     return tuple({M, arms});
@@ -47034,7 +46989,7 @@ Py lookout(Py at, Py facing, Py seed) {
     Py tunic;
     tunic = tuple({P[S("linen")], P[S("blue")], P[S("red")]})[mod(seed, Py(3))];
     cap = tuple({P[S("red")], P[S("blue")], P[S("wood_dark")]})[mod(seed + 1, Py(3))];
-    { Py _t14225 = spyglass(); Vec _u14226 = unpack(_t14225, 2); glass = _u14226[0]; arms = _u14226[1]; }
+    { Py _t14206 = spyglass(); Vec _u14207 = unpack(_t14206, 2); glass = _u14207[0]; arms = _u14207[1]; }
     M = person(S("stand"), tunic, MISSING_ARG, MISSING_ARG, MISSING_ARG, arms, P[S("wood")], MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, tuple({S("cap"), cap}), MISSING_ARG, MISSING_ARG, tuple({SHOE, tuple({P[S("skin")], P[S("skin")]})}));
     M.extend(glass);
     figure(at, facing, M);
@@ -47064,7 +47019,7 @@ Py tarred(Py M__p, Py y0____p, Py tar, Py only) {
     Py xpt;
     only = (!is(only, None) ? addpy::rgb(only) : None);
     (*out__c) = addpy::Mesh();
-    ids = [&](Each _it14227) { Py p; Py _r14228 = list(); for (Py _x14229 : _it14227) { p = _x14229; L_(_r14228)->v.push_back(mesh_add_vertex((*out__c), list_(p))); } return _r14228; }(each(mesh_V((*M__c))));
+    ids = [&](Each _it14208) { Py p; Py _r14209 = list(); for (Py _x14210 : _it14208) { p = _x14210; L_(_r14209)->v.push_back(mesh_add_vertex((*out__c), list_(p))); } return _r14209; }(each(mesh_V((*M__c))));
     (*cross__c) = dict({});
     xpt = func(sig("xpt", {"a", "b"}, {MISSING_ARG, MISSING_ARG}, 2), [M__c, cross__c, out__c, y0____c](Vec& _A_) -> Py {
         Py a = _A_[0];
@@ -47075,29 +47030,29 @@ Py tarred(Py M__p, Py y0____p, Py tar, Py only) {
         Py t;
         key = tuple({min2(a, b), max2(a, b)});
         if (!contains((*cross__c), key)) {
-            { Py _t14230 = tuple({mesh_V((*M__c))[key[0]], mesh_V((*M__c))[key[1]]}); Vec _u14231 = unpack(_t14230, 2); pa = _u14231[0]; pb = _u14231[1]; }
+            { Py _t14211 = tuple({mesh_V((*M__c))[key[0]], mesh_V((*M__c))[key[1]]}); Vec _u14212 = unpack(_t14211, 2); pa = _u14212[0]; pb = _u14212[1]; }
             t = ((*y0____c) - pa[1]) / (pb[1] - pa[1]);
-            { Py _t14235 = mesh_add_vertex((*out__c), [&](Range _it14232) { Py k; Py _r14233 = list(); for (Py _x14234 : _it14232) { k = _x14234; L_(_r14233)->v.push_back(pa[k] + (pb[k] - pa[k]) * t); } return _r14233; }(range(Py(3)))); setitem((*cross__c), key, _t14235); }
+            { Py _t14216 = mesh_add_vertex((*out__c), [&](Range _it14213) { Py k; Py _r14214 = list(); for (Py _x14215 : _it14213) { k = _x14215; L_(_r14214)->v.push_back(pa[k] + (pb[k] - pa[k]) * t); } return _r14214; }(range(Py(3)))); setitem((*cross__c), key, _t14216); }
         }
         return (*cross__c)[key];
     });
-    for (Py _v14236 : each(zip_({mesh_F((*M__c)), mesh_C((*M__c))}))) {
-        Vec _u14237 = unpack(_v14236, 2);
-        f = _u14237[0];
-        c = _u14237[1];
-        lo = [&](Each _it14238) { Py i; Py _r14239 = list(); for (Py _x14240 : _it14238) { i = _x14240; L_(_r14239)->v.push_back(Py(mesh_V((*M__c))[i][1] < (*y0____c))); } return _r14239; }(each(f));
+    for (Py _v14217 : each(zip_({mesh_F((*M__c)), mesh_C((*M__c))}))) {
+        Vec _u14218 = unpack(_v14217, 2);
+        f = _u14218[0];
+        c = _u14218[1];
+        lo = [&](Each _it14219) { Py i; Py _r14220 = list(); for (Py _x14221 : _it14219) { i = _x14221; L_(_r14220)->v.push_back(Py(mesh_V((*M__c))[i][1] < (*y0____c))); } return _r14220; }(each(f));
         if ((!is(only, None) && (addpy::rgb(c) != only)) || !truthy(any_(items_of(lo)))) {
-            mesh_add_face((*out__c), [&](Each _it14241) { Py i; Py _r14242 = list(); for (Py _x14243 : _it14241) { i = _x14243; L_(_r14242)->v.push_back(ids[i]); } return _r14242; }(each(f)), c);
+            mesh_add_face((*out__c), [&](Each _it14222) { Py i; Py _r14223 = list(); for (Py _x14224 : _it14222) { i = _x14224; L_(_r14223)->v.push_back(ids[i]); } return _r14223; }(each(f)), c);
             continue;
         }
         if (truthy(all_(items_of(lo)))) {
-            mesh_add_face((*out__c), [&](Each _it14244) { Py i; Py _r14245 = list(); for (Py _x14246 : _it14244) { i = _x14246; L_(_r14245)->v.push_back(ids[i]); } return _r14245; }(each(f)), tar);
+            mesh_add_face((*out__c), [&](Each _it14225) { Py i; Py _r14226 = list(); for (Py _x14227 : _it14225) { i = _x14227; L_(_r14226)->v.push_back(ids[i]); } return _r14226; }(each(f)), tar);
             continue;
         }
-        { Py _t14247 = tuple({list({}), list({})}); Vec _u14248 = unpack(_t14247, 2); below = _u14248[0]; above = _u14248[1]; }
-        for (Py _v14249 : range(len(f))) {
-            k = _v14249;
-            { Py _t14250 = tuple({f[k], f[mod(k + 1, len(f))]}); Vec _u14251 = unpack(_t14250, 2); a = _u14251[0]; b = _u14251[1]; }
+        { Py _t14228 = tuple({list({}), list({})}); Vec _u14229 = unpack(_t14228, 2); below = _u14229[0]; above = _u14229[1]; }
+        for (Py _v14230 : range(len(f))) {
+            k = _v14230;
+            { Py _t14231 = tuple({f[k], f[mod(k + 1, len(f))]}); Vec _u14232 = unpack(_t14231, 2); a = _u14232[0]; b = _u14232[1]; }
             (truthy(lo[k]) ? below : above).append(ids[a]);
             if (lo[k] != lo[mod(k + 1, len(f))]) {
                 x = call(xpt, {a, b});
@@ -47539,7 +47494,6 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     auto sill_y__c = std::make_shared<Py>();
     Py sk;
     auto skin__c = std::make_shared<Py>();
-    Py sl;
     auto slope__c = std::make_shared<Py>();
     Py sn;
     Py sp;
@@ -47663,19 +47617,19 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     Py zs_;
     auto zw___c = std::make_shared<Py>();
     Py zz;
-    band = [&]() -> Py { Py _t14252 = band; if (truthy(_t14252)) return _t14252; _t14252 = P[S("red")]; return _t14252; }();
-    { Py _t14253 = ship_lines((*L__c), B); Vec _u14254 = unpack(_t14253, 6); (*half__c) = _u14254[0]; (*sheer__c) = _u14254[1]; (*keel__c) = _u14254[2]; (*xs__c) = _u14254[3]; (*side__c) = _u14254[4]; (*t_at__c) = _u14254[5]; }
+    band = [&]() -> Py { Py _t14233 = band; if (truthy(_t14233)) return _t14233; _t14233 = P[S("red")]; return _t14233; }();
+    { Py _t14234 = ship_lines((*L__c), B); Vec _u14235 = unpack(_t14234, 6); (*half__c) = _u14235[0]; (*sheer__c) = _u14235[1]; (*keel__c) = _u14235[2]; (*xs__c) = _u14235[3]; (*side__c) = _u14235[4]; (*t_at__c) = _u14235[5]; }
     tx = func(sig("lambda", {"x"}, {MISSING_ARG}, 1), [L__c](Vec& _A_) -> Py { Py x = _A_[0]; return addpy::clamp(x / ((*L__c) / 2), Py(-1.0), Py(1.0)); });
     (*deck_y__c) = func(sig("lambda", {"x"}, {MISSING_ARG}, 1), [sheer__c, t_at__c](Vec& _A_) -> Py { Py x = _A_[0]; return call((*sheer__c), {call((*t_at__c), {x})}); });  // the deck's height at x
-    (*slope__c) = func(sig("lambda", {"t"}, {MISSING_ARG}, 1), [sheer__c, xs__c](Vec& _A_) -> Py { Py t = _A_[0]; return [&] { Py _t14255 = [&] { Py _t14257 = call((*sheer__c), {t + 0.001}); Py _t14258 = call((*sheer__c), {t - 0.001}); return _t14257 - _t14258; }(); Py _t14256 = [&] { Py _t14259 = call((*xs__c), {t + 0.001}); Py _t14260 = call((*xs__c), {t - 0.001}); return _t14259 - _t14260; }(); return _t14255 / _t14256; }(); });
+    (*slope__c) = func(sig("lambda", {"t"}, {MISSING_ARG}, 1), [sheer__c, xs__c](Vec& _A_) -> Py { Py t = _A_[0]; return [&] { Py _t14236 = [&] { Py _t14238 = call((*sheer__c), {t + 0.001}); Py _t14239 = call((*sheer__c), {t - 0.001}); return _t14238 - _t14239; }(); Py _t14237 = [&] { Py _t14240 = call((*xs__c), {t + 0.001}); Py _t14241 = call((*xs__c), {t - 0.001}); return _t14240 - _t14241; }(); return _t14236 / _t14237; }(); });
     (*n__c) = Py(31);
     (*STATION__c) = func(sig("lambda", {"i"}, {MISSING_ARG}, 1), [n__c](Vec& _A_) -> Py { Py i = _A_[0]; return Py(-1) + 2.0 * i / ((*n__c) - 1); });
     (*FRAC__c) = K(tuple({Py(0.0), Py(0.1), Py(0.2), Py(0.3), Py(0.4), Py(0.5), Py(0.6), Py(0.7), Py(0.8), Py(0.88), Py(0.94), Py(0.975), Py(0.993)}));  // down the side, evenly, finer at the bilge
     T_P = Py(0.07);  // the planks' thickness; in from the outside
-    { Py _t14261 = tuple({T_P + 0.02, T_P + 0.14, T_P + 0.21}); Vec _u14262 = unpack(_t14261, 3); (*D_F0__c) = _u14262[0]; (*D_F1__c) = _u14262[1]; (*D_C__c) = _u14262[2]; }  // of them the frames' faces and the ceiling's
-    { Py _t14263 = K(tuple({Py(-1.25), Py(-0.45), Py(0.34)})); Vec _u14264 = unpack(_t14263, 3); (*YF__c) = _u14264[0]; YC = _u14264[1]; (*W_M__c) = _u14264[2]; }  // the hold's floor, the ceiling's top edge,
-    { Py _t14265 = K(tuple({Py(1.2), Py(19.0)})); Vec _u14266 = unpack(_t14265, 2); (*MX__c) = _u14266[0]; (*TOP__c) = _u14266[1]; }  // the waterway's inner edge; the mast,
-    { Py _t14267 = tuple({call((*xs__c), {Py(0.2)}), call((*xs__c), {Py(0.4)})}); Vec _u14268 = unpack(_t14267, 2); HA = _u14268[0]; HB = _u14268[1]; }  // the hatch between two deck beams
+    { Py _t14242 = tuple({T_P + 0.02, T_P + 0.14, T_P + 0.21}); Vec _u14243 = unpack(_t14242, 3); (*D_F0__c) = _u14243[0]; (*D_F1__c) = _u14243[1]; (*D_C__c) = _u14243[2]; }  // of them the frames' faces and the ceiling's
+    { Py _t14244 = K(tuple({Py(-1.25), Py(-0.45), Py(0.34)})); Vec _u14245 = unpack(_t14244, 3); (*YF__c) = _u14245[0]; YC = _u14245[1]; (*W_M__c) = _u14245[2]; }  // the hold's floor, the ceiling's top edge,
+    { Py _t14246 = K(tuple({Py(1.2), Py(19.0)})); Vec _u14247 = unpack(_t14246, 2); (*MX__c) = _u14247[0]; (*TOP__c) = _u14247[1]; }  // the waterway's inner edge; the mast,
+    { Py _t14248 = tuple({call((*xs__c), {Py(0.2)}), call((*xs__c), {Py(0.4)})}); Vec _u14249 = unpack(_t14248, 2); HA = _u14249[0]; HB = _u14249[1]; }  // the hatch between two deck beams
     (*POST_Z__c) = Py(0.211);  // (the stem's and the sternpost's sides)
     (*hull_at__c) = func(sig("hull_at", {"t", "f", "sg", "off"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG, Py(0.0)}, 3), [half__c, keel__c, sheer__c, side__c, xs__c](Vec& _A_) -> Py {
         Py t = _A_[0];
@@ -47693,14 +47647,14 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         // The point of the side (``sg``: 1 port, -1 starboard) at station ``t``, ``f`` of the way down from the gunwale
         // to the keel -- ``off`` out from it, square to the side.
         pts = list({});
-        for (Py _v14269 : each(tuple({f - 0.004, f, f + 0.004}))) {
-            g = _v14269;
-            { Py _t14270 = tuple({call((*sheer__c), {t}), call((*keel__c), {t})}); Vec _u14271 = unpack(_t14270, 2); sh = _u14271[0]; k = _u14271[1]; }
+        for (Py _v14250 : each(tuple({f - 0.004, f, f + 0.004}))) {
+            g = _v14250;
+            { Py _t14251 = tuple({call((*sheer__c), {t}), call((*keel__c), {t})}); Vec _u14252 = unpack(_t14251, 2); sh = _u14252[0]; k = _u14252[1]; }
             y = sh - (sh - k) * g;
-            pts.append(tuple({y, sg * ((g > 0 ? [&]() -> Py { Py _t14272 = call((*side__c), {t, y}); if (truthy(_t14272)) return _t14272; _t14272 = Py(0.0); return _t14272; }() : call((*half__c), {t})))}));
+            pts.append(tuple({y, sg * ((g > 0 ? [&]() -> Py { Py _t14253 = call((*side__c), {t, y}); if (truthy(_t14253)) return _t14253; _t14253 = Py(0.0); return _t14253; }() : call((*half__c), {t})))}));
         }
-        { Py _t14273 = tuple({sg * (pts[2][1] - pts[0][1]), (-sg) * (pts[2][0] - pts[0][0])}); Vec _u14274 = unpack(_t14273, 2); ny = _u14274[0]; nz = _u14274[1]; }
-        nl = [&]() -> Py { Py _t14275 = addpy::sqrt(ny * ny + nz * nz); if (truthy(_t14275)) return _t14275; _t14275 = Py(1.0); return _t14275; }();
+        { Py _t14254 = tuple({sg * (pts[2][1] - pts[0][1]), (-sg) * (pts[2][0] - pts[0][0])}); Vec _u14255 = unpack(_t14254, 2); ny = _u14255[0]; nz = _u14255[1]; }
+        nl = [&]() -> Py { Py _t14256 = addpy::sqrt(ny * ny + nz * nz); if (truthy(_t14256)) return _t14256; _t14256 = Py(1.0); return _t14256; }();
         return list({call((*xs__c), {t}), pts[1][0] + off * ny / nl, pts[1][1] + off * nz / nl});
     });
     (*skin__c) = func(sig("skin", {"t", "f", "sg"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG}, 3), [half__c, keel__c, sheer__c, side__c, xs__c](Vec& _A_) -> Py {
@@ -47711,9 +47665,9 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         Py sh;
         Py y;
         // The point of the outside of the planking at station ``t``, ``f`` of the way down, on side ``sg``.
-        { Py _t14276 = tuple({call((*sheer__c), {t}), call((*keel__c), {t})}); Vec _u14277 = unpack(_t14276, 2); sh = _u14277[0]; k = _u14277[1]; }
+        { Py _t14257 = tuple({call((*sheer__c), {t}), call((*keel__c), {t})}); Vec _u14258 = unpack(_t14257, 2); sh = _u14258[0]; k = _u14258[1]; }
         y = sh - (sh - k) * f;
-        return list({call((*xs__c), {t}), y, sg * ((f > 0 ? [&]() -> Py { Py _t14278 = call((*side__c), {t, y}); if (truthy(_t14278)) return _t14278; _t14278 = Py(0.0); return _t14278; }() : call((*half__c), {t})))});
+        return list({call((*xs__c), {t}), y, sg * ((f > 0 ? [&]() -> Py { Py _t14259 = call((*side__c), {t, y}); if (truthy(_t14259)) return _t14259; _t14259 = Py(0.0); return _t14259; }() : call((*half__c), {t})))});
     });
     normal_at = func(sig("normal_at", {"t", "f", "sg"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG}, 3), [skin__c](Vec& _A_) -> Py {
         Py t = _A_[0];
@@ -47723,10 +47677,10 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         Py b_;
         Py nrm;
         // The way straight out of the planking there (towards the ends it leans fore or aft).
-        a_ = [&] { Py _a14279 = call((*skin__c), {min2(Py(1.0), t + 0.003), f, sg}); Py _a14280 = call((*skin__c), {max2(Py(-1.0), t - 0.003), f, sg}); return vsub(_a14279, _a14280); }();
-        b_ = [&] { Py _a14281 = call((*skin__c), {t, f + 0.004, sg}); Py _a14282 = call((*skin__c), {t, max2(Py(0.0), f - 0.004), sg}); return vsub(_a14281, _a14282); }();
+        a_ = [&] { Py _a14260 = call((*skin__c), {min2(Py(1.0), t + 0.003), f, sg}); Py _a14261 = call((*skin__c), {max2(Py(-1.0), t - 0.003), f, sg}); return vsub(_a14260, _a14261); }();
+        b_ = [&] { Py _a14262 = call((*skin__c), {t, f + 0.004, sg}); Py _a14263 = call((*skin__c), {t, max2(Py(0.0), f - 0.004), sg}); return vsub(_a14262, _a14263); }();
         nrm = vunit(vcross(a_, b_));
-        return ((nrm[2] * sg) > 0 ? nrm : [&](Each _it14283) { Py c; Py _r14284 = list(); for (Py _x14285 : _it14283) { c = _x14285; L_(_r14284)->v.push_back(-c); } return _r14284; }(each(nrm)));
+        return ((nrm[2] * sg) > 0 ? nrm : [&](Each _it14264) { Py c; Py _r14265 = list(); for (Py _x14266 : _it14264) { c = _x14266; L_(_r14265)->v.push_back(-c); } return _r14265; }(each(nrm)));
     });
     (*at_height__c) = func(sig("at_height", {"t", "y", "d", "sg"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG, Py(1)}, 3), [hull_at__c](Vec& _A_) -> Py {
         Py t = _A_[0];
@@ -47738,11 +47692,11 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         Py lo;
         Py mid;
         // The point ``d`` in from the outside of the planking (square to it) at height ``y``, station ``t``.
-        { Py _t14286 = K(tuple({Py(0.0), Py(0.997)})); Vec _u14287 = unpack(_t14286, 2); lo = _u14287[0]; hi = _u14287[1]; }
-        for (Py _v14288 : range(Py(34))) {
-            _ = _v14288;
+        { Py _t14267 = K(tuple({Py(0.0), Py(0.997)})); Vec _u14268 = unpack(_t14267, 2); lo = _u14268[0]; hi = _u14268[1]; }
+        for (Py _v14269 : range(Py(34))) {
+            _ = _v14269;
             mid = (lo + hi) / 2;
-            { Py _t14289 = (call((*hull_at__c), {t, mid, sg, -d})[1] > y ? tuple({mid, hi}) : tuple({lo, mid})); Vec _u14290 = unpack(_t14289, 2); lo = _u14290[0]; hi = _u14290[1]; }
+            { Py _t14270 = (call((*hull_at__c), {t, mid, sg, -d})[1] > y ? tuple({mid, hi}) : tuple({lo, mid})); Vec _u14271 = unpack(_t14270, 2); lo = _u14271[0]; hi = _u14271[1]; }
         }
         return call((*hull_at__c), {t, (lo + hi) / 2, sg, -d});
     });
@@ -47755,8 +47709,8 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         Py ta;
         Py tb;
         // The gunwale at station ``t`` on side ``sg``, and the level way out of the hull there, square to it.
-        { Py _t14291 = tuple({max2(Py(-1.0), t - 0.002), min2(Py(1.0), t + 0.002)}); Vec _u14292 = unpack(_t14291, 2); ta = _u14292[0]; tb = _u14292[1]; }
-        { Py _t14297 = tuple({[&] { Py _t14293 = call((*xs__c), {tb}); Py _t14294 = call((*xs__c), {ta}); return _t14293 - _t14294; }(), [&] { Py _t14295 = call((*half__c), {tb}); Py _t14296 = call((*half__c), {ta}); return _t14295 - _t14296; }()}); Vec _u14298 = unpack(_t14297, 2); dx = _u14298[0]; dh = _u14298[1]; }
+        { Py _t14272 = tuple({max2(Py(-1.0), t - 0.002), min2(Py(1.0), t + 0.002)}); Vec _u14273 = unpack(_t14272, 2); ta = _u14273[0]; tb = _u14273[1]; }
+        { Py _t14278 = tuple({[&] { Py _t14274 = call((*xs__c), {tb}); Py _t14275 = call((*xs__c), {ta}); return _t14274 - _t14275; }(), [&] { Py _t14276 = call((*half__c), {tb}); Py _t14277 = call((*half__c), {ta}); return _t14276 - _t14277; }()}); Vec _u14279 = unpack(_t14278, 2); dx = _u14279[0]; dh = _u14279[1]; }
         l = addpy::sqrt(dx * dx + dh * dh);
         return tuple({list({call((*xs__c), {t}), call((*sheer__c), {t}), sg * call((*half__c), {t})}), tuple({(-dh) / l, sg * dx / l})});
     });
@@ -47769,7 +47723,7 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         Py nz;
         Py p;
         // The point ``o`` out from the gunwale at station ``t`` (in if negative), ``y`` above it.
-        { Py _t14299 = call((*rim__c), {t, sg}); Vec _u14300 = unpack(_t14299, 2); p = _u14300[0]; Vec _u14301 = unpack(_u14300[1], 2); nx = _u14301[0]; nz = _u14301[1]; }
+        { Py _t14280 = call((*rim__c), {t, sg}); Vec _u14281 = unpack(_t14280, 2); p = _u14281[0]; Vec _u14282 = unpack(_u14281[1], 2); nx = _u14282[0]; nz = _u14282[1]; }
         return list({p[0] + nx * o, p[1] + y, p[2] + nz * o});
     });
     rail_timber = func(sig("rail_timber", {"sg", "ta", "tb", "y0", "y1", "o0", "o1", "colour"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG}, 8), [POST_Z__c, by_rim__c](Vec& _A_) -> Py {
@@ -47796,29 +47750,29 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         // it and ``o0``..``o1`` out from the line of the hull; at the stem and the sternpost (``ta`` -1, ``tb``
         // 1) it runs into their sides and stops there, cut to them.
         ends = list({});
-        for (Py _v14302 : each(tuple({tuple({o0, y0__}), tuple({o1, y0__}), tuple({o1, y1__}), tuple({o0, y1__})}))) {
-            Vec _u14303 = unpack(_v14302, 2);
-            o = _u14303[0];
-            y = _u14303[1];
+        for (Py _v14283 : each(tuple({tuple({o0, y0__}), tuple({o1, y0__}), tuple({o1, y1__}), tuple({o0, y1__})}))) {
+            Vec _u14284 = unpack(_v14283, 2);
+            o = _u14284[0];
+            y = _u14284[1];
             lim = list({});
-            for (Py _v14304 : each(tuple({ta, tb}))) {
-                tt = _v14304;
+            for (Py _v14285 : each(tuple({ta, tb}))) {
+                tt = _v14285;
                 if (abs_(tt) < 1.0) {
                     lim.append(tt);
                     continue;
                 }
-                { Py _t14305 = tuple({Py(0.0), tt}); Vec _u14306 = unpack(_t14305, 2); lo = _u14306[0]; hi = _u14306[1]; }  // where this edge reaches the post
-                for (Py _v14307 : range(Py(50))) {
-                    _ = _v14307;
+                { Py _t14286 = tuple({Py(0.0), tt}); Vec _u14287 = unpack(_t14286, 2); lo = _u14287[0]; hi = _u14287[1]; }  // where this edge reaches the post
+                for (Py _v14288 : range(Py(50))) {
+                    _ = _v14288;
                     mid = (lo + hi) / 2;
-                    { Py _t14308 = (abs_(call((*by_rim__c), {mid, sg, o, y})[2]) > (*POST_Z__c) ? tuple({mid, hi}) : tuple({lo, mid})); Vec _u14309 = unpack(_t14308, 2); lo = _u14309[0]; hi = _u14309[1]; }
+                    { Py _t14289 = (abs_(call((*by_rim__c), {mid, sg, o, y})[2]) > (*POST_Z__c) ? tuple({mid, hi}) : tuple({lo, mid})); Vec _u14290 = unpack(_t14289, 2); lo = _u14290[0]; hi = _u14290[1]; }
                 }
                 lim.append(lo);
             }
             ends.append(lim);
         }
         steps = max2(Py(2), int_(abs_(tb - ta) / 0.012));
-        rings = [&](Range _it14310) { Py i; Py _r14311 = list(); for (Py _x14318 : _it14310) { i = _x14318; L_(_r14311)->v.push_back([&](Each _it14312) { Py a; Py b; Py o; Py y; Py _r14313 = list(); for (Py _x14314 : _it14312) { Vec _u14315 = unpack(_x14314, 2); Vec _u14316 = unpack(_u14315[0], 2); a = _u14316[0]; b = _u14316[1]; Vec _u14317 = unpack(_u14315[1], 2); o = _u14317[0]; y = _u14317[1]; L_(_r14313)->v.push_back(call((*by_rim__c), {a + (b - a) * i / steps, sg, o, y})); } return _r14313; }(each(zip_({ends, tuple({tuple({o0, y0__}), tuple({o1, y0__}), tuple({o1, y1__}), tuple({o0, y1__})})})))); } return _r14311; }(range(steps + 1));
+        rings = [&](Range _it14291) { Py i; Py _r14292 = list(); for (Py _x14299 : _it14291) { i = _x14299; L_(_r14292)->v.push_back([&](Each _it14293) { Py a; Py b; Py o; Py y; Py _r14294 = list(); for (Py _x14295 : _it14293) { Vec _u14296 = unpack(_x14295, 2); Vec _u14297 = unpack(_u14296[0], 2); a = _u14297[0]; b = _u14297[1]; Vec _u14298 = unpack(_u14296[1], 2); o = _u14298[0]; y = _u14298[1]; L_(_r14294)->v.push_back(call((*by_rim__c), {a + (b - a) * i / steps, sg, o, y})); } return _r14294; }(each(zip_({ends, tuple({tuple({o0, y0__}), tuple({o1, y0__}), tuple({o1, y1__}), tuple({o0, y1__})})})))); } return _r14292; }(range(steps + 1));
         addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft(rings, colour); })));
         return None;
     });
@@ -47835,7 +47789,7 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         // A timber lying along the deck from ``xa_`` to ``xb_``, between ``z0`` and ``z1``, ``y0``..``y1`` above the
         // deck's line, following its sheer.
         m_ = max2(Py(2), int_((xb_ - xa_) / 0.5));
-        rings = [&](Each _it14319) { Py x; Py _r14323 = list(); for (Py _x14324 : _it14319) { x = _x14324; L_(_r14323)->v.push_back(list({list({x, call((*deck_y__c), {x}) + y1__, z0}), list({x, call((*deck_y__c), {x}) + y1__, z1}), list({x, call((*deck_y__c), {x}) + y0__, z1}), list({x, call((*deck_y__c), {x}) + y0__, z0})})); } return _r14323; }(each([&](Range _it14320) { Py i; Py _r14321 = list(); for (Py _x14322 : _it14320) { i = _x14322; L_(_r14321)->v.push_back(xa_ + (xb_ - xa_) * i / float_(m_)); } return _r14321; }(range(m_ + 1))));
+        rings = [&](Each _it14300) { Py x; Py _r14304 = list(); for (Py _x14305 : _it14300) { x = _x14305; L_(_r14304)->v.push_back(list({list({x, call((*deck_y__c), {x}) + y1__, z0}), list({x, call((*deck_y__c), {x}) + y1__, z1}), list({x, call((*deck_y__c), {x}) + y0__, z1}), list({x, call((*deck_y__c), {x}) + y0__, z0})})); } return _r14304; }(each([&](Range _it14301) { Py i; Py _r14302 = list(); for (Py _x14303 : _it14301) { i = _x14303; L_(_r14302)->v.push_back(xa_ + (xb_ - xa_) * i / float_(m_)); } return _r14302; }(range(m_ + 1))));
         addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft(rings, colour); })));
         return None;
     });
@@ -47853,7 +47807,7 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         // square to its sheer.
         t = call((*t_at__c), {x});
         box = addpy::make([&] { addpy::cuboid(list({Py(0), (y0__ + y1__) / 2, (z0 + z1) / 2}), list({w, y1__ - y0__, z1 - z0}), colour); });
-        addpy::mesh([&] { Py _a14325 = addpy::rotateZ(box, addpy::atan(call((*slope__c), {t}))); Py _a14326 = list({x, call((*sheer__c), {t}), Py(0)}); return addpy::move(_a14325, _a14326); }());
+        addpy::mesh([&] { Py _a14306 = addpy::rotateZ(box, addpy::atan(call((*slope__c), {t}))); Py _a14307 = list({x, call((*sheer__c), {t}), Py(0)}); return addpy::move(_a14306, _a14307); }());
         return None;
     });
     on_deck = func(sig("on_deck", {"x", "z", "lift", "facing"}, {MISSING_ARG, MISSING_ARG, Py(0.03), Py(0.0)}, 2), [sheer__c, slope__c, t_at__c](Vec& _A_) -> Py {
@@ -47865,7 +47819,7 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         // Set down what was built since ``add.push()`` about the origin on the deck at (x, z), turned by ``facing``
         // and tilted to the sheer.
         t = call((*t_at__c), {x});
-        addpy::mesh([&] { Py _a14329 = [&] { Py _a14327 = addpy::rotateY(addpy::pop(), facing); Py _a14328 = addpy::atan(call((*slope__c), {t})); return addpy::rotateZ(_a14327, _a14328); }(); Py _a14330 = list({x, call((*sheer__c), {t}) + lift, z}); return addpy::move(_a14329, _a14330); }());
+        addpy::mesh([&] { Py _a14310 = [&] { Py _a14308 = addpy::rotateY(addpy::pop(), facing); Py _a14309 = addpy::atan(call((*slope__c), {t})); return addpy::rotateZ(_a14308, _a14309); }(); Py _a14311 = list({x, call((*sheer__c), {t}) + lift, z}); return addpy::move(_a14310, _a14311); }());
         return None;
     });
     end_steps = func(sig("end_steps", {"t0", "t1", "far"}, {MISSING_ARG, MISSING_ARG, Py(0.06)}, 2), [](Vec& _A_) -> Py {
@@ -47892,111 +47846,111 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     // stations close together at the ends, so that it follows the side where it turns in to the posts
     SH = addpy::Mesh();
     rings_i = list({});
-    TE = [&](Range _it14331) { Py k; Py _r14332 = list(); for (Py _x14333 : _it14331) { k = _x14333; L_(_r14332)->v.push_back(1.0 - 0.1 * pow_(Py(0.8), k)); } return _r14332; }(range(Py(19))) + list({Py(1.0)});  // (0.9 .. 1: a fifth closer each time)
-    TS = [&](Each _it14334) { Py t; Py _r14335 = list(); for (Py _x14336 : _it14334) { t = _x14336; L_(_r14335)->v.push_back(-t); } return _r14335; }(each(slice(TE, None, None, Py(-1)))) + [&](Range _it14337) { Py i; Py _r14338 = list(); for (Py _x14339 : _it14337) { i = _x14339; if (!(abs_(call((*STATION__c), {i})) < (Py(0.9) - 1e-06))) continue; L_(_r14338)->v.push_back(call((*STATION__c), {i})); } return _r14338; }(range((*n__c))) + TE;
-    for (Py _v14340 : each(TS)) {
-        t = _v14340;
-        { Py _t14341 = tuple({call((*sheer__c), {t}), call((*keel__c), {t})}); Vec _u14342 = unpack(_t14341, 2); sh = _u14342[0]; (*k__c) = _u14342[1]; }
+    TE = [&](Range _it14312) { Py k; Py _r14313 = list(); for (Py _x14314 : _it14312) { k = _x14314; L_(_r14313)->v.push_back(1.0 - 0.1 * pow_(Py(0.8), k)); } return _r14313; }(range(Py(19))) + list({Py(1.0)});  // (0.9 .. 1: a fifth closer each time)
+    TS = [&](Each _it14315) { Py t; Py _r14316 = list(); for (Py _x14317 : _it14315) { t = _x14317; L_(_r14316)->v.push_back(-t); } return _r14316; }(each(slice(TE, None, None, Py(-1)))) + [&](Range _it14318) { Py i; Py _r14319 = list(); for (Py _x14320 : _it14318) { i = _x14320; if (!(abs_(call((*STATION__c), {i})) < (Py(0.9) - 1e-06))) continue; L_(_r14319)->v.push_back(call((*STATION__c), {i})); } return _r14319; }(range((*n__c))) + TE;
+    for (Py _v14321 : each(TS)) {
+        t = _v14321;
+        { Py _t14322 = tuple({call((*sheer__c), {t}), call((*keel__c), {t})}); Vec _u14323 = unpack(_t14322, 2); sh = _u14323[0]; (*k__c) = _u14323[1]; }
         tp = min2(T_P, 0.4 * call((*half__c), {t}));
-        port = [&](Each _it14343) { Py f; Py _r14344 = list(); for (Py _x14345 : _it14343) { f = _x14345; L_(_r14344)->v.push_back(list({call((*xs__c), {t}), sh - (sh - (*k__c)) * f, (f > 0 ? call((*side__c), {t, sh - (sh - (*k__c)) * f}) : call((*half__c), {t}))})); } return _r14344; }(each((*FRAC__c)));
-        outer = port + list({list({call((*xs__c), {t}), (*k__c), Py(0.0)})}) + [&](Each _it14346) { Py x; Py y; Py z; Py _r14347 = list(); for (Py _x14348 : _it14346) { Vec _u14349 = unpack(_x14348, 3); x = _u14349[0]; y = _u14349[1]; z = _u14349[2]; L_(_r14347)->v.push_back(list({x, y, -z})); } return _r14347; }(each(slice(port, None, None, Py(-1))));
-        pin = [&](Each _it14350) { Py f; Py _r14351 = list(); for (Py _x14352 : _it14350) { f = _x14352; L_(_r14351)->v.push_back(call((*hull_at__c), {t, f, Py(1), -tp})); } return _r14351; }(each((*FRAC__c)));
-        pin = [&](Each _it14353) { Py p; Py _r14354 = list(); for (Py _x14355 : _it14353) { p = _x14355; L_(_r14354)->v.push_back(list({p[0], p[1], max2(Py(0.01), p[2])})); } return _r14354; }(each(pin));
-        inner = pin + list({list({call((*xs__c), {t}), (*k__c) + tp, Py(0.0)})}) + [&](Each _it14356) { Py x; Py y; Py z; Py _r14357 = list(); for (Py _x14358 : _it14356) { Vec _u14359 = unpack(_x14358, 3); x = _u14359[0]; y = _u14359[1]; z = _u14359[2]; L_(_r14357)->v.push_back(list({x, y, -z})); } return _r14357; }(each(slice(pin, None, None, Py(-1))));
-        rings_i.append([&](Each _it14360) { Py p; Py _r14361 = list(); for (Py _x14362 : _it14360) { p = _x14362; L_(_r14361)->v.push_back(mesh_add_vertex(SH, p)); } return _r14361; }(each(outer + slice(inner, None, None, Py(-1)))));
+        port = [&](Each _it14324) { Py f; Py _r14325 = list(); for (Py _x14326 : _it14324) { f = _x14326; L_(_r14325)->v.push_back(list({call((*xs__c), {t}), sh - (sh - (*k__c)) * f, (f > 0 ? call((*side__c), {t, sh - (sh - (*k__c)) * f}) : call((*half__c), {t}))})); } return _r14325; }(each((*FRAC__c)));
+        outer = port + list({list({call((*xs__c), {t}), (*k__c), Py(0.0)})}) + [&](Each _it14327) { Py x; Py y; Py z; Py _r14328 = list(); for (Py _x14329 : _it14327) { Vec _u14330 = unpack(_x14329, 3); x = _u14330[0]; y = _u14330[1]; z = _u14330[2]; L_(_r14328)->v.push_back(list({x, y, -z})); } return _r14328; }(each(slice(port, None, None, Py(-1))));
+        pin = [&](Each _it14331) { Py f; Py _r14332 = list(); for (Py _x14333 : _it14331) { f = _x14333; L_(_r14332)->v.push_back(call((*hull_at__c), {t, f, Py(1), -tp})); } return _r14332; }(each((*FRAC__c)));
+        pin = [&](Each _it14334) { Py p; Py _r14335 = list(); for (Py _x14336 : _it14334) { p = _x14336; L_(_r14335)->v.push_back(list({p[0], p[1], max2(Py(0.01), p[2])})); } return _r14335; }(each(pin));
+        inner = pin + list({list({call((*xs__c), {t}), (*k__c) + tp, Py(0.0)})}) + [&](Each _it14337) { Py x; Py y; Py z; Py _r14338 = list(); for (Py _x14339 : _it14337) { Vec _u14340 = unpack(_x14339, 3); x = _u14340[0]; y = _u14340[1]; z = _u14340[2]; L_(_r14338)->v.push_back(list({x, y, -z})); } return _r14338; }(each(slice(pin, None, None, Py(-1))));
+        rings_i.append([&](Each _it14341) { Py p; Py _r14342 = list(); for (Py _x14343 : _it14341) { p = _x14343; L_(_r14342)->v.push_back(mesh_add_vertex(SH, p)); } return _r14342; }(each(outer + slice(inner, None, None, Py(-1)))));
     }
     no = 2 * len((*FRAC__c)) + 1;
     m = 2 * no;
-    for (Py _v14363 : range(len(TS) - 1)) {
-        i = _v14363;
+    for (Py _v14344 : range(len(TS) - 1)) {
+        i = _v14344;
         io = min2((*n__c) - 2, int_((TS[i] + TS[i + 1] + 2) / 2 * ((*n__c) - 1) / 2));  // (the even station before it)
-        for (Py _v14364 : range(m)) {
-            j = _v14364;
+        for (Py _v14345 : range(m)) {
+            j = _v14345;
             face = list({rings_i[i][j], rings_i[i][mod(j + 1, m)], rings_i[i + 1][mod(j + 1, m)], rings_i[i + 1][j]});
-            q = [&](Range _it14365) { Py c; Py _r14366 = list(); for (Py _x14370 : _it14365) { c = _x14370; L_(_r14366)->v.push_back(sum([&](Each _it14367) { Py v; Py _r14368 = list(); for (Py _x14369 : _it14367) { v = _x14369; L_(_r14368)->v.push_back(mesh_V(SH)[v][c]); } return _r14368; }(each(face))) / 4.0); } return _r14366; }(range(Py(3)));
+            q = [&](Range _it14346) { Py c; Py _r14347 = list(); for (Py _x14351 : _it14346) { c = _x14351; L_(_r14347)->v.push_back(sum([&](Each _it14348) { Py v; Py _r14349 = list(); for (Py _x14350 : _it14348) { v = _x14350; L_(_r14349)->v.push_back(mesh_V(SH)[v][c]); } return _r14349; }(each(face))) / 4.0); } return _r14347; }(range(Py(3)));
             if (j < (no - 1)) {  // the outside (tarred below the
                 colour = P[S("wood_dark")];  // water: see below)
             } else if (contains(tuple({no - 1, m - 1}), j)) {  // the planks' top edges
                 colour = P[S("wood_dark")];
             } else {
                 tq = call((*STATION__c), {io}) + 1.0 / ((*n__c) - 1);  // the butts staggered
-                sk = int_([&] { Py _t14371 = 10.3 * (call((*sheer__c), {tq}) - q[1]); Py _t14372 = [&] { Py _t14373 = call((*sheer__c), {tq}); Py _t14374 = call((*keel__c), {tq}); return _t14373 - _t14374; }(); return _t14371 / _t14372; }());
+                sk = int_([&] { Py _t14352 = 10.3 * (call((*sheer__c), {tq}) - q[1]); Py _t14353 = [&] { Py _t14354 = call((*sheer__c), {tq}); Py _t14355 = call((*keel__c), {tq}); return _t14354 - _t14355; }(); return _t14352 / _t14353; }());
                 colour = shade_of(S("wood"), sk + floordiv(io + 3 * sk, Py(6)) + (*seed__c));
             }
             mesh_add_face(SH, face, colour);
         }
     }
-    for (Py _v14375 : each(tuple({Py(0), len(TS) - 1}))) {
-        i = _v14375;
+    for (Py _v14356 : each(tuple({Py(0), len(TS) - 1}))) {
+        i = _v14356;
         r = rings_i[i];
-        for (Py _v14376 : range(no - 1)) {
-            j = _v14376;
+        for (Py _v14357 : range(no - 1)) {
+            j = _v14357;
             mesh_add_face(SH, list({r[j], r[j + 1], r[m - 2 - j], r[m - 1 - j]}), P[S("wood_dark")]);
         }
     }
     addpy::mesh(tarred(addpy::fix_normals(SH), Py(0.15), P[S("black")], P[S("wood_dark")]));
-    { Py _t14377 = K(tuple({Py(10), Py(6)})); Vec _u14378 = unpack(_t14377, 2); (*STRAKES__c) = _u14378[0]; NSUB = _u14378[1]; }  // the planking: clinker-built, each
+    { Py _t14358 = K(tuple({Py(10), Py(6)})); Vec _u14359 = unpack(_t14358, 2); (*STRAKES__c) = _u14359[0]; NSUB = _u14359[1]; }  // the planking: clinker-built, each
     (*lap__c) = func(sig("lambda", {"u"}, {MISSING_ARG}, 1), [](Vec& _A_) -> Py { Py u = _A_[0]; return 0.012 + 0.038 * u; });  // strake lapped over the one below it,
-    for (Py _v14379 : each(K(tuple({Py(-1), Py(1)})))) {  // its lower edge standing out; planks
-        sg = _v14379;
-        for (Py _v14380 : range((*STRAKES__c))) {  // 4 to 6 m long, their butts staggered
-            (*k__c) = _v14380;
-            { Py _t14381 = tuple({0.97 * (*k__c) / (*STRAKES__c) - ((truthy((*k__c)) ? Py(0.02) : Py(0.0))), 0.97 * ((*k__c) + 1) / (*STRAKES__c)}); Vec _u14382 = unpack(_t14381, 2); fa = _u14382[0]; fb = _u14382[1]; }  // from strake to strake, and a row
+    for (Py _v14360 : each(K(tuple({Py(-1), Py(1)})))) {  // its lower edge standing out; planks
+        sg = _v14360;
+        for (Py _v14361 : range((*STRAKES__c))) {  // 4 to 6 m long, their butts staggered
+            (*k__c) = _v14361;
+            { Py _t14362 = tuple({0.97 * (*k__c) / (*STRAKES__c) - ((truthy((*k__c)) ? Py(0.02) : Py(0.0))), 0.97 * ((*k__c) + 1) / (*STRAKES__c)}); Vec _u14363 = unpack(_t14362, 2); fa = _u14363[0]; fb = _u14363[1]; }  // from strake to strake, and a row
             ends = list({Py(-1.0)});  // of rivets along every lap; they run
             while (ends[Py(-1)] < 1.0) {  // into the stem and the sternpost (at
                 ends.append(min2(Py(1.0), ends[Py(-1)] + (0.34 + 0.16 * hash2((*seed__c) * 7 + (*k__c), len(ends), Py(57))) * ((len(ends) == 1 ? Py(0.6) : Py(1.0))) + ((len(ends) == 1 ? 0.12 * mod((*k__c), Py(3)) : Py(0.0)))));  // stations closer and closer as the
             }
-            fs = [&](Range _it14383) { Py i; Py _r14384 = list(); for (Py _x14385 : _it14383) { i = _x14385; L_(_r14384)->v.push_back(fa + (fb - fa) * i / NSUB); } return _r14384; }(range(NSUB + 1));  // side turns in to them); each is bent
-            for (Py _v14386 : range(len(ends) - 1)) {  // round the side, across its width too
-                j = _v14386;
-                { Py _t14387 = tuple({ends[j] + ((truthy(j) ? Py(5e-05) : Py(0.0))), ends[j + 1] - ((j < (len(ends) - 2) ? Py(5e-05) : Py(0.0)))}); Vec _u14388 = unpack(_t14387, 2); t0 = _u14388[0]; t1 = _u14388[1]; }  // (butted
+            fs = [&](Range _it14364) { Py i; Py _r14365 = list(); for (Py _x14366 : _it14364) { i = _x14366; L_(_r14365)->v.push_back(fa + (fb - fa) * i / NSUB); } return _r14365; }(range(NSUB + 1));  // side turns in to them); each is bent
+            for (Py _v14367 : range(len(ends) - 1)) {  // round the side, across its width too
+                j = _v14367;
+                { Py _t14368 = tuple({ends[j] + ((truthy(j) ? Py(5e-05) : Py(0.0))), ends[j + 1] - ((j < (len(ends) - 2) ? Py(5e-05) : Py(0.0)))}); Vec _u14369 = unpack(_t14368, 2); t0 = _u14369[0]; t1 = _u14369[1]; }  // (butted
                 // close: a hairline between them)
                 rings = list({});
-                for (Py _v14389 : each(call(end_steps, {t0, t1}))) {
-                    t = _v14389;
-                    rings.append([&] { Py _t14390 = [&](Each _it14392) { Py f; Py i; Py _r14393 = list(); for (Py _x14394 : _it14392) { Vec _u14395 = unpack(_x14394, 2); i = _u14395[0]; f = _u14395[1]; L_(_r14393)->v.push_back(call((*hull_at__c), {t, f, sg, call((*lap__c), {i / float_(NSUB)})})); } return _r14393; }(each(enumerate_(fs, Py(0)))); Py _t14391 = [&](Each _it14396) { Py f; Py _r14397 = list(); for (Py _x14398 : _it14396) { f = _x14398; L_(_r14397)->v.push_back(call((*hull_at__c), {t, f, sg, Py(-0.02)})); } return _r14397; }(each(slice(fs, None, None, Py(-1)))); return _t14390 + _t14391; }());
+                for (Py _v14370 : each(call(end_steps, {t0, t1}))) {
+                    t = _v14370;
+                    rings.append([&] { Py _t14371 = [&](Each _it14373) { Py f; Py i; Py _r14374 = list(); for (Py _x14375 : _it14373) { Vec _u14376 = unpack(_x14375, 2); i = _u14376[0]; f = _u14376[1]; L_(_r14374)->v.push_back(call((*hull_at__c), {t, f, sg, call((*lap__c), {i / float_(NSUB)})})); } return _r14374; }(each(enumerate_(fs, Py(0)))); Py _t14372 = [&](Each _it14377) { Py f; Py _r14378 = list(); for (Py _x14379 : _it14377) { f = _x14379; L_(_r14378)->v.push_back(call((*hull_at__c), {t, f, sg, Py(-0.02)})); } return _r14378; }(each(slice(fs, None, None, Py(-1)))); return _t14371 + _t14372; }());
                 }
                 mid = call((*hull_at__c), {(t0 + t1) / 2, (fa + fb) / 2, sg});
                 colour = ((*k__c) == 0 ? band : shade_of(S("wood"), (*k__c) + j + (*seed__c)));  // tarred below the water: the
                 addpy::mesh(tarred(addpy::fix_normals(addpy::make([&] { addpy::loft(rings, colour); })), Py(0.15), P[S("black")]));  // line level
             }
-            for (Py _v14399 : range(((*k__c) < ((*STRAKES__c) - 1) ? Py(39) : Py(0)))) {  // the rivets
-                i = _v14399;
+            for (Py _v14380 : range(((*k__c) < ((*STRAKES__c) - 1) ? Py(39) : Py(0)))) {  // the rivets
+                i = _v14380;
                 addpy::octahedron(call((*hull_at__c), {Py(-0.95) + i * 0.05, fb - 0.012, sg, call((*lap__c), {(fb - 0.012 - fa) / (fb - fa)}) + 0.001}), Py(0.022), P[S("iron")]);
             }
         }
     }
-    for (Py _v14400 : each(K(tuple({Py(0.3), Py(0.85), Py(1.35)})))) {  // the wales, along the sheer, from the
-        yw = _v14400;
-        for (Py _v14401 : each(K(tuple({Py(-1), Py(1)})))) {  // sternpost to the stem, into their sides
-            sg = _v14401;
+    for (Py _v14381 : each(K(tuple({Py(0.3), Py(0.85), Py(1.35)})))) {  // the wales, along the sheer, from the
+        yw = _v14381;
+        for (Py _v14382 : each(K(tuple({Py(-1), Py(1)})))) {  // sternpost to the stem, into their sides
+            sg = _v14382;
             pts = list({});
-            for (Py _v14402 : each(call(end_steps, {Py(-1.0), Py(1.0), Py(0.05)}))) {
-                t = _v14402;
+            for (Py _v14383 : each(call(end_steps, {Py(-1.0), Py(1.0), Py(0.05)}))) {
+                t = _v14383;
                 y = yw + 0.45 * t * t;
                 if (!is(call((*side__c), {t, y}), None)) {
-                    pts.append(call((*hull_at__c), {t, [&] { Py _t14403 = call((*sheer__c), {t}) - y; Py _t14404 = [&] { Py _t14405 = call((*sheer__c), {t}); Py _t14406 = call((*keel__c), {t}); return _t14405 - _t14406; }(); return _t14403 / _t14404; }(), sg, Py(0.03)}));
+                    pts.append(call((*hull_at__c), {t, [&] { Py _t14384 = call((*sheer__c), {t}) - y; Py _t14385 = [&] { Py _t14386 = call((*sheer__c), {t}); Py _t14387 = call((*keel__c), {t}); return _t14386 - _t14387; }(); return _t14384 / _t14385; }(), sg, Py(0.03)}));
                 }
             }
-            out = [&](Each _it14407) { Py i; Py p; Py _r14408 = list(); for (Py _x14409 : _it14407) { Vec _u14410 = unpack(_x14409, 2); i = _u14410[0]; p = _u14410[1]; if (!(abs_(p[2]) > ((*POST_Z__c) - 0.03))) continue; L_(_r14408)->v.push_back(i); } return _r14408; }(each(enumerate_(pts, Py(0))));
+            out = [&](Each _it14388) { Py i; Py p; Py _r14389 = list(); for (Py _x14390 : _it14388) { Vec _u14391 = unpack(_x14390, 2); i = _u14391[0]; p = _u14391[1]; if (!(abs_(p[2]) > ((*POST_Z__c) - 0.03))) continue; L_(_r14389)->v.push_back(i); } return _r14389; }(each(enumerate_(pts, Py(0))));
             pts = slice(pts, max2(Py(0), out[0] - 1), out[Py(-1)] + 2);
             pts = list({list({pts[0][0] - 0.05, pts[0][1], sg * 0.05})}) + pts + list({list({pts[Py(-1)][0] + 0.05, pts[Py(-1)][1], sg * 0.05})});
             addpy::polyline(pts, Py(0.08), Py(6), P[S("wood_dark")]);
         }
     }
-    TBEAMS = [&](Each _it14411) { Py x; Py _r14412 = list(); for (Py _x14413 : _it14411) { x = _x14413; L_(_r14412)->v.push_back(call(tx, {x})); } return _r14412; }(each(K(tuple({Py(-7.2), Py(-4.8), Py(-2.4), Py(0.0), Py(2.4), Py(4.8), Py(7.2)}))));  // the through-beams: their ends through
-    for (Py _v14414 : each(TBEAMS)) {  // the side (and inside, see below)
-        t = _v14414;
+    TBEAMS = [&](Each _it14392) { Py x; Py _r14393 = list(); for (Py _x14394 : _it14392) { x = _x14394; L_(_r14393)->v.push_back(call(tx, {x})); } return _r14393; }(each(K(tuple({Py(-7.2), Py(-4.8), Py(-2.4), Py(0.0), Py(2.4), Py(4.8), Py(7.2)}))));  // the through-beams: their ends through
+    for (Py _v14395 : each(TBEAMS)) {  // the side (and inside, see below)
+        t = _v14395;
         y = 1.1 + 0.45 * t * t;
         w = call((*side__c), {t, y});
-        for (Py _v14415 : each(K(tuple({Py(-1), Py(1)})))) {
-            sg = _v14415;
+        for (Py _v14396 : each(K(tuple({Py(-1), Py(1)})))) {
+            sg = _v14396;
             addpy::cuboid(list({call((*xs__c), {t}), y, sg * (w + 0.12)}), list({Py(0.26), Py(0.26), Py(0.3)}), P[S("wood_dark")]);  // (from within the planking)
         }
     }
     // ---- the deck: boards fore and aft, their butts staggered, the seams caulked black; along each side a waterway,
     // into which the boards' ends are cut; openings for the hatch and the mast
-    (*ST__c) = [&](Each _it14416) { Py t; Py _r14417 = list(); for (Py _x14420 : _it14416) { t = _x14420; L_(_r14417)->v.push_back(tuple({call((*xs__c), {t}), call((*half__c), {t}), [&] { Py _t14418 = call((*half__c), {t}); Py _t14419 = min2(T_P, 0.4 * call((*half__c), {t})); return _t14418 - _t14419; }()})); } return _r14417; }(each(TS));
+    (*ST__c) = [&](Each _it14397) { Py t; Py _r14398 = list(); for (Py _x14401 : _it14397) { t = _x14401; L_(_r14398)->v.push_back(tuple({call((*xs__c), {t}), call((*half__c), {t}), [&] { Py _t14399 = call((*half__c), {t}); Py _t14400 = min2(T_P, 0.4 * call((*half__c), {t})); return _t14399 - _t14400; }()})); } return _r14398; }(each(TS));
     (*gunwale__c) = func(sig("gunwale", {"x", "inner"}, {MISSING_ARG, False}, 1), [ST__c](Vec& _A_) -> Py {
         Py x = _A_[0];
         Py inner = _A_[1];
@@ -48008,16 +47962,16 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         Py xa_;
         Py xb_;
         // The half-breadth at the gunwale at ``x`` -- or of the inside of the planking there -- between the stations.
-        for (Py _v14421 : each(zip_({(*ST__c), slice((*ST__c), Py(1), None)}))) {
-            Vec _u14422 = unpack(_v14421, 2);
-            Vec _u14423 = unpack(_u14422[0], 3);
-            xa_ = _u14423[0];
-            ha = _u14423[1];
-            ia = _u14423[2];
-            Vec _u14424 = unpack(_u14422[1], 3);
-            xb_ = _u14424[0];
-            hb = _u14424[1];
-            ib = _u14424[2];
+        for (Py _v14402 : each(zip_({(*ST__c), slice((*ST__c), Py(1), None)}))) {
+            Vec _u14403 = unpack(_v14402, 2);
+            Vec _u14404 = unpack(_u14403[0], 3);
+            xa_ = _u14404[0];
+            ha = _u14404[1];
+            ia = _u14404[2];
+            Vec _u14405 = unpack(_u14403[1], 3);
+            xb_ = _u14405[0];
+            hb = _u14405[1];
+            ib = _u14405[2];
             if (x <= xb_) {
                 u = max2(Py(0.0), (x - xa_) / (xb_ - xa_));
                 return (truthy(inner) ? ia + (ib - ia) * u : ha + (hb - ha) * u);
@@ -48025,7 +47979,7 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         }
         return (truthy(inner) ? (*ST__c)[Py(-1)][2] : (*ST__c)[Py(-1)][1]);
     });
-    { Py _t14425 = tuple({call((*xs__c), {Py(-1.0)}) + 0.36, call((*xs__c), {Py(1.0)}) - 0.36}); Vec _u14426 = unpack(_t14425, 2); (*XW0__c) = _u14426[0]; (*XW1__c) = _u14426[1]; }  // (the sternpost's and the stem's faces)
+    { Py _t14406 = tuple({call((*xs__c), {Py(-1.0)}) + 0.36, call((*xs__c), {Py(1.0)}) - 0.36}); Vec _u14407 = unpack(_t14406, 2); (*XW0__c) = _u14407[0]; (*XW1__c) = _u14407[1]; }  // (the sternpost's and the stem's faces)
     (*reach__c) = func(sig("reach", {"zz", "sgn"}, {MISSING_ARG, MISSING_ARG}, 2), [W_M__c, XW0__c, XW1__c, gunwale__c](Vec& _A_) -> Py {
         Py zz = _A_[0];
         Py sgn = _A_[1];
@@ -48039,11 +47993,11 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         if ((call((*gunwale__c), {lim}) - (*W_M__c)) >= zz) {
             return lim;
         }
-        { Py _t14427 = tuple({Py(0.0), lim}); Vec _u14428 = unpack(_t14427, 2); lo = _u14428[0]; hi = _u14428[1]; }
-        for (Py _v14429 : range(Py(40))) {
-            _ = _v14429;
+        { Py _t14408 = tuple({Py(0.0), lim}); Vec _u14409 = unpack(_t14408, 2); lo = _u14409[0]; hi = _u14409[1]; }
+        for (Py _v14410 : range(Py(40))) {
+            _ = _v14410;
             mid = (lo + hi) / 2;
-            { Py _t14430 = ((call((*gunwale__c), {mid}) - (*W_M__c)) >= zz ? tuple({mid, hi}) : tuple({lo, mid})); Vec _u14431 = unpack(_t14430, 2); lo = _u14431[0]; hi = _u14431[1]; }
+            { Py _t14411 = ((call((*gunwale__c), {mid}) - (*W_M__c)) >= zz ? tuple({mid, hi}) : tuple({lo, mid})); Vec _u14412 = unpack(_t14411, 2); lo = _u14412[0]; hi = _u14412[1]; }
         }
         return lo;
     });
@@ -48054,15 +48008,15 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         Py lo_;
         Py mid;
         // How far out the inside of the bulwark is at ``x`` (it stands a hand in from the gunwale, square to it).
-        { Py _t14432 = K(tuple({Py(-1.0), Py(1.0)})); Vec _u14433 = unpack(_t14432, 2); lo_ = _u14433[0]; hi_ = _u14433[1]; }
-        for (Py _v14434 : range(Py(40))) {
-            _ = _v14434;
+        { Py _t14413 = K(tuple({Py(-1.0), Py(1.0)})); Vec _u14414 = unpack(_t14413, 2); lo_ = _u14414[0]; hi_ = _u14414[1]; }
+        for (Py _v14415 : range(Py(40))) {
+            _ = _v14415;
             mid = (lo_ + hi_) / 2;
-            { Py _t14435 = (call((*by_rim__c), {mid, Py(1), Py(-0.06), Py(0)})[0] < x ? tuple({mid, hi_}) : tuple({lo_, mid})); Vec _u14436 = unpack(_t14435, 2); lo_ = _u14436[0]; hi_ = _u14436[1]; }
+            { Py _t14416 = (call((*by_rim__c), {mid, Py(1), Py(-0.06), Py(0)})[0] < x ? tuple({mid, hi_}) : tuple({lo_, mid})); Vec _u14417 = unpack(_t14416, 2); lo_ = _u14417[0]; hi_ = _u14417[1]; }
         }
         return abs_(call((*by_rim__c), {(lo_ + hi_) / 2, Py(1), Py(-0.06), Py(0)})[2]);
     });
-    (*way_out__c) = func(sig("lambda", {"x"}, {MISSING_ARG}, 1), [bulwark_in__c, gunwale__c](Vec& _A_) -> Py { Py x = _A_[0]; return [&] { Py _t14437 = call((*gunwale__c), {x, True}); Py _t14438 = call((*bulwark_in__c), {x}); return min2(_t14437, _t14438); }() - 0.004; });  // (the waterway's outer edge)
+    (*way_out__c) = func(sig("lambda", {"x"}, {MISSING_ARG}, 1), [bulwark_in__c, gunwale__c](Vec& _A_) -> Py { Py x = _A_[0]; return [&] { Py _t14418 = call((*gunwale__c), {x, True}); Py _t14419 = call((*bulwark_in__c), {x}); return min2(_t14418, _t14419); }() - 0.004; });  // (the waterway's outer edge)
     ends_of = func(sig("ends_of", {"sgn"}, {MISSING_ARG}, 1), [POST_Z__c, XW0__c, XW1__c, way_out__c, xs__c](Vec& _A_) -> Py {
         Py sgn = _A_[0];
         Py _;
@@ -48070,9 +48024,9 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         Py lo;
         Py mid;
         // Where the waterway ends beside the sternpost (``sgn`` -1) or the stem, too narrow to go on.
-        { Py _t14439 = (sgn < 0 ? tuple({call((*xs__c), {Py(-1.0)}), (*XW0__c)}) : tuple({(*XW1__c), call((*xs__c), {Py(1.0)})})); Vec _u14440 = unpack(_t14439, 2); lo = _u14440[0]; hi = _u14440[1]; }
-        for (Py _v14441 : range(Py(40))) {
-            _ = _v14441;
+        { Py _t14420 = (sgn < 0 ? tuple({call((*xs__c), {Py(-1.0)}), (*XW0__c)}) : tuple({(*XW1__c), call((*xs__c), {Py(1.0)})})); Vec _u14421 = unpack(_t14420, 2); lo = _u14421[0]; hi = _u14421[1]; }
+        for (Py _v14422 : range(Py(40))) {
+            _ = _v14422;
             mid = (lo + hi) / 2;
             if ((Py(call((*way_out__c), {mid}) > ((*POST_Z__c) + 0.008))) == (Py(sgn < 0))) {
                 hi = mid;
@@ -48082,13 +48036,13 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         }
         return (lo + hi) / 2;
     });
-    for (Py _v14442 : each(K(tuple({Py(-1), Py(1)})))) {  // the waterways
-        sg = _v14442;
-        xw0 = [&] { Py _t14443 = call(ends_of, {Py(-1)}); Py _t14444 = call((*xs__c), {Py(-1.0)}) + 0.11; return max2(_t14443, _t14444); }();  // (clear of the rudder's top strap)
-        xw = [&] { Py _t14445 = list({xw0}) + [&](Each _it14447) { Py _; Py x; Py _r14448 = list(); for (Py _x14449 : _it14447) { Vec _u14450 = unpack(_x14449, 3); x = _u14450[0]; _ = _u14450[1]; _ = _u14450[2]; if (!([&]() -> bool { Py _t14451 = xw0; Py _t14452 = x; if (!(_t14451 < _t14452)) return false; Py _t14453 = call(ends_of, {Py(1)}); return _t14452 < _t14453; }())) continue; L_(_r14448)->v.push_back(x); } return _r14448; }(each((*ST__c))); Py _t14446 = list({(*XW0__c), (*XW1__c), call(ends_of, {Py(1)})}); return _t14445 + _t14446; }();
+    for (Py _v14423 : each(K(tuple({Py(-1), Py(1)})))) {  // the waterways
+        sg = _v14423;
+        xw0 = [&] { Py _t14424 = call(ends_of, {Py(-1)}); Py _t14425 = call((*xs__c), {Py(-1.0)}) + 0.11; return max2(_t14424, _t14425); }();  // (clear of the rudder's top strap)
+        xw = [&] { Py _t14426 = list({xw0}) + [&](Each _it14428) { Py _; Py x; Py _r14429 = list(); for (Py _x14430 : _it14428) { Vec _u14431 = unpack(_x14430, 3); x = _u14431[0]; _ = _u14431[1]; _ = _u14431[2]; if (!([&]() -> bool { Py _t14432 = xw0; Py _t14433 = x; if (!(_t14432 < _t14433)) return false; Py _t14434 = call(ends_of, {Py(1)}); return _t14433 < _t14434; }())) continue; L_(_r14429)->v.push_back(x); } return _r14429; }(each((*ST__c))); Py _t14427 = list({(*XW0__c), (*XW1__c), call(ends_of, {Py(1)})}); return _t14426 + _t14427; }();
         rings = list({});
-        for (Py _v14454 : each(sorted(set_of([&](Each _it14455) { Py v; Py _r14456 = list(); for (Py _x14457 : _it14455) { v = _x14457; L_(_r14456)->v.push_back(round_(v, Py(6))); } return _r14456; }(each(xw))), None, False))) {
-            x = _v14454;
+        for (Py _v14435 : each(sorted(set_of([&](Each _it14436) { Py v; Py _r14437 = list(); for (Py _x14438 : _it14436) { v = _x14438; L_(_r14437)->v.push_back(round_(v, Py(6))); } return _r14437; }(each(xw))), None, False))) {
+            x = _v14435;
             zo_ = call((*way_out__c), {x});
             zi_ = min2(max2(call((*gunwale__c), {x}) - (*W_M__c), ((x < (*XW0__c)) || (x > (*XW1__c)) ? (*POST_Z__c) + 0.002 : Py(0.0))), zo_ - 0.005);
             y = call((*deck_y__c), {x});
@@ -48127,12 +48081,12 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         // A deck board from ``xa_`` to ``xb_`` along the deck, following its sheer, ``y0``..``y1`` above the deck's line:
         // its inner edge ``z_in`` straight, its outer edge ``z_out`` -- where the waterway comes in towards the ends --
         // nibbed into the waterway along its line; with ``pitch`` the caulking of a seam instead, a black strip.
-        { Py _t14458 = tuple({(z_out > 0 ? Py(1) : Py(-1)), abs_(z_in), abs_(z_out)}); Vec _u14459 = unpack(_t14458, 3); sg_ = _u14459[0]; zi_ = _u14459[1]; zo_ = _u14459[2]; }
+        { Py _t14439 = tuple({(z_out > 0 ? Py(1) : Py(-1)), abs_(z_in), abs_(z_out)}); Vec _u14440 = unpack(_t14439, 3); sg_ = _u14440[0]; zi_ = _u14440[1]; zo_ = _u14440[2]; }
         n_ = max2(Py(1), int_((xb_ - xa_) / 1.0));
-        xq = set_of([&] { Py _t14460 = [&](Range _it14462) { Py i; Py _r14463 = list(); for (Py _x14464 : _it14462) { i = _x14464; L_(_r14463)->v.push_back(xa_ + (xb_ - xa_) * i / float_(n_)); } return _r14463; }(range(n_ + 1)) + [&](Each _it14465) { Py r_; Py _r14466 = list(); for (Py _x14467 : _it14465) { r_ = _x14467; if (!([&]() -> bool { Py _t14468 = xa_; Py _t14469 = r_; if (!(_t14468 < _t14469)) return false; Py _t14470 = xb_; return _t14469 < _t14470; }())) continue; L_(_r14466)->v.push_back(r_); } return _r14466; }(each(tuple({call((*reach__c), {zo_, Py(-1)}), call((*reach__c), {zo_, Py(1)}), Py(0.0)}))); Py _t14461 = [&](Each _it14471) { Py _; Py x; Py _r14472 = list(); for (Py _x14473 : _it14471) { Vec _u14474 = unpack(_x14473, 3); x = _u14474[0]; _ = _u14474[1]; _ = _u14474[2]; if (!(([&]() -> bool { Py _t14475 = xa_; Py _t14476 = x; if (!(_t14475 < _t14476)) return false; Py _t14477 = xb_; return _t14476 < _t14477; }()) && ((call((*gunwale__c), {x}) - (*W_M__c)) < (zo_ + 0.25)))) continue; L_(_r14472)->v.push_back(x); } return _r14472; }(each((*ST__c))); return _t14460 + _t14461; }());  // (where it is nibbed, at every station)
+        xq = set_of([&] { Py _t14441 = [&](Range _it14443) { Py i; Py _r14444 = list(); for (Py _x14445 : _it14443) { i = _x14445; L_(_r14444)->v.push_back(xa_ + (xb_ - xa_) * i / float_(n_)); } return _r14444; }(range(n_ + 1)) + [&](Each _it14446) { Py r_; Py _r14447 = list(); for (Py _x14448 : _it14446) { r_ = _x14448; if (!([&]() -> bool { Py _t14449 = xa_; Py _t14450 = r_; if (!(_t14449 < _t14450)) return false; Py _t14451 = xb_; return _t14450 < _t14451; }())) continue; L_(_r14447)->v.push_back(r_); } return _r14447; }(each(tuple({call((*reach__c), {zo_, Py(-1)}), call((*reach__c), {zo_, Py(1)}), Py(0.0)}))); Py _t14442 = [&](Each _it14452) { Py _; Py x; Py _r14453 = list(); for (Py _x14454 : _it14452) { Vec _u14455 = unpack(_x14454, 3); x = _u14455[0]; _ = _u14455[1]; _ = _u14455[2]; if (!(([&]() -> bool { Py _t14456 = xa_; Py _t14457 = x; if (!(_t14456 < _t14457)) return false; Py _t14458 = xb_; return _t14457 < _t14458; }()) && ((call((*gunwale__c), {x}) - (*W_M__c)) < (zo_ + 0.25)))) continue; L_(_r14453)->v.push_back(x); } return _r14453; }(each((*ST__c))); return _t14441 + _t14442; }());  // (where it is nibbed, at every station)
         rings = list({});
-        for (Py _v14478 : each(sorted(xq, None, False))) {
-            x = _v14478;
+        for (Py _v14459 : each(sorted(xq, None, False))) {
+            x = _v14459;
             w = max2(zi_ + 0.001, min2(zo_, call((*gunwale__c), {x}) - (*W_M__c) - 0.001));
             y = call((*deck_y__c), {x});
             rings.append(list({list({x, y + y1__, sg_ * zi_}), list({x, y + y1__, sg_ * w}), list({x, y + y0__, sg_ * w}), list({x, y + y0__, sg_ * zi_})}));
@@ -48142,17 +48096,17 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
             return None;
         }
         S___ = addpy::Mesh();  // (the seam: its top and bottom only)
-        for (Py _v14479 : each(rings)) {
-            r_ = _v14479;
-            for (Py _v14480 : each(tuple({r_[0], r_[1], list({r_[1][0], r_[1][1] - 0.004, r_[1][2]}), list({r_[0][0], r_[0][1] - 0.004, r_[0][2]})}))) {
-                p_ = _v14480;
+        for (Py _v14460 : each(rings)) {
+            r_ = _v14460;
+            for (Py _v14461 : each(tuple({r_[0], r_[1], list({r_[1][0], r_[1][1] - 0.004, r_[1][2]}), list({r_[0][0], r_[0][1] - 0.004, r_[0][2]})}))) {
+                p_ = _v14461;
                 mesh_add_vertex(S___, p_);
             }
         }
-        for (Py _v14481 : range(len(rings) - 1)) {
-            i = _v14481;
-            { Py _t14482 = tuple({4 * i, 4 * i + 4}); Vec _u14483 = unpack(_t14482, 2); a_ = _u14483[0]; b_ = _u14483[1]; }
-            { Py _t14484 = tuple({list({a_, a_ + 1, b_ + 1, b_}), list({a_ + 3, b_ + 3, b_ + 2, a_ + 2})}); Vec _u14485 = unpack(_t14484, 2); top_ = _u14485[0]; bot_ = _u14485[1]; }
+        for (Py _v14462 : range(len(rings) - 1)) {
+            i = _v14462;
+            { Py _t14463 = tuple({4 * i, 4 * i + 4}); Vec _u14464 = unpack(_t14463, 2); a_ = _u14464[0]; b_ = _u14464[1]; }
+            { Py _t14465 = tuple({list({a_, a_ + 1, b_ + 1, b_}), list({a_ + 3, b_ + 3, b_ + 2, a_ + 2})}); Vec _u14466 = unpack(_t14465, 2); top_ = _u14466[0]; bot_ = _u14466[1]; }
             mesh_add_face(S___, (sg_ > 0 ? top_ : slice(top_, None, None, Py(-1))), colour);
             mesh_add_face(S___, (sg_ > 0 ? bot_ : slice(bot_, None, None, Py(-1))), colour);
         }
@@ -48184,25 +48138,25 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
             return None;
         }
         pieces = list({list({call((*reach__c), {zi_ + 0.002, Py(-1)}), call((*reach__c), {zi_ + 0.002, Py(1)})})});
-        for (Py _v14486 : each(cuts)) {
-            c = _v14486;
-            pieces = [&](Each _it14487) { Py a_; Py b_; Py q; Py _r14488 = list(); for (Py _x14489 : _it14487) { Vec _u14490 = unpack(_x14489, 2); a_ = _u14490[0]; b_ = _u14490[1]; for (Py _x14491 : each(([&]() -> bool { Py _t14492 = a_ + 0.3; Py _t14493 = c; if (!(_t14492 < _t14493)) return false; Py _t14494 = b_ - 0.3; return _t14493 < _t14494; }() ? tuple({list({a_, c - 0.001}), list({c + 0.001, b_})}) : tuple({list({a_, b_})})))) { q = _x14491; L_(_r14488)->v.push_back(q); } } return _r14488; }(each(pieces));
+        for (Py _v14467 : each(cuts)) {
+            c = _v14467;
+            pieces = [&](Each _it14468) { Py a_; Py b_; Py q; Py _r14469 = list(); for (Py _x14470 : _it14468) { Vec _u14471 = unpack(_x14470, 2); a_ = _u14471[0]; b_ = _u14471[1]; for (Py _x14472 : each(([&]() -> bool { Py _t14473 = a_ + 0.3; Py _t14474 = c; if (!(_t14473 < _t14474)) return false; Py _t14475 = b_ - 0.3; return _t14474 < _t14475; }() ? tuple({list({a_, c - 0.001}), list({c + 0.001, b_})}) : tuple({list({a_, b_})})))) { q = _x14472; L_(_r14469)->v.push_back(q); } } return _r14469; }(each(pieces));
         }
-        for (Py _v14495 : each((*OPEN__c))) {
-            Vec _u14496 = unpack(_v14495, 3);
-            ox0 = _u14496[0];
-            ox1 = _u14496[1];
-            oz = _u14496[2];
+        for (Py _v14476 : each((*OPEN__c))) {
+            Vec _u14477 = unpack(_v14476, 3);
+            ox0 = _u14477[0];
+            ox1 = _u14477[1];
+            oz = _u14477[2];
             if (max2(abs_(za), abs_(zb)) < oz) {
-                pieces = [&](Each _it14497) { Py a_; Py b_; Py q; Py _r14498 = list(); for (Py _x14499 : _it14497) { Vec _u14500 = unpack(_x14499, 2); a_ = _u14500[0]; b_ = _u14500[1]; for (Py _x14501 : each(tuple({list({a_, min2(b_, ox0)}), list({max2(a_, ox1), b_})}))) { q = _x14501; if (!((q[1] - q[0]) > 0.1)) continue; L_(_r14498)->v.push_back(q); } } return _r14498; }(each(pieces));
+                pieces = [&](Each _it14478) { Py a_; Py b_; Py q; Py _r14479 = list(); for (Py _x14480 : _it14478) { Vec _u14481 = unpack(_x14480, 2); a_ = _u14481[0]; b_ = _u14481[1]; for (Py _x14482 : each(tuple({list({a_, min2(b_, ox0)}), list({max2(a_, ox1), b_})}))) { q = _x14482; if (!((q[1] - q[0]) > 0.1)) continue; L_(_r14479)->v.push_back(q); } } return _r14479; }(each(pieces));
             }
         }
-        for (Py _v14502 : each(enumerate_(pieces, Py(0)))) {
-            Vec _u14503 = unpack(_v14502, 2);
-            j = _u14503[0];
-            Vec _u14504 = unpack(_u14503[1], 2);
-            a_ = _u14504[0];
-            b_ = _u14504[1];
+        for (Py _v14483 : each(enumerate_(pieces, Py(0)))) {
+            Vec _u14484 = unpack(_v14483, 2);
+            j = _u14484[0];
+            Vec _u14485 = unpack(_u14484[1], 2);
+            a_ = _u14485[0];
+            b_ = _u14485[1];
             if ((b_ - a_) > 0.1) {
                 call((*plank__c), {a_, b_, (abs_(za) < abs_(zb) ? za : zb), (abs_(za) < abs_(zb) ? zb : za), y0__, y1__, call(colour_of, {j}), pitch});
                 if (truthy(record)) {
@@ -48212,33 +48166,33 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         }
         return None;
     });
-    for (Py _v14505 : range(int_(B / 0.3))) {
-        (*k__c) = _v14505;
-        { Py _t14506 = tuple({(-B) / 2 + 0.3 * (*k__c) + 0.012, (-B) / 2 + 0.3 * ((*k__c) + 1) - 0.012}); Vec _u14507 = unpack(_t14506, 2); (*z0__c) = _u14507[0]; (*z1__c) = _u14507[1]; }
-        cuts = [&](Each _it14508) { Py c; Py _r14512 = list(); for (Py _x14513 : _it14508) { c = _x14513; if (!([&]() -> bool { Py _t14514 = Py(-0.95); Py _t14515 = c; if (!(_t14514 < _t14515)) return false; Py _t14516 = Py(0.95); return _t14515 < _t14516; }())) continue; L_(_r14512)->v.push_back(call((*xs__c), {c})); } return _r14512; }(each([&](Range _it14509) { Py i; Py _r14510 = list(); for (Py _x14511 : _it14509) { i = _x14511; L_(_r14510)->v.push_back(Py(-0.55) + 0.25 * mod((*k__c), Py(4)) + 0.9 * i); } return _r14510; }(range(Py(-2), Py(3)))));
+    for (Py _v14486 : range(int_(B / 0.3))) {
+        (*k__c) = _v14486;
+        { Py _t14487 = tuple({(-B) / 2 + 0.3 * (*k__c) + 0.012, (-B) / 2 + 0.3 * ((*k__c) + 1) - 0.012}); Vec _u14488 = unpack(_t14487, 2); (*z0__c) = _u14488[0]; (*z1__c) = _u14488[1]; }
+        cuts = [&](Each _it14489) { Py c; Py _r14493 = list(); for (Py _x14494 : _it14489) { c = _x14494; if (!([&]() -> bool { Py _t14495 = Py(-0.95); Py _t14496 = c; if (!(_t14495 < _t14496)) return false; Py _t14497 = Py(0.95); return _t14496 < _t14497; }())) continue; L_(_r14493)->v.push_back(call((*xs__c), {c})); } return _r14493; }(each([&](Range _it14490) { Py i; Py _r14491 = list(); for (Py _x14492 : _it14490) { i = _x14492; L_(_r14491)->v.push_back(Py(-0.55) + 0.25 * mod((*k__c), Py(4)) + 0.9 * i); } return _r14491; }(range(Py(-2), Py(3)))));
         call(lay, {(*z0__c), (*z1__c), cuts, Py(-0.02), Py(0.03), func(sig("lambda", {"j"}, {MISSING_ARG}, 1), [k__c, seed__c](Vec& _A_) -> Py { Py j = _A_[0]; return shade_of(S("wood_light"), (*k__c) * 2 + j + (*seed__c)); }), True});
         if ((*k__c) < (int_(B / 0.3) - 1)) {
             call(lay, Args(Vec{(*z1__c), (*z1__c) + 0.024, list({}), Py(-0.015), Py(0.024), func(sig("lambda", {"j"}, {MISSING_ARG}, 1), [](Vec& _A_) -> Py { Py j = _A_[0]; return P[S("black")]; })}, {{"pitch", True}}));  // the caulked seam beside it
         }
     }
-    BEAMS = [&](Range _it14517) { Py i; Py _r14518 = list(); for (Py _x14519 : _it14517) { i = _x14519; L_(_r14518)->v.push_back(call((*STATION__c), {i})); } return _r14518; }(range(Py(3), Py(28), Py(3)));  // under it the deck beams, square to
-    for (Py _v14520 : each(BEAMS)) {  // the sheer, right up under the boards,
-        t = _v14520;
-        w = min_(L_([&](Each _it14521) { Py dx; Py _r14522 = list(); for (Py _x14523 : _it14521) { dx = _x14523; L_(_r14522)->v.push_back(call((*at_height__c), {call((*t_at__c), {call((*xs__c), {t}) + dx}), call((*sheer__c), {t}) - 0.23, (*D_F1__c) + 0.006})[2]); } return _r14522; }(each(K(tuple({Py(-0.1), Py(0.1)})))))->v, None, MISSING_ARG);  // from frame to frame
+    BEAMS = [&](Range _it14498) { Py i; Py _r14499 = list(); for (Py _x14500 : _it14498) { i = _x14500; L_(_r14499)->v.push_back(call((*STATION__c), {i})); } return _r14499; }(range(Py(3), Py(28), Py(3)));  // under it the deck beams, square to
+    for (Py _v14501 : each(BEAMS)) {  // the sheer, right up under the boards,
+        t = _v14501;
+        w = min_(L_([&](Each _it14502) { Py dx; Py _r14503 = list(); for (Py _x14504 : _it14502) { dx = _x14504; L_(_r14503)->v.push_back(call((*at_height__c), {call((*t_at__c), {call((*xs__c), {t}) + dx}), call((*sheer__c), {t}) - 0.23, (*D_F1__c) + 0.006})[2]); } return _r14503; }(each(K(tuple({Py(-0.1), Py(0.1)})))))->v, None, MISSING_ARG);  // from frame to frame
         call(across_deck, {call((*xs__c), {t}), Py(0.2), -w, w, Py(-0.222), Py(-0.022), P[S("wood_dark")]});
     }
-    for (Py _v14524 : each(K(tuple({Py(-1), Py(1)})))) {  // the hatch's coaming: its sides on
-        sz = _v14524;
+    for (Py _v14505 : each(K(tuple({Py(-1), Py(1)})))) {  // the hatch's coaming: its sides on
+        sz = _v14505;
         call(along_deck, {HA + 0.06, HB - 0.06, sz * 0.78, sz * 0.886, Py(-0.018), Py(0.28), P[S("wood_dark")]});  // carlings between the beams,
         call(along_deck, {HA + 0.112, HB - 0.112, sz * 0.78, sz * 0.886, Py(-0.2), Py(-0.02), P[S("wood_dark")]});
     }
-    for (Py _v14525 : each(tuple({HA, HB}))) {  // its ends on the beams
-        x = _v14525;
-        yb_ = [&] { Py _t14526 = call((*deck_y__c), {x}) - 0.02; Py _t14527 = 0.06 * abs_(call((*slope__c), {call((*t_at__c), {x})})); return _t14526 + _t14527; }() + 0.001;
-        [&] { Py _a14528 = list({x, (yb_ + call((*deck_y__c), {x}) + 0.28) / 2, Py(0)}); Py _a14529 = list({Py(0.12), call((*deck_y__c), {x}) + 0.28 - yb_, Py(1.772)}); Py _a14530 = P[S("wood_dark")]; return addpy::cuboid(_a14528, _a14529, _a14530); }();
+    for (Py _v14506 : each(tuple({HA, HB}))) {  // its ends on the beams
+        x = _v14506;
+        yb_ = [&] { Py _t14507 = call((*deck_y__c), {x}) - 0.02; Py _t14508 = 0.06 * abs_(call((*slope__c), {call((*t_at__c), {x})})); return _t14507 + _t14508; }() + 0.001;
+        [&] { Py _a14509 = list({x, (yb_ + call((*deck_y__c), {x}) + 0.28) / 2, Py(0)}); Py _a14510 = list({Py(0.12), call((*deck_y__c), {x}) + 0.28 - yb_, Py(1.772)}); Py _a14511 = P[S("wood_dark")]; return addpy::cuboid(_a14509, _a14510, _a14511); }();
     }
-    for (Py _v14531 : each(K(tuple({Py(-1), Py(1)})))) {  // the mast's partners under the deck: two
-        sz = _v14531;
+    for (Py _v14512 : each(K(tuple({Py(-1), Py(1)})))) {  // the mast's partners under the deck: two
+        sz = _v14512;
         call(along_deck, {Py(0.112), call((*xs__c), {Py(0.2)}) - 0.112, sz * 0.62, sz * 0.74, Py(-0.2), Py(-0.022), P[S("wood_dark")]});  // carlings,
         call(across_deck, {(*MX__c) + sz * 0.42, Py(0.12), Py(-0.618), Py(0.618), Py(-0.2), Py(-0.022), P[S("wood_dark")]});  // two chocks between them
     }
@@ -48246,205 +48200,205 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     addpy::pipe(list({Py(0), Py(0), Py(0)}), list({Py(0), Py(0.07), Py(0)}), Py(0.72), 0.3 / addpy::cos(addpy::pi / 16) + 0.004, Py(16), P[S("wood_dark")]);
     call(on_deck, {(*MX__c), Py(0.0), Py(0.037)});
     GAP = (truthy(gangway) ? tuple({call((*t_at__c), {gangway[0] - 1.2}), call((*t_at__c), {gangway[0] + 1.2})}) : None);  // (where the gangway opens it)
-    for (Py _v14532 : each(K(tuple({Py(-1), Py(1)})))) {  // the bulwarks: two strakes a hand
-        sg = _v14532;
+    for (Py _v14513 : each(K(tuple({Py(-1), Py(1)})))) {  // the bulwarks: two strakes a hand
+        sg = _v14513;
         runs = (truthy(GAP) && (sg < 0) ? list({tuple({Py(-1.0), GAP[0]}), tuple({GAP[1], Py(1.0)})}) : list({K(tuple({Py(-1.0), Py(1.0)}))}));  // thick, clinker-laid, the upper
-        for (Py _v14533 : each(runs)) {  // lapping over the lower; frames
-            Vec _u14534 = unpack(_v14533, 2);
-            ta = _u14534[0];
-            tb = _u14534[1];
+        for (Py _v14514 : each(runs)) {  // lapping over the lower; frames
+            Vec _u14515 = unpack(_v14514, 2);
+            ta = _u14515[0];
+            tb = _u14515[1];
             call(rail_timber, {sg, ta, tb, Py(0.0), Py(0.28), Py(-0.06), Py(0.012), band});  // inside them standing on the waterway,
             call(rail_timber, {sg, ta, tb, Py(0.28), Py(0.55), Py(-0.06), Py(0.03), band});  // a broad cap rail on them and the
             call(rail_timber, {sg, ta, tb, Py(0.55), Py(0.61), Py(-0.14), Py(0.06), P[S("wood_dark")]});  // frames, following the sheer and the
         }
-        for (Py _v14535 : range(Py(3), (*n__c) - 4)) {  // curve
-            i = _v14535;
+        for (Py _v14516 : range(Py(3), (*n__c) - 4)) {  // curve
+            i = _v14516;
             t = call((*STATION__c), {i});
-            if (truthy(GAP) && (sg < 0) && ([&]() -> bool { Py _t14536 = GAP[0] - 0.02; Py _t14537 = t; if (!(_t14536 < _t14537)) return false; Py _t14538 = GAP[1] + 0.02; return _t14537 < _t14538; }())) {
+            if (truthy(GAP) && (sg < 0) && ([&]() -> bool { Py _t14517 = GAP[0] - 0.02; Py _t14518 = t; if (!(_t14517 < _t14518)) return false; Py _t14519 = GAP[1] + 0.02; return _t14518 < _t14519; }())) {
                 continue;
             }
-            yb_ = [&] { Py _t14539 = max_(L_([&](Each _it14541) { Py dx_; Py o_; Py _r14542 = list(); for (Py _x14543 : _it14541) { o_ = _x14543; for (Py _x14544 : each(K(tuple({Py(-0.06), Py(0.06)})))) { dx_ = _x14544; L_(_r14542)->v.push_back(call((*deck_y__c), {call((*by_rim__c), {t, sg, o_, Py(0)})[0] + dx_})); } } return _r14542; }(each(K(tuple({Py(-0.06), Py(-0.14)})))))->v, None, MISSING_ARG); Py _t14540 = call((*sheer__c), {t}); return _t14539 - _t14540; }() + 0.031;
-            [&] { Py _a14545 = call((*by_rim__c), {t, sg, Py(-0.06), (yb_ + 0.55) / 2}); Py _a14546 = call((*by_rim__c), {t, sg, Py(-0.14), (yb_ + 0.55) / 2}); Py _a14547 = Py(0.1); Py _a14548 = 0.55 - yb_; Py _a14549 = P[S("wood_dark")]; return addpy::beam(_a14545, _a14546, _a14547, _a14548, _a14549); }();
+            yb_ = [&] { Py _t14520 = max_(L_([&](Each _it14522) { Py dx_; Py o_; Py _r14523 = list(); for (Py _x14524 : _it14522) { o_ = _x14524; for (Py _x14525 : each(K(tuple({Py(-0.06), Py(0.06)})))) { dx_ = _x14525; L_(_r14523)->v.push_back(call((*deck_y__c), {call((*by_rim__c), {t, sg, o_, Py(0)})[0] + dx_})); } } return _r14523; }(each(K(tuple({Py(-0.06), Py(-0.14)})))))->v, None, MISSING_ARG); Py _t14521 = call((*sheer__c), {t}); return _t14520 - _t14521; }() + 0.031;
+            [&] { Py _a14526 = call((*by_rim__c), {t, sg, Py(-0.06), (yb_ + 0.55) / 2}); Py _a14527 = call((*by_rim__c), {t, sg, Py(-0.14), (yb_ + 0.55) / 2}); Py _a14528 = Py(0.1); Py _a14529 = 0.55 - yb_; Py _a14530 = P[S("wood_dark")]; return addpy::beam(_a14526, _a14527, _a14528, _a14529, _a14530); }();
         }
     }
     // ---- the castle aft: a cabin narrowing to the stern, its walls of planks on a sill, lined inside with boards, the
     // door standing open; a deck over it with a rail
-    { Py _t14550 = tuple({(-(*L__c)) / 2 + 1.0, (-(*L__c)) / 2 + 6.4}); Vec _u14551 = unpack(_t14550, 2); (*x0__c) = _u14551[0]; (*x1__c) = _u14551[1]; }
-    { Py _t14552 = tuple({call((*half__c), {2 * (*x0__c) / (*L__c)}) - 0.3, call((*half__c), {2 * (*x1__c) / (*L__c)}) - 0.3}); Vec _u14553 = unpack(_t14552, 2); (*z0__c) = _u14553[0]; (*z1__c) = _u14553[1]; }
-    { Py _t14554 = tuple({call((*sheer__c), {2 * (*x1__c) / (*L__c)}) - 0.1, call((*sheer__c), {2 * (*x0__c) / (*L__c)}) + 2.0}); Vec _u14555 = unpack(_t14554, 2); ya = _u14555[0]; top = _u14555[1]; }
+    { Py _t14531 = tuple({(-(*L__c)) / 2 + 1.0, (-(*L__c)) / 2 + 6.4}); Vec _u14532 = unpack(_t14531, 2); (*x0__c) = _u14532[0]; (*x1__c) = _u14532[1]; }
+    { Py _t14533 = tuple({call((*half__c), {2 * (*x0__c) / (*L__c)}) - 0.3, call((*half__c), {2 * (*x1__c) / (*L__c)}) - 0.3}); Vec _u14534 = unpack(_t14533, 2); (*z0__c) = _u14534[0]; (*z1__c) = _u14534[1]; }
+    { Py _t14535 = tuple({call((*sheer__c), {2 * (*x1__c) / (*L__c)}) - 0.1, call((*sheer__c), {2 * (*x0__c) / (*L__c)}) + 2.0}); Vec _u14536 = unpack(_t14535, 2); ya = _u14536[0]; top = _u14536[1]; }
     ccx = ((*x0__c) + (*x1__c)) / 2;
     (*sill_y__c) = func(sig("lambda", {"x"}, {MISSING_ARG}, 1), [deck_y__c](Vec& _A_) -> Py { Py x = _A_[0]; return call((*deck_y__c), {x}) + 0.154; });  // (the top of the sills the walls stand on)
-    { Py _t14556 = tuple({tuple({call((*sill_y__c), {(*x1__c)}) + 0.005, ya + 1.95}), tuple({ya + 1.05, ya + 1.55})}); Vec _u14557 = unpack(_t14556, 2); DOOR = _u14557[0]; WIN = _u14557[1]; }
+    { Py _t14537 = tuple({tuple({call((*sill_y__c), {(*x1__c)}) + 0.005, ya + 1.95}), tuple({ya + 1.05, ya + 1.55})}); Vec _u14538 = unpack(_t14537, 2); DOOR = _u14538[0]; WIN = _u14538[1]; }
     walls = list({tuple({tuple({(*x1__c), (*z1__c)}), tuple({(*x1__c), -(*z1__c)}), list({K(tuple({Py(0.0), Py(0.5)})) + DOOR})}), tuple({tuple({(*x1__c), -(*z1__c)}), tuple({(*x0__c), -(*z0__c)}), list({K(tuple({Py(0.0), Py(0.3)})) + WIN})}), tuple({tuple({(*x0__c), -(*z0__c)}), tuple({(*x0__c), (*z0__c)}), list({K(tuple({Py(-0.55), Py(0.22)})) + WIN, K(tuple({Py(0.55), Py(0.22)})) + WIN})}), tuple({tuple({(*x0__c), (*z0__c)}), tuple({(*x1__c), (*z1__c)}), list({K(tuple({Py(0.0), Py(0.3)})) + WIN})})});
-    for (Py _v14558 : each(enumerate_(walls, Py(0)))) {
-        Vec _u14559 = unpack(_v14558, 2);
-        wi = _u14559[0];
-        Vec _u14560 = unpack(_u14559[1], 3);
-        (*pa__c) = _u14560[0];
-        pb = _u14560[1];
-        holes = _u14560[2];
+    for (Py _v14539 : each(enumerate_(walls, Py(0)))) {
+        Vec _u14540 = unpack(_v14539, 2);
+        wi = _u14540[0];
+        Vec _u14541 = unpack(_u14540[1], 3);
+        (*pa__c) = _u14541[0];
+        pb = _u14541[1];
+        holes = _u14541[2];
         Lw = addpy::sqrt(pow_(pb[0] - (*pa__c)[0], Py(2)) + pow_(pb[1] - (*pa__c)[1], Py(2)));
-        { Py _t14561 = tuple({(pb[0] - (*pa__c)[0]) / Lw, (pb[1] - (*pa__c)[1]) / Lw}); Vec _u14562 = unpack(_t14561, 2); (*ux__c) = _u14562[0]; (*uz__c) = _u14562[1]; }
-        { Py _t14563 = tuple({(*uz__c), -(*ux__c)}); Vec _u14564 = unpack(_t14563, 2); (*ox__c) = _u14564[0]; (*oz__c) = _u14564[1]; }  // (out of the cabin)
+        { Py _t14542 = tuple({(pb[0] - (*pa__c)[0]) / Lw, (pb[1] - (*pa__c)[1]) / Lw}); Vec _u14543 = unpack(_t14542, 2); (*ux__c) = _u14543[0]; (*uz__c) = _u14543[1]; }
+        { Py _t14544 = tuple({(*uz__c), -(*ux__c)}); Vec _u14545 = unpack(_t14544, 2); (*ox__c) = _u14545[0]; (*oz__c) = _u14545[1]; }  // (out of the cabin)
         if (((*ox__c) * (((*pa__c)[0] + pb[0]) / 2 - ccx) + (*oz__c) * ((*pa__c)[1] + pb[1]) / 2) < 0) {
-            { Py _t14565 = tuple({-(*ox__c), -(*oz__c)}); Vec _u14566 = unpack(_t14565, 2); (*ox__c) = _u14566[0]; (*oz__c) = _u14566[1]; }
+            { Py _t14546 = tuple({-(*ox__c), -(*oz__c)}); Vec _u14547 = unpack(_t14546, 2); (*ox__c) = _u14547[0]; (*oz__c) = _u14547[1]; }
         }
         at_w = func(sig("lambda", {"sw", "y", "off"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG}, 3), [ox__c, oz__c, pa__c, ux__c, uz__c](Vec& _A_) -> Py { Py sw = _A_[0]; Py y = _A_[1]; Py off = _A_[2]; return list({(*pa__c)[0] + (*ux__c) * sw + (*ox__c) * off, y, (*pa__c)[1] + (*uz__c) * sw + (*oz__c) * off}); });
         (*ys__c) = func(sig("lambda", {"sw"}, {MISSING_ARG}, 1), [pa__c, sill_y__c, ux__c](Vec& _A_) -> Py { Py sw = _A_[0]; return call((*sill_y__c), {(*pa__c)[0] + (*ux__c) * sw}); });
-        holes = [&](Each _it14567) { Py c; Py hw; Py hy0; Py hy1; Py _r14568 = list(); for (Py _x14569 : _it14567) { Vec _u14570 = unpack(_x14569, 4); c = _u14570[0]; hw = _u14570[1]; hy0 = _u14570[2]; hy1 = _u14570[3]; L_(_r14568)->v.push_back(tuple({Lw / 2 + c - hw, Lw / 2 + c + hw, hy0, hy1})); } return _r14568; }(each(holes));
+        holes = [&](Each _it14548) { Py c; Py hw; Py hy0; Py hy1; Py _r14549 = list(); for (Py _x14550 : _it14548) { Vec _u14551 = unpack(_x14550, 4); c = _u14551[0]; hw = _u14551[1]; hy0 = _u14551[2]; hy1 = _u14551[3]; L_(_r14549)->v.push_back(tuple({Lw / 2 + c - hw, Lw / 2 + c + hw, hy0, hy1})); } return _r14549; }(each(holes));
         rings = list({});  // the sill, on the deck
-        for (Py _v14571 : range(Py(7))) {
-            q = _v14571;
+        for (Py _v14552 : range(Py(7))) {
+            q = _v14552;
             sw = 0.1 + (Lw - 0.2) * q / 6.0;
-            { Py _t14572 = tuple({call(at_w, {sw, Py(0), Py(0.04)}), call(at_w, {sw, Py(0), Py(-0.08)})}); Vec _u14573 = unpack(_t14572, 2); po = _u14573[0]; pi_ = _u14573[1]; }
-            { Py _t14574 = tuple({call((*deck_y__c), {po[0]}) + 0.034, call((*deck_y__c), {pi_[0]}) + 0.034}); Vec _u14575 = unpack(_t14574, 2); yo = _u14575[0]; yi = _u14575[1]; }
+            { Py _t14553 = tuple({call(at_w, {sw, Py(0), Py(0.04)}), call(at_w, {sw, Py(0), Py(-0.08)})}); Vec _u14554 = unpack(_t14553, 2); po = _u14554[0]; pi_ = _u14554[1]; }
+            { Py _t14555 = tuple({call((*deck_y__c), {po[0]}) + 0.034, call((*deck_y__c), {pi_[0]}) + 0.034}); Vec _u14556 = unpack(_t14555, 2); yo = _u14556[0]; yi = _u14556[1]; }
             rings.append(list({list({po[0], yo + 0.12, po[2]}), list({pi_[0], yi + 0.12, pi_[2]}), list({pi_[0], yi, pi_[2]}), list({po[0], yo, po[2]})}));
         }
         addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft(rings, P[S("wood_dark")]); })));
-        for (Py _v14576 : range(Py(12))) {  // twelve strakes of planks on it, stopped
-            (*k__c) = _v14576;
+        for (Py _v14557 : range(Py(12))) {  // twelve strakes of planks on it, stopped
+            (*k__c) = _v14557;
             y = ya + 0.22 * (*k__c);  // at the door and the windows, the lowest
             spans = list({tuple({Py(0.1), Lw - 0.1})});  // cut to the sill along the rising deck
-            for (Py _v14577 : each(holes)) {
-                Vec _u14578 = unpack(_v14577, 4);
-                h0 = _u14578[0];
-                h1 = _u14578[1];
-                hy0 = _u14578[2];
-                hy1 = _u14578[3];
+            for (Py _v14558 : each(holes)) {
+                Vec _u14559 = unpack(_v14558, 4);
+                h0 = _u14559[0];
+                h1 = _u14559[1];
+                hy0 = _u14559[2];
+                hy1 = _u14559[3];
                 if (((y + 0.21) > hy0) && (y < hy1)) {
-                    spans = [&](Each _it14579) { Py a_; Py b_; Py piece; Py _r14580 = list(); for (Py _x14581 : _it14579) { Vec _u14582 = unpack(_x14581, 2); a_ = _u14582[0]; b_ = _u14582[1]; for (Py _x14583 : each(tuple({tuple({a_, min2(b_, h0)}), tuple({max2(a_, h1), b_})}))) { piece = _x14583; if (!((piece[1] - piece[0]) > 0.05)) continue; L_(_r14580)->v.push_back(piece); } } return _r14580; }(each(spans));
+                    spans = [&](Each _it14560) { Py a_; Py b_; Py piece; Py _r14561 = list(); for (Py _x14562 : _it14560) { Vec _u14563 = unpack(_x14562, 2); a_ = _u14563[0]; b_ = _u14563[1]; for (Py _x14564 : each(tuple({tuple({a_, min2(b_, h0)}), tuple({max2(a_, h1), b_})}))) { piece = _x14564; if (!((piece[1] - piece[0]) > 0.05)) continue; L_(_r14561)->v.push_back(piece); } } return _r14561; }(each(spans));
                 }
             }
-            for (Py _v14584 : each(spans)) {
-                Vec _u14585 = unpack(_v14584, 2);
-                a_ = _u14585[0];
-                b_ = _u14585[1];
+            for (Py _v14565 : each(spans)) {
+                Vec _u14566 = unpack(_v14565, 2);
+                a_ = _u14566[0];
+                b_ = _u14566[1];
                 colour = shade_of(S("wood"), (*k__c) + wi, Py(3));
-                if ([&] { Py _t14586 = call((*ys__c), {a_}); Py _t14587 = call((*ys__c), {b_}); return max2(_t14586, _t14587); }() <= y) {
-                    [&] { Py _a14588 = call(at_w, {a_, y + 0.105, Py(0.02)}); Py _a14589 = call(at_w, {b_, y + 0.105, Py(0.02)}); Py _a14590 = Py(0.04); Py _a14591 = Py(0.21); return addpy::beam(_a14588, _a14589, _a14590, _a14591, colour); }();
+                if ([&] { Py _t14567 = call((*ys__c), {a_}); Py _t14568 = call((*ys__c), {b_}); return max2(_t14567, _t14568); }() <= y) {
+                    [&] { Py _a14569 = call(at_w, {a_, y + 0.105, Py(0.02)}); Py _a14570 = call(at_w, {b_, y + 0.105, Py(0.02)}); Py _a14571 = Py(0.04); Py _a14572 = Py(0.21); return addpy::beam(_a14569, _a14570, _a14571, _a14572, colour); }();
                 } else {
-                    ok = [&](Each _it14592) { Py sw; Py _r14596 = list(); for (Py _x14597 : _it14592) { sw = _x14597; if (!(call((*ys__c), {sw}) < (y + 0.18))) continue; L_(_r14596)->v.push_back(sw); } return _r14596; }(each([&](Range _it14593) { Py q; Py _r14594 = list(); for (Py _x14595 : _it14593) { q = _x14595; L_(_r14594)->v.push_back(a_ + (b_ - a_) * q / 20.0); } return _r14594; }(range(Py(21)))));
+                    ok = [&](Each _it14573) { Py sw; Py _r14577 = list(); for (Py _x14578 : _it14573) { sw = _x14578; if (!(call((*ys__c), {sw}) < (y + 0.18))) continue; L_(_r14577)->v.push_back(sw); } return _r14577; }(each([&](Range _it14574) { Py q; Py _r14575 = list(); for (Py _x14576 : _it14574) { q = _x14576; L_(_r14575)->v.push_back(a_ + (b_ - a_) * q / 20.0); } return _r14575; }(range(Py(21)))));
                     if (len(ok) < 2) {
                         continue;
                     }
-                    { Py _t14598 = tuple({ok[0], ok[Py(-1)]}); Vec _u14599 = unpack(_t14598, 2); sa = _u14599[0]; sb = _u14599[1]; }
+                    { Py _t14579 = tuple({ok[0], ok[Py(-1)]}); Vec _u14580 = unpack(_t14579, 2); sa = _u14580[0]; sb = _u14580[1]; }
                     bottom = list({tuple({sa, max2(y, call((*ys__c), {sa}))})});
-                    { Py _t14602 = ([&] { Py _t14600 = call((*ys__c), {sa}); Py _t14601 = call((*ys__c), {sb}); return _t14600 > _t14601; }() ? tuple({sa, sb}) : tuple({sb, sa})); Vec _u14603 = unpack(_t14602, 2); lo_ = _u14603[0]; hi_ = _u14603[1]; }
-                    if ([&]() -> bool { Py _t14604 = call((*ys__c), {lo_}); Py _t14605 = y; if (!(_t14604 < _t14605)) return false; Py _t14606 = call((*ys__c), {hi_}); return _t14605 < _t14606; }()) {  // (where the sill rises past the strake)
-                        for (Py _v14607 : range(Py(30))) {
-                            _ = _v14607;
+                    { Py _t14583 = ([&] { Py _t14581 = call((*ys__c), {sa}); Py _t14582 = call((*ys__c), {sb}); return _t14581 > _t14582; }() ? tuple({sa, sb}) : tuple({sb, sa})); Vec _u14584 = unpack(_t14583, 2); lo_ = _u14584[0]; hi_ = _u14584[1]; }
+                    if ([&]() -> bool { Py _t14585 = call((*ys__c), {lo_}); Py _t14586 = y; if (!(_t14585 < _t14586)) return false; Py _t14587 = call((*ys__c), {hi_}); return _t14586 < _t14587; }()) {  // (where the sill rises past the strake)
+                        for (Py _v14588 : range(Py(30))) {
+                            _ = _v14588;
                             mid = (lo_ + hi_) / 2;
-                            { Py _t14608 = (call((*ys__c), {mid}) < y ? tuple({mid, hi_}) : tuple({lo_, mid})); Vec _u14609 = unpack(_t14608, 2); lo_ = _u14609[0]; hi_ = _u14609[1]; }
+                            { Py _t14589 = (call((*ys__c), {mid}) < y ? tuple({mid, hi_}) : tuple({lo_, mid})); Vec _u14590 = unpack(_t14589, 2); lo_ = _u14590[0]; hi_ = _u14590[1]; }
                         }
                         bottom.append(tuple({(lo_ + hi_) / 2, y}));
                     }
                     bottom.append(tuple({sb, max2(y, call((*ys__c), {sb}))}));
                     bottom.sort(None, False);
                     poly = bottom + list({tuple({sb, y + 0.21}), tuple({sa, y + 0.21})});
-                    addpy::mesh(extrude([&](Each _it14610) { Py sw; Py yy; Py _r14611 = list(); for (Py _x14612 : _it14610) { Vec _u14613 = unpack(_x14612, 2); sw = _u14613[0]; yy = _u14613[1]; L_(_r14611)->v.push_back(call(at_w, {sw, yy, Py(0.0)})); } return _r14611; }(each(poly)), list({(*ox__c) * 0.04, Py(0), (*oz__c) * 0.04}), colour));
+                    addpy::mesh(extrude([&](Each _it14591) { Py sw; Py yy; Py _r14592 = list(); for (Py _x14593 : _it14591) { Vec _u14594 = unpack(_x14593, 2); sw = _u14594[0]; yy = _u14594[1]; L_(_r14592)->v.push_back(call(at_w, {sw, yy, Py(0.0)})); } return _r14592; }(each(poly)), list({(*ox__c) * 0.04, Py(0), (*oz__c) * 0.04}), colour));
                 }
-                for (Py _v14614 : range(int_((b_ - a_ - 0.3) / 0.9) + 1)) {  // nailed to the frames
-                    sn = _v14614;
+                for (Py _v14595 : range(int_((b_ - a_ - 0.3) / 0.9) + 1)) {  // nailed to the frames
+                    sn = _v14595;
                     if (call((*ys__c), {a_ + 0.15 + sn * 0.9}) < (y + 0.08)) {
                         addpy::octahedron(call(at_w, {a_ + 0.15 + sn * 0.9, y + 0.105, Py(0.043)}), Py(0.014), P[S("iron")]);
                     }
                 }
             }
         }
-        for (Py _v14615 : each(holes)) {
-            Vec _u14616 = unpack(_v14615, 4);
-            h0 = _u14616[0];
-            h1 = _u14616[1];
-            hy0 = _u14616[2];
-            hy1 = _u14616[3];
+        for (Py _v14596 : each(holes)) {
+            Vec _u14597 = unpack(_v14596, 4);
+            h0 = _u14597[0];
+            h1 = _u14597[1];
+            hy0 = _u14597[2];
+            hy1 = _u14597[3];
             if ((hy1 - hy0) < 1.0) {  // a window: a frame round it, bars
-                for (Py _v14617 : each(tuple({tuple({call(at_w, {h0 - 0.06, hy0 - 0.03, Py(0.07)}), call(at_w, {h1 + 0.06, hy0 - 0.03, Py(0.07)})}), tuple({call(at_w, {h0 - 0.06, hy1 + 0.03, Py(0.07)}), call(at_w, {h1 + 0.06, hy1 + 0.03, Py(0.07)})})}))) {
-                    Vec _u14618 = unpack(_v14617, 2);
-                    a_ = _u14618[0];
-                    b_ = _u14618[1];
+                for (Py _v14598 : each(tuple({tuple({call(at_w, {h0 - 0.06, hy0 - 0.03, Py(0.07)}), call(at_w, {h1 + 0.06, hy0 - 0.03, Py(0.07)})}), tuple({call(at_w, {h0 - 0.06, hy1 + 0.03, Py(0.07)}), call(at_w, {h1 + 0.06, hy1 + 0.03, Py(0.07)})})}))) {
+                    Vec _u14599 = unpack(_v14598, 2);
+                    a_ = _u14599[0];
+                    b_ = _u14599[1];
                     addpy::beam(a_, b_, Py(0.06), Py(0.06), P[S("wood_dark")]);
                 }
-                for (Py _v14619 : each(tuple({h0 - 0.03, h1 + 0.03}))) {
-                    sw = _v14619;
-                    [&] { Py _a14620 = call(at_w, {sw, hy0, Py(0.07)}); Py _a14621 = call(at_w, {sw, hy1, Py(0.07)}); Py _a14622 = Py(0.06); Py _a14623 = Py(0.06); Py _a14624 = P[S("wood_dark")]; return addpy::beam(_a14620, _a14621, _a14622, _a14623, _a14624); }();
+                for (Py _v14600 : each(tuple({h0 - 0.03, h1 + 0.03}))) {
+                    sw = _v14600;
+                    [&] { Py _a14601 = call(at_w, {sw, hy0, Py(0.07)}); Py _a14602 = call(at_w, {sw, hy1, Py(0.07)}); Py _a14603 = Py(0.06); Py _a14604 = Py(0.06); Py _a14605 = P[S("wood_dark")]; return addpy::beam(_a14601, _a14602, _a14603, _a14604, _a14605); }();
                 }
-                for (Py _v14625 : each(tuple({h0 + (h1 - h0) / 3, h0 + 2 * (h1 - h0) / 3}))) {
-                    sw = _v14625;
-                    [&] { Py _a14626 = call(at_w, {sw, hy0, Py(0.02)}); Py _a14627 = call(at_w, {sw, hy1, Py(0.02)}); Py _a14628 = Py(0.012); Py _a14629 = Py(5); Py _a14630 = P[S("iron")]; return addpy::cylinder(_a14626, _a14627, _a14628, _a14629, _a14630); }();
+                for (Py _v14606 : each(tuple({h0 + (h1 - h0) / 3, h0 + 2 * (h1 - h0) / 3}))) {
+                    sw = _v14606;
+                    [&] { Py _a14607 = call(at_w, {sw, hy0, Py(0.02)}); Py _a14608 = call(at_w, {sw, hy1, Py(0.02)}); Py _a14609 = Py(0.012); Py _a14610 = Py(5); Py _a14611 = P[S("iron")]; return addpy::cylinder(_a14607, _a14608, _a14609, _a14610, _a14611); }();
                 }
             }
         }
-        cuts = sorted(set_of(list({Py(0.1), Lw - 0.1}) + [&](Each _it14631) { Py _; Py h0; Py h1; Py v; Py _r14632 = list(); for (Py _x14633 : _it14631) { Vec _u14634 = unpack(_x14633, 4); h0 = _u14634[0]; h1 = _u14634[1]; _ = _u14634[2]; _ = _u14634[3]; for (Py _x14635 : each(tuple({h0, h1}))) { v = _x14635; L_(_r14632)->v.push_back(v); } } return _r14632; }(each(holes))), None, False);  // the lining: upright boards,
-        for (Py _v14636 : each(zip_({cuts, slice(cuts, Py(1), None)}))) {  // round the door and the windows
-            Vec _u14637 = unpack(_v14636, 2);
-            a_ = _u14637[0];
-            b_ = _u14637[1];
-            hole = [&](Each _it14638) { Py h; Py _r14639 = list(); for (Py _x14640 : _it14638) { h = _x14640; if (!(((h[0] - 0.001) <= a_) && (b_ <= (h[1] + 0.001)))) continue; L_(_r14639)->v.push_back(h); } return _r14639; }(each(holes));
+        cuts = sorted(set_of(list({Py(0.1), Lw - 0.1}) + [&](Each _it14612) { Py _; Py h0; Py h1; Py v; Py _r14613 = list(); for (Py _x14614 : _it14612) { Vec _u14615 = unpack(_x14614, 4); h0 = _u14615[0]; h1 = _u14615[1]; _ = _u14615[2]; _ = _u14615[3]; for (Py _x14616 : each(tuple({h0, h1}))) { v = _x14616; L_(_r14613)->v.push_back(v); } } return _r14613; }(each(holes))), None, False);  // the lining: upright boards,
+        for (Py _v14617 : each(zip_({cuts, slice(cuts, Py(1), None)}))) {  // round the door and the windows
+            Vec _u14618 = unpack(_v14617, 2);
+            a_ = _u14618[0];
+            b_ = _u14618[1];
+            hole = [&](Each _it14619) { Py h; Py _r14620 = list(); for (Py _x14621 : _it14619) { h = _x14621; if (!(((h[0] - 0.001) <= a_) && (b_ <= (h[1] + 0.001)))) continue; L_(_r14620)->v.push_back(h); } return _r14620; }(each(holes));
             nb = max2(Py(1), int_(addpy::ceil((b_ - a_) / 0.26)));
-            for (Py _v14641 : range(nb)) {
-                q = _v14641;
-                { Py _t14642 = tuple({a_ + (b_ - a_) * q / nb + 0.002, a_ + (b_ - a_) * (q + 1) / nb - 0.002}); Vec _u14643 = unpack(_t14642, 2); sa = _u14643[0]; sb = _u14643[1]; }
+            for (Py _v14622 : range(nb)) {
+                q = _v14622;
+                { Py _t14623 = tuple({a_ + (b_ - a_) * q / nb + 0.002, a_ + (b_ - a_) * (q + 1) / nb - 0.002}); Vec _u14624 = unpack(_t14623, 2); sa = _u14624[0]; sb = _u14624[1]; }
                 parts = (truthy(hole) ? list({tuple({None, hole[0][2]}), tuple({hole[0][3], top - 0.002})}) : list({tuple({None, top - 0.002})}));
-                for (Py _v14644 : each(parts)) {
-                    Vec _u14645 = unpack(_v14644, 2);
-                    y0_ = _u14645[0];
-                    y1_ = _u14645[1];
+                for (Py _v14625 : each(parts)) {
+                    Vec _u14626 = unpack(_v14625, 2);
+                    y0_ = _u14626[0];
+                    y1_ = _u14626[1];
                     if (is(y0_, None)) {
                         quad = list({tuple({sa, call((*ys__c), {sa}) + 0.001}), tuple({sb, call((*ys__c), {sb}) + 0.001}), tuple({sb, y1_}), tuple({sa, y1_})});
                     } else {
                         quad = list({tuple({sa, y0_}), tuple({sb, y0_}), tuple({sb, y1_}), tuple({sa, y1_})});
                     }
                     if (min2(quad[2][1] - quad[1][1], quad[3][1] - quad[0][1]) > 0.02) {
-                        addpy::mesh([&] { Py _a14650 = [&](Each _it14646) { Py sw; Py yy; Py _r14647 = list(); for (Py _x14648 : _it14646) { Vec _u14649 = unpack(_x14648, 2); sw = _u14649[0]; yy = _u14649[1]; L_(_r14647)->v.push_back(call(at_w, {sw, yy, Py(-0.001)})); } return _r14647; }(each(quad)); Py _a14651 = list({(-(*ox__c)) * 0.03, Py(0), (-(*oz__c)) * 0.03}); Py _a14652 = shade_of(S("wood_light"), q + wi + int_(a_ * 3), Py(3)); return extrude(_a14650, _a14651, _a14652); }());
+                        addpy::mesh([&] { Py _a14631 = [&](Each _it14627) { Py sw; Py yy; Py _r14628 = list(); for (Py _x14629 : _it14627) { Vec _u14630 = unpack(_x14629, 2); sw = _u14630[0]; yy = _u14630[1]; L_(_r14628)->v.push_back(call(at_w, {sw, yy, Py(-0.001)})); } return _r14628; }(each(quad)); Py _a14632 = list({(-(*ox__c)) * 0.03, Py(0), (-(*oz__c)) * 0.03}); Py _a14633 = shade_of(S("wood_light"), q + wi + int_(a_ * 3), Py(3)); return extrude(_a14631, _a14632, _a14633); }());
                     }
                 }
             }
         }
     }
-    for (Py _v14653 : each(tuple({tuple({(*x0__c), -(*z0__c)}), tuple({(*x1__c), -(*z1__c)}), tuple({(*x1__c), (*z1__c)}), tuple({(*x0__c), (*z0__c)})}))) {  // posts at its corners
-        Vec _u14654 = unpack(_v14653, 2);
-        vx = _u14654[0];
-        vz = _u14654[1];
-        yb_ = [&] { Py _t14655 = call((*deck_y__c), {vx - 0.08}); Py _t14656 = call((*deck_y__c), {vx + 0.08}); return max2(_t14655, _t14656); }() + 0.034;
+    for (Py _v14634 : each(tuple({tuple({(*x0__c), -(*z0__c)}), tuple({(*x1__c), -(*z1__c)}), tuple({(*x1__c), (*z1__c)}), tuple({(*x0__c), (*z0__c)})}))) {  // posts at its corners
+        Vec _u14635 = unpack(_v14634, 2);
+        vx = _u14635[0];
+        vz = _u14635[1];
+        yb_ = [&] { Py _t14636 = call((*deck_y__c), {vx - 0.08}); Py _t14637 = call((*deck_y__c), {vx + 0.08}); return max2(_t14636, _t14637); }() + 0.034;
         addpy::cuboid(list({vx, (yb_ + top) / 2, vz}), list({Py(0.16), top - yb_, Py(0.16)}), P[S("wood_dark")]);
     }
     addpy::push();  // its door, of four boards on iron straps
-    for (Py _v14657 : range(Py(4))) {  // with a ring to pull it by, swung open
-        j = _v14657;
+    for (Py _v14638 : range(Py(4))) {  // with a ring to pull it by, swung open
+        j = _v14638;
         zb = Py(-0.48) + 0.24 * j;  // on its hinges
         addpy::cuboid(list({(*x1__c) + 0.025, (DOOR[0] + DOOR_GAP - 0.005 + DOOR[1]) / 2, zb + 0.12}), list({Py(0.05), DOOR[1] - DOOR[0] - DOOR_GAP + 0.005, Py(0.235)}), shade_of(S("wood"), j + 1, Py(3)));  // (clear of the sill)
     }
-    for (Py _v14658 : each(tuple({DOOR[0] + 0.35, DOOR[1] - 0.4}))) {
-        y = _v14658;
+    for (Py _v14639 : each(tuple({DOOR[0] + 0.35, DOOR[1] - 0.4}))) {
+        y = _v14639;
         addpy::cuboid(list({(*x1__c) + 0.055, y, Py(0.08)}), list({Py(0.01), Py(0.06), Py(0.78)}), P[S("iron")]);
     }
     addpy::torus(list({(*x1__c) + 0.075, DOOR[0] + 0.85, Py(-0.32)}), Py(0.05), Py(0.01), Py(10), Py(4), P[S("iron")], K(tuple({Py(1), Py(0), Py(0)})));
     addpy::mesh(addpy::rotateY(addpy::pop(), Py(-1.75), tuple({(*x1__c) + 0.05, Py(0), Py(0.48)})));
-    for (Py _v14659 : each(tuple({DOOR[0] + 0.35, DOOR[1] - 0.4}))) {  // the pintles on the door post
-        y = _v14659;
+    for (Py _v14640 : each(tuple({DOOR[0] + 0.35, DOOR[1] - 0.4}))) {  // the pintles on the door post
+        y = _v14640;
         addpy::cylinder(list({(*x1__c) + 0.06, y - 0.05, Py(0.505)}), list({(*x1__c) + 0.06, y + 0.05, Py(0.505)}), Py(0.015), Py(6), P[S("iron")]);
         addpy::cuboid(list({(*x1__c) + 0.051, y, Py(0.52)}), list({Py(0.022), Py(0.03), Py(0.05)}), P[S("iron")]);
     }
     (*zw___c) = func(sig("lambda", {"x"}, {MISSING_ARG}, 1), [x0__c, x1__c, z0__c, z1__c](Vec& _A_) -> Py { Py x = _A_[0]; return (*z0__c) + ((*z1__c) - (*z0__c)) * (x - (*x0__c)) / ((*x1__c) - (*x0__c)); });  // (the side walls' line)
-    for (Py _v14660 : each(K(tuple({Py(-6.3), Py(-7.5), Py(-8.7), Py(-9.9)})))) {  // the beams of its deck, and on them
-        xb_ = _v14660;
-        wb = [&] { Py _t14661 = call((*zw___c), {xb_ - 0.06}); Py _t14662 = call((*zw___c), {xb_ + 0.06}); return min2(_t14661, _t14662); }() - 0.04;  // the deck: beams, and boards across
+    for (Py _v14641 : each(K(tuple({Py(-6.3), Py(-7.5), Py(-8.7), Py(-9.9)})))) {  // the beams of its deck, and on them
+        xb_ = _v14641;
+        wb = [&] { Py _t14642 = call((*zw___c), {xb_ - 0.06}); Py _t14643 = call((*zw___c), {xb_ + 0.06}); return min2(_t14642, _t14643); }() - 0.04;  // the deck: beams, and boards across
         addpy::cuboid(list({xb_, top - 0.07, Py(0)}), list({Py(0.12), Py(0.14), 2 * wb}), P[S("wood_dark")]);
     }
     dpoly = list({tuple({(*x0__c) - 0.2, (-(*z0__c)) - 0.15}), tuple({(*x1__c) + 0.3, (-(*z1__c)) - 0.15}), tuple({(*x1__c) + 0.3, (*z1__c) + 0.15}), tuple({(*x0__c) - 0.2, (*z0__c) + 0.15})});
     addpy::mesh(solid(dpoly, top, top + 0.08, P[S("wood_dark")]));  // nailed to them, fore and aft (but under
     hwd = func(sig("lambda", {"x"}, {MISSING_ARG}, 1), [x0__c, x1__c, z0__c, z1__c](Vec& _A_) -> Py { Py x = _A_[0]; return (*z0__c) + 0.15 + ((*z1__c) - (*z0__c)) * (x - (*x0__c) + 0.2) / ((*x1__c) - (*x0__c) + 0.5); });  // the flagstaff and where the master stands)
-    for (Py _v14663 : range(int_(((*x1__c) - (*x0__c) + 0.5) / 0.25))) {
-        (*k__c) = _v14663;
+    for (Py _v14644 : range(int_(((*x1__c) - (*x0__c) + 0.5) / 0.25))) {
+        (*k__c) = _v14644;
         xq = (*x0__c) - 0.2 + 0.25 * (*k__c);
-        wq = [&] { Py _t14664 = call(hwd, {xq}); Py _t14665 = call(hwd, {xq + 0.25}); return min2(_t14664, _t14665); }() - 0.02;
+        wq = [&] { Py _t14645 = call(hwd, {xq}); Py _t14646 = call(hwd, {xq + 0.25}); return min2(_t14645, _t14646); }() - 0.02;
         addpy::cuboid(list({xq + 0.125, top + 0.1, Py(0)}), list({Py(0.238), Py(0.04), 2 * wq}), shade_of(S("wood_light"), (*k__c), Py(3)));
-        for (Py _v14666 : each(tuple({(-wq) + 0.3, Py(0.0), wq - 0.3}))) {
-            zq = _v14666;
-            for (Py _v14667 : each(K(tuple({Py(0.06), Py(0.18)})))) {
-                dx = _v14667;
-                lamp = [&]() -> Py { Py _t14668 = Py(abs_(xq + dx - (*x0__c) - 0.1) < 0.15); if (!truthy(_t14668)) return _t14668; _t14668 = Py(abs_(zq) > (wq - 0.45)); return _t14668; }();  // (the lanterns' posts)
-                if ((abs_(xq + dx - (*x0__c) - 0.3) > 0.2) && !truthy(lamp) && !([&](Each _it14669) -> bool { Py cf; Py cx_; Py cz_; Py task; for (Py _x14670 : _it14669) { Vec _u14671 = unpack(_x14670, 4); cx_ = _u14671[0]; cz_ = _u14671[1]; cf = _u14671[2]; task = _u14671[3]; if (!(task == S("captain"))) continue; if (((abs_(xq + dx - cx_) < 0.4) && (abs_(zq - cz_) < 0.4))) return true; } return false; }(each(crew)))) {
+        for (Py _v14647 : each(tuple({(-wq) + 0.3, Py(0.0), wq - 0.3}))) {
+            zq = _v14647;
+            for (Py _v14648 : each(K(tuple({Py(0.06), Py(0.18)})))) {
+                dx = _v14648;
+                lamp = [&]() -> Py { Py _t14649 = Py(abs_(xq + dx - (*x0__c) - 0.1) < 0.15); if (!truthy(_t14649)) return _t14649; _t14649 = Py(abs_(zq) > (wq - 0.45)); return _t14649; }();  // (the lanterns' posts)
+                if ((abs_(xq + dx - (*x0__c) - 0.3) > 0.2) && !truthy(lamp) && !([&](Each _it14650) -> bool { Py cf; Py cx_; Py cz_; Py task; for (Py _x14651 : _it14650) { Vec _u14652 = unpack(_x14651, 4); cx_ = _u14652[0]; cz_ = _u14652[1]; cf = _u14652[2]; task = _u14652[3]; if (!(task == S("captain"))) continue; if (((abs_(xq + dx - cx_) < 0.4) && (abs_(zq - cz_) < 0.4))) return true; } return false; }(each(crew)))) {
                     floor_nail(xq + dx, top + 0.12, zq, Py(4));
                 }
             }
@@ -48454,73 +48408,73 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     edge = list({(*x1__c) + 0.35, top + 0.12});  // leaning on the edge of the deck and
     dl = vunit(list({edge[0] - foot[0], edge[1] - foot[1], Py(0.0)}));  // standing up above it
     head = list({edge[0] + dl[0] * 0.75, edge[1] + dl[1] * 0.75});
-    for (Py _v14672 : each(K(tuple({Py(1.2), Py(1.8)})))) {
-        zz = _v14672;
+    for (Py _v14653 : each(K(tuple({Py(1.2), Py(1.8)})))) {
+        zz = _v14653;
         addpy::beam(list({foot[0], foot[1], zz}), list({head[0], head[1], zz}), Py(0.08), Py(0.08), P[S("wood")]);
     }
-    for (Py _v14673 : range(Py(1), Py(10))) {
-        (*k__c) = _v14673;
+    for (Py _v14654 : range(Py(1), Py(10))) {
+        (*k__c) = _v14654;
         u = (*k__c) / 10.0;
         addpy::cylinder(list({foot[0] + (head[0] - foot[0]) * u, foot[1] + (head[1] - foot[1]) * u, Py(1.24)}), list({foot[0] + (head[0] - foot[0]) * u, foot[1] + (head[1] - foot[1]) * u, Py(1.76)}), Py(0.03), Py(5), P[S("wood")]);
     }
-    for (Py _v14674 : each(K(tuple({Py(-1), Py(1)})))) {
-        sg = _v14674;
-        for (Py _v14675 : range(Py(11))) {
-            i = _v14675;
+    for (Py _v14655 : each(K(tuple({Py(-1), Py(1)})))) {
+        sg = _v14655;
+        for (Py _v14656 : range(Py(11))) {
+            i = _v14656;
             u = i / 10.0;
-            { Py _t14676 = tuple({(*x0__c) + ((*x1__c) - (*x0__c)) * u, sg * ((*z0__c) + ((*z1__c) - (*z0__c)) * u)}); Vec _u14677 = unpack(_t14676, 2); x = _u14677[0]; z = _u14677[1]; }
+            { Py _t14657 = tuple({(*x0__c) + ((*x1__c) - (*x0__c)) * u, sg * ((*z0__c) + ((*z1__c) - (*z0__c)) * u)}); Vec _u14658 = unpack(_t14657, 2); x = _u14658[0]; z = _u14658[1]; }
             addpy::cylinder(list({x, top + 0.12, z}), list({x, top + 0.75, z}), Py(0.04), Py(6), P[S("wood_dark")]);
         }
         addpy::cylinder(list({(*x0__c), top + 0.78, sg * (*z0__c)}), list({(*x1__c), top + 0.78, sg * (*z1__c)}), Py(0.05), Py(6), P[S("wood")]);
         addpy::cylinder(list({(*x0__c), top + 0.12, sg * (*z0__c)}), list({(*x1__c), top + 0.12, sg * (*z1__c)}), Py(0.04), Py(6), P[S("wood")]);
         if (truthy(shields)) {  // the knights' shields hung on the rail,
             nrm = vunit(list({(-((*z1__c) - (*z0__c))) / ((*x1__c) - (*x0__c)), Py(0.0), sg}));  // outside it and square to it, their
-            for (Py _v14678 : range(Py(5))) {  // backs a hair off it, their top edges
-                i = _v14678;
+            for (Py _v14659 : range(Py(5))) {  // backs a hair off it, their top edges
+                i = _v14659;
                 u = (i + 0.5) / 5.0;  // just under its top
-                { Py _t14679 = tuple({(*x0__c) + ((*x1__c) - (*x0__c)) * u, sg * ((*z0__c) + ((*z1__c) - (*z0__c)) * u)}); Vec _u14680 = unpack(_t14679, 2); x = _u14680[0]; z = _u14680[1]; }
+                { Py _t14660 = tuple({(*x0__c) + ((*x1__c) - (*x0__c)) * u, sg * ((*z0__c) + ((*z1__c) - (*z0__c)) * u)}); Vec _u14661 = unpack(_t14660, 2); x = _u14661[0]; z = _u14661[1]; }
                 place_heater(list({x + nrm[0] * 0.068, top + 0.8, z + nrm[2] * 0.068}), nrm);
             }
         }
-        { Py _t14681 = tuple({(*x0__c) + 0.1, sg * ((*z0__c) - 0.1)}); Vec _u14682 = unpack(_t14681, 2); lx = _u14682[0]; lz = _u14682[1]; }  // lanterns on the corners
+        { Py _t14662 = tuple({(*x0__c) + 0.1, sg * ((*z0__c) - 0.1)}); Vec _u14663 = unpack(_t14662, 2); lx = _u14663[0]; lz = _u14663[1]; }  // lanterns on the corners
         addpy::cylinder(list({lx, top + 0.12, lz}), list({lx, top + 1.5, lz}), Py(0.05), Py(6), P[S("iron")]);
         lantern(list({lx, top + 1.5, lz}));
     }
     addpy::cylinder(list({(*x0__c) + 0.3, top + 0.12, Py(0)}), list({(*x0__c) + 0.3, top + 3.6, Py(0)}), Py(0.07), Py(8), P[S("wood_dark")]);  // the flagstaff at the stern
     yf = call((*sheer__c), {Py(0.8)});  // the platform forward, narrowing, railed:
-    { Py _t14683 = tuple({(*L__c) / 2 - 5.2, (*L__c) / 2 - 1.2}); Vec _u14684 = unpack(_t14683, 2); (*XA__c) = _u14684[0]; (*XB__c) = _u14684[1]; }  // boards across joists, the joists on a
-    hw = func(sig("lambda", {"x"}, {MISSING_ARG}, 1), [XA__c, XB__c, half__c](Vec& _A_) -> Py { Py x = _A_[0]; return [&] { Py _t14685 = call((*half__c), {Py(0.6)}) - 0.3; Py _t14686 = ([&] { Py _t14687 = call((*half__c), {Py(0.9)}) - 0.25; Py _t14688 = call((*half__c), {Py(0.6)}); return _t14687 - _t14688; }() + 0.3) * (x - (*XA__c)) / ((*XB__c) - (*XA__c)); return _t14685 + _t14686; }(); });  // stringer each side,
+    { Py _t14664 = tuple({(*L__c) / 2 - 5.2, (*L__c) / 2 - 1.2}); Vec _u14665 = unpack(_t14664, 2); (*XA__c) = _u14665[0]; (*XB__c) = _u14665[1]; }  // boards across joists, the joists on a
+    hw = func(sig("lambda", {"x"}, {MISSING_ARG}, 1), [XA__c, XB__c, half__c](Vec& _A_) -> Py { Py x = _A_[0]; return [&] { Py _t14666 = call((*half__c), {Py(0.6)}) - 0.3; Py _t14667 = ([&] { Py _t14668 = call((*half__c), {Py(0.9)}) - 0.25; Py _t14669 = call((*half__c), {Py(0.6)}); return _t14668 - _t14669; }() + 0.3) * (x - (*XA__c)) / ((*XB__c) - (*XA__c)); return _t14666 + _t14667; }(); });  // stringer each side,
     fore = list({tuple({(*XA__c), -call(hw, {(*XA__c)})}), tuple({(*XA__c), call(hw, {(*XA__c)})}), tuple({(*XB__c), call(hw, {(*XB__c)})}), tuple({(*XB__c), -call(hw, {(*XB__c)})})});  // the stringers on three posts that
     timber_floor(fore, yf + 1.25, Py(0.0), MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, Py(0.26), Py(0.95), K(tuple({Py(0.16), Py(0.19)})), S("wood_light"), S("wood"), MISSING_ARG, MISSING_ARG, MISSING_ARG, (*seed__c));
     // (stand on the deck, braced to them)
-    for (Py _v14689 : each(K(tuple({Py(-1), Py(1)})))) {
-        sg = _v14689;
-        [&] { Py _a14690 = list({(*XA__c), yf + 0.92, sg * (call(hw, {(*XA__c)}) - 0.11)}); Py _a14691 = list({(*XB__c), yf + 0.92, sg * (call(hw, {(*XB__c)}) - 0.11)}); Py _a14692 = Py(0.18); Py _a14693 = Py(0.18); Py _a14694 = P[S("wood_dark")]; return addpy::beam(_a14690, _a14691, _a14692, _a14693, _a14694); }();
-        for (Py _v14695 : each(enumerate_(tuple({(*XA__c) + 0.1, ((*XA__c) + (*XB__c)) / 2, (*XB__c) - 0.15}), Py(0)))) {
-            Vec _u14696 = unpack(_v14695, 2);
-            (*k__c) = _u14696[0];
-            xq = _u14696[1];
-            { Py _t14699 = tuple({sg * (call(hw, {xq}) - 0.11), [&] { Py _t14697 = call((*deck_y__c), {xq - 0.08}); Py _t14698 = call((*deck_y__c), {xq + 0.08}); return max2(_t14697, _t14698); }() + 0.033}); Vec _u14700 = unpack(_t14699, 2); zq = _u14700[0]; yd_ = _u14700[1]; }
+    for (Py _v14670 : each(K(tuple({Py(-1), Py(1)})))) {
+        sg = _v14670;
+        [&] { Py _a14671 = list({(*XA__c), yf + 0.92, sg * (call(hw, {(*XA__c)}) - 0.11)}); Py _a14672 = list({(*XB__c), yf + 0.92, sg * (call(hw, {(*XB__c)}) - 0.11)}); Py _a14673 = Py(0.18); Py _a14674 = Py(0.18); Py _a14675 = P[S("wood_dark")]; return addpy::beam(_a14671, _a14672, _a14673, _a14674, _a14675); }();
+        for (Py _v14676 : each(enumerate_(tuple({(*XA__c) + 0.1, ((*XA__c) + (*XB__c)) / 2, (*XB__c) - 0.15}), Py(0)))) {
+            Vec _u14677 = unpack(_v14676, 2);
+            (*k__c) = _u14677[0];
+            xq = _u14677[1];
+            { Py _t14680 = tuple({sg * (call(hw, {xq}) - 0.11), [&] { Py _t14678 = call((*deck_y__c), {xq - 0.08}); Py _t14679 = call((*deck_y__c), {xq + 0.08}); return max2(_t14678, _t14679); }() + 0.033}); Vec _u14681 = unpack(_t14680, 2); zq = _u14681[0]; yd_ = _u14681[1]; }
             addpy::cuboid(list({xq, (yd_ + yf + 0.83) / 2, zq}), list({Py(0.16), yf + 0.83 - yd_, Py(0.16)}), P[S("wood_dark")]);
-            for (Py _v14701 : each(((*k__c) == 0 ? K(tuple({Py(0.5)})) : ((*k__c) == 2 ? K(tuple({Py(-0.5)})) : K(tuple({Py(-0.5), Py(0.5)})))))) {  // knee braces up to the stringer
-                dxb = _v14701;
+            for (Py _v14682 : each(((*k__c) == 0 ? K(tuple({Py(0.5)})) : ((*k__c) == 2 ? K(tuple({Py(-0.5)})) : K(tuple({Py(-0.5), Py(0.5)})))))) {  // knee braces up to the stringer
+                dxb = _v14682;
                 addpy::beam(list({xq + dxb * 0.12, yf + 0.3, zq}), list({xq + dxb * 1.0, yf + 0.84, sg * (call(hw, {xq + dxb * 1.0}) - 0.11)}), Py(0.1), Py(0.1), P[S("wood")]);
             }
         }
-        { Py _t14702 = tuple({fore[(sg < 0 ? Py(0) : Py(1))], fore[(sg < 0 ? Py(3) : Py(2))]}); Vec _u14703 = unpack(_t14702, 2); Vec _u14704 = unpack(_u14703[0], 2); xa_ = _u14704[0]; za_ = _u14704[1]; Vec _u14705 = unpack(_u14703[1], 2); xb_ = _u14705[0]; zb_ = _u14705[1]; }
-        for (Py _v14706 : range(Py(7))) {
-            i = _v14706;
+        { Py _t14683 = tuple({fore[(sg < 0 ? Py(0) : Py(1))], fore[(sg < 0 ? Py(3) : Py(2))]}); Vec _u14684 = unpack(_t14683, 2); Vec _u14685 = unpack(_u14684[0], 2); xa_ = _u14685[0]; za_ = _u14685[1]; Vec _u14686 = unpack(_u14684[1], 2); xb_ = _u14686[0]; zb_ = _u14686[1]; }
+        for (Py _v14687 : range(Py(7))) {
+            i = _v14687;
             u = i / 6.0;
             addpy::cylinder(list({xa_ + (xb_ - xa_) * u, yf + 1.25, za_ + (zb_ - za_) * u}), list({xa_ + (xb_ - xa_) * u, yf + 1.85, za_ + (zb_ - za_) * u}), Py(0.035), Py(6), P[S("wood_dark")]);
         }
         addpy::cylinder(list({xa_, yf + 1.88, za_}), list({xb_, yf + 1.88, zb_}), Py(0.045), Py(6), P[S("wood")]);
     }
-    for (Py _v14707 : each(tuple({tuple({(-call(hw, {(*XA__c)})) + 0.2, Py(-1.85)}), tuple({Py(-1.15), call(hw, {(*XA__c)}) - 0.2})}))) {  // the rail across its back, open where
-        Vec _u14708 = unpack(_v14707, 2);
-        za_ = _u14708[0];
-        zb_ = _u14708[1];
-        for (Py _v14709 : range(int_((zb_ - za_) / 0.45) + 1)) {  // a ladder comes up from the deck
-            (*k__c) = _v14709;
+    for (Py _v14688 : each(tuple({tuple({(-call(hw, {(*XA__c)})) + 0.2, Py(-1.85)}), tuple({Py(-1.15), call(hw, {(*XA__c)}) - 0.2})}))) {  // the rail across its back, open where
+        Vec _u14689 = unpack(_v14688, 2);
+        za_ = _u14689[0];
+        zb_ = _u14689[1];
+        for (Py _v14690 : range(int_((zb_ - za_) / 0.45) + 1)) {  // a ladder comes up from the deck
+            (*k__c) = _v14690;
             zq = za_ + (zb_ - za_) * (*k__c) / max2(Py(1), int_((zb_ - za_) / 0.45));
             addpy::cylinder(list({(*XA__c) + 0.05, yf + 1.25, zq}), list({(*XA__c) + 0.05, yf + 1.85, zq}), Py(0.035), Py(6), P[S("wood_dark")]);
         }
@@ -48529,30 +48483,30 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     foot = list({(*XA__c) - 0.95, call((*sheer__c), {call((*t_at__c), {(*XA__c) - 0.95})}) + 0.073});
     dl = vunit(list({(*XA__c) - 0.05 - foot[0], yf + 1.25 - foot[1], Py(0.0)}));
     head = list({(*XA__c) - 0.05 + dl[0] * 0.75, yf + 1.25 + dl[1] * 0.75});
-    for (Py _v14710 : each(K(tuple({Py(-1.8), Py(-1.2)})))) {
-        zz = _v14710;
+    for (Py _v14691 : each(K(tuple({Py(-1.8), Py(-1.2)})))) {
+        zz = _v14691;
         addpy::beam(list({foot[0], foot[1], zz}), list({head[0], head[1], zz}), Py(0.08), Py(0.08), P[S("wood")]);
     }
-    for (Py _v14711 : range(Py(1), Py(9))) {
-        (*k__c) = _v14711;
+    for (Py _v14692 : range(Py(1), Py(9))) {
+        (*k__c) = _v14692;
         u = (*k__c) / 9.0;
         addpy::cylinder(list({foot[0] + (head[0] - foot[0]) * u, foot[1] + (head[1] - foot[1]) * u, Py(-1.76)}), list({foot[0] + (head[0] - foot[0]) * u, foot[1] + (head[1] - foot[1]) * u, Py(-1.24)}), Py(0.03), Py(5), P[S("wood")]);
     }
     (*SLOPE__c) = Py(0.442);  // the bowsprit, lying on the stem head
-    (*sprit__c) = func(sig("lambda", {"x"}, {MISSING_ARG}, 1), [SLOPE__c, sheer__c, xs__c](Vec& _A_) -> Py { Py x = _A_[0]; return [&] { Py _t14712 = call((*sheer__c), {Py(1.0)}) + 0.7 + 0.18 * addpy::sqrt(1 + (*SLOPE__c) * (*SLOPE__c)); Py _t14713 = (*SLOPE__c) * (x - call((*xs__c), {Py(1.0)}) + 0.35); return _t14712 + _t14713; }(); });  // (its axis),
-    { Py _t14714 = tuple({(*XA__c), call((*xs__c), {Py(1.0)}) - 0.35}); Vec _u14715 = unpack(_t14714, 2); lo = _u14715[0]; hi = _u14715[1]; }  // its heel down on the deck,
-    for (Py _v14716 : range(Py(40))) {
-        _ = _v14716;
+    (*sprit__c) = func(sig("lambda", {"x"}, {MISSING_ARG}, 1), [SLOPE__c, sheer__c, xs__c](Vec& _A_) -> Py { Py x = _A_[0]; return [&] { Py _t14693 = call((*sheer__c), {Py(1.0)}) + 0.7 + 0.18 * addpy::sqrt(1 + (*SLOPE__c) * (*SLOPE__c)); Py _t14694 = (*SLOPE__c) * (x - call((*xs__c), {Py(1.0)}) + 0.35); return _t14693 + _t14694; }(); });  // (its axis),
+    { Py _t14695 = tuple({(*XA__c), call((*xs__c), {Py(1.0)}) - 0.35}); Vec _u14696 = unpack(_t14695, 2); lo = _u14696[0]; hi = _u14696[1]; }  // its heel down on the deck,
+    for (Py _v14697 : range(Py(40))) {
+        _ = _v14697;
         mid = (lo + hi) / 2;
         low = call((*sprit__c), {mid}) - 0.18 / addpy::sqrt(1 + (*SLOPE__c) * (*SLOPE__c));
-        { Py _t14717 = (low > (call((*sheer__c), {call((*t_at__c), {mid + 0.18 * (*SLOPE__c) / addpy::sqrt(1 + (*SLOPE__c) * (*SLOPE__c))})}) + 0.03) ? tuple({lo, mid}) : tuple({mid, hi})); Vec _u14718 = unpack(_t14717, 2); lo = _u14718[0]; hi = _u14718[1]; }
+        { Py _t14698 = (low > (call((*sheer__c), {call((*t_at__c), {mid + 0.18 * (*SLOPE__c) / addpy::sqrt(1 + (*SLOPE__c) * (*SLOPE__c))})}) + 0.03) ? tuple({lo, mid}) : tuple({mid, hi})); Vec _u14699 = unpack(_t14698, 2); lo = _u14699[0]; hi = _u14699[1]; }
     }
-    { Py _t14719 = tuple({list({hi, call((*sprit__c), {hi}), Py(0.0)}), list({call((*xs__c), {Py(1.0)}) + 4.4, call((*sprit__c), {call((*xs__c), {Py(1.0)}) + 4.4}), Py(0.0)})}); Vec _u14720 = unpack(_t14719, 2); heel = _u14720[0]; tip = _u14720[1]; }
+    { Py _t14700 = tuple({list({hi, call((*sprit__c), {hi}), Py(0.0)}), list({call((*xs__c), {Py(1.0)}) + 4.4, call((*sprit__c), {call((*xs__c), {Py(1.0)}) + 4.4}), Py(0.0)})}); Vec _u14701 = unpack(_t14700, 2); heel = _u14701[0]; tip = _u14701[1]; }
     addpy::cylinder(heel, tip, Py(0.18), Py(16), P[S("wood_dark")]);
     bx = heel[0] + 0.35;
-    for (Py _v14721 : each(K(tuple({Py(-1), Py(1)})))) {  // between two bitts
-        sz = _v14721;
-        addpy::cuboid(list({bx, [&] { Py _t14722 = call((*deck_y__c), {bx - 0.08}); Py _t14723 = call((*deck_y__c), {bx + 0.08}); return max2(_t14722, _t14723); }() + 0.033 + 0.4, sz * 0.28}), list({Py(0.16), Py(0.8), Py(0.16)}), P[S("wood_dark")]);
+    for (Py _v14702 : each(K(tuple({Py(-1), Py(1)})))) {  // between two bitts
+        sz = _v14702;
+        addpy::cuboid(list({bx, [&] { Py _t14703 = call((*deck_y__c), {bx - 0.08}); Py _t14704 = call((*deck_y__c), {bx + 0.08}); return max2(_t14703, _t14704); }() + 0.033 + 0.4, sz * 0.28}), list({Py(0.16), Py(0.8), Py(0.16)}), P[S("wood_dark")]);
     }
     ys_ = call((*sprit__c), {bx}) + 0.18 / addpy::cos(addpy::atan((*SLOPE__c)));  // a cross-piece bolted to their heads over
     addpy::cuboid(list({bx, ys_ + 0.07, Py(0)}), list({Py(0.14), Py(0.14), Py(0.72)}), P[S("wood_dark")]);  // it, holding it down, and an iron strap
@@ -48560,10 +48514,10 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     hx0 = heel[0] - 0.12;  // a chock on the deck behind its heel
     addpy::cuboid(list({hx0, call((*deck_y__c), {hx0}) + 0.033 + 0.09, Py(0)}), list({Py(0.16), Py(0.18), Py(0.46)}), P[S("wood_dark")]);
     ax_b = vunit(vsub(tip, heel));
-    { Py _t14724 = tuple({call((*sheer__c), {Py(1.0)}) + 0.7, call((*xs__c), {Py(1.0)}) + 0.25}); Vec _u14725 = unpack(_t14724, 2); y_top = _u14725[0]; XF = _u14725[1]; }  // at the stem head (its top, its fore face) it
-    { Py _t14726 = tuple({addpy::cos(addpy::atan((*SLOPE__c))), addpy::sin(addpy::atan((*SLOPE__c)))}); Vec _u14727 = unpack(_t14726, 2); (*CS___c) = _u14727[0]; (*SN___c) = _u14727[1]; }  // is held in wood: a saddle chock on the head,
-    { Py _t14728 = tuple({list({-(*SN___c), (*CS___c), Py(0.0)}), 0.18 + 0.002 / addpy::cos(addpy::pi / 16)}); Vec _u14729 = unpack(_t14728, 2); e_ = _u14729[0]; RH = _u14729[1]; }  // its top hollowed to the bowsprit's underside,
-    { Py _t14730 = K(tuple({Py(0.28), Py(0.25), Py(0.26), Py(0.012)})); Vec _u14731 = unpack(_t14730, 4); (*SW__c) = _u14731[0]; (*CW__c) = _u14731[1]; (*CH__c) = _u14731[2]; (*CC__c) = _u14731[3]; }  // a cap over it hollowed to its top, both wider
+    { Py _t14705 = tuple({call((*sheer__c), {Py(1.0)}) + 0.7, call((*xs__c), {Py(1.0)}) + 0.25}); Vec _u14706 = unpack(_t14705, 2); y_top = _u14706[0]; XF = _u14706[1]; }  // at the stem head (its top, its fore face) it
+    { Py _t14707 = tuple({addpy::cos(addpy::atan((*SLOPE__c))), addpy::sin(addpy::atan((*SLOPE__c)))}); Vec _u14708 = unpack(_t14707, 2); (*CS___c) = _u14708[0]; (*SN___c) = _u14708[1]; }  // is held in wood: a saddle chock on the head,
+    { Py _t14709 = tuple({list({-(*SN___c), (*CS___c), Py(0.0)}), 0.18 + 0.002 / addpy::cos(addpy::pi / 16)}); Vec _u14710 = unpack(_t14709, 2); e_ = _u14710[0]; RH = _u14710[1]; }  // its top hollowed to the bowsprit's underside,
+    { Py _t14711 = K(tuple({Py(0.28), Py(0.25), Py(0.26), Py(0.012)})); Vec _u14712 = unpack(_t14711, 4); (*SW__c) = _u14712[0]; (*CW__c) = _u14712[1]; (*CH__c) = _u14712[2]; (*CC__c) = _u14712[3]; }  // a cap over it hollowed to its top, both wider
     // than the stem and meeting at the level of its
     carpentered = func(sig("carpentered", {"rings", "caps", "colour"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG}, 3), [](Vec& _A_) -> Py {
         Py rings = _A_[0];
@@ -48578,53 +48532,53 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         // A block of wood skinned over ``rings`` of points (all of one count), each end closed by the convex pieces
         // ``caps`` (lists of places in a ring).
         M___ = addpy::Mesh();
-        ids = [&](Each _it14732) { Py r_; Py _r14733 = list(); for (Py _x14737 : _it14732) { r_ = _x14737; L_(_r14733)->v.push_back([&](Each _it14734) { Py q; Py _r14735 = list(); for (Py _x14736 : _it14734) { q = _x14736; L_(_r14735)->v.push_back(mesh_add_vertex(M___, q)); } return _r14735; }(each(r_))); } return _r14733; }(each(rings));
-        for (Py _v14738 : range(len(rings) - 1)) {
-            a_i = _v14738;
-            for (Py _v14739 : range(len(rings[0]))) {
-                i = _v14739;
+        ids = [&](Each _it14713) { Py r_; Py _r14714 = list(); for (Py _x14718 : _it14713) { r_ = _x14718; L_(_r14714)->v.push_back([&](Each _it14715) { Py q; Py _r14716 = list(); for (Py _x14717 : _it14715) { q = _x14717; L_(_r14716)->v.push_back(mesh_add_vertex(M___, q)); } return _r14716; }(each(r_))); } return _r14714; }(each(rings));
+        for (Py _v14719 : range(len(rings) - 1)) {
+            a_i = _v14719;
+            for (Py _v14720 : range(len(rings[0]))) {
+                i = _v14720;
                 j = mod(i + 1, len(rings[0]));
                 mesh_add_face(M___, list({ids[a_i][i], ids[a_i][j], ids[a_i + 1][j], ids[a_i + 1][i]}), colour);
             }
         }
-        for (Py _v14740 : each(caps)) {
-            piece = _v14740;
-            mesh_add_face(M___, slice([&](Each _it14741) { Py i; Py _r14742 = list(); for (Py _x14743 : _it14741) { i = _x14743; L_(_r14742)->v.push_back(ids[0][i]); } return _r14742; }(each(piece)), None, None, Py(-1)), colour);
-            mesh_add_face(M___, [&](Each _it14744) { Py i; Py _r14745 = list(); for (Py _x14746 : _it14744) { i = _x14746; L_(_r14745)->v.push_back(ids[Py(-1)][i]); } return _r14745; }(each(piece)), colour);
+        for (Py _v14721 : each(caps)) {
+            piece = _v14721;
+            mesh_add_face(M___, slice([&](Each _it14722) { Py i; Py _r14723 = list(); for (Py _x14724 : _it14722) { i = _x14724; L_(_r14723)->v.push_back(ids[0][i]); } return _r14723; }(each(piece)), None, None, Py(-1)), colour);
+            mesh_add_face(M___, [&](Each _it14725) { Py i; Py _r14726 = list(); for (Py _x14727 : _it14725) { i = _x14727; L_(_r14726)->v.push_back(ids[Py(-1)][i]); } return _r14726; }(each(piece)), colour);
         }
         addpy::mesh(addpy::fix_normals(M___));
         return None;
     });
-    (*hol__c) = [&](Range _it14747) { Py j; Py _r14748 = list(); for (Py _x14749 : _it14747) { j = _x14749; L_(_r14748)->v.push_back(tuple({RH * addpy::cos(addpy::pi * j / 8), (-RH) * addpy::sin(addpy::pi * j / 8)})); } return _r14748; }(range(Py(9)));  // (round under it from side to side:
-    sad = func(sig("lambda", {"x_", "vb"}, {MISSING_ARG, MISSING_ARG}, 2), [CS___c, SW__c, hol__c, sprit__c](Vec& _A_) -> Py { Py x_ = _A_[0]; Py vb = _A_[1]; return [&](Each _it14750) { Py v_; Py w_; Py _r14755 = list(); for (Py _x14756 : _it14750) { Vec _u14757 = unpack(_x14756, 2); w_ = _u14757[0]; v_ = _u14757[1]; L_(_r14755)->v.push_back(list({x_, call((*sprit__c), {x_}) + v_ / (*CS___c), w_})); } return _r14755; }(each(list({tuple({(*SW__c), Py(0.0)})}) + (*hol__c) + list({tuple({-(*SW__c), Py(0.0)}), tuple({-(*SW__c), vb})}) + [&](Each _it14751) { Py v_; Py w_; Py _r14752 = list(); for (Py _x14753 : _it14751) { Vec _u14754 = unpack(_x14753, 2); w_ = _u14754[0]; v_ = _u14754[1]; L_(_r14752)->v.push_back(tuple({w_, vb})); } return _r14752; }(each(slice((*hol__c), None, None, Py(-1)))) + list({tuple({(*SW__c), vb})}))); });  // w across, v square to the axis, up; cut upright)
-    call(carpentered, {[&](Each _it14758) { Py x_; Py _r14759 = list(); for (Py _x14760 : _it14758) { x_ = _x14760; L_(_r14759)->v.push_back(call(sad, {x_, (y_top - 0.002 - call((*sprit__c), {x_})) * (*CS___c)})); } return _r14759; }(each(tuple({call((*xs__c), {Py(1.0)}) - 0.31, XF + 0.03}))), [&](Range _it14761) { Py j; Py _r14762 = list(); for (Py _x14763 : _it14761) { j = _x14763; L_(_r14762)->v.push_back(list({1 + j, 2 + j, 19 - j, 20 - j})); } return _r14762; }(range(Py(8))) + list({list({Py(0), Py(1), Py(20), Py(21)}), list({Py(9), Py(10), Py(11), Py(12)})}), P[S("wood")]});  // the saddle, sitting on the head,
-    (*hc__c) = [&](Range _it14764) { Py j; Py _r14765 = list(); for (Py _x14766 : _it14764) { j = _x14766; L_(_r14765)->v.push_back(tuple({RH * addpy::cos(addpy::pi - addpy::pi * j / 8), RH * addpy::sin(addpy::pi - addpy::pi * j / 8)})); } return _r14765; }(range(Py(9)));  // the cap (over its top,
+    (*hol__c) = [&](Range _it14728) { Py j; Py _r14729 = list(); for (Py _x14730 : _it14728) { j = _x14730; L_(_r14729)->v.push_back(tuple({RH * addpy::cos(addpy::pi * j / 8), (-RH) * addpy::sin(addpy::pi * j / 8)})); } return _r14729; }(range(Py(9)));  // (round under it from side to side:
+    sad = func(sig("lambda", {"x_", "vb"}, {MISSING_ARG, MISSING_ARG}, 2), [CS___c, SW__c, hol__c, sprit__c](Vec& _A_) -> Py { Py x_ = _A_[0]; Py vb = _A_[1]; return [&](Each _it14731) { Py v_; Py w_; Py _r14736 = list(); for (Py _x14737 : _it14731) { Vec _u14738 = unpack(_x14737, 2); w_ = _u14738[0]; v_ = _u14738[1]; L_(_r14736)->v.push_back(list({x_, call((*sprit__c), {x_}) + v_ / (*CS___c), w_})); } return _r14736; }(each(list({tuple({(*SW__c), Py(0.0)})}) + (*hol__c) + list({tuple({-(*SW__c), Py(0.0)}), tuple({-(*SW__c), vb})}) + [&](Each _it14732) { Py v_; Py w_; Py _r14733 = list(); for (Py _x14734 : _it14732) { Vec _u14735 = unpack(_x14734, 2); w_ = _u14735[0]; v_ = _u14735[1]; L_(_r14733)->v.push_back(tuple({w_, vb})); } return _r14733; }(each(slice((*hol__c), None, None, Py(-1)))) + list({tuple({(*SW__c), vb})}))); });  // w across, v square to the axis, up; cut upright)
+    call(carpentered, {[&](Each _it14739) { Py x_; Py _r14740 = list(); for (Py _x14741 : _it14739) { x_ = _x14741; L_(_r14740)->v.push_back(call(sad, {x_, (y_top - 0.002 - call((*sprit__c), {x_})) * (*CS___c)})); } return _r14740; }(each(tuple({call((*xs__c), {Py(1.0)}) - 0.31, XF + 0.03}))), [&](Range _it14742) { Py j; Py _r14743 = list(); for (Py _x14744 : _it14742) { j = _x14744; L_(_r14743)->v.push_back(list({1 + j, 2 + j, 19 - j, 20 - j})); } return _r14743; }(range(Py(8))) + list({list({Py(0), Py(1), Py(20), Py(21)}), list({Py(9), Py(10), Py(11), Py(12)})}), P[S("wood")]});  // the saddle, sitting on the head,
+    (*hc__c) = [&](Range _it14745) { Py j; Py _r14746 = list(); for (Py _x14747 : _it14745) { j = _x14747; L_(_r14746)->v.push_back(tuple({RH * addpy::cos(addpy::pi - addpy::pi * j / 8), RH * addpy::sin(addpy::pi - addpy::pi * j / 8)})); } return _r14746; }(range(Py(9)));  // the cap (over its top,
     (*XC__c) = call((*xs__c), {Py(1.0)}) - 0.02;  // side to side; its ends square to the axis)
-    cap = func(sig("lambda", {"s_"}, {MISSING_ARG}, 1), [CC__c, CH__c, CS___c, CW__c, SN___c, XC__c, hc__c, sprit__c](Vec& _A_) -> Py { Py s_ = _A_[0]; return [&](Each _it14767) { Py v_; Py w_; Py _r14772 = list(); for (Py _x14773 : _it14767) { Vec _u14774 = unpack(_x14773, 2); w_ = _u14774[0]; v_ = _u14774[1]; L_(_r14772)->v.push_back(list({(*XC__c) + s_ * (*CS___c) - v_ * (*SN___c), call((*sprit__c), {(*XC__c)}) + s_ * (*SN___c) + v_ * (*CS___c), w_})); } return _r14772; }(each(list({tuple({(*CW__c), Py(0.0)}), tuple({(*CW__c), (*CH__c) - (*CC__c)}), tuple({(*CW__c) - (*CC__c), (*CH__c)})}) + [&](Each _it14768) { Py v_; Py w_; Py _r14769 = list(); for (Py _x14770 : _it14768) { Vec _u14771 = unpack(_x14770, 2); w_ = _u14771[0]; v_ = _u14771[1]; L_(_r14769)->v.push_back(tuple({w_, (*CH__c)})); } return _r14769; }(each(slice((*hc__c), None, None, Py(-1)))) + list({tuple({(*CC__c) - (*CW__c), (*CH__c)}), tuple({-(*CW__c), (*CH__c) - (*CC__c)}), tuple({-(*CW__c), Py(0.0)})}) + (*hc__c))); });
-    call(carpentered, {list({call(cap, {Py(-0.12)}), call(cap, {Py(0.12)})}), [&](Range _it14775) { Py j; Py _r14776 = list(); for (Py _x14777 : _it14775) { j = _x14777; L_(_r14776)->v.push_back(list({15 + j, 16 + j, 10 - j, 11 - j})); } return _r14776; }(range(Py(8))) + list({list({Py(23), Py(0), Py(1), Py(2), Py(3)}), list({Py(14), Py(15), Py(11), Py(12), Py(13)})}), P[S("wood_dark")]});
-    for (Py _v14778 : each(K(tuple({Py(-1), Py(1)})))) {  // four bolts down through the cap's sides into
-        sz = _v14778;
-        for (Py _v14779 : each(K(tuple({Py(-0.06), Py(0.06)})))) {  // the saddle's, their square nuts on its top;
-            s_ = _v14779;
+    cap = func(sig("lambda", {"s_"}, {MISSING_ARG}, 1), [CC__c, CH__c, CS___c, CW__c, SN___c, XC__c, hc__c, sprit__c](Vec& _A_) -> Py { Py s_ = _A_[0]; return [&](Each _it14748) { Py v_; Py w_; Py _r14753 = list(); for (Py _x14754 : _it14748) { Vec _u14755 = unpack(_x14754, 2); w_ = _u14755[0]; v_ = _u14755[1]; L_(_r14753)->v.push_back(list({(*XC__c) + s_ * (*CS___c) - v_ * (*SN___c), call((*sprit__c), {(*XC__c)}) + s_ * (*SN___c) + v_ * (*CS___c), w_})); } return _r14753; }(each(list({tuple({(*CW__c), Py(0.0)}), tuple({(*CW__c), (*CH__c) - (*CC__c)}), tuple({(*CW__c) - (*CC__c), (*CH__c)})}) + [&](Each _it14749) { Py v_; Py w_; Py _r14750 = list(); for (Py _x14751 : _it14749) { Vec _u14752 = unpack(_x14751, 2); w_ = _u14752[0]; v_ = _u14752[1]; L_(_r14750)->v.push_back(tuple({w_, (*CH__c)})); } return _r14750; }(each(slice((*hc__c), None, None, Py(-1)))) + list({tuple({(*CC__c) - (*CW__c), (*CH__c)}), tuple({-(*CW__c), (*CH__c) - (*CC__c)}), tuple({-(*CW__c), Py(0.0)})}) + (*hc__c))); });
+    call(carpentered, {list({call(cap, {Py(-0.12)}), call(cap, {Py(0.12)})}), [&](Range _it14756) { Py j; Py _r14757 = list(); for (Py _x14758 : _it14756) { j = _x14758; L_(_r14757)->v.push_back(list({15 + j, 16 + j, 10 - j, 11 - j})); } return _r14757; }(range(Py(8))) + list({list({Py(23), Py(0), Py(1), Py(2), Py(3)}), list({Py(14), Py(15), Py(11), Py(12), Py(13)})}), P[S("wood_dark")]});
+    for (Py _v14759 : each(K(tuple({Py(-1), Py(1)})))) {  // four bolts down through the cap's sides into
+        sz = _v14759;
+        for (Py _v14760 : each(K(tuple({Py(-0.06), Py(0.06)})))) {  // the saddle's, their square nuts on its top;
+            s_ = _v14760;
             b_ = list({(*XC__c) + s_ * (*CS___c) - (*CH__c) * (*SN___c), call((*sprit__c), {(*XC__c)}) + s_ * (*SN___c) + (*CH__c) * (*CS___c), sz * 0.216});
             addpy::beam(b_, _plus(tuple({b_, _times(e_, Py(0.02))})), Py(0.04), Py(0.04), P[S("iron")], ax_b);
             addpy::cylinder(_plus(tuple({b_, _times(e_, Py(0.02))})), _plus(tuple({b_, _times(e_, Py(0.032))})), Py(0.012), Py(6), P[S("iron")]);
         }
-        for (Py _v14780 : each(tuple({XF - 0.11, XF - 0.03}))) {  // the saddle's overhang bolted down to a cheek
-            x_ = _v14780;
+        for (Py _v14761 : each(tuple({XF - 0.11, XF - 0.03}))) {  // the saddle's overhang bolted down to a cheek
+            x_ = _v14761;
             b_ = list({x_, call((*sprit__c), {x_}), sz * 0.235});  // under it on each side of the stem head (fore
             addpy::beam(b_, _plus(tuple({b_, _times(e_, Py(0.02))})), Py(0.045), Py(0.045), P[S("iron")], ax_b);  // of where the rails and the bulwark come
         }
         addpy::prism(list({list({XF - 0.2, y_top}), list({XF - 0.2, y_top - 0.2}), list({XF - 0.1, y_top - 0.32}), list({XF - 0.01, y_top - 0.32}), list({XF - 0.01, y_top})}), Py(0.045), P[S("wood")], tuple({Py(0), Py(0), sz * ((*POST_Z__c) + 0.0215)}), K(tuple({Py(0), Py(0), Py(1)})));  // into it), each bolted through the stem
-        for (Py _v14781 : each(tuple({tuple({XF - 0.12, y_top - 0.09}), tuple({XF - 0.06, y_top - 0.22})}))) {
-            Vec _u14782 = unpack(_v14781, 2);
-            x_ = _u14782[0];
-            y_ = _u14782[1];
+        for (Py _v14762 : each(tuple({tuple({XF - 0.12, y_top - 0.09}), tuple({XF - 0.06, y_top - 0.22})}))) {
+            Vec _u14763 = unpack(_v14762, 2);
+            x_ = _u14763[0];
+            y_ = _u14763[1];
             addpy::cylinder(list({x_, y_, sz * ((*POST_Z__c) + 0.044)}), list({x_, y_, sz * ((*POST_Z__c) + 0.056)}), Py(0.022), Py(8), P[S("iron")]);
         }
     }
-    for (Py _v14783 : each(K(tuple({Py(0.9), Py(2.6)})))) {  // iron bands round it, an eye under the
-        d_ = _v14783;
+    for (Py _v14764 : each(K(tuple({Py(0.9), Py(2.6)})))) {  // iron bands round it, an eye under the
+        d_ = _v14764;
         c_ = _plus(tuple({heel, _times(ax_b, vlen(vsub(list({call((*xs__c), {Py(1.0)}) + d_, Py(0), Py(0)}), list({heel[0], Py(0), Py(0)}))) / ax_b[0])}));  // outer one for the bobstay
         addpy::torus(c_, Py(0.18) + 0.008, Py(0.012), Py(16), Py(4), P[S("iron")], ax_b);
     }
@@ -48643,59 +48597,59 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     addpy::cylinder(list({(*MX__c), (*TOP__c) + 1.2, Py(0)}), list({(*MX__c), (*TOP__c) + 3.3, Py(0)}), Py(0.1), Py(10), P[S("wood")]);  // a pole on it for the flag, its truck
     addpy::sphere(list({(*MX__c), (*TOP__c) + 3.37, Py(0)}), Py(0.12), Py(6), P[S("wood_dark")]);
     (*FT__c) = (*TOP__c) - 1.58;  // the top's floor, and under it
-    { Py _t14784 = tuple({(*FT__c) - 0.05, (*FT__c) - 0.17}); Vec _u14785 = unpack(_t14784, 2); (*CT__c) = _u14785[0]; TT = _u14785[1]; }  // the crosstrees, the trestletrees
-    { Py _t14786 = K(tuple({Py(0.8), Py(1.0), Py(1.1)})); Vec _u14787 = unpack(_t14786, 3); (*RB__c) = _u14787[0]; (*RT__c) = _u14787[1]; (*HB___c) = _u14787[2]; }  // (inside at the foot, at the brim; how high)
+    { Py _t14765 = tuple({(*FT__c) - 0.05, (*FT__c) - 0.17}); Vec _u14766 = unpack(_t14765, 2); (*CT__c) = _u14766[0]; TT = _u14766[1]; }  // the crosstrees, the trestletrees
+    { Py _t14767 = K(tuple({Py(0.8), Py(1.0), Py(1.1)})); Vec _u14768 = unpack(_t14767, 3); (*RB__c) = _u14768[0]; (*RT__c) = _u14768[1]; (*HB___c) = _u14768[2]; }  // (inside at the foot, at the brim; how high)
     rin = func(sig("lambda", {"y"}, {MISSING_ARG}, 1), [CT__c, FT__c, HB___c, RB__c, RT__c](Vec& _A_) -> Py { Py y = _A_[0]; return (*RB__c) + ((*RT__c) - (*RB__c)) * (y - (*CT__c)) / ((*FT__c) + (*HB___c) - (*CT__c)); });
-    for (Py _v14788 : each(K(tuple({Py(-1), Py(1)})))) {  // the cheeks, bolted to the mast's sides,
-        sz = _v14788;
+    for (Py _v14769 : each(K(tuple({Py(-1), Py(1)})))) {  // the cheeks, bolted to the mast's sides,
+        sz = _v14769;
         cheek = list({list({(*MX__c) - 0.14, TT - 0.16, Py(0)}), list({(*MX__c) + 0.14, TT - 0.16, Py(0)}), list({(*MX__c) + 0.14, TT - 0.86, Py(0)}), list({(*MX__c), TT - 1.16, Py(0)}), list({(*MX__c) - 0.14, TT - 0.86, Py(0)})});
         addpy::mesh(addpy::move(extrude(cheek, list({Py(0), Py(0), Py(0.1)}), P[S("wood_dark")]), list({Py(0), Py(0), (sz > 0 ? Py(0.302) : Py(-0.402))})));
         addpy::cuboid(list({(*MX__c), TT - 0.08, sz * 0.362}), list({Py(1.5), Py(0.16), Py(0.12)}), P[S("wood_dark")]);  // the trestletrees on them,
     }
-    for (Py _v14789 : each(K(tuple({Py(-1), Py(1)})))) {  // the crosstrees on those
-        sx = _v14789;
+    for (Py _v14770 : each(K(tuple({Py(-1), Py(1)})))) {  // the crosstrees on those
+        sx = _v14770;
         addpy::cuboid(list({(*MX__c) + sx * 0.45, (TT + (*CT__c)) / 2, Py(0)}), list({Py(0.12), (*CT__c) - TT, Py(1.9)}), P[S("wood_dark")]);
     }
-    hug = func(sig("lambda", {"r_"}, {MISSING_ARG}, 1), [MX__c](Vec& _A_) -> Py { Py r_ = _A_[0]; return [&](Range _it14790) { Py i; Py _r14791 = list(); for (Py _x14792 : _it14790) { i = _x14792; L_(_r14791)->v.push_back(tuple({(*MX__c) + r_ * addpy::cos(addpy::pi * i / 6), r_ * addpy::sin(addpy::pi * i / 6)})); } return _r14791; }(range(Py(12))); });  // (round the mast's
+    hug = func(sig("lambda", {"r_"}, {MISSING_ARG}, 1), [MX__c](Vec& _A_) -> Py { Py r_ = _A_[0]; return [&](Range _it14771) { Py i; Py _r14772 = list(); for (Py _x14773 : _it14771) { i = _x14773; L_(_r14772)->v.push_back(tuple({(*MX__c) + r_ * addpy::cos(addpy::pi * i / 6), r_ * addpy::sin(addpy::pi * i / 6)})); } return _r14772; }(range(Py(12))); });  // (round the mast's
     RF = call(rin, {(*CT__c)}) - 0.002;  // twelve corners)  The floor: boards
-    disc = [&](Range _it14793) { Py i; Py _r14794 = list(); for (Py _x14795 : _it14793) { i = _x14795; L_(_r14794)->v.push_back(tuple({(*MX__c) + RF * addpy::cos(2 * addpy::pi * i / 96), RF * addpy::sin(2 * addpy::pi * i / 96)})); } return _r14794; }(range(Py(96)));  // across the crosstrees,
-    flat = func(sig("lambda", {"pts", "y0_", "y1_", "col"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG, None}, 3), [](Vec& _A_) -> Py { Py pts = _A_[0]; Py y0_ = _A_[1]; Py y1_ = _A_[2]; Py col = _A_[3]; return addpy::make([&] { addpy::prism([&](Each _it14796) { Py x_; Py z_; Py _r14797 = list(); for (Py _x14798 : _it14796) { Vec _u14799 = unpack(_x14798, 2); x_ = _u14799[0]; z_ = _u14799[1]; L_(_r14797)->v.push_back(list({x_, -z_})); } return _r14797; }(each(pts)), y1_ - y0_, col, tuple({Py(0), (y0_ + y1_) / 2, Py(0)}), K(tuple({Py(0), Py(1), Py(0)}))); }); });
+    disc = [&](Range _it14774) { Py i; Py _r14775 = list(); for (Py _x14776 : _it14774) { i = _x14776; L_(_r14775)->v.push_back(tuple({(*MX__c) + RF * addpy::cos(2 * addpy::pi * i / 96), RF * addpy::sin(2 * addpy::pi * i / 96)})); } return _r14775; }(range(Py(96)));  // across the crosstrees,
+    flat = func(sig("lambda", {"pts", "y0_", "y1_", "col"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG, None}, 3), [](Vec& _A_) -> Py { Py pts = _A_[0]; Py y0_ = _A_[1]; Py y1_ = _A_[2]; Py col = _A_[3]; return addpy::make([&] { addpy::prism([&](Each _it14777) { Py x_; Py z_; Py _r14778 = list(); for (Py _x14779 : _it14777) { Vec _u14780 = unpack(_x14779, 2); x_ = _u14780[0]; z_ = _u14780[1]; L_(_r14778)->v.push_back(list({x_, -z_})); } return _r14778; }(each(pts)), y1_ - y0_, col, tuple({Py(0), (y0_ + y1_) / 2, Py(0)}), K(tuple({Py(0), Py(1), Py(0)}))); }); });
     cut_mast = call(flat, {call(hug, {Py(0.301)}), (*CT__c) - 0.1, (*FT__c) + 0.1});  // edge to edge, cut to the staves round
-    for (Py _v14800 : range(Py(11))) {  // it and to the mast, whole (the lookout
-        j = _v14800;
-        { Py _t14801 = tuple({(-(*RB__c)) + 1.6 * j / 11, (-(*RB__c)) + 1.6 * (j + 1) / 11}); Vec _u14802 = unpack(_t14801, 2); za_ = _u14802[0]; zb_ = _u14802[1]; }  // climbs in over the brim from the shrouds)
+    for (Py _v14781 : range(Py(11))) {  // it and to the mast, whole (the lookout
+        j = _v14781;
+        { Py _t14782 = tuple({(-(*RB__c)) + 1.6 * j / 11, (-(*RB__c)) + 1.6 * (j + 1) / 11}); Vec _u14783 = unpack(_t14782, 2); za_ = _u14783[0]; zb_ = _u14783[1]; }  // climbs in over the brim from the shrouds)
         q = clip_half(clip_half(disc, Py(0), Py(-1), -za_), Py(0), Py(1), zb_);
         col = shade_of(S("wood_light"), j, Py(3));
         B_ = call(flat, {q, (*CT__c), (*FT__c), col});
         cuts = ((za_ < 0.32) && (zb_ > Py(-0.32)) ? list({cut_mast}) : list({}));
         if (truthy(cuts)) {
-            B_ = addpy::color(addpy::difference(B_, tuple([&] { Vec _v14803; star_into(_v14803, cuts); return _v14803; }()), None), col);
+            B_ = addpy::color(addpy::difference(B_, tuple([&] { Vec _v14784; star_into(_v14784, cuts); return _v14784; }()), None), col);
         }
         addpy::mesh(B_);
         zc_ = (za_ + zb_) / 2;
-        for (Py _v14804 : each(K(tuple({Py(-0.45), Py(0.45)})))) {  // nailed to the crosstrees
-            xc = _v14804;
+        for (Py _v14785 : each(K(tuple({Py(-0.45), Py(0.45)})))) {  // nailed to the crosstrees
+            xc = _v14785;
             if ((xc * xc + zc_ * zc_) < (pow_(RF - 0.06, Py(2)))) {
                 floor_nail((*MX__c) + xc, (*FT__c), zc_, Py(4));
             }
         }
     }
-    collar = [&](Each _it14805) { Py x_; Py z_; Py _r14806 = list(); for (Py _x14811 : _it14805) { Vec _u14812 = unpack(_x14811, 2); x_ = _u14812[0]; z_ = _u14812[1]; L_(_r14806)->v.push_back([&](Each _it14807) { Py f_; Py y_; Py _r14808 = list(); for (Py _x14809 : _it14807) { Vec _u14810 = unpack(_x14809, 2); f_ = _u14810[0]; y_ = _u14810[1]; L_(_r14808)->v.push_back(list({x_ * f_ + (*MX__c) * (1 - f_), y_, z_ * f_})); } return _r14808; }(each(tuple({tuple({Py(1.0), (*FT__c)}), tuple({Py(0.42) / 0.301, (*FT__c)}), tuple({Py(0.42) / 0.301, (*FT__c) + 0.06}), tuple({Py(1.0), (*FT__c) + 0.06})})))); } return _r14806; }(each(call(hug, {Py(0.301)})));  // a collar round the mast, on the boards
+    collar = [&](Each _it14786) { Py x_; Py z_; Py _r14787 = list(); for (Py _x14792 : _it14786) { Vec _u14793 = unpack(_x14792, 2); x_ = _u14793[0]; z_ = _u14793[1]; L_(_r14787)->v.push_back([&](Each _it14788) { Py f_; Py y_; Py _r14789 = list(); for (Py _x14790 : _it14788) { Vec _u14791 = unpack(_x14790, 2); f_ = _u14791[0]; y_ = _u14791[1]; L_(_r14789)->v.push_back(list({x_ * f_ + (*MX__c) * (1 - f_), y_, z_ * f_})); } return _r14789; }(each(tuple({tuple({Py(1.0), (*FT__c)}), tuple({Py(0.42) / 0.301, (*FT__c)}), tuple({Py(0.42) / 0.301, (*FT__c) + 0.06}), tuple({Py(1.0), (*FT__c) + 0.06})})))); } return _r14787; }(each(call(hug, {Py(0.301)})));  // a collar round the mast, on the boards
     addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft(collar, P[S("wood_dark")], True); })));
     K = Py(32);
-    for (Py _v14813 : range(K)) {  // the staves, flaring to the brim
-        i = _v14813;
-        { Py _t14814 = tuple({2 * addpy::pi * (i - 0.5) / K, 2 * addpy::pi * (i + 0.5) / K}); Vec _u14815 = unpack(_t14814, 2); a0 = _u14815[0]; a1 = _u14815[1]; }  // (edge to edge, no gap between)
-        rings = [&](Each _it14816) { Py y; Py _r14817 = list(); for (Py _x14822 : _it14816) { y = _x14822; L_(_r14817)->v.push_back([&](Each _it14818) { Py a; Py r_; Py _r14819 = list(); for (Py _x14820 : _it14818) { Vec _u14821 = unpack(_x14820, 2); r_ = _u14821[0]; a = _u14821[1]; L_(_r14819)->v.push_back(list({r_ * addpy::cos(a), y, r_ * addpy::sin(a)})); } return _r14819; }(each(tuple({tuple({call(rin, {y}), a0}), tuple({call(rin, {y}), a1}), tuple({call(rin, {y}) + 0.05, a1}), tuple({call(rin, {y}) + 0.05, a0})})))); } return _r14817; }(each(tuple({(*CT__c), (*FT__c) + (*HB___c)})));
+    for (Py _v14794 : range(K)) {  // the staves, flaring to the brim
+        i = _v14794;
+        { Py _t14795 = tuple({2 * addpy::pi * (i - 0.5) / K, 2 * addpy::pi * (i + 0.5) / K}); Vec _u14796 = unpack(_t14795, 2); a0 = _u14796[0]; a1 = _u14796[1]; }  // (edge to edge, no gap between)
+        rings = [&](Each _it14797) { Py y; Py _r14798 = list(); for (Py _x14803 : _it14797) { y = _x14803; L_(_r14798)->v.push_back([&](Each _it14799) { Py a; Py r_; Py _r14800 = list(); for (Py _x14801 : _it14799) { Vec _u14802 = unpack(_x14801, 2); r_ = _u14802[0]; a = _u14802[1]; L_(_r14800)->v.push_back(list({r_ * addpy::cos(a), y, r_ * addpy::sin(a)})); } return _r14800; }(each(tuple({tuple({call(rin, {y}), a0}), tuple({call(rin, {y}), a1}), tuple({call(rin, {y}) + 0.05, a1}), tuple({call(rin, {y}) + 0.05, a0})})))); } return _r14798; }(each(tuple({(*CT__c), (*FT__c) + (*HB___c)})));
         addpy::mesh(addpy::move(addpy::fix_normals(addpy::make([&] { addpy::loft(rings, shade_of(S("wood"), i, Py(3))); })), list({(*MX__c), Py(0), Py(0)})));
     }
-    for (Py _v14823 : each(K(tuple({K(tuple({Py(0.08), Py(0.15)})), K(tuple({Py(0.52), Py(0.59)})), K(tuple({Py(0.94), Py(1.01)}))})))) {  // three flat iron hoops
-        Vec _u14824 = unpack(_v14823, 2);
-        h0 = _u14824[0];
-        h1 = _u14824[1];
-        { Py _t14825 = tuple({(*FT__c) + h0, (*FT__c) + h1}); Vec _u14826 = unpack(_t14825, 2); y0__ = _u14826[0]; y1__ = _u14826[1]; }
-        { Py _t14827 = tuple({(call(rin, {y0__}) + 0.05) / addpy::cos(addpy::pi / K) + 0.001, (call(rin, {y1__}) + 0.05) / addpy::cos(addpy::pi / K) + 0.001}); Vec _u14828 = unpack(_t14827, 2); r0 = _u14828[0]; r1 = _u14828[1]; }
-        hoop = [&](Each _it14829) { Py q; Py yq; Py _r14830 = list(); for (Py _x14834 : _it14829) { Vec _u14835 = unpack(_x14834, 2); q = _u14835[0]; yq = _u14835[1]; L_(_r14830)->v.push_back([&](Range _it14831) { Py j; Py _r14832 = list(); for (Py _x14833 : _it14831) { j = _x14833; L_(_r14832)->v.push_back(list({(*MX__c) + q * addpy::cos(2 * addpy::pi * j / K), yq, q * addpy::sin(2 * addpy::pi * j / K)})); } return _r14832; }(range(K))); } return _r14830; }(each(tuple({tuple({r0, y0__}), tuple({r0 + 0.012, y0__}), tuple({r1 + 0.012, y1__}), tuple({r1, y1__})})));
+    for (Py _v14804 : each(K(tuple({K(tuple({Py(0.08), Py(0.15)})), K(tuple({Py(0.52), Py(0.59)})), K(tuple({Py(0.94), Py(1.01)}))})))) {  // three flat iron hoops
+        Vec _u14805 = unpack(_v14804, 2);
+        h0 = _u14805[0];
+        h1 = _u14805[1];
+        { Py _t14806 = tuple({(*FT__c) + h0, (*FT__c) + h1}); Vec _u14807 = unpack(_t14806, 2); y0__ = _u14807[0]; y1__ = _u14807[1]; }
+        { Py _t14808 = tuple({(call(rin, {y0__}) + 0.05) / addpy::cos(addpy::pi / K) + 0.001, (call(rin, {y1__}) + 0.05) / addpy::cos(addpy::pi / K) + 0.001}); Vec _u14809 = unpack(_t14808, 2); r0 = _u14809[0]; r1 = _u14809[1]; }
+        hoop = [&](Each _it14810) { Py q; Py yq; Py _r14811 = list(); for (Py _x14815 : _it14810) { Vec _u14816 = unpack(_x14815, 2); q = _u14816[0]; yq = _u14816[1]; L_(_r14811)->v.push_back([&](Range _it14812) { Py j; Py _r14813 = list(); for (Py _x14814 : _it14812) { j = _x14814; L_(_r14813)->v.push_back(list({(*MX__c) + q * addpy::cos(2 * addpy::pi * j / K), yq, q * addpy::sin(2 * addpy::pi * j / K)})); } return _r14813; }(range(K))); } return _r14811; }(each(tuple({tuple({r0, y0__}), tuple({r0 + 0.012, y0__}), tuple({r1 + 0.012, y1__}), tuple({r1, y1__})})));
         addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft(hoop, P[S("iron")], True); })));
     }
     if ((*seed__c) == 1) {  // the lookout, looking out over the lake
@@ -48721,8 +48675,8 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         // pushed out ``d`` square to its faces -- the way round it of a rope wound on it; and the way along it.
         w = vunit(ax);
         u = list({Py(0.0), Py(0.0), Py(1.0)});
-        for (Py _v14836 : each(tuple({list({Py(1.0), Py(0.0), Py(0.0)}), list({Py(0.0), Py(1.0), Py(0.0)}), list({Py(0.0), Py(0.0), Py(1.0)})}))) {
-            cand = _v14836;
+        for (Py _v14817 : each(tuple({list({Py(1.0), Py(0.0), Py(0.0)}), list({Py(0.0), Py(1.0), Py(0.0)}), list({Py(0.0), Py(0.0), Py(1.0)})}))) {
+            cand = _v14817;
             dd = _dot(w, cand);
             if (abs_(dd) < 0.9) {
                 u = vunit(vsub(cand, _times(w, dd)));
@@ -48731,7 +48685,7 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         }
         v = vcross(w, u);
         Rh = R + d / addpy::cos(addpy::pi / k);
-        return tuple({[&](Range _it14837) { Py i; Py _r14838 = list(); for (Py _x14839 : _it14837) { i = _x14839; L_(_r14838)->v.push_back(_plus(tuple({c, _times(u, Rh * addpy::cos(2 * addpy::pi * i / k)), _times(v, Rh * addpy::sin(2 * addpy::pi * i / k))}))); } return _r14838; }(range(k)), w});
+        return tuple({[&](Range _it14818) { Py i; Py _r14819 = list(); for (Py _x14820 : _it14818) { i = _x14820; L_(_r14819)->v.push_back(_plus(tuple({c, _times(u, Rh * addpy::cos(2 * addpy::pi * i / k)), _times(v, Rh * addpy::sin(2 * addpy::pi * i / k))}))); } return _r14819; }(range(k)), w});
     });
     (*comes_on__c) = func(sig("comes_on", {"Q", "w", "frm", "sense"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG}, 4), [](Vec& _A_) -> Py {
         Py Q = _A_[0];
@@ -48746,8 +48700,8 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         // round the way ``sense`` (1: as the corners are numbered): the one the rope's line from frm only touches.
         k = len(Q);
         fp = vsub(frm, _times(w, _dot(vsub(frm, Q[0]), w)));
-        for (Py _v14840 : range(k)) {
-            i = _v14840;
+        for (Py _v14821 : range(k)) {
+            i = _v14821;
             e = vsub(Q[i], fp);
             if (((_dot(vcross(e, vsub(Q[mod(i + 1, k)], Q[i])), w) * sense) >= Py(-1e-12)) && ((_dot(vcross(e, vsub(Q[mod(i + k - 1, k)], Q[i])), w) * sense) >= Py(-1e-12))) {
                 return i;
@@ -48777,20 +48731,20 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         // its points, from where it comes on -- on the side ``up`` of the two it could come on by -- each turn beside the
         // last, on away from frm; and how they run (the corners, the way along, the way round, the first corner, the first
         // point's place along the spar, the step along at each corner).
-        { Py _t14841 = call((*spar_ring__c), {c, ax, R, k, r + 0.002}); Vec _u14842 = unpack(_t14841, 2); Q = _u14842[0]; w = _u14842[1]; }
+        { Py _t14822 = call((*spar_ring__c), {c, ax, R, k, r + 0.002}); Vec _u14823 = unpack(_t14822, 2); Q = _u14823[0]; w = _u14823[1]; }
         best = None;
-        for (Py _v14843 : each(K(tuple({Py(1), Py(-1)})))) {
-            sense = _v14843;
+        for (Py _v14824 : each(K(tuple({Py(1), Py(-1)})))) {
+            sense = _v14824;
             i = call((*comes_on__c), {Q, w, frm, sense});
             h = _dot(vsub(Q[i], c), up);
             if (is(best, None) || (h > (best[0] + 1e-09))) {
                 best = tuple({h, sense, i});
             }
         }
-        { Py _t14844 = tuple({best[1], best[2]}); Vec _u14845 = unpack(_t14844, 2); sense = _u14845[0]; i0 = _u14845[1]; }
+        { Py _t14825 = tuple({best[1], best[2]}); Vec _u14826 = unpack(_t14825, 2); sense = _u14826[0]; i0 = _u14826[1]; }
         a = ((_dot(vsub(frm, c), w) > 0 ? Py(-1.0) : Py(1.0))) * (2 * r + 0.003);
         s0 = (-a) * n / 2.0;
-        return tuple({[&](Range _it14846) { Py m; Py _r14847 = list(); for (Py _x14848 : _it14846) { m = _x14848; L_(_r14847)->v.push_back(_at(Q[mod(i0 + sense * m + k * (n + 2), k)], w, s0 + a * m / float_(k))); } return _r14847; }(range(n * k + 1)), tuple({Q, w, sense, i0, s0, a})});
+        return tuple({[&](Range _it14827) { Py m; Py _r14828 = list(); for (Py _x14829 : _it14827) { m = _x14829; L_(_r14828)->v.push_back(_at(Q[mod(i0 + sense * m + k * (n + 2), k)], w, s0 + a * m / float_(k))); } return _r14828; }(range(n * k + 1)), tuple({Q, w, sense, i0, s0, a})});
     });
     hanging = func(sig("hanging", {"pts", "how", "hang", "drop"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG}, 4), [](Vec& _A_) -> Py {
         Py pts = _A_[0];
@@ -48810,21 +48764,21 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         Py w;
         // A rope wound on a spar (see wound) on round to the corner the most the way ``hang`` (down, and in), and its
         // end hanging from there ``drop`` long.
-        { Py _t14849 = how; Vec _u14850 = unpack(_t14849, 6); (*Q__c) = _u14850[0]; w = _u14850[1]; (*sense__c) = _u14850[2]; (*i0__c) = _u14850[3]; s0 = _u14850[4]; a = _u14850[5]; }
-        { Py _t14851 = tuple({len((*Q__c)), len(pts) - 1}); Vec _u14852 = unpack(_t14851, 2); (*k__c) = _u14852[0]; (*m__c) = _u14852[1]; }
-        (*c__c) = [&](Range _it14853) { Py j; Py _r14854 = list(); for (Py _x14858 : _it14853) { j = _x14858; L_(_r14854)->v.push_back(sum([&](Each _it14855) { Py q; Py _r14856 = list(); for (Py _x14857 : _it14855) { q = _x14857; L_(_r14856)->v.push_back(q[j]); } return _r14856; }(each((*Q__c)))) / (*k__c)); } return _r14854; }(range(Py(3)));
+        { Py _t14830 = how; Vec _u14831 = unpack(_t14830, 6); (*Q__c) = _u14831[0]; w = _u14831[1]; (*sense__c) = _u14831[2]; (*i0__c) = _u14831[3]; s0 = _u14831[4]; a = _u14831[5]; }
+        { Py _t14832 = tuple({len((*Q__c)), len(pts) - 1}); Vec _u14833 = unpack(_t14832, 2); (*k__c) = _u14833[0]; (*m__c) = _u14833[1]; }
+        (*c__c) = [&](Range _it14834) { Py j; Py _r14835 = list(); for (Py _x14839 : _it14834) { j = _x14839; L_(_r14835)->v.push_back(sum([&](Each _it14836) { Py q; Py _r14837 = list(); for (Py _x14838 : _it14836) { q = _x14838; L_(_r14837)->v.push_back(q[j]); } return _r14837; }(each((*Q__c)))) / (*k__c)); } return _r14835; }(range(Py(3)));
         (*on__c) = func(sig("lambda", {"j"}, {MISSING_ARG}, 1), [i0__c, k__c, m__c, sense__c](Vec& _A_) -> Py { Py j = _A_[0]; return mod((*i0__c) + (*sense__c) * ((*m__c) + j) + (*k__c) * ((*m__c) + (*k__c) + 2), (*k__c)); });
         last = max_(items_of(Py(range((*k__c)))), func(sig("lambda", {"j"}, {MISSING_ARG}, 1), [Q__c, c__c, hang__c, on__c](Vec& _A_) -> Py { Py j = _A_[0]; return _dot(vsub((*Q__c)[call((*on__c), {j})], (*c__c)), (*hang__c)); }), MISSING_ARG);
-        pts = pts + [&](Range _it14859) { Py j; Py _r14860 = list(); for (Py _x14861 : _it14859) { j = _x14861; L_(_r14860)->v.push_back(_at((*Q__c)[call((*on__c), {j})], w, s0 + a * ((*m__c) + j) / float_((*k__c)))); } return _r14860; }(range(Py(1), last + 1));
+        pts = pts + [&](Range _it14840) { Py j; Py _r14841 = list(); for (Py _x14842 : _it14840) { j = _x14842; L_(_r14841)->v.push_back(_at((*Q__c)[call((*on__c), {j})], w, s0 + a * ((*m__c) + j) / float_((*k__c)))); } return _r14841; }(range(Py(1), last + 1));
         return pts + list({_plus(tuple({pts[Py(-1)], list({Py(0.0), Py(-0.35) * drop, Py(0.0)})})), _plus(tuple({pts[Py(-1)], list({Py(0.0), -drop, Py(0.0)})}))});
     });
-    { Py _t14862 = tuple({(*MX__c) + 0.5, (*TOP__c) - 3.2, Py(0.16)}); Vec _u14863 = unpack(_t14862, 3); (*YARD__c) = _u14863[0]; (*YY__c) = _u14863[1]; (*RY__c) = _u14863[2]; }  // the yard, hung before the mast
+    { Py _t14843 = tuple({(*MX__c) + 0.5, (*TOP__c) - 3.2, Py(0.16)}); Vec _u14844 = unpack(_t14843, 3); (*YARD__c) = _u14844[0]; (*YY__c) = _u14844[1]; (*RY__c) = _u14844[2]; }  // the yard, hung before the mast
     addpy::cylinder(list({(*YARD__c), (*YY__c), Py(-7.0)}), list({(*YARD__c), (*YY__c), Py(7.0)}), (*RY__c), Py(16), P[S("wood_dark")]);
     // the sail furled on it: rolled up under the yard and before it, thickest in the middle, the bunt, thin out at the
     // arms, folds winding along it -- 4 mm clear of the yard -- and made fast with gaskets: a rope's turn round the yard
     // and the sail together, the sail drawn in under each.  The middle two are the parrel's: a rope from the one round
     // the back of the mast to the other holds the yard to the mast
-    { Py _t14864 = K(tuple({Py(6.2), Py(0.022)})); Vec _u14865 = unpack(_t14864, 2); (*SAIL_Z__c) = _u14865[0]; RG = _u14865[1]; }
+    { Py _t14845 = K(tuple({Py(6.2), Py(0.022)})); Vec _u14846 = unpack(_t14845, 2); (*SAIL_Z__c) = _u14846[0]; RG = _u14846[1]; }
     (*GASKETS__c) = K(tuple({Py(-5.2), Py(-4.0), Py(-2.8), Py(-1.6), Py(-0.45), Py(0.45), Py(1.6), Py(2.8), Py(4.0), Py(5.2)}));
     (*FD__c) = K(tuple({Py(0.42), Py(-0.9075)}));  // (the way, from the yard's axis, the
     // rolled sail's middle lies)
@@ -48835,8 +48789,8 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         Py zg;
         f_ = min2(Py(1.0), abs_(z) / (*SAIL_Z__c));
         r_ = 0.09 + 0.21 * pow_(1 - f_ * f_, Py(0.6));
-        for (Py _v14866 : each((*GASKETS__c))) {
-            zg = _v14866;
+        for (Py _v14847 : each((*GASKETS__c))) {
+            zg = _v14847;
             r_ = r_ * (1 - 0.12 * addpy::exp(-(pow_((z - zg) / 0.14, Py(2)))));
         }
         return r_;
@@ -48853,43 +48807,43 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         Py ring;
         r_ = call((*sail_r__c), {z});
         D__ = (*RY__c) + 0.004 + 1.08 * r_;
-        { Py _t14867 = tuple({(*YARD__c) + (*FD__c)[0] * D__, (*YY__c) + (*FD__c)[1] * D__}); Vec _u14868 = unpack(_t14867, 2); cx = _u14868[0]; cy = _u14868[1]; }
+        { Py _t14848 = tuple({(*YARD__c) + (*FD__c)[0] * D__, (*YY__c) + (*FD__c)[1] * D__}); Vec _u14849 = unpack(_t14848, 2); cx = _u14849[0]; cy = _u14849[1]; }
         ring = list({});
-        for (Py _v14869 : range(Py(12))) {
-            j = _v14869;
+        for (Py _v14850 : range(Py(12))) {
+            j = _v14850;
             a_ = 2 * addpy::pi * j / 12;
             f_ = r_ * (1 + 0.07 * addpy::sin(3 * a_ + 1.3 * z));
             ring.append(list({cx + f_ * addpy::cos(a_), cy + f_ * addpy::sin(a_), z}));
         }
         return ring;
     });
-    zg_ = [&](Each _it14870) { Py dz; Py zg; Py _r14871 = list(); for (Py _x14872 : _it14870) { zg = _x14872; for (Py _x14873 : each(K(tuple({Py(-0.1), Py(-0.03), Py(0.0), Py(0.03), Py(0.1)})))) { dz = _x14873; L_(_r14871)->v.push_back(zg + dz); } } return _r14871; }(each((*GASKETS__c)));  // (its rings: at every gasket, and
-    zs = sorted(zg_ + [&](Each _it14874) { Py z; Py _r14878 = list(); for (Py _x14879 : _it14874) { z = _x14879; if (!(min_(L_([&](Each _it14880) { Py q; Py _r14881 = list(); for (Py _x14882 : _it14880) { q = _x14882; L_(_r14881)->v.push_back(abs_(z - q)); } return _r14881; }(each(zg_)))->v, None, MISSING_ARG) > 0.05)) continue; L_(_r14878)->v.push_back(z); } return _r14878; }(each([&](Range _it14875) { Py i; Py _r14876 = list(); for (Py _x14877 : _it14875) { i = _x14877; L_(_r14876)->v.push_back((-(*SAIL_Z__c)) + 0.31 * i); } return _r14876; }(range(Py(41))))), None, False);  // between)
-    addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft([&](Each _it14883) { Py z; Py _r14884 = list(); for (Py _x14885 : _it14883) { z = _x14885; L_(_r14884)->v.push_back(call(sail_ring, {z})); } return _r14884; }(each(zs)), P[S("linen")]); })));
+    zg_ = [&](Each _it14851) { Py dz; Py zg; Py _r14852 = list(); for (Py _x14853 : _it14851) { zg = _x14853; for (Py _x14854 : each(K(tuple({Py(-0.1), Py(-0.03), Py(0.0), Py(0.03), Py(0.1)})))) { dz = _x14854; L_(_r14852)->v.push_back(zg + dz); } } return _r14852; }(each((*GASKETS__c)));  // (its rings: at every gasket, and
+    zs = sorted(zg_ + [&](Each _it14855) { Py z; Py _r14859 = list(); for (Py _x14860 : _it14855) { z = _x14860; if (!(min_(L_([&](Each _it14861) { Py q; Py _r14862 = list(); for (Py _x14863 : _it14861) { q = _x14863; L_(_r14862)->v.push_back(abs_(z - q)); } return _r14862; }(each(zg_)))->v, None, MISSING_ARG) > 0.05)) continue; L_(_r14859)->v.push_back(z); } return _r14859; }(each([&](Range _it14856) { Py i; Py _r14857 = list(); for (Py _x14858 : _it14856) { i = _x14858; L_(_r14857)->v.push_back((-(*SAIL_Z__c)) + 0.31 * i); } return _r14857; }(range(Py(41))))), None, False);  // between)
+    addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft([&](Each _it14864) { Py z; Py _r14865 = list(); for (Py _x14866 : _it14864) { z = _x14866; L_(_r14865)->v.push_back(call(sail_ring, {z})); } return _r14865; }(each(zs)), P[S("linen")]); })));
     tops = list({});
-    for (Py _v14886 : each((*GASKETS__c))) {
-        zg = _v14886;
-        { Py _t14887 = call((*spar_ring__c), {list({(*YARD__c), (*YY__c), zg}), list({Py(0), Py(0), Py(1)}), (*RY__c), Py(16)}); Vec _u14888 = unpack(_t14887, 2); Q = _u14888[0]; _ = _u14888[1]; }
-        loop = poly_grown(convex_hull([&](Each _it14889) { Py q; Py _r14890 = list(); for (Py _x14891 : _it14889) { q = _x14891; L_(_r14890)->v.push_back(tuple({q[0], q[1]})); } return _r14890; }(each(Q)) + [&](Each _it14892) { Py dz; Py q; Py _r14893 = list(); for (Py _x14894 : _it14892) { dz = _x14894; for (Py _x14895 : each(call(sail_ring, {zg + dz}))) { q = _x14895; L_(_r14893)->v.push_back(tuple({q[0], q[1]})); } } return _r14893; }(each(K(tuple({Py(-0.03), Py(0.0), Py(0.03)}))))), RG + 0.002);
-        addpy::polyline([&](Each _it14896) { Py x_; Py y_; Py _r14897 = list(); for (Py _x14898 : _it14896) { Vec _u14899 = unpack(_x14898, 2); x_ = _u14899[0]; y_ = _u14899[1]; L_(_r14897)->v.push_back(list({x_, y_, zg})); } return _r14897; }(each(loop)), RG, Py(6), P[S("rope")], True);
+    for (Py _v14867 : each((*GASKETS__c))) {
+        zg = _v14867;
+        { Py _t14868 = call((*spar_ring__c), {list({(*YARD__c), (*YY__c), zg}), list({Py(0), Py(0), Py(1)}), (*RY__c), Py(16)}); Vec _u14869 = unpack(_t14868, 2); Q = _u14869[0]; _ = _u14869[1]; }
+        loop = poly_grown(convex_hull([&](Each _it14870) { Py q; Py _r14871 = list(); for (Py _x14872 : _it14870) { q = _x14872; L_(_r14871)->v.push_back(tuple({q[0], q[1]})); } return _r14871; }(each(Q)) + [&](Each _it14873) { Py dz; Py q; Py _r14874 = list(); for (Py _x14875 : _it14873) { dz = _x14875; for (Py _x14876 : each(call(sail_ring, {zg + dz}))) { q = _x14876; L_(_r14874)->v.push_back(tuple({q[0], q[1]})); } } return _r14874; }(each(K(tuple({Py(-0.03), Py(0.0), Py(0.03)}))))), RG + 0.002);
+        addpy::polyline([&](Each _it14877) { Py x_; Py y_; Py _r14878 = list(); for (Py _x14879 : _it14877) { Vec _u14880 = unpack(_x14879, 2); x_ = _u14880[0]; y_ = _u14880[1]; L_(_r14878)->v.push_back(list({x_, y_, zg})); } return _r14878; }(each(loop)), RG, Py(6), P[S("rope")], True);
         tops.append(max_(items_of(loop), func(sig("lambda", {"q"}, {MISSING_ARG}, 1), [](Vec& _A_) -> Py { Py q = _A_[0]; return q[1]; }), MISSING_ARG));
     }
-    { Py _t14900 = call((*spar_ring__c), {list({(*MX__c), Py(0.0), Py(0.0)}), list({Py(0), Py(1), Py(0)}), Py(0.3), Py(12), RG + 0.002}); Vec _u14901 = unpack(_t14900, 2); Qm = _u14901[0]; wm = _u14901[1]; }  // the parrel: from the top of the one
+    { Py _t14881 = call((*spar_ring__c), {list({(*MX__c), Py(0.0), Py(0.0)}), list({Py(0), Py(1), Py(0)}), Py(0.3), Py(12), RG + 0.002}); Vec _u14882 = unpack(_t14881, 2); Qm = _u14882[0]; wm = _u14882[1]; }  // the parrel: from the top of the one
     ends = list({list({tops[4][0], tops[4][1], Py(-0.45)}), list({tops[5][0], tops[5][1], Py(0.45)})});  // gasket round the mast's back to the
     yp = ends[0][1];  // other, level
     way = None;
-    for (Py _v14902 : each(K(tuple({Py(1), Py(-1)})))) {
-        sense = _v14902;
-        { Py _t14903 = tuple({call((*comes_on__c), {Qm, wm, ends[1], sense}), call((*comes_on__c), {Qm, wm, ends[0], -sense})}); Vec _u14904 = unpack(_t14903, 2); i_s = _u14904[0]; i_e = _u14904[1]; }
+    for (Py _v14883 : each(K(tuple({Py(1), Py(-1)})))) {
+        sense = _v14883;
+        { Py _t14884 = tuple({call((*comes_on__c), {Qm, wm, ends[1], sense}), call((*comes_on__c), {Qm, wm, ends[0], -sense})}); Vec _u14885 = unpack(_t14884, 2); i_s = _u14885[0]; i_e = _u14885[1]; }
         run = list({i_s});
         while ((run[Py(-1)] != i_e) && (len(run) <= 12)) {
             run.append(mod(run[Py(-1)] + sense + 12, Py(12)));
         }
-        if (is(way, None) || (min_(L_([&](Each _it14905) { Py i; Py _r14906 = list(); for (Py _x14907 : _it14905) { i = _x14907; L_(_r14906)->v.push_back(Qm[i][0]); } return _r14906; }(each(run)))->v, None, MISSING_ARG) < min_(L_([&](Each _it14908) { Py i; Py _r14909 = list(); for (Py _x14910 : _it14908) { i = _x14910; L_(_r14909)->v.push_back(Qm[i][0]); } return _r14909; }(each(way)))->v, None, MISSING_ARG))) {
+        if (is(way, None) || (min_(L_([&](Each _it14886) { Py i; Py _r14887 = list(); for (Py _x14888 : _it14886) { i = _x14888; L_(_r14887)->v.push_back(Qm[i][0]); } return _r14887; }(each(run)))->v, None, MISSING_ARG) < min_(L_([&](Each _it14889) { Py i; Py _r14890 = list(); for (Py _x14891 : _it14889) { i = _x14891; L_(_r14890)->v.push_back(Qm[i][0]); } return _r14890; }(each(way)))->v, None, MISSING_ARG))) {
             way = run;
         }
     }
-    addpy::polyline(list({ends[1]}) + [&](Each _it14911) { Py i; Py _r14912 = list(); for (Py _x14913 : _it14911) { i = _x14913; L_(_r14912)->v.push_back(list({Qm[i][0], yp, Qm[i][2]})); } return _r14912; }(each(way)) + list({ends[0]}), RG - 0.003, Py(6), P[S("rope")]);  // (its ends spliced
+    addpy::polyline(list({ends[1]}) + [&](Each _it14892) { Py i; Py _r14893 = list(); for (Py _x14894 : _it14892) { i = _x14894; L_(_r14893)->v.push_back(list({Qm[i][0], yp, Qm[i][2]})); } return _r14893; }(each(way)) + list({ends[0]}), RG - 0.003, Py(6), P[S("rope")]);  // (its ends spliced
     // into the gaskets)
     RMH = Py(0.3) + 0.05 + 0.002 / addpy::cos(addpy::pi / 12);  // the masthead: a collar of rope round
     addpy::torus(list({(*MX__c), (*TOP__c) + 1.05, Py(0)}), RMH, Py(0.05), Py(12), Py(6), P[S("rope")]);  // it, a hair off its faces
@@ -48900,59 +48854,59 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         h = vunit(list({p[0] - (*MX__c), Py(0.0), p[2]}));
         return list({(*MX__c) + h[0] * 0.36, (*TOP__c) + 1.05, h[2] * 0.36});
     });
-    { Py _t14914 = K(tuple({Py(0.025), Py(0.05)})); Vec _u14915 = unpack(_t14914, 2); RL = _u14915[0]; RB_ = _u14915[1]; }  // (a lift's and a brace's radius; the rail's)
-    for (Py _v14916 : each(K(tuple({Py(-1), Py(1)})))) {
-        sg = _v14916;
-        { Py _t14917 = tuple({list({(*YARD__c), (*YY__c), sg * 6.5}), list({(*YARD__c), (*YY__c), sg * 6.8})}); Vec _u14918 = unpack(_t14917, 2); c_l = _u14918[0]; c_b = _u14918[1]; }  // the lifts, from the masthead down to
+    { Py _t14895 = K(tuple({Py(0.025), Py(0.05)})); Vec _u14896 = unpack(_t14895, 2); RL = _u14896[0]; RB_ = _u14896[1]; }  // (a lift's and a brace's radius; the rail's)
+    for (Py _v14897 : each(K(tuple({Py(-1), Py(1)})))) {
+        sg = _v14897;
+        { Py _t14898 = tuple({list({(*YARD__c), (*YY__c), sg * 6.5}), list({(*YARD__c), (*YY__c), sg * 6.8})}); Vec _u14899 = unpack(_t14898, 2); c_l = _u14899[0]; c_b = _u14899[1]; }  // the lifts, from the masthead down to
         top_l = call(from_head, {c_l});  // round turns on the yard's arms;
-        { Py _t14919 = call(wound, {c_l, list({Py(0), Py(0), Py(1)}), (*RY__c), Py(16), RL, top_l, Py(2)}); Vec _u14920 = unpack(_t14919, 2); turns = _u14920[0]; _ = _u14920[1]; }
+        { Py _t14900 = call(wound, {c_l, list({Py(0), Py(0), Py(1)}), (*RY__c), Py(16), RL, top_l, Py(2)}); Vec _u14901 = unpack(_t14900, 2); turns = _u14901[0]; _ = _u14901[1]; }
         addpy::polyline(list({top_l}) + turns, RL, Py(6), P[S("rope")]);
         u = 0.86 / ((*x1__c) - (*x0__c));  // the braces, from the arms down to the
         R_p = list({(*x0__c) + 0.86, top + 0.78, sg * ((*z0__c) + ((*z1__c) - (*z0__c)) * u)});  // castle's rail, between its posts and
         ax_r = list({(*x1__c) - (*x0__c), Py(0.0), sg * ((*z1__c) - (*z0__c))});  // its shields, made fast with two round
-        { Py _t14921 = call(wound, {c_b, list({Py(0), Py(0), Py(1)}), (*RY__c), Py(16), RL, R_p, Py(2)}); Vec _u14922 = unpack(_t14921, 2); arm = _u14922[0]; _ = _u14922[1]; }  // turns on each, the end hanging
-        { Py _t14923 = call(wound, {R_p, ax_r, RB_, Py(6), RL, arm[0], Py(2)}); Vec _u14924 = unpack(_t14923, 2); rail = _u14924[0]; _ = _u14924[1]; }  // inside
-        { Py _t14925 = call(wound, {c_b, list({Py(0), Py(0), Py(1)}), (*RY__c), Py(16), RL, rail[0], Py(2)}); Vec _u14926 = unpack(_t14925, 2); arm = _u14926[0]; _ = _u14926[1]; }
-        { Py _t14927 = call(wound, {R_p, ax_r, RB_, Py(6), RL, arm[0], Py(2)}); Vec _u14928 = unpack(_t14927, 2); rail = _u14928[0]; how = _u14928[1]; }
+        { Py _t14902 = call(wound, {c_b, list({Py(0), Py(0), Py(1)}), (*RY__c), Py(16), RL, R_p, Py(2)}); Vec _u14903 = unpack(_t14902, 2); arm = _u14903[0]; _ = _u14903[1]; }  // turns on each, the end hanging
+        { Py _t14904 = call(wound, {R_p, ax_r, RB_, Py(6), RL, arm[0], Py(2)}); Vec _u14905 = unpack(_t14904, 2); rail = _u14905[0]; _ = _u14905[1]; }  // inside
+        { Py _t14906 = call(wound, {c_b, list({Py(0), Py(0), Py(1)}), (*RY__c), Py(16), RL, rail[0], Py(2)}); Vec _u14907 = unpack(_t14906, 2); arm = _u14907[0]; _ = _u14907[1]; }
+        { Py _t14908 = call(wound, {R_p, ax_r, RB_, Py(6), RL, arm[0], Py(2)}); Vec _u14909 = unpack(_t14908, 2); rail = _u14909[0]; how = _u14909[1]; }
         inward = vunit(vcross(list({Py(0), Py(1), Py(0)}), vunit(ax_r)));
         inward = ((inward[2] * sg) < 0 ? inward : _times(inward, Py(-1)));
         addpy::polyline(slice(arm, None, None, Py(-1)) + call(hanging, {rail, how, _plus(tuple({inward, list({Py(0.0), Py(-1.5), Py(0.0)})})), Py(0.3)}), RL, Py(6), P[S("rope")]);
     }
-    { Py _t14929 = tuple({TT - 0.3, Py(0.035)}); Vec _u14930 = unpack(_t14929, 2); SH_Y = _u14930[0]; RC = _u14930[1]; }  // the shrouds' heads: spliced into a
-    for (Py _v14931 : each(K(tuple({Py(-1), Py(1)})))) {  // collar round the masthead and its
-        sg = _v14931;
-        { Py _t14932 = call((*spar_ring__c), {list({(*MX__c), SH_Y, Py(0.0)}), list({Py(0), Py(1), Py(0)}), Py(0.3), Py(12)}); Vec _u14933 = unpack(_t14932, 2); Qh = _u14933[0]; _ = _u14933[1]; }  // cheeks, under the trestletrees
-        loop = poly_grown(convex_hull([&](Each _it14934) { Py q; Py _r14935 = list(); for (Py _x14936 : _it14934) { q = _x14936; L_(_r14935)->v.push_back(tuple({q[0], q[2]})); } return _r14935; }(each(Qh)) + [&](Each _it14937) { Py sx; Py sz; Py z_; Py _r14938 = list(); for (Py _x14939 : _it14937) { sx = _x14939; for (Py _x14940 : each(K(tuple({Py(-1), Py(1)})))) { sz = _x14940; for (Py _x14941 : each(K(tuple({Py(0.302), Py(0.402)})))) { z_ = _x14941; L_(_r14938)->v.push_back(tuple({(*MX__c) + sx * 0.14, sz * z_})); } } } return _r14938; }(each(K(tuple({Py(-1), Py(1)}))))), RC + 0.002);
+    { Py _t14910 = tuple({TT - 0.3, Py(0.035)}); Vec _u14911 = unpack(_t14910, 2); SH_Y = _u14911[0]; RC = _u14911[1]; }  // the shrouds' heads: spliced into a
+    for (Py _v14912 : each(K(tuple({Py(-1), Py(1)})))) {  // collar round the masthead and its
+        sg = _v14912;
+        { Py _t14913 = call((*spar_ring__c), {list({(*MX__c), SH_Y, Py(0.0)}), list({Py(0), Py(1), Py(0)}), Py(0.3), Py(12)}); Vec _u14914 = unpack(_t14913, 2); Qh = _u14914[0]; _ = _u14914[1]; }  // cheeks, under the trestletrees
+        loop = poly_grown(convex_hull([&](Each _it14915) { Py q; Py _r14916 = list(); for (Py _x14917 : _it14915) { q = _x14917; L_(_r14916)->v.push_back(tuple({q[0], q[2]})); } return _r14916; }(each(Qh)) + [&](Each _it14918) { Py sx; Py sz; Py z_; Py _r14919 = list(); for (Py _x14920 : _it14918) { sx = _x14920; for (Py _x14921 : each(K(tuple({Py(-1), Py(1)})))) { sz = _x14921; for (Py _x14922 : each(K(tuple({Py(0.302), Py(0.402)})))) { z_ = _x14922; L_(_r14919)->v.push_back(tuple({(*MX__c) + sx * 0.14, sz * z_})); } } } return _r14919; }(each(K(tuple({Py(-1), Py(1)}))))), RC + 0.002);
         if (sg > 0) {
-            addpy::polyline([&](Each _it14942) { Py x_; Py z_; Py _r14943 = list(); for (Py _x14944 : _it14942) { Vec _u14945 = unpack(_x14944, 2); x_ = _u14945[0]; z_ = _u14945[1]; L_(_r14943)->v.push_back(list({x_, SH_Y, z_})); } return _r14943; }(each(loop)), RC, Py(6), P[S("rope")], True);
+            addpy::polyline([&](Each _it14923) { Py x_; Py z_; Py _r14924 = list(); for (Py _x14925 : _it14923) { Vec _u14926 = unpack(_x14925, 2); x_ = _u14926[0]; z_ = _u14926[1]; L_(_r14924)->v.push_back(list({x_, SH_Y, z_})); } return _r14924; }(each(loop)), RC, Py(6), P[S("rope")], True);
         }
-        ts = [&](Range _it14946) { Py k; Py _r14947 = list(); for (Py _x14948 : _it14946) { k = _x14948; L_(_r14947)->v.push_back(call((*t_at__c), {(*MX__c) - 1.6 + 1.1 * k})); } return _r14947; }(range(Py(4)));  // the shrouds, set up with deadeyes on
+        ts = [&](Range _it14927) { Py k; Py _r14928 = list(); for (Py _x14929 : _it14927) { k = _x14929; L_(_r14928)->v.push_back(call((*t_at__c), {(*MX__c) - 1.6 + 1.1 * k})); } return _r14928; }(range(Py(4)));  // the shrouds, set up with deadeyes on
         call(rail_timber, {sg, ts[0] - 0.03, ts[3] + 0.03, Py(0.4), Py(0.47), Py(0.03), Py(0.34), P[S("wood_dark")]});  // a channel, a plank standing out
-        { Py _t14949 = tuple({list({}), list({})}); Vec _u14950 = unpack(_t14949, 2); feet = _u14950[0]; heads = _u14950[1]; }  // from the bulwark, their chainplates
-        for (Py _v14951 : each(enumerate_(ts, Py(0)))) {  // down from it to the wale; ratlines
-            Vec _u14952 = unpack(_v14951, 2);
-            (*k__c) = _u14952[0];
-            t = _u14952[1];
+        { Py _t14930 = tuple({list({}), list({})}); Vec _u14931 = unpack(_t14930, 2); feet = _u14931[0]; heads = _u14931[1]; }  // from the bulwark, their chainplates
+        for (Py _v14932 : each(enumerate_(ts, Py(0)))) {  // down from it to the wale; ratlines
+            Vec _u14933 = unpack(_v14932, 2);
+            (*k__c) = _u14933[0];
+            t = _u14933[1];
             f = call((*by_rim__c), {t, sg, Py(0.2), Py(0.61)});  // tied to each shroud
             feet.append(f);
             heads.append(list({(*MX__c) - 0.105 + 0.07 * (*k__c), SH_Y, sg * (0.402 + RC + 0.002)}));
             addpy::cylinder(f, heads[Py(-1)], Py(0.03), Py(6), P[S("rope")]);
             addpy::cylinder(call((*by_rim__c), {t, sg, Py(0.2), Py(0.47)}), f, Py(0.12), Py(8), P[S("wood_dark")]);
             yw = 1.35 + 0.45 * t * t;
-            low = list({call((*xs__c), {t}), yw, sg * (([&]() -> Py { Py _t14953 = call((*side__c), {t, yw}); if (truthy(_t14953)) return _t14953; _t14953 = call((*half__c), {t}); return _t14953; }()) + 0.13)});
-            { Py _t14954 = call((*rim__c), {t, sg}); Vec _u14955 = unpack(_t14954, 2); _ = _u14955[0]; Vec _u14956 = unpack(_u14955[1], 2); (*nx__c) = _u14956[0]; (*nz__c) = _u14956[1]; }
+            low = list({call((*xs__c), {t}), yw, sg * (([&]() -> Py { Py _t14934 = call((*side__c), {t, yw}); if (truthy(_t14934)) return _t14934; _t14934 = call((*half__c), {t}); return _t14934; }()) + 0.13)});
+            { Py _t14935 = call((*rim__c), {t, sg}); Vec _u14936 = unpack(_t14935, 2); _ = _u14936[0]; Vec _u14937 = unpack(_u14936[1], 2); (*nx__c) = _u14937[0]; (*nz__c) = _u14937[1]; }
             addpy::beam(call((*by_rim__c), {t, sg, Py(0.2), Py(0.4)}), low, Py(0.06), Py(0.04), P[S("iron")], tuple({(*nx__c), Py(0), (*nz__c)}));
             addpy::octahedron(list({low[0], low[1] + 0.03, low[2] + sg * 0.03}), Py(0.02), P[S("iron")]);
         }
-        for (Py _v14957 : range(Py(1), Py(12))) {
-            (*k__c) = _v14957;
-            addpy::polyline([&](Each _it14958) { Py f; Py h_; Py _r14959 = list(); for (Py _x14960 : _it14958) { Vec _u14961 = unpack(_x14960, 2); f = _u14961[0]; h_ = _u14961[1]; L_(_r14959)->v.push_back(_mix(f, h_, (*k__c) / 12.0)); } return _r14959; }(each(zip_({feet, heads}))), Py(0.015), Py(4), P[S("rope")]);
+        for (Py _v14938 : range(Py(1), Py(12))) {
+            (*k__c) = _v14938;
+            addpy::polyline([&](Each _it14939) { Py f; Py h_; Py _r14940 = list(); for (Py _x14941 : _it14939) { Vec _u14942 = unpack(_x14941, 2); f = _u14942[0]; h_ = _u14942[1]; L_(_r14940)->v.push_back(_mix(f, h_, (*k__c) / 12.0)); } return _r14940; }(each(zip_({feet, heads}))), Py(0.015), Py(4), P[S("rope")]);
         }
     }
     ax_s = vsub(tip, heel);  // the stays: the forestay down to three
     c_s = list({tip[0] - 0.3, call((*sprit__c), {tip[0] - 0.3}), Py(0.0)});  // round turns on the bowsprit,
     top_s = call(from_head, {c_s});
-    { Py _t14962 = call(wound, {c_s, ax_s, Py(0.18), Py(16), Py(0.035), top_s, Py(3)}); Vec _u14963 = unpack(_t14962, 2); turns = _u14963[0]; _ = _u14963[1]; }
+    { Py _t14943 = call(wound, {c_s, ax_s, Py(0.18), Py(16), Py(0.035), top_s, Py(3)}); Vec _u14944 = unpack(_t14943, 2); turns = _u14944[0]; _ = _u14944[1]; }
     addpy::polyline(list({top_s}) + turns, Py(0.035), Py(6), P[S("rope")]);
     rb_ = list({(*x0__c) + 0.75, top + 0.12, Py(0.0)});  // the backstay to an eyebolt in the deck of
     addpy::cuboid(list({rb_[0], rb_[1] + 0.006, Py(0.0)}), list({Py(0.09), Py(0.012), Py(0.09)}), P[S("iron")]);  // the castle: its plate, its ring, and the
@@ -48963,7 +48917,7 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     addpy::cylinder(call(from_head, {eye_top}), eye_top, Py(0.035), Py(6), P[S("rope")]);
     // ---- the stem, the keel, the sternpost with the deadwood under the stern, and the rudder hung on it
     (*YB__c) = Py(-1.6);  // (how deep the rudder and the deadwood go)
-    { Py _t14964 = tuple({call((*xs__c), {Py(1.0)}) - 0.05 - 0.3, call((*xs__c), {Py(-1.0)}) + 0.05 + 0.3}); Vec _u14965 = unpack(_t14964, 2); XS0 = _u14965[0]; XS1 = _u14965[1]; }  // (the stem's after face, the sternpost's fore face)
+    { Py _t14945 = tuple({call((*xs__c), {Py(1.0)}) - 0.05 - 0.3, call((*xs__c), {Py(-1.0)}) + 0.05 + 0.3}); Vec _u14946 = unpack(_t14945, 2); XS0 = _u14946[0]; XS1 = _u14946[1]; }  // (the stem's after face, the sternpost's fore face)
     XAFT = call((*xs__c), {Py(-1.0)}) + 0.05 - 0.3;  // (the sternpost's after face)
     (*KR__c) = Py(0.21);  // the keel: a timber of six faces, flat
     (*kc__c) = func(sig("lambda", {"t"}, {MISSING_ARG}, 1), [keel__c, xs__c](Vec& _A_) -> Py { Py t = _A_[0]; return list({call((*xs__c), {t}), call((*keel__c), {t}) - 0.02}); });  // underneath, along the line of the bottom
@@ -48972,19 +48926,19 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         Py a_;
         Py b_;
         Py d;
-        { Py _t14966 = tuple({call((*kc__c), {t - 0.002}), call((*kc__c), {t + 0.002})}); Vec _u14967 = unpack(_t14966, 2); a_ = _u14967[0]; b_ = _u14967[1]; }
+        { Py _t14947 = tuple({call((*kc__c), {t - 0.002}), call((*kc__c), {t + 0.002})}); Vec _u14948 = unpack(_t14947, 2); a_ = _u14948[0]; b_ = _u14948[1]; }
         d = vunit(list({b_[0] - a_[0], b_[1] - a_[1], Py(0.0)}));
         return tuple({call((*kc__c), {t}), (d[0] > 0 ? list({-d[1], d[0]}) : list({d[1], -d[0]})), d});
     });
-    flat_y = func(sig("lambda", {"t"}, {MISSING_ARG}, 1), [KR__c, k_frame__c](Vec& _A_) -> Py { Py t = _A_[0]; return [&] { Py _t14968 = call((*k_frame__c), {t})[0][1]; Py _t14969 = (*KR__c) * 0.866 * call((*k_frame__c), {t})[1][1]; return _t14968 - _t14969; }(); });  // (the underside's middle at t)
-    { Py _t14970 = K(tuple({Py(-1.0), Py(0.0)})); Vec _u14971 = unpack(_t14970, 2); lo_t = _u14971[0]; hi_t = _u14971[1]; }
-    for (Py _v14972 : range(Py(50))) {  // where it comes down to YB, aft
-        _ = _v14972;
+    flat_y = func(sig("lambda", {"t"}, {MISSING_ARG}, 1), [KR__c, k_frame__c](Vec& _A_) -> Py { Py t = _A_[0]; return [&] { Py _t14949 = call((*k_frame__c), {t})[0][1]; Py _t14950 = (*KR__c) * 0.866 * call((*k_frame__c), {t})[1][1]; return _t14949 - _t14950; }(); });  // (the underside's middle at t)
+    { Py _t14951 = K(tuple({Py(-1.0), Py(0.0)})); Vec _u14952 = unpack(_t14951, 2); lo_t = _u14952[0]; hi_t = _u14952[1]; }
+    for (Py _v14953 : range(Py(50))) {  // where it comes down to YB, aft
+        _ = _v14953;
         mid = (lo_t + hi_t) / 2;
-        { Py _t14973 = (call(flat_y, {mid}) > (*YB__c) ? tuple({mid, hi_t}) : tuple({lo_t, mid})); Vec _u14974 = unpack(_t14973, 2); lo_t = _u14974[0]; hi_t = _u14974[1]; }
+        { Py _t14954 = (call(flat_y, {mid}) > (*YB__c) ? tuple({mid, hi_t}) : tuple({lo_t, mid})); Vec _u14955 = unpack(_t14954, 2); lo_t = _u14955[0]; hi_t = _u14955[1]; }
     }
     T_F = (lo_t + hi_t) / 2;
-    ts_ = sorted(set_of([&](Range _it14975) { Py i; Py _r14976 = list(); for (Py _x14977 : _it14975) { i = _x14977; L_(_r14976)->v.push_back(i / 20.0); } return _r14976; }(range(Py(-20), Py(21))) + list({T_F})), None, False);
+    ts_ = sorted(set_of([&](Range _it14956) { Py i; Py _r14957 = list(); for (Py _x14958 : _it14956) { i = _x14958; L_(_r14957)->v.push_back(i / 20.0); } return _r14957; }(range(Py(-20), Py(21))) + list({T_F})), None, False);
     to_plane = func(sig("to_plane", {"p", "d", "xp"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG}, 3), [](Vec& _A_) -> Py {
         Py p = _A_[0];
         Py d = _A_[1];
@@ -48992,29 +48946,29 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         return list({xp, p[1] + d[1] * (xp - p[0]) / d[0], p[2]});
     });
     krings = list({});
-    for (Py _v14978 : each(ts_)) {
-        t = _v14978;
-        { Py _t14979 = call((*k_frame__c), {t}); Vec _u14980 = unpack(_t14979, 3); c = _u14980[0]; n_ = _u14980[1]; d = _u14980[2]; }
-        krings.append(tuple({t, [&](Each _it14981) { Py th; Py _r14985 = list(); for (Py _x14986 : _it14981) { th = _x14986; L_(_r14985)->v.push_back(list({c[0] + (*KR__c) * addpy::cos(th) * n_[0], c[1] + (*KR__c) * addpy::cos(th) * n_[1], (*KR__c) * addpy::sin(th)})); } return _r14985; }(each([&](Range _it14982) { Py m; Py _r14983 = list(); for (Py _x14984 : _it14982) { m = _x14984; L_(_r14983)->v.push_back(addpy::pi * (2 * m + 1) / 6); } return _r14983; }(range(Py(6))))), d}));  // (corners 2 and 3: the flat underside)
+    for (Py _v14959 : each(ts_)) {
+        t = _v14959;
+        { Py _t14960 = call((*k_frame__c), {t}); Vec _u14961 = unpack(_t14960, 3); c = _u14961[0]; n_ = _u14961[1]; d = _u14961[2]; }
+        krings.append(tuple({t, [&](Each _it14962) { Py th; Py _r14966 = list(); for (Py _x14967 : _it14962) { th = _x14967; L_(_r14966)->v.push_back(list({c[0] + (*KR__c) * addpy::cos(th) * n_[0], c[1] + (*KR__c) * addpy::cos(th) * n_[1], (*KR__c) * addpy::sin(th)})); } return _r14966; }(each([&](Range _it14963) { Py m; Py _r14964 = list(); for (Py _x14965 : _it14963) { m = _x14965; L_(_r14964)->v.push_back(addpy::pi * (2 * m + 1) / 6); } return _r14964; }(range(Py(6))))), d}));  // (corners 2 and 3: the flat underside)
     }
-    first = [&](Each _it14987) -> Py { Py d; Py i; Py r_; Py t; for (Py _x14988 : _it14987) { Vec _u14989 = unpack(_x14988, 2); i = _u14989[0]; Vec _u14990 = unpack(_u14989[1], 3); t = _u14990[0]; r_ = _u14990[1]; d = _u14990[2]; if (!(min_(L_([&](Each _it14991) { Py q; Py _r14992 = list(); for (Py _x14993 : _it14991) { q = _x14993; L_(_r14992)->v.push_back(q[0]); } return _r14992; }(each(r_)))->v, None, MISSING_ARG) > XS1)) continue; return i; } raise("StopIteration", ""); }(each(enumerate_(krings, Py(0))));
-    last = max_(L_([&](Each _it14994) { Py d; Py i; Py r_; Py t; Py _r14995 = list(); for (Py _x14996 : _it14994) { Vec _u14997 = unpack(_x14996, 2); i = _u14997[0]; Vec _u14998 = unpack(_u14997[1], 3); t = _u14998[0]; r_ = _u14998[1]; d = _u14998[2]; if (!(max_(L_([&](Each _it14999) { Py q; Py _r15000 = list(); for (Py _x15001 : _it14999) { q = _x15001; L_(_r15000)->v.push_back(q[0]); } return _r15000; }(each(r_)))->v, None, MISSING_ARG) < XS0)) continue; L_(_r14995)->v.push_back(i); } return _r14995; }(each(enumerate_(krings, Py(0)))))->v, None, MISSING_ARG);
-    kends = tuple({[&](Each _it15002) { Py q; Py _r15003 = list(); for (Py _x15004 : _it15002) { q = _x15004; L_(_r15003)->v.push_back(call(to_plane, {q, krings[first - 1][2], XS1})); } return _r15003; }(each(krings[first - 1][1])), [&](Each _it15005) { Py q; Py _r15006 = list(); for (Py _x15007 : _it15005) { q = _x15007; L_(_r15006)->v.push_back(call(to_plane, {q, krings[last + 1][2], XS0})); } return _r15006; }(each(krings[last + 1][1]))});
-    addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft(list({kends[0]}) + [&](Each _it15008) { Py d; Py r_; Py t; Py _r15009 = list(); for (Py _x15010 : _it15008) { Vec _u15011 = unpack(_x15010, 3); t = _u15011[0]; r_ = _u15011[1]; d = _u15011[2]; L_(_r15009)->v.push_back(r_); } return _r15009; }(each(slice(krings, first, last + 1))) + list({kends[1]}), P[S("wood_dark")]); })));
-    y_stem = min_(L_([&](Each _it15012) { Py q; Py _r15013 = list(); for (Py _x15014 : _it15012) { q = _x15014; L_(_r15013)->v.push_back(q[1]); } return _r15013; }(each(kends[1])))->v, None, MISSING_ARG);  // the stem and the sternpost, the planks'
-    [&] { Py _a15015 = list({call((*xs__c), {Py(1.0)}) - 0.05, (y_stem + call((*sheer__c), {Py(1.0)}) + 0.7) / 2, Py(0)}); Py _a15016 = list({Py(0.6), call((*sheer__c), {Py(1.0)}) + 0.7 - y_stem, 2 * (*POST_Z__c)}); Py _a15017 = P[S("wood_dark")]; return addpy::cuboid(_a15015, _a15016, _a15017); }();  // kends in
-    [&] { Py _a15018 = list({call((*xs__c), {Py(-1.0)}) + 0.05, ((*YB__c) + call((*sheer__c), {Py(-1.0)}) + 0.7) / 2, Py(0)}); Py _a15019 = list({Py(0.6), call((*sheer__c), {Py(-1.0)}) + 0.7 - (*YB__c), 2 * (*POST_Z__c)}); Py _a15020 = P[S("wood_dark")]; return addpy::cuboid(_a15018, _a15019, _a15020); }();  // them,
-    under = list({kends[0]}) + [&](Each _it15021) { Py d; Py r_; Py t; Py _r15022 = list(); for (Py _x15023 : _it15021) { Vec _u15024 = unpack(_x15023, 3); t = _u15024[0]; r_ = _u15024[1]; d = _u15024[2]; if (!(t <= (T_F + 1e-12))) continue; L_(_r15022)->v.push_back(r_); } return _r15022; }(each(slice(krings, first, None)));  // (its kends cut square against the posts)
-    dw = [&](Each _it15025) { Py r_; Py _r15026 = list(); for (Py _x15027 : _it15025) { r_ = _x15027; L_(_r15026)->v.push_back(tuple({(r_[2][0] + r_[3][0]) / 2, (r_[2][1] + r_[3][1]) / 2})); } return _r15026; }(each(under));  // the deadwood: under the keel's flat
-    { Py _t15028 = tuple({dw[Py(-1)][0], (*YB__c)}); setitem(dw, Py(-1), _t15028); }  // underside, from the sternpost forward
+    first = [&](Each _it14968) -> Py { Py d; Py i; Py r_; Py t; for (Py _x14969 : _it14968) { Vec _u14970 = unpack(_x14969, 2); i = _u14970[0]; Vec _u14971 = unpack(_u14970[1], 3); t = _u14971[0]; r_ = _u14971[1]; d = _u14971[2]; if (!(min_(L_([&](Each _it14972) { Py q; Py _r14973 = list(); for (Py _x14974 : _it14972) { q = _x14974; L_(_r14973)->v.push_back(q[0]); } return _r14973; }(each(r_)))->v, None, MISSING_ARG) > XS1)) continue; return i; } raise("StopIteration", ""); }(each(enumerate_(krings, Py(0))));
+    last = max_(L_([&](Each _it14975) { Py d; Py i; Py r_; Py t; Py _r14976 = list(); for (Py _x14977 : _it14975) { Vec _u14978 = unpack(_x14977, 2); i = _u14978[0]; Vec _u14979 = unpack(_u14978[1], 3); t = _u14979[0]; r_ = _u14979[1]; d = _u14979[2]; if (!(max_(L_([&](Each _it14980) { Py q; Py _r14981 = list(); for (Py _x14982 : _it14980) { q = _x14982; L_(_r14981)->v.push_back(q[0]); } return _r14981; }(each(r_)))->v, None, MISSING_ARG) < XS0)) continue; L_(_r14976)->v.push_back(i); } return _r14976; }(each(enumerate_(krings, Py(0)))))->v, None, MISSING_ARG);
+    kends = tuple({[&](Each _it14983) { Py q; Py _r14984 = list(); for (Py _x14985 : _it14983) { q = _x14985; L_(_r14984)->v.push_back(call(to_plane, {q, krings[first - 1][2], XS1})); } return _r14984; }(each(krings[first - 1][1])), [&](Each _it14986) { Py q; Py _r14987 = list(); for (Py _x14988 : _it14986) { q = _x14988; L_(_r14987)->v.push_back(call(to_plane, {q, krings[last + 1][2], XS0})); } return _r14987; }(each(krings[last + 1][1]))});
+    addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft(list({kends[0]}) + [&](Each _it14989) { Py d; Py r_; Py t; Py _r14990 = list(); for (Py _x14991 : _it14989) { Vec _u14992 = unpack(_x14991, 3); t = _u14992[0]; r_ = _u14992[1]; d = _u14992[2]; L_(_r14990)->v.push_back(r_); } return _r14990; }(each(slice(krings, first, last + 1))) + list({kends[1]}), P[S("wood_dark")]); })));
+    y_stem = min_(L_([&](Each _it14993) { Py q; Py _r14994 = list(); for (Py _x14995 : _it14993) { q = _x14995; L_(_r14994)->v.push_back(q[1]); } return _r14994; }(each(kends[1])))->v, None, MISSING_ARG);  // the stem and the sternpost, the planks'
+    [&] { Py _a14996 = list({call((*xs__c), {Py(1.0)}) - 0.05, (y_stem + call((*sheer__c), {Py(1.0)}) + 0.7) / 2, Py(0)}); Py _a14997 = list({Py(0.6), call((*sheer__c), {Py(1.0)}) + 0.7 - y_stem, 2 * (*POST_Z__c)}); Py _a14998 = P[S("wood_dark")]; return addpy::cuboid(_a14996, _a14997, _a14998); }();  // kends in
+    [&] { Py _a14999 = list({call((*xs__c), {Py(-1.0)}) + 0.05, ((*YB__c) + call((*sheer__c), {Py(-1.0)}) + 0.7) / 2, Py(0)}); Py _a15000 = list({Py(0.6), call((*sheer__c), {Py(-1.0)}) + 0.7 - (*YB__c), 2 * (*POST_Z__c)}); Py _a15001 = P[S("wood_dark")]; return addpy::cuboid(_a14999, _a15000, _a15001); }();  // them,
+    under = list({kends[0]}) + [&](Each _it15002) { Py d; Py r_; Py t; Py _r15003 = list(); for (Py _x15004 : _it15002) { Vec _u15005 = unpack(_x15004, 3); t = _u15005[0]; r_ = _u15005[1]; d = _u15005[2]; if (!(t <= (T_F + 1e-12))) continue; L_(_r15003)->v.push_back(r_); } return _r15003; }(each(slice(krings, first, None)));  // (its kends cut square against the posts)
+    dw = [&](Each _it15006) { Py r_; Py _r15007 = list(); for (Py _x15008 : _it15006) { r_ = _x15008; L_(_r15007)->v.push_back(tuple({(r_[2][0] + r_[3][0]) / 2, (r_[2][1] + r_[3][1]) / 2})); } return _r15007; }(each(under));  // the deadwood: under the keel's flat
+    { Py _t15009 = tuple({dw[Py(-1)][0], (*YB__c)}); setitem(dw, Py(-1), _t15009); }  // underside, from the sternpost forward
     DZ = (*KR__c) * 0.5;  // to where that is YB deep, down to YB,
     D___ = addpy::Mesh();  // as thick as the flat is wide
-    dtop = [&](Each _it15029) { Py x_; Py y_; Py _r15030 = list(); for (Py _x15034 : _it15029) { Vec _u15035 = unpack(_x15034, 2); x_ = _u15035[0]; y_ = _u15035[1]; L_(_r15030)->v.push_back([&](Each _it15031) { Py sz; Py _r15032 = list(); for (Py _x15033 : _it15031) { sz = _x15033; L_(_r15032)->v.push_back(mesh_add_vertex(D___, list({x_, y_, sz * DZ}))); } return _r15032; }(each(K(tuple({Py(-1), Py(1)}))))); } return _r15030; }(each(dw));
-    dbot = [&](Each _it15036) { Py x_; Py y_; Py _r15037 = list(); for (Py _x15041 : _it15036) { Vec _u15042 = unpack(_x15041, 2); x_ = _u15042[0]; y_ = _u15042[1]; L_(_r15037)->v.push_back([&](Each _it15038) { Py sz; Py _r15039 = list(); for (Py _x15040 : _it15038) { sz = _x15040; L_(_r15039)->v.push_back(mesh_add_vertex(D___, list({x_, (*YB__c), sz * DZ}))); } return _r15039; }(each(K(tuple({Py(-1), Py(1)}))))); } return _r15037; }(each(slice(dw, None, Py(-1)))) + list({dtop[Py(-1)]});
-    for (Py _v15043 : range(len(dw) - 1)) {
-        i = _v15043;
-        for (Py _v15044 : each(K(tuple({Py(0), Py(1)})))) {  // its sides,
-            (*k__c) = _v15044;
+    dtop = [&](Each _it15010) { Py x_; Py y_; Py _r15011 = list(); for (Py _x15015 : _it15010) { Vec _u15016 = unpack(_x15015, 2); x_ = _u15016[0]; y_ = _u15016[1]; L_(_r15011)->v.push_back([&](Each _it15012) { Py sz; Py _r15013 = list(); for (Py _x15014 : _it15012) { sz = _x15014; L_(_r15013)->v.push_back(mesh_add_vertex(D___, list({x_, y_, sz * DZ}))); } return _r15013; }(each(K(tuple({Py(-1), Py(1)}))))); } return _r15011; }(each(dw));
+    dbot = [&](Each _it15017) { Py x_; Py y_; Py _r15018 = list(); for (Py _x15022 : _it15017) { Vec _u15023 = unpack(_x15022, 2); x_ = _u15023[0]; y_ = _u15023[1]; L_(_r15018)->v.push_back([&](Each _it15019) { Py sz; Py _r15020 = list(); for (Py _x15021 : _it15019) { sz = _x15021; L_(_r15020)->v.push_back(mesh_add_vertex(D___, list({x_, (*YB__c), sz * DZ}))); } return _r15020; }(each(K(tuple({Py(-1), Py(1)}))))); } return _r15018; }(each(slice(dw, None, Py(-1)))) + list({dtop[Py(-1)]});
+    for (Py _v15024 : range(len(dw) - 1)) {
+        i = _v15024;
+        for (Py _v15025 : each(K(tuple({Py(0), Py(1)})))) {  // its sides,
+            (*k__c) = _v15025;
             mesh_add_face(D___, ((i + 1) == (len(dw) - 1) ? list({dtop[i][(*k__c)], dtop[i + 1][(*k__c)], dbot[i][(*k__c)]}) : list({dtop[i][(*k__c)], dtop[i + 1][(*k__c)], dbot[i + 1][(*k__c)], dbot[i][(*k__c)]})), P[S("wood_dark")]);
         }
         mesh_add_face(D___, list({dtop[i][0], dtop[i][1], dtop[i + 1][1], dtop[i + 1][0]}), P[S("wood_dark")]);  // its top, under the keel,
@@ -49028,7 +48982,7 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     addpy::mesh(addpy::fix_normals(D___));
     XP = XAFT - 0.057;  // the rudder: hung by five pintles on the
     YHEAD = call((*sheer__c), {Py(-1.0)}) + 1.05;  // after face of the post, its head a stout
-    { Py _t15045 = K(tuple({Py(0.06), Py(0.09)})); Vec _u15046 = unpack(_t15045, 2); (*U0__c) = _u15046[0]; TK = _u15046[1]; }  // stock rising to the tiller, the blade
+    { Py _t15026 = K(tuple({Py(0.06), Py(0.09)})); Vec _u15027 = unpack(_t15026, 2); (*U0__c) = _u15027[0]; TK = _u15027[1]; }  // stock rising to the tiller, the blade
     bot_u = func(sig("lambda", {"u"}, {MISSING_ARG}, 1), [U0__c, YB__c](Vec& _A_) -> Py { Py u = _A_[0]; return (*YB__c) + 0.03 + 0.1 * (u - (*U0__c)); });  // three planks behind it, widening down
     top_u = func(sig("lambda", {"u"}, {MISSING_ARG}, 1), [](Vec& _A_) -> Py { Py u = _A_[0]; return 2.2 - 1.75 * (u - 0.36) / 0.9; });  // to the keel (u: aft of the pins' line)
     TY = Py(3.2);  // the tiller's height
@@ -49037,19 +48991,19 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     addpy::mesh(addpy::color(addpy::difference(stock, tuple({tiller}), None), P[S("wood_dark")]));  // (its mortise: the tiller through it)
     addpy::mesh(tiller);
     addpy::cuboid(list({(-(*L__c)) / 2 + 0.955, TY, Py(0)}), list({Py(0.01), Py(0.3), Py(0.3)}), P[S("black")]);  // (the port it goes in by)
-    for (Py _v15047 : each(enumerate_(K(tuple({K(tuple({Py(0.36), Py(0.66)})), K(tuple({Py(0.66), Py(0.96)})), K(tuple({Py(0.96), Py(1.26)}))})), Py(0)))) {
-        Vec _u15048 = unpack(_v15047, 2);
-        (*k__c) = _u15048[0];
-        Vec _u15049 = unpack(_u15048[1], 2);
-        u0 = _u15049[0];
-        u1 = _u15049[1];
-        [&] { Py _a15050 = list({list({XP - u0, call(bot_u, {u0})}), list({XP - u0, call(top_u, {u0})}), list({XP - u1, call(top_u, {u1})}), list({XP - u1, call(bot_u, {u1})})}); Py _a15051 = 2 * TK; Py _a15052 = shade_of(S("wood"), (*k__c) + 1); Py _a15053 = K(tuple({Py(0), Py(0), Py(0)})); Py _a15054 = K(tuple({Py(0), Py(0), Py(1)})); return addpy::prism(_a15050, _a15051, _a15052, _a15053, _a15054); }();
+    for (Py _v15028 : each(enumerate_(K(tuple({K(tuple({Py(0.36), Py(0.66)})), K(tuple({Py(0.66), Py(0.96)})), K(tuple({Py(0.96), Py(1.26)}))})), Py(0)))) {
+        Vec _u15029 = unpack(_v15028, 2);
+        (*k__c) = _u15029[0];
+        Vec _u15030 = unpack(_u15029[1], 2);
+        u0 = _u15030[0];
+        u1 = _u15030[1];
+        [&] { Py _a15031 = list({list({XP - u0, call(bot_u, {u0})}), list({XP - u0, call(top_u, {u0})}), list({XP - u1, call(top_u, {u1})}), list({XP - u1, call(bot_u, {u1})})}); Py _a15032 = 2 * TK; Py _a15033 = shade_of(S("wood"), (*k__c) + 1); Py _a15034 = K(tuple({Py(0), Py(0), Py(0)})); Py _a15035 = K(tuple({Py(0), Py(0), Py(1)})); return addpy::prism(_a15031, _a15032, _a15033, _a15034, _a15035); }();
     }
-    for (Py _v15055 : each(K(tuple({Py(-1.25), Py(-0.4), Py(0.5), Py(1.4), Py(2.25)})))) {  // the pintles: straps round the blade (as
-        h = _v15055;
+    for (Py _v15036 : each(K(tuple({Py(-1.25), Py(-0.4), Py(0.5), Py(1.4), Py(2.25)})))) {  // the pintles: straps round the blade (as
+        h = _v15036;
         ue = min2(Py(0.8), max2(Py(0.3), 0.36 + (2.2 - h - 0.05) * 0.9 / 1.75));  // far as it reaches there), a knuckle at
-        for (Py _v15056 : each(K(tuple({Py(-1), Py(1)})))) {  // the pins' line, the pin down from it
-            sz = _v15056;
+        for (Py _v15037 : each(K(tuple({Py(-1), Py(1)})))) {  // the pins' line, the pin down from it
+            sz = _v15037;
             addpy::cuboid(list({XP - ((*U0__c) + ue) / 2, h, sz * (TK + 0.006)}), list({ue - (*U0__c), Py(0.07), Py(0.012)}), P[S("iron")]);
         }
         addpy::cuboid(list({XP - (0.045 + (*U0__c)) / 2, h, Py(0)}), list({(*U0__c) - 0.045, Py(0.07), 2 * TK + 0.024}), P[S("iron")]);
@@ -49058,8 +49012,8 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         g0 = h - 0.135;  // and under each the gudgeon on the post:
         addpy::pipe(list({XP, g0, Py(0)}), list({XP, g0 + 0.07, Py(0)}), Py(0.045), Py(0.018), Py(8), P[S("iron")]);  // its eye round the pin, a strap round the
         addpy::cuboid(list({(XP + 0.045 + XAFT) / 2, g0 + 0.035, Py(0)}), list({XAFT - XP - 0.045, Py(0.07), 2 * (*POST_Z__c) + 0.024}), P[S("iron")]);  // post's after face
-        for (Py _v15057 : each(K(tuple({Py(-1), Py(1)})))) {  // and forward along its sides
-            sz = _v15057;
+        for (Py _v15038 : each(K(tuple({Py(-1), Py(1)})))) {  // and forward along its sides
+            sz = _v15038;
             addpy::cuboid(list({XAFT + 0.1, g0 + 0.035, sz * ((*POST_Z__c) + 0.006)}), list({Py(0.2), Py(0.07), Py(0.012)}), P[S("iron")]);
         }
     }
@@ -49068,16 +49022,16 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     // bear an anchor), outside a knee fitted to the side, all bolted through; it lies 2 mm over the cap rail -- by the
     // cat fall: from an eyebolt under the cathead down through the anchor's ring, up over a sheave in its end, along its
     // top and made fast with three round turns inboard; and the anchor's chain into the hawse hole
-    for (Py _v15058 : each(K(tuple({Py(-1), Py(1)})))) {
-        sg = _v15058;
+    for (Py _v15039 : each(K(tuple({Py(-1), Py(1)})))) {
+        sg = _v15039;
         t = Py(0.9);
-        { Py _t15059 = call((*rim__c), {t, sg}); Vec _u15060 = unpack(_t15059, 2); p = _u15060[0]; Vec _u15061 = unpack(_u15060[1], 2); (*nx__c) = _u15061[0]; (*nz__c) = _u15061[1]; }
-        { Py _t15062 = tuple({(-(*nz__c)) * sg, (*nx__c) * sg}); Vec _u15063 = unpack(_t15062, 2); (*tpx__c) = _u15063[0]; (*tpz__c) = _u15063[1]; }
+        { Py _t15040 = call((*rim__c), {t, sg}); Vec _u15041 = unpack(_t15040, 2); p = _u15041[0]; Vec _u15042 = unpack(_u15041[1], 2); (*nx__c) = _u15042[0]; (*nz__c) = _u15042[1]; }
+        { Py _t15043 = tuple({(-(*nz__c)) * sg, (*nx__c) * sg}); Vec _u15044 = unpack(_t15043, 2); (*tpx__c) = _u15044[0]; (*tpz__c) = _u15044[1]; }
         if ((*tpx__c) < 0) {
-            { Py _t15064 = tuple({-(*tpx__c), -(*tpz__c)}); Vec _u15065 = unpack(_t15064, 2); (*tpx__c) = _u15065[0]; (*tpz__c) = _u15065[1]; }
+            { Py _t15045 = tuple({-(*tpx__c), -(*tpz__c)}); Vec _u15046 = unpack(_t15045, 2); (*tpx__c) = _u15046[0]; (*tpz__c) = _u15046[1]; }
         }
-        rise = [&] { Py _t15066 = [&] { Py _t15068 = call((*sheer__c), {t + 0.001}); Py _t15069 = call((*sheer__c), {t - 0.001}); return _t15068 - _t15069; }(); Py _t15067 = vlen(list({[&] { Py _t15070 = call((*xs__c), {t + 0.001}); Py _t15071 = call((*xs__c), {t - 0.001}); return _t15070 - _t15071; }(), Py(0), [&] { Py _t15072 = call((*half__c), {t + 0.001}); Py _t15073 = call((*half__c), {t - 0.001}); return _t15072 - _t15073; }()})); return _t15066 / _t15067; }();
-        { Py _t15074 = tuple({vunit(list({(*tpx__c), rise, (*tpz__c)})), list({(*nx__c), Py(0.0), (*nz__c)})}); Vec _u15075 = unpack(_t15074, 2); Tr = _u15075[0]; nv_ = _u15075[1]; }
+        rise = [&] { Py _t15047 = [&] { Py _t15049 = call((*sheer__c), {t + 0.001}); Py _t15050 = call((*sheer__c), {t - 0.001}); return _t15049 - _t15050; }(); Py _t15048 = vlen(list({[&] { Py _t15051 = call((*xs__c), {t + 0.001}); Py _t15052 = call((*xs__c), {t - 0.001}); return _t15051 - _t15052; }(), Py(0), [&] { Py _t15053 = call((*half__c), {t + 0.001}); Py _t15054 = call((*half__c), {t - 0.001}); return _t15053 - _t15054; }()})); return _t15047 / _t15048; }();
+        { Py _t15055 = tuple({vunit(list({(*tpx__c), rise, (*tpz__c)})), list({(*nx__c), Py(0.0), (*nz__c)})}); Vec _u15056 = unpack(_t15055, 2); Tr = _u15056[0]; nv_ = _u15056[1]; }
         cat = func(sig("cat", {"o", "y", "a", "p", "nv_", "Tr"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG, p, nv_, Tr}, 3), [](Vec& _A_) -> Py {
             Py o = _A_[0];
             Py y = _A_[1];
@@ -49118,29 +49072,29 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
             Py o_;
             Py q;
             hi = Py(-9.0);  // there, in that frame)
-            for (Py _v15076 : each(tuple({o0, o1}))) {
-                o_ = _v15076;
-                for (Py _v15077 : each(tuple({a0, a1}))) {
-                    a_ = _v15077;
+            for (Py _v15057 : each(tuple({o0, o1}))) {
+                o_ = _v15057;
+                for (Py _v15058 : each(tuple({a0, a1}))) {
+                    a_ = _v15058;
                     q = call(cat, {o_, Py(0.0), a_});
                     hi = max2(hi, call((*deck_y__c), {q[0]}) + 0.033 - q[1]);
                 }
             }
             return hi;
         });
-        { Py _t15078 = K(tuple({Py(-0.8), Py(0.7), Py(0.14), Py(0.612), Py(0.872)})); Vec _u15079 = unpack(_t15078, 5); CI = _u15079[0]; CO = _u15079[1]; (*CW__c) = _u15079[2]; C0 = _u15079[3]; C1 = _u15079[4]; }  // the cathead: its ends, half its width,
-        { Py _t15080 = K(tuple({Py(0.385), Py(0.625), Py(0.04), Py(0.475), Py(0.802), Py(0.07)})); Vec _u15081 = unpack(_t15080, 6); SL0 = _u15081[0]; SL1 = _u15081[1]; SLW = _u15081[2]; SO = _u15081[3]; SY = _u15081[4]; SR = _u15081[5]; }  // its underside, its top; the slot through
+        { Py _t15059 = K(tuple({Py(-0.8), Py(0.7), Py(0.14), Py(0.612), Py(0.872)})); Vec _u15060 = unpack(_t15059, 5); CI = _u15060[0]; CO = _u15060[1]; (*CW__c) = _u15060[2]; C0 = _u15060[3]; C1 = _u15060[4]; }  // the cathead: its ends, half its width,
+        { Py _t15061 = K(tuple({Py(0.385), Py(0.625), Py(0.04), Py(0.475), Py(0.802), Py(0.07)})); Vec _u15062 = unpack(_t15061, 6); SL0 = _u15062[0]; SL1 = _u15062[1]; SLW = _u15062[2]; SO = _u15062[3]; SY = _u15062[4]; SR = _u15062[5]; }  // its underside, its top; the slot through
         call(block, {CI, SL0, C0, C1, -(*CW__c), (*CW__c), S("wood_dark")});  // it, the sheave in it (its top flush with
         call(block, {SL0, SL1, C0, C1, SLW, (*CW__c), S("wood_dark")});  // the timber's) on an iron pin, an iron
         call(block, {SL0, SL1, C0, C1, -(*CW__c), -SLW, S("wood_dark")});  // band round the end
         call(block, {SL1, CO, C0, C1, -(*CW__c), (*CW__c), S("wood_dark")});
         call((*part__c), {addpy::make([&] { addpy::pipe(list({SO, SY, Py(-0.032)}), list({SO, SY, Py(0.032)}), SR, Py(0.016), Py(16)); }), P[S("wood_light")]});
-        for (Py _v15082 : each(K(tuple({Py(-1), Py(1)})))) {
-            s_ = _v15082;
+        for (Py _v15063 : each(K(tuple({Py(-1), Py(1)})))) {
+            s_ = _v15063;
             call((*part__c), {addpy::make([&] { addpy::cylinder(list({SO, SY, s_ * (*CW__c)}), list({SO, SY, s_ * ((*CW__c) + 0.012)}), Py(0.024), Py(8)); }), P[S("iron")]});
             call(block, {Py(0.645), Py(0.685), C0, C1, (s_ > 0 ? (*CW__c) : (-(*CW__c)) - 0.008), (s_ > 0 ? (*CW__c) + 0.008 : -(*CW__c)), S("iron")});
-            for (Py _v15083 : each(K(tuple({Py(-0.15), Py(-0.67)})))) {  // (bolts down into the knighthead and
-                o_ = _v15083;
+            for (Py _v15064 : each(K(tuple({Py(-0.15), Py(-0.67)})))) {  // (bolts down into the knighthead and
+                o_ = _v15064;
                 call((*part__c), {addpy::make([&] { addpy::cylinder(list({o_, C1, s_ * 0.08}), list({o_, C1 + 0.012, s_ * 0.08}), Py(0.022), Py(8)); }), P[S("iron")]});  // the post)
             }
         }
@@ -49150,7 +49104,7 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         call(block, {Py(-0.24), Py(-0.063), kb, Py(0.547), Py(-0.12), Py(0.12), S("wood_dark")});  // from the deck up under the cathead, cut
         call(block, {Py(-0.24), Py(-0.143), Py(0.547), C0, Py(-0.12), Py(0.12), S("wood_dark")});  // round the cap rail; and the post
         call(block, {CI, CI + 0.26, call(deck_under, {CI, CI + 0.26, Py(-0.13), Py(0.13)}), C0, Py(-0.13), Py(0.13), S("wood_dark")});
-        ds = vlen([&] { Py _a15084 = call((*skin__c), {min2(Py(1.0), t + 0.002), Py(0.0), sg}); Py _a15085 = call((*skin__c), {t - 0.002, Py(0.0), sg}); return vsub(_a15084, _a15085); }()) / 0.004;
+        ds = vlen([&] { Py _a15065 = call((*skin__c), {min2(Py(1.0), t + 0.002), Py(0.0), sg}); Py _a15066 = call((*skin__c), {t - 0.002, Py(0.0), sg}); return vsub(_a15065, _a15066); }()) / 0.004;
         side_out = func(sig("side_out", {"y", "t", "sg", "p", "nv_", "ds"}, {MISSING_ARG, t, sg, p, nv_, ds}, 1), [STRAKES__c, hull_at__c, keel__c, lap__c, sheer__c](Vec& _A_) -> Py {
             Py y = _A_[0];
             Py t = _A_[1];
@@ -49175,14 +49129,14 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
                 return Py(0.012);
             }
             best = Py(0.012);
-            for (Py _v15086 : each(K(tuple({Py(-0.1), Py(-0.05), Py(0.0), Py(0.05), Py(0.1)})))) {
-                a_ = _v15086;
+            for (Py _v15067 : each(K(tuple({Py(-0.1), Py(-0.05), Py(0.0), Py(0.05), Py(0.1)})))) {
+                a_ = _v15067;
                 t2 = t + a_ / ds;
-                f = (-y) / ([&] { Py _t15087 = call((*sheer__c), {t2}); Py _t15088 = call((*keel__c), {t2}); return _t15087 - _t15088; }());
-                for (Py _v15089 : range((*STRAKES__c))) {
-                    k_ = _v15089;
-                    { Py _t15090 = tuple({0.97 * k_ / (*STRAKES__c) - ((truthy(k_) ? Py(0.02) : Py(0.0))), 0.97 * (k_ + 1) / (*STRAKES__c)}); Vec _u15091 = unpack(_t15090, 2); fa = _u15091[0]; fb = _u15091[1]; }
-                    if ([&]() -> bool { Py _t15092 = fa; Py _t15093 = f; if (!(_t15092 <= _t15093)) return false; Py _t15094 = fb; return _t15093 <= _t15094; }()) {
+                f = (-y) / ([&] { Py _t15068 = call((*sheer__c), {t2}); Py _t15069 = call((*keel__c), {t2}); return _t15068 - _t15069; }());
+                for (Py _v15070 : range((*STRAKES__c))) {
+                    k_ = _v15070;
+                    { Py _t15071 = tuple({0.97 * k_ / (*STRAKES__c) - ((truthy(k_) ? Py(0.02) : Py(0.0))), 0.97 * (k_ + 1) / (*STRAKES__c)}); Vec _u15072 = unpack(_t15071, 2); fa = _u15072[0]; fb = _u15072[1]; }
+                    if ([&]() -> bool { Py _t15073 = fa; Py _t15074 = f; if (!(_t15073 <= _t15074)) return false; Py _t15075 = fb; return _t15074 <= _t15075; }()) {
                         best = max2(best, _dot(vsub(call((*hull_at__c), {t2, f, sg, call((*lap__c), {(f - fa) / (fb - fa)})}), p), nv_));
                     }
                 }
@@ -49191,25 +49145,25 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         });
         KH = list({Py(-0.25), Py(-0.2), Py(-0.15), Py(-0.1), Py(-0.05), Py(0.0), Py(0.14), Py(0.277), Py(0.277), Py(0.41), Py(0.547), Py(0.547), C0});
         rings = list({});
-        for (Py _v15095 : each(enumerate_(KH, Py(0)))) {
-            Vec _u15096 = unpack(_v15095, 2);
-            i = _u15096[0];
-            y = _u15096[1];
+        for (Py _v15076 : each(enumerate_(KH, Py(0)))) {
+            Vec _u15077 = unpack(_v15076, 2);
+            i = _u15077[0];
+            y = _u15077[1];
             o0 = call(side_out, {(((i + 1) < len(KH)) && (KH[i + 1] == y) ? y - 1e-06 : y)}) + 0.003;
             o1 = 0.1 + 0.18 * pow_((y + 0.25) / (C0 + 0.25), Py(2.2));
             rings.append(list({call(cat, {o0, y, Py(-0.1)}), call(cat, {o1, y, Py(-0.1)}), call(cat, {o1, y, Py(0.1)}), call(cat, {o0, y, Py(0.1)})}));
         }
         addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft(rings, P[S("wood_dark")]); })));
-        for (Py _v15097 : each(K(tuple({K(tuple({Py(0.09), Py(0.25)})), K(tuple({Py(0.065), Py(-0.05)}))})))) {  // (bolted through the side)
-            Vec _u15098 = unpack(_v15097, 2);
-            o_ = _u15098[0];
-            y_ = _u15098[1];
-            for (Py _v15099 : each(K(tuple({Py(-1), Py(1)})))) {
-                s_ = _v15099;
+        for (Py _v15078 : each(K(tuple({K(tuple({Py(0.09), Py(0.25)})), K(tuple({Py(0.065), Py(-0.05)}))})))) {  // (bolted through the side)
+            Vec _u15079 = unpack(_v15078, 2);
+            o_ = _u15079[0];
+            y_ = _u15079[1];
+            for (Py _v15080 : each(K(tuple({Py(-1), Py(1)})))) {
+                s_ = _v15080;
                 call((*part__c), {addpy::make([&] { addpy::cylinder(list({o_, y_, s_ * 0.1}), list({o_, y_, s_ * 0.112}), Py(0.02), Py(8)); }), P[S("iron")]});
             }
         }
-        { Py _t15100 = K(tuple({Py(0.325), Py(0.575), Py(0.035)})); Vec _u15101 = unpack(_t15100, 3); OS = _u15101[0]; OH = _u15101[1]; ER2 = _u15101[2]; }  // (the fall's two parts: how far out)
+        { Py _t15081 = K(tuple({Py(0.325), Py(0.575), Py(0.035)})); Vec _u15082 = unpack(_t15081, 3); OS = _u15082[0]; OH = _u15082[1]; ER2 = _u15082[2]; }  // (the fall's two parts: how far out)
         call(block, {OS - 0.04, OS + 0.04, C0 - 0.012, C0, Py(-0.04), Py(0.04), S("iron")});  // the eyebolt: its plate, its eye, the
         yi = C0 - 0.012 - 0.008 - ER2;  // eye in the fall's end linked through it
         call((*part__c), {addpy::make([&] { addpy::torus(list({OS, yi, Py(0.0)}), ER2, Py(0.008), Py(12), Py(4), None, K(tuple({Py(1), Py(0), Py(0)}))); }), P[S("iron")]});
@@ -49220,223 +49174,223 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         // y_ up, t_ forward):
         sq = func(sig("lambda", {"y_", "h_"}, {MISSING_ARG, MISSING_ARG}, 2), [aq__c](Vec& _A_) -> Py { Py y_ = _A_[0]; Py h_ = _A_[1]; return list({call((*aq__c), {-h_, y_, -h_}), call((*aq__c), {h_, y_, -h_}), call((*aq__c), {h_, y_, h_}), call((*aq__c), {-h_, y_, h_})}); });
         addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft(list({call(sq, {Py(-1.6), Py(0.06)}), call(sq, {Py(-0.05), Py(0.038)})}), P[S("iron")]); })));  // the shank, square, tapering
-        [&] { Py _a15102 = call((*aq__c), {Py(0), Py(0), Py(-0.046)}); Py _a15103 = call((*aq__c), {Py(0), Py(0), Py(0.046)}); Py _a15104 = Py(0.086); Py _a15105 = Py(0.04); Py _a15106 = Py(12); Py _a15107 = P[S("iron")]; return addpy::pipe(_a15102, _a15103, _a15104, _a15105, _a15106, _a15107); }();  // up to the eye, a flat boss pierced fore and
+        [&] { Py _a15083 = call((*aq__c), {Py(0), Py(0), Py(-0.046)}); Py _a15084 = call((*aq__c), {Py(0), Py(0), Py(0.046)}); Py _a15085 = Py(0.086); Py _a15086 = Py(0.04); Py _a15087 = Py(12); Py _a15088 = P[S("iron")]; return addpy::pipe(_a15083, _a15084, _a15085, _a15086, _a15087, _a15088); }();  // up to the eye, a flat boss pierced fore and
         RR = Py(0.16);  // aft; the ring through it, square to it like
         addpy::torus(call((*aq__c), {Py(0), 0.002 + RR, Py(0)}), RR, Py(0.022), Py(20), Py(6), P[S("iron")], list({(*nx__c), Py(0.0), (*nz__c)}));  // links of a chain, its top bar in the bight
         fall = list({call(cat, {OS, yi - 2 * ER2, Py(0.0)}), call((*aq__c), {OS - 0.45, Py(0.572), Py(0)})});  // of the fall, 2 mm under it
-        iadd(fall, ([&](Each _it15108) { Py a; Py _r15112 = list(); for (Py _x15113 : _it15108) { a = _x15113; L_(_r15112)->v.push_back(call((*aq__c), {0.052 * addpy::cos(a), 0.322 + 0.052 * addpy::sin(a), Py(0)})); } return _r15112; }(each([&](Range _it15109) { Py j; Py _r15110 = list(); for (Py _x15111 : _it15109) { j = _x15111; L_(_r15110)->v.push_back(addpy::pi + addpy::pi * j / 8); } return _r15110; }(range(Py(9)))))));
+        iadd(fall, ([&](Each _it15089) { Py a; Py _r15093 = list(); for (Py _x15094 : _it15089) { a = _x15094; L_(_r15093)->v.push_back(call((*aq__c), {0.052 * addpy::cos(a), 0.322 + 0.052 * addpy::sin(a), Py(0)})); } return _r15093; }(each([&](Range _it15090) { Py j; Py _r15091 = list(); for (Py _x15092 : _it15090) { j = _x15092; L_(_r15091)->v.push_back(addpy::pi + addpy::pi * j / 8); } return _r15091; }(range(Py(9)))))));
         iadd(fall, list({call((*aq__c), {OH - 0.45, Py(0.572), Py(0)}), call(cat, {OH, C0 - 0.06, Py(0.0)}), call(cat, {OH, SY, Py(0.0)})}));
-        iadd(fall, ([&](Each _it15114) { Py a; Py _r15118 = list(); for (Py _x15119 : _it15114) { a = _x15119; L_(_r15118)->v.push_back(call(cat, {SO + 0.1 * addpy::cos(a), SY + 0.1 * addpy::sin(a), Py(0.0)})); } return _r15118; }(each([&](Range _it15115) { Py j; Py _r15116 = list(); for (Py _x15117 : _it15115) { j = _x15117; L_(_r15116)->v.push_back(addpy::pi * j / 8); } return _r15116; }(range(Py(1), Py(5)))))));
+        iadd(fall, ([&](Each _it15095) { Py a; Py _r15099 = list(); for (Py _x15100 : _it15095) { a = _x15100; L_(_r15099)->v.push_back(call(cat, {SO + 0.1 * addpy::cos(a), SY + 0.1 * addpy::sin(a), Py(0.0)})); } return _r15099; }(each([&](Range _it15096) { Py j; Py _r15097 = list(); for (Py _x15098 : _it15096) { j = _x15098; L_(_r15097)->v.push_back(addpy::pi * j / 8); } return _r15097; }(range(Py(1), Py(5)))))));
         fall.append(call(cat, {Py(-0.3), C1 + 0.03, Py(0.0)}));  // (over the sheave, along the top, three
         loop_ = list({tuple({Py(0.0), C1 + 0.03})});  // turns round the timber inboard, a hair
-        for (Py _v15120 : each(tuple({tuple({(*CW__c), C1, Py(90)}), tuple({(*CW__c), C0, Py(0)}), tuple({-(*CW__c), C0, Py(-90)}), tuple({-(*CW__c), C1, Py(-180)})}))) {  // off it, rounding its edges)
-            Vec _u15121 = unpack(_v15120, 3);
-            ca = _u15121[0];
-            cy_ = _u15121[1];
-            a0 = _u15121[2];
-            iadd(loop_, ([&](Range _it15122) { Py j; Py _r15123 = list(); for (Py _x15124 : _it15122) { j = _x15124; L_(_r15123)->v.push_back(tuple({ca + 0.03 * addpy::cos(addpy::pi * (a0 - 45 * j) / 180), cy_ + 0.03 * addpy::sin(addpy::pi * (a0 - 45 * j) / 180)})); } return _r15123; }(range(Py(3)))));
+        for (Py _v15101 : each(tuple({tuple({(*CW__c), C1, Py(90)}), tuple({(*CW__c), C0, Py(0)}), tuple({-(*CW__c), C0, Py(-90)}), tuple({-(*CW__c), C1, Py(-180)})}))) {  // off it, rounding its edges)
+            Vec _u15102 = unpack(_v15101, 3);
+            ca = _u15102[0];
+            cy_ = _u15102[1];
+            a0 = _u15102[2];
+            iadd(loop_, ([&](Range _it15103) { Py j; Py _r15104 = list(); for (Py _x15105 : _it15103) { j = _x15105; L_(_r15104)->v.push_back(tuple({ca + 0.03 * addpy::cos(addpy::pi * (a0 - 45 * j) / 180), cy_ + 0.03 * addpy::sin(addpy::pi * (a0 - 45 * j) / 180)})); } return _r15104; }(range(Py(3)))));
         }
         loop_.append(tuple({Py(0.0), C1 + 0.03}));
         lens = list({Py(0.0)});
-        for (Py _v15125 : each(zip_({loop_, slice(loop_, Py(1), None)}))) {
-            Vec _u15126 = unpack(_v15125, 2);
-            q0 = _u15126[0];
-            q1 = _u15126[1];
+        for (Py _v15106 : each(zip_({loop_, slice(loop_, Py(1), None)}))) {
+            Vec _u15107 = unpack(_v15106, 2);
+            q0 = _u15107[0];
+            q1 = _u15107[1];
             lens.append(lens[Py(-1)] + addpy::sqrt(pow_(q1[0] - q0[0], Py(2)) + pow_(q1[1] - q0[1], Py(2))));
         }
-        for (Py _v15127 : range(Py(3))) {
-            n_t = _v15127;
-            for (Py _v15128 : range(Py(1), len(loop_))) {
-                j = _v15128;
+        for (Py _v15108 : range(Py(3))) {
+            n_t = _v15108;
+            for (Py _v15109 : range(Py(1), len(loop_))) {
+                j = _v15109;
                 fall.append(call(cat, {Py(-0.3) - 0.059 * (n_t + lens[j] / lens[Py(-1)]), loop_[j][1], loop_[j][0]}));
             }
         }
         addpy::polyline(fall, Py(0.028), Py(6), P[S("rope")]);
-        { Py _t15129 = K(tuple({Py(-0.26), Py(0.36)})); Vec _u15130 = unpack(_t15129, 2); (*ys__c) = _u15130[0]; LS = _u15130[1]; }  // the stock, square to the arms: two halves of
+        { Py _t15110 = K(tuple({Py(-0.26), Py(0.36)})); Vec _u15111 = unpack(_t15110, 2); (*ys__c) = _u15111[0]; LS = _u15111[1]; }  // the stock, square to the arms: two halves of
         STK = tuple({tuple({-LS, Py(0.045)}), K(tuple({Py(-0.07), Py(0.08)})), K(tuple({Py(0.07), Py(0.08)})), tuple({LS, Py(0.045)})});  // oak either side of the shank, tapering from
         blk = func(sig("lambda", {"n_", "h_", "t0", "t1", "d_"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG}, 5), [aq__c, ys__c](Vec& _A_) -> Py { Py n_ = _A_[0]; Py h_ = _A_[1]; Py t0 = _A_[2]; Py t1 = _A_[3]; Py d_ = _A_[4]; return list({call((*aq__c), {n_, (*ys__c) - h_ + d_, t0}), call((*aq__c), {n_, (*ys__c) - h_ + d_, t1}), call((*aq__c), {n_, (*ys__c) + h_ - d_, t1}), call((*aq__c), {n_, (*ys__c) + h_ - d_, t0})}); });
-        for (Py _v15131 : each(K(tuple({Py(-1), Py(1)})))) {  // the middle to the ends, a dark seam between
-            s_ = _v15131;
-            addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft([&](Each _it15132) { Py h_; Py n_; Py _r15133 = list(); for (Py _x15134 : _it15132) { Vec _u15135 = unpack(_x15134, 2); n_ = _u15135[0]; h_ = _u15135[1]; L_(_r15133)->v.push_back(call(blk, {n_, h_, s_ * 0.004, s_ * h_, Py(0.0)})); } return _r15133; }(each(STK)), P[S("wood")]); })));
+        for (Py _v15112 : each(K(tuple({Py(-1), Py(1)})))) {  // the middle to the ends, a dark seam between
+            s_ = _v15112;
+            addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft([&](Each _it15113) { Py h_; Py n_; Py _r15114 = list(); for (Py _x15115 : _it15113) { Vec _u15116 = unpack(_x15115, 2); n_ = _u15116[0]; h_ = _u15116[1]; L_(_r15114)->v.push_back(call(blk, {n_, h_, s_ * 0.004, s_ * h_, Py(0.0)})); } return _r15114; }(each(STK)), P[S("wood")]); })));
         }
-        addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft([&](Each _it15136) { Py h_; Py n_; Py _r15137 = list(); for (Py _x15138 : _it15136) { Vec _u15139 = unpack(_x15138, 2); n_ = _u15139[0]; h_ = _u15139[1]; L_(_r15137)->v.push_back(call(blk, {n_ * (1 - 0.003 / LS), h_, Py(-0.0038), Py(0.0038), Py(0.003)})); } return _r15137; }(each(STK)), P[S("black")]); })));
-        for (Py _v15140 : each(K(tuple({Py(-0.28), Py(-0.15), Py(0.15), Py(0.28)})))) {  // them, bound with four iron hoops; collars on
-            n_ = _v15140;
+        addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft([&](Each _it15117) { Py h_; Py n_; Py _r15118 = list(); for (Py _x15119 : _it15117) { Vec _u15120 = unpack(_x15119, 2); n_ = _u15120[0]; h_ = _u15120[1]; L_(_r15118)->v.push_back(call(blk, {n_ * (1 - 0.003 / LS), h_, Py(-0.0038), Py(0.0038), Py(0.003)})); } return _r15118; }(each(STK)), P[S("black")]); })));
+        for (Py _v15121 : each(K(tuple({Py(-0.28), Py(-0.15), Py(0.15), Py(0.28)})))) {  // them, bound with four iron hoops; collars on
+            n_ = _v15121;
             h_ = 0.08 - 0.035 * (abs_(n_) - 0.07) / (LS - 0.07) + 0.008;  // the shank above and below it, holding it
-            [&] { Py _a15141 = call((*aq__c), {n_ - 0.015, (*ys__c), Py(0)}); Py _a15142 = call((*aq__c), {n_ + 0.015, (*ys__c), Py(0)}); Py _a15143 = 2 * h_; Py _a15144 = 2 * h_; Py _a15145 = P[S("iron")]; return addpy::beam(_a15141, _a15142, _a15143, _a15144, _a15145); }();
+            [&] { Py _a15122 = call((*aq__c), {n_ - 0.015, (*ys__c), Py(0)}); Py _a15123 = call((*aq__c), {n_ + 0.015, (*ys__c), Py(0)}); Py _a15124 = 2 * h_; Py _a15125 = 2 * h_; Py _a15126 = P[S("iron")]; return addpy::beam(_a15122, _a15123, _a15124, _a15125, _a15126); }();
         }
-        for (Py _v15146 : each(tuple({(*ys__c) + 0.081, (*ys__c) - 0.111}))) {
-            y_ = _v15146;
+        for (Py _v15127 : each(tuple({(*ys__c) + 0.081, (*ys__c) - 0.111}))) {
+            y_ = _v15127;
             h_ = 0.06 - 0.022 * (y_ + 0.015 + 1.6) / 1.55 + 0.016;
-            [&] { Py _a15147 = call((*aq__c), {Py(0), y_, Py(0)}); Py _a15148 = call((*aq__c), {Py(0), y_ + 0.03, Py(0)}); Py _a15149 = 2 * h_; Py _a15150 = 2 * h_; Py _a15151 = P[S("iron")]; Py _a15152 = list({(*nx__c), Py(0.0), (*nz__c)}); return addpy::beam(_a15147, _a15148, _a15149, _a15150, _a15151, _a15152); }();
+            [&] { Py _a15128 = call((*aq__c), {Py(0), y_, Py(0)}); Py _a15129 = call((*aq__c), {Py(0), y_ + 0.03, Py(0)}); Py _a15130 = 2 * h_; Py _a15131 = 2 * h_; Py _a15132 = P[S("iron")]; Py _a15133 = list({(*nx__c), Py(0.0), (*nz__c)}); return addpy::beam(_a15128, _a15129, _a15130, _a15131, _a15132, _a15133); }();
         }
-        { Py _t15153 = K(tuple({Py(0.56), Py(1.26)})); Vec _u15154 = unpack(_t15153, 2); (*AR__c) = _u15154[0]; (*FE__c) = _u15154[1]; }  // the arms: arcs of a circle, tapering out
-        [&] { Py _a15155 = call((*aq__c), {Py(-0.08), Py(-1.6), Py(0)}); Py _a15156 = call((*aq__c), {Py(0.08), Py(-1.6), Py(0)}); Py _a15157 = Py(0.085); Py _a15158 = Py(8); Py _a15159 = P[S("iron")]; return addpy::cylinder(_a15155, _a15156, _a15157, _a15158, _a15159); }();  // from a thick crown, each ending in a bill
+        { Py _t15134 = K(tuple({Py(0.56), Py(1.26)})); Vec _u15135 = unpack(_t15134, 2); (*AR__c) = _u15135[0]; (*FE__c) = _u15135[1]; }  // the arms: arcs of a circle, tapering out
+        [&] { Py _a15136 = call((*aq__c), {Py(-0.08), Py(-1.6), Py(0)}); Py _a15137 = call((*aq__c), {Py(0.08), Py(-1.6), Py(0)}); Py _a15138 = Py(0.085); Py _a15139 = Py(8); Py _a15140 = P[S("iron")]; return addpy::cylinder(_a15136, _a15137, _a15138, _a15139, _a15140); }();  // from a thick crown, each ending in a bill
         (*ra__c) = func(sig("lambda", {"f_"}, {MISSING_ARG}, 1), [FE__c](Vec& _A_) -> Py { Py f_ = _A_[0]; return 0.062 - 0.026 * f_ / (*FE__c); });  // (a point); on its inner side near the end
         (*pal__c) = func(sig("lambda", {"sA", "f_", "v_", "n_"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG}, 4), [AR__c, aq__c](Vec& _A_) -> Py { Py sA = _A_[0]; Py f_ = _A_[1]; Py v_ = _A_[2]; Py n_ = _A_[3]; return call((*aq__c), {n_, Py(-1.6) + (*AR__c) * (1 - addpy::cos(f_)) + v_ * addpy::cos(f_), sA * ((*AR__c) - v_) * addpy::sin(f_)}); });  // a palm,
         (*bill__c) = func(sig("lambda", {"sA", "d_"}, {MISSING_ARG, MISSING_ARG}, 2), [AR__c, FE__c, aq__c](Vec& _A_) -> Py { Py sA = _A_[0]; Py d_ = _A_[1]; return call((*aq__c), {Py(0), Py(-1.6) + (*AR__c) * (1 - addpy::cos((*FE__c))) + d_ * addpy::sin((*FE__c)), sA * ((*AR__c) * addpy::sin((*FE__c)) + d_ * addpy::cos((*FE__c)))}); });
-        arm = func(sig("lambda", {"sA"}, {MISSING_ARG}, 1), [FE__c, bill__c, pal__c](Vec& _A_) -> Py { Py sA = _A_[0]; return [&] { Py _t15160 = [&](Range _it15162) { Py j; Py _r15163 = list(); for (Py _x15164 : _it15162) { j = _x15164; L_(_r15163)->v.push_back(call((*pal__c), {sA, (*FE__c) * j / 10.0, Py(0), Py(0)})); } return _r15163; }(range(Py(11))); Py _t15161 = list({call((*bill__c), {sA, Py(0.05)}), call((*bill__c), {sA, Py(0.1)})}); return _t15160 + _t15161; }(); });  // a spade of plate
-        (*rs__c) = [&](Range _it15165) { Py j; Py _r15166 = list(); for (Py _x15167 : _it15165) { j = _x15167; L_(_r15166)->v.push_back(call((*ra__c), {(*FE__c) * j / 10.0})); } return _r15166; }(range(Py(11))) + list({Py(0.024), Py(0.004)});  // square to their plane (f_ round the arc,
+        arm = func(sig("lambda", {"sA"}, {MISSING_ARG}, 1), [FE__c, bill__c, pal__c](Vec& _A_) -> Py { Py sA = _A_[0]; return [&] { Py _t15141 = [&](Range _it15143) { Py j; Py _r15144 = list(); for (Py _x15145 : _it15143) { j = _x15145; L_(_r15144)->v.push_back(call((*pal__c), {sA, (*FE__c) * j / 10.0, Py(0), Py(0)})); } return _r15144; }(range(Py(11))); Py _t15142 = list({call((*bill__c), {sA, Py(0.05)}), call((*bill__c), {sA, Py(0.1)})}); return _t15141 + _t15142; }(); });  // a spade of plate
+        (*rs__c) = [&](Range _it15146) { Py j; Py _r15147 = list(); for (Py _x15148 : _it15146) { j = _x15148; L_(_r15147)->v.push_back(call((*ra__c), {(*FE__c) * j / 10.0})); } return _r15147; }(range(Py(11))) + list({Py(0.024), Py(0.004)});  // square to their plane (f_ round the arc,
         (*rs__c) = slice((*rs__c), None, None, Py(-1)) + slice((*rs__c), Py(1), None);  // v_ in from it, n_ out)
-        addpy::polyline([&] { Py _t15168 = slice(call(arm, {Py(-1)}), None, None, Py(-1)); Py _t15169 = slice(call(arm, {Py(1)}), Py(1), None); return _t15168 + _t15169; }(), func(sig("lambda", {"u"}, {MISSING_ARG}, 1), [rs__c](Vec& _A_) -> Py { Py u = _A_[0]; return (*rs__c)[int_(round_(u * (len((*rs__c)) - 1)))]; }), Py(8), P[S("iron")]);
+        addpy::polyline([&] { Py _t15149 = slice(call(arm, {Py(-1)}), None, None, Py(-1)); Py _t15150 = slice(call(arm, {Py(1)}), Py(1), None); return _t15149 + _t15150; }(), func(sig("lambda", {"u"}, {MISSING_ARG}, 1), [rs__c](Vec& _A_) -> Py { Py u = _A_[0]; return (*rs__c)[int_(round_(u * (len((*rs__c)) - 1)))]; }), Py(8), P[S("iron")]);
         PALM = K(tuple({K(tuple({Py(0.0), Py(0.085)})), K(tuple({Py(0.12), Py(0.12)})), K(tuple({Py(0.4), Py(0.115)})), K(tuple({Py(0.7), Py(0.075)})), K(tuple({Py(1.0), Py(0.012)}))}));  // (its half-width, from the crown's end)
-        palm = func(sig("lambda", {"sA", "f_", "w_"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG}, 3), [pal__c, ra__c](Vec& _A_) -> Py { Py sA = _A_[0]; Py f_ = _A_[1]; Py w_ = _A_[2]; return [&](Each _it15170) { Py n_; Py v_; Py _r15171 = list(); for (Py _x15172 : _it15170) { Vec _u15173 = unpack(_x15172, 2); v_ = _u15173[0]; n_ = _u15173[1]; L_(_r15171)->v.push_back(call((*pal__c), {sA, f_, call((*ra__c), {f_}) + v_, n_})); } return _r15171; }(each(tuple({tuple({Py(-0.012), -w_}), tuple({Py(-0.012), w_}), tuple({Py(0.018), w_}), tuple({Py(0.018), -w_})}))); });
-        for (Py _v15174 : each(K(tuple({Py(-1), Py(1)})))) {
-            sA = _v15174;
-            addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft([&](Each _it15175) { Py u_; Py w_; Py _r15176 = list(); for (Py _x15177 : _it15175) { Vec _u15178 = unpack(_x15177, 2); u_ = _u15178[0]; w_ = _u15178[1]; L_(_r15176)->v.push_back(call(palm, {sA, (*FE__c) - 0.52 + 0.5 * u_, w_})); } return _r15176; }(each(PALM)), P[S("iron")]); })));
+        palm = func(sig("lambda", {"sA", "f_", "w_"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG}, 3), [pal__c, ra__c](Vec& _A_) -> Py { Py sA = _A_[0]; Py f_ = _A_[1]; Py w_ = _A_[2]; return [&](Each _it15151) { Py n_; Py v_; Py _r15152 = list(); for (Py _x15153 : _it15151) { Vec _u15154 = unpack(_x15153, 2); v_ = _u15154[0]; n_ = _u15154[1]; L_(_r15152)->v.push_back(call((*pal__c), {sA, f_, call((*ra__c), {f_}) + v_, n_})); } return _r15152; }(each(tuple({tuple({Py(-0.012), -w_}), tuple({Py(-0.012), w_}), tuple({Py(0.018), w_}), tuple({Py(0.018), -w_})}))); });
+        for (Py _v15155 : each(K(tuple({Py(-1), Py(1)})))) {
+            sA = _v15155;
+            addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft([&](Each _it15156) { Py u_; Py w_; Py _r15157 = list(); for (Py _x15158 : _it15156) { Vec _u15159 = unpack(_x15158, 2); u_ = _u15159[0]; w_ = _u15159[1]; L_(_r15157)->v.push_back(call(palm, {sA, (*FE__c) - 0.52 + 0.5 * u_, w_})); } return _r15157; }(each(PALM)), P[S("iron")]); })));
         }
         // the hawse hole, a little forward of the anchor and below the sheer: a bore through the bow, the way the
         // anchor's chain comes in -- from its ring, from the side of the ring towards the hole, clear of the shank's
         // boss -- lined with an iron pipe standing out of an iron plate riveted on the strakes, a lip round its mouth,
         // dark deep in (as the drawbridge's chains go into the gate); and the chain from the ring into it
         th = call((*t_at__c), {call((*xs__c), {t}) + 0.32});
-        fh = 0.46 / ([&] { Py _t15179 = call((*sheer__c), {th}); Py _t15180 = call((*keel__c), {th}); return _t15179 - _t15180; }());
-        { Py _t15181 = tuple({call(normal_at, {th, fh, sg}), call((*skin__c), {th, fh, sg})}); Vec _u15182 = unpack(_t15181, 2); nh = _u15182[0]; ph = _u15182[1]; }
-        { Py _t15183 = tuple({list({(*tpx__c), Py(0.0), (*tpz__c)}), list({Py(0.0), Py(1.0), Py(0.0)})}); Vec _u15184 = unpack(_t15183, 2); Tv = _u15184[0]; Yv = _u15184[1]; }
-        { Py _t15185 = tuple({call((*aq__c), {Py(0), 0.002 + RR, Py(0)}), call((*aq__c), {Py(0), 0.002 + RR, Py(0)}), Py(0.0)}); Vec _u15186 = unpack(_t15185, 3); rc = _u15186[0]; (*pa__c) = _u15186[1]; phi = _u15186[2]; }
-        for (Py _v15187 : range(Py(5))) {  // (where on the ring: towards the
-            _ = _v15187;
+        fh = 0.46 / ([&] { Py _t15160 = call((*sheer__c), {th}); Py _t15161 = call((*keel__c), {th}); return _t15160 - _t15161; }());
+        { Py _t15162 = tuple({call(normal_at, {th, fh, sg}), call((*skin__c), {th, fh, sg})}); Vec _u15163 = unpack(_t15162, 2); nh = _u15163[0]; ph = _u15163[1]; }
+        { Py _t15164 = tuple({list({(*tpx__c), Py(0.0), (*tpz__c)}), list({Py(0.0), Py(1.0), Py(0.0)})}); Vec _u15165 = unpack(_t15164, 2); Tv = _u15165[0]; Yv = _u15165[1]; }
+        { Py _t15166 = tuple({call((*aq__c), {Py(0), 0.002 + RR, Py(0)}), call((*aq__c), {Py(0), 0.002 + RR, Py(0)}), Py(0.0)}); Vec _u15167 = unpack(_t15166, 3); rc = _u15167[0]; (*pa__c) = _u15167[1]; phi = _u15167[2]; }
+        for (Py _v15168 : range(Py(5))) {  // (where on the ring: towards the
+            _ = _v15168;
             dd = vsub(ph, (*pa__c));  // hole, seen in the ring's plane)
             phi = addpy::atan2(_dot(dd, Tv), -_dot(dd, Yv));
-            (*pa__c) = [&](Range _it15188) { Py k; Py _r15189 = list(); for (Py _x15190 : _it15188) { k = _x15190; L_(_r15189)->v.push_back(rc[k] + RR * (addpy::sin(phi) * Tv[k] - addpy::cos(phi) * Yv[k])); } return _r15189; }(range(Py(3)));
+            (*pa__c) = [&](Range _it15169) { Py k; Py _r15170 = list(); for (Py _x15171 : _it15169) { k = _x15171; L_(_r15170)->v.push_back(rc[k] + RR * (addpy::sin(phi) * Tv[k] - addpy::cos(phi) * Yv[k])); } return _r15170; }(range(Py(3)));
         }
         d = vunit(vsub(ph, (*pa__c)));  // (the way in)
         cd = _dot(d, nh);
-        e1 = vunit([&](Range _it15191) { Py k; Py _r15192 = list(); for (Py _x15193 : _it15191) { k = _x15193; L_(_r15192)->v.push_back(Yv[k] - nh[k] * nh[1]); } return _r15192; }(range(Py(3))));
+        e1 = vunit([&](Range _it15172) { Py k; Py _r15173 = list(); for (Py _x15174 : _it15172) { k = _x15174; L_(_r15173)->v.push_back(Yv[k] - nh[k] * nh[1]); } return _r15173; }(range(Py(3))));
         e2 = vcross(nh, e1);
         addpy::cylinder(_at(ph, nh, Py(-0.005)), _at(ph, nh, Py(0.065)), Py(0.2), Py(16), P[S("iron")]);  // the plate,
-        for (Py _v15194 : range(Py(10))) {  // its rivets,
-            i = _v15194;
+        for (Py _v15175 : range(Py(10))) {  // its rivets,
+            i = _v15175;
             a = 2 * addpy::pi * (i + 0.5) / 10;
-            addpy::hemisphere([&](Range _it15195) { Py k; Py _r15196 = list(); for (Py _x15197 : _it15195) { k = _x15197; L_(_r15196)->v.push_back(ph[k] + nh[k] * 0.065 + 0.165 * (addpy::cos(a) * e1[k] + addpy::sin(a) * e2[k])); } return _r15196; }(range(Py(3))), Py(0.018), Py(3), P[S("iron")], nh);
+            addpy::hemisphere([&](Range _it15176) { Py k; Py _r15177 = list(); for (Py _x15178 : _it15176) { k = _x15178; L_(_r15177)->v.push_back(ph[k] + nh[k] * 0.065 + 0.165 * (addpy::cos(a) * e1[k] + addpy::sin(a) * e2[k])); } return _r15177; }(range(Py(3))), Py(0.018), Py(3), P[S("iron")], nh);
         }
         sf = 0.065 / cd;  // (where the way in meets the plate's face)
-        addpy::mesh(addpy::cut(addpy::make([&] { addpy::pipe(_at(ph, d, sf + 0.06), _at(ph, d, sf - 0.14), Py(0.11), Py(0.088), Py(16), P[S("iron")]); }), _at(ph, nh, Py(0.065)), [&](Each _it15198) { Py c; Py _r15199 = list(); for (Py _x15200 : _it15198) { c = _x15200; L_(_r15199)->v.push_back(-c); } return _r15199; }(each(nh)), False));  // the pipe, standing out of it,
+        addpy::mesh(addpy::cut(addpy::make([&] { addpy::pipe(_at(ph, d, sf + 0.06), _at(ph, d, sf - 0.14), Py(0.11), Py(0.088), Py(16), P[S("iron")]); }), _at(ph, nh, Py(0.065)), [&](Each _it15179) { Py c; Py _r15180 = list(); for (Py _x15181 : _it15179) { c = _x15181; L_(_r15180)->v.push_back(-c); } return _r15180; }(each(nh)), False));  // the pipe, standing out of it,
         addpy::torus(_at(ph, d, sf - 0.14), Py(0.099), Py(0.014), Py(16), Py(5), P[S("iron")], d);  // the lip round its mouth
         u1 = vunit(vcross(d, nh));
         u2 = vcross(d, u1);
         dark = list({});  // and its bottom, dark: on the plate's
-        for (Py _v15201 : range(Py(16))) {  // face, inside the pipe
-            i = _v15201;
+        for (Py _v15182 : range(Py(16))) {  // face, inside the pipe
+            i = _v15182;
             a = 2 * addpy::pi * i / 16;
-            q = [&](Range _it15202) { Py k; Py _r15203 = list(); for (Py _x15204 : _it15202) { k = _x15204; L_(_r15203)->v.push_back(ph[k] + d[k] * sf + 0.085 * (addpy::cos(a) * u1[k] + addpy::sin(a) * u2[k])); } return _r15203; }(range(Py(3)));
+            q = [&](Range _it15183) { Py k; Py _r15184 = list(); for (Py _x15185 : _it15183) { k = _x15185; L_(_r15184)->v.push_back(ph[k] + d[k] * sf + 0.085 * (addpy::cos(a) * u1[k] + addpy::sin(a) * u2[k])); } return _r15184; }(range(Py(3)));
             dark.append(_at(q, d, (0.066 - _dot(vsub(q, ph), nh)) / cd));
         }
         addpy::mesh(extrude(dark, _times(nh, Py(0.001)), P[S("black")]));
-        { Py _t15205 = K(tuple({Py(0.055), Py(0.014)})); Vec _u15206 = unpack(_t15205, 2); LK = _u15206[0]; TK_ = _u15206[1]; }  // the chain: its first link round the
+        { Py _t15186 = K(tuple({Py(0.055), Py(0.014)})); Vec _u15187 = unpack(_t15186, 2); LK = _u15187[0]; TK_ = _u15187[1]; }  // the chain: its first link round the
         c0 = _at((*pa__c), d, 2.1 * LK - TK_ - 0.024);  // ring's bar there, square to it; the
         pitch = 2.2 * LK + 2 * LK - 2.25 * TK_;  // last that would stop short of the
         tan_ = addpy::sqrt(max2(Py(0.0), 1.0 - cd * cd)) / abs_(cd);  // pipe's dark bottom, and one more,
         n_ = int_((sf - (LK + TK_ + 0.003) * tan_ - 0.005 - 2.1 * LK - _dot(vsub(c0, ph), d)) / pitch) + 1;  // hanging in it and
-        tau = [&](Range _it15207) { Py k; Py _r15208 = list(); for (Py _x15209 : _it15207) { k = _x15209; L_(_r15208)->v.push_back(addpy::cos(phi) * Tv[k] + addpy::sin(phi) * Yv[k]); } return _r15208; }(range(Py(3)));  // going on down into the dark (its end
+        tau = [&](Range _it15188) { Py k; Py _r15189 = list(); for (Py _x15190 : _it15188) { k = _x15190; L_(_r15189)->v.push_back(addpy::cos(phi) * Tv[k] + addpy::sin(phi) * Yv[k]); } return _r15189; }(range(Py(3)));  // going on down into the dark (its end
         chain(c0, _at(c0, d, n_ * pitch + 1e-06), LK, TK_, P[S("iron")], MISSING_ARG, vcross(d, tau));  // in the planking)
     }
     // ---- on deck: the gratings off the hatch, stacked aft of the mast; a capstan, barrels, coils of rope
     GR = K(tuple({Py(-0.66), Py(1.7)}));  // (where the gratings lie)
     addpy::push();
-    { Py _t15210 = tuple({(HB - HA + 0.12) / 2, Py(1.78)}); Vec _u15211 = unpack(_t15210, 2); gl = _u15211[0]; gw = _u15211[1]; }
-    for (Py _v15212 : range(Py(2))) {  // two gratings, one on the other: a frame,
-        q = _v15212;
+    { Py _t15191 = tuple({(HB - HA + 0.12) / 2, Py(1.78)}); Vec _u15192 = unpack(_t15191, 2); gl = _u15192[0]; gw = _u15192[1]; }
+    for (Py _v15193 : range(Py(2))) {  // two gratings, one on the other: a frame,
+        q = _v15193;
         yq = 0.085 * q;  // bars one way, laths the other on them
-        for (Py _v15213 : each(K(tuple({Py(-1), Py(1)})))) {
-            sx = _v15213;
+        for (Py _v15194 : each(K(tuple({Py(-1), Py(1)})))) {
+            sx = _v15194;
             addpy::cuboid(list({sx * (gl / 2 - 0.04), yq + 0.03, Py(0)}), list({Py(0.08), Py(0.06), gw}), P[S("wood_dark")]);
             addpy::cuboid(list({Py(0), yq + 0.03, sx * (gw / 2 - 0.04)}), list({gl - 0.16, Py(0.06), Py(0.08)}), P[S("wood_dark")]);
         }
-        for (Py _v15214 : range(Py(4))) {
-            i = _v15214;
+        for (Py _v15195 : range(Py(4))) {
+            i = _v15195;
             addpy::cuboid(list({Py(0), yq + 0.02, Py(-0.6) + 0.4 * i}), list({gl - 0.16, Py(0.04), Py(0.07)}), P[S("wood")]);
         }
-        for (Py _v15215 : range(Py(3))) {
-            i = _v15215;
+        for (Py _v15196 : range(Py(3))) {
+            i = _v15196;
             addpy::cuboid(list({Py(-0.36) + 0.36 * i, yq + 0.06, Py(0)}), list({Py(0.07), Py(0.04), gw - 0.16}), P[S("wood")]);
         }
     }
     call(on_deck, {GR[0], GR[1], Py(0.037)});
     addpy::push();
     lathe(list({list({Py(0.0), Py(0)}), list({Py(0.45), Py(0)}), list({Py(0.4), Py(0.1)}), list({Py(0.32), Py(0.2)}), list({Py(0.3), Py(0.75)}), list({Py(0.42), Py(0.85)}), list({Py(0.42), Py(1.05)}), list({Py(0.0), Py(1.05)})}), list({Py(0), Py(0), Py(0)}), Py(12), P[S("wood")]);
-    for (Py _v15216 : range(Py(4))) {
-        a = _v15216;
+    for (Py _v15197 : range(Py(4))) {
+        a = _v15197;
         addpy::cylinder(list({Py(-0.9) * addpy::cos(a * addpy::pi / 4), Py(0.95), Py(-0.9) * addpy::sin(a * addpy::pi / 4)}), list({0.9 * addpy::cos(a * addpy::pi / 4), Py(0.95), 0.9 * addpy::sin(a * addpy::pi / 4)}), Py(0.04), Py(6), P[S("wood_dark")]);
     }
     call(on_deck, {Py(7.4), Py(0.0), Py(0.036)});
-    for (Py _v15217 : each(enumerate_(DECK_BARRELS, Py(0)))) {  // (0.84 apart: none touching)
-        Vec _u15218 = unpack(_v15217, 2);
-        (*k__c) = _u15218[0];
-        Vec _u15219 = unpack(_u15218[1], 2);
-        bx = _u15219[0];
-        bz = _u15219[1];
+    for (Py _v15198 : each(enumerate_(DECK_BARRELS, Py(0)))) {  // (0.84 apart: none touching)
+        Vec _u15199 = unpack(_v15198, 2);
+        (*k__c) = _u15199[0];
+        Vec _u15200 = unpack(_u15199[1], 2);
+        bx = _u15200[0];
+        bz = _u15200[1];
         addpy::push();
         barrel(list({Py(0), Py(0), Py(0)}), Py(0.4), Py(1.0));
         call(on_deck, {bx, bz, Py(0.038)});
     }
-    for (Py _v15220 : each(K(tuple({K(tuple({Py(-2.5), Py(-1.8)})), K(tuple({Py(2.6), Py(2.2)}))})))) {
-        Vec _u15221 = unpack(_v15220, 2);
-        cx_ = _u15221[0];
-        cz_ = _u15221[1];
+    for (Py _v15201 : each(K(tuple({K(tuple({Py(-2.5), Py(-1.8)})), K(tuple({Py(2.6), Py(2.2)}))})))) {
+        Vec _u15202 = unpack(_v15201, 2);
+        cx_ = _u15202[0];
+        cz_ = _u15202[1];
         addpy::push();
         addpy::torus(list({Py(0), Py(0.08), Py(0)}), Py(0.45), Py(0.08), Py(12), Py(6), P[S("rope")]);
         addpy::torus(list({Py(0), Py(0.22), Py(0)}), Py(0.38), Py(0.08), Py(12), Py(6), P[S("rope")]);
         call(on_deck, {cx_, cz_, Py(0.038)});
     }
-    things = list({tuple({(HA + HB) / 2, Py(0.0), (HB - HA) / 2 + 0.14, Py(0.95)}), K(tuple({Py(7.4), Py(0.0), Py(0.5), Py(0.5)})), tuple({(*MX__c), Py(0.0), Py(0.76), Py(0.76)}), tuple({GR[0], GR[1], gl / 2 + 0.06, Py(0.95)}), tuple({heel[0], Py(0.0), Py(0.5), Py(0.3)}), tuple({heel[0] + 0.35, Py(0.28), Py(0.12), Py(0.12)}), tuple({heel[0] + 0.35, Py(-0.28), Py(0.12), Py(0.12)})}) + [&](Each _it15222) { Py bx; Py bz; Py _r15223 = list(); for (Py _x15224 : _it15222) { Vec _u15225 = unpack(_x15224, 2); bx = _u15225[0]; bz = _u15225[1]; L_(_r15223)->v.push_back(tuple({bx, bz, Py(0.45), Py(0.45)})); } return _r15223; }(each(DECK_BARRELS)) + [&](Each _it15226) { Py cx_; Py cz_; Py _r15227 = list(); for (Py _x15228 : _it15226) { Vec _u15229 = unpack(_x15228, 2); cx_ = _u15229[0]; cz_ = _u15229[1]; L_(_r15227)->v.push_back(tuple({cx_, cz_, Py(0.6), Py(0.6)})); } return _r15227; }(each(K(tuple({K(tuple({Py(-2.5), Py(-1.8)})), K(tuple({Py(2.6), Py(2.2)}))})))) + [&](Each _it15230) { Py cf; Py cx_; Py cz_; Py task; Py _r15231 = list(); for (Py _x15232 : _it15230) { Vec _u15233 = unpack(_x15232, 4); cx_ = _u15233[0]; cz_ = _u15233[1]; cf = _u15233[2]; task = _u15233[3]; if (!(task != S("captain"))) continue; L_(_r15231)->v.push_back(tuple({cx_, cz_, Py(0.9), Py(0.9)})); } return _r15231; }(each(crew)) + list({K(tuple({Py(-8.2), Py(0.0), Py(0.75), Py(1.15)})), K(tuple({Py(-9.5), Py(1.08), Py(1.1), Py(0.75)})), K(tuple({Py(-10.6), Py(-0.4), Py(0.35), Py(0.45)}))});  // every deck board nailed to each beam with two nails -- but where something stands on it (in the cabin: its furniture)
-    (*in_cabin__c) = func(sig("lambda", {"x", "z"}, {MISSING_ARG, MISSING_ARG}, 2), [x0__c, x1__c, zw___c](Vec& _A_) -> Py { Py x = _A_[0]; Py z = _A_[1]; return [&]() -> Py { Py _t15234 = Py([&]() -> bool { Py _t15235 = (*x0__c) - 0.1; Py _t15236 = x; if (!(_t15235 < _t15236)) return false; Py _t15237 = (*x1__c) + 0.1; return _t15236 < _t15237; }()); if (!truthy(_t15234)) return _t15234; _t15234 = Py(abs_(z) < (call((*zw___c), {x}) + 0.1)); return _t15234; }(); });
-    near_wall = func(sig("lambda", {"x", "z"}, {MISSING_ARG, MISSING_ARG}, 2), [in_cabin__c, x0__c, x1__c, zw___c](Vec& _A_) -> Py { Py x = _A_[0]; Py z = _A_[1]; return (truthy(call((*in_cabin__c), {x, z})) ? [&]() -> Py { Py _t15238 = Py(x < ((*x0__c) + 0.2)); if (truthy(_t15238)) return _t15238; _t15238 = Py(x > ((*x1__c) - 0.2)); if (truthy(_t15238)) return _t15238; _t15238 = Py(abs_(z) > (call((*zw___c), {x}) - 0.25)); return _t15238; }() : False); });
-    for (Py _v15239 : each((*deck_boards__c))) {
-        Vec _u15240 = unpack(_v15239, 4);
-        ta = _u15240[0];
-        tb = _u15240[1];
-        za = _u15240[2];
-        zb = _u15240[3];
-        for (Py _v15241 : each(BEAMS)) {
-            t = _v15241;
-            if ([&]() -> bool { Py _t15242 = ta + 0.05; Py _t15243 = call((*xs__c), {t}); if (!(_t15242 < _t15243)) return false; Py _t15244 = tb - 0.05; return _t15243 < _t15244; }()) {
-                for (Py _v15245 : each(tuple({(za + zb) / 2 - 0.07, (za + zb) / 2 + 0.07}))) {
-                    z = _v15245;
-                    if (!([&](Each _it15246) -> bool { Py hx; Py hz; Py qx; Py qz; for (Py _x15247 : _it15246) { Vec _u15248 = unpack(_x15247, 4); qx = _u15248[0]; qz = _u15248[1]; hx = _u15248[2]; hz = _u15248[3]; if (((abs_(call((*xs__c), {t}) - qx) < hx) && (abs_(z - qz) < hz))) return true; } return false; }(each(things))) && !truthy(call(near_wall, {call((*xs__c), {t}), z})) && (abs_(z) < (call((*gunwale__c), {call((*xs__c), {t})}) - (*W_M__c) - 0.03))) {
-                        [&] { Py _a15249 = call((*xs__c), {t}); Py _a15250 = call((*sheer__c), {t}) + 0.03; Py _a15251 = Py(4); return floor_nail(_a15249, _a15250, z, _a15251); }();
+    things = list({tuple({(HA + HB) / 2, Py(0.0), (HB - HA) / 2 + 0.14, Py(0.95)}), K(tuple({Py(7.4), Py(0.0), Py(0.5), Py(0.5)})), tuple({(*MX__c), Py(0.0), Py(0.76), Py(0.76)}), tuple({GR[0], GR[1], gl / 2 + 0.06, Py(0.95)}), tuple({heel[0], Py(0.0), Py(0.5), Py(0.3)}), tuple({heel[0] + 0.35, Py(0.28), Py(0.12), Py(0.12)}), tuple({heel[0] + 0.35, Py(-0.28), Py(0.12), Py(0.12)})}) + [&](Each _it15203) { Py bx; Py bz; Py _r15204 = list(); for (Py _x15205 : _it15203) { Vec _u15206 = unpack(_x15205, 2); bx = _u15206[0]; bz = _u15206[1]; L_(_r15204)->v.push_back(tuple({bx, bz, Py(0.45), Py(0.45)})); } return _r15204; }(each(DECK_BARRELS)) + [&](Each _it15207) { Py cx_; Py cz_; Py _r15208 = list(); for (Py _x15209 : _it15207) { Vec _u15210 = unpack(_x15209, 2); cx_ = _u15210[0]; cz_ = _u15210[1]; L_(_r15208)->v.push_back(tuple({cx_, cz_, Py(0.6), Py(0.6)})); } return _r15208; }(each(K(tuple({K(tuple({Py(-2.5), Py(-1.8)})), K(tuple({Py(2.6), Py(2.2)}))})))) + [&](Each _it15211) { Py cf; Py cx_; Py cz_; Py task; Py _r15212 = list(); for (Py _x15213 : _it15211) { Vec _u15214 = unpack(_x15213, 4); cx_ = _u15214[0]; cz_ = _u15214[1]; cf = _u15214[2]; task = _u15214[3]; if (!(task != S("captain"))) continue; L_(_r15212)->v.push_back(tuple({cx_, cz_, Py(0.9), Py(0.9)})); } return _r15212; }(each(crew)) + list({K(tuple({Py(-8.2), Py(0.0), Py(0.75), Py(1.15)})), K(tuple({Py(-9.5), Py(1.08), Py(1.1), Py(0.75)})), K(tuple({Py(-10.6), Py(-0.4), Py(0.35), Py(0.45)}))});  // every deck board nailed to each beam with two nails -- but where something stands on it (in the cabin: its furniture)
+    (*in_cabin__c) = func(sig("lambda", {"x", "z"}, {MISSING_ARG, MISSING_ARG}, 2), [x0__c, x1__c, zw___c](Vec& _A_) -> Py { Py x = _A_[0]; Py z = _A_[1]; return [&]() -> Py { Py _t15215 = Py([&]() -> bool { Py _t15216 = (*x0__c) - 0.1; Py _t15217 = x; if (!(_t15216 < _t15217)) return false; Py _t15218 = (*x1__c) + 0.1; return _t15217 < _t15218; }()); if (!truthy(_t15215)) return _t15215; _t15215 = Py(abs_(z) < (call((*zw___c), {x}) + 0.1)); return _t15215; }(); });
+    near_wall = func(sig("lambda", {"x", "z"}, {MISSING_ARG, MISSING_ARG}, 2), [in_cabin__c, x0__c, x1__c, zw___c](Vec& _A_) -> Py { Py x = _A_[0]; Py z = _A_[1]; return (truthy(call((*in_cabin__c), {x, z})) ? [&]() -> Py { Py _t15219 = Py(x < ((*x0__c) + 0.2)); if (truthy(_t15219)) return _t15219; _t15219 = Py(x > ((*x1__c) - 0.2)); if (truthy(_t15219)) return _t15219; _t15219 = Py(abs_(z) > (call((*zw___c), {x}) - 0.25)); return _t15219; }() : False); });
+    for (Py _v15220 : each((*deck_boards__c))) {
+        Vec _u15221 = unpack(_v15220, 4);
+        ta = _u15221[0];
+        tb = _u15221[1];
+        za = _u15221[2];
+        zb = _u15221[3];
+        for (Py _v15222 : each(BEAMS)) {
+            t = _v15222;
+            if ([&]() -> bool { Py _t15223 = ta + 0.05; Py _t15224 = call((*xs__c), {t}); if (!(_t15223 < _t15224)) return false; Py _t15225 = tb - 0.05; return _t15224 < _t15225; }()) {
+                for (Py _v15226 : each(tuple({(za + zb) / 2 - 0.07, (za + zb) / 2 + 0.07}))) {
+                    z = _v15226;
+                    if (!([&](Each _it15227) -> bool { Py hx; Py hz; Py qx; Py qz; for (Py _x15228 : _it15227) { Vec _u15229 = unpack(_x15228, 4); qx = _u15229[0]; qz = _u15229[1]; hx = _u15229[2]; hz = _u15229[3]; if (((abs_(call((*xs__c), {t}) - qx) < hx) && (abs_(z - qz) < hz))) return true; } return false; }(each(things))) && !truthy(call(near_wall, {call((*xs__c), {t}), z})) && (abs_(z) < (call((*gunwale__c), {call((*xs__c), {t})}) - (*W_M__c) - 0.03))) {
+                        [&] { Py _a15230 = call((*xs__c), {t}); Py _a15231 = call((*sheer__c), {t}) + 0.03; Py _a15232 = Py(4); return floor_nail(_a15230, _a15231, z, _a15232); }();
                     }
                 }
             }
         }
     }
     if (truthy(gangway)) {  // the gangway: a post at each end of
-        { Py _t15252 = gangway; Vec _u15253 = unpack(_t15252, 2); gx = _u15253[0]; quay = _u15253[1]; }  // the opening, the ramp resting on the
-        for (Py _v15254 : each(tuple({tuple({GAP[0], Py(0.08)}), tuple({GAP[1], Py(-0.08)})}))) {  // waterway and reaching down to the quay
-            Vec _u15255 = unpack(_v15254, 2);
-            t = _u15255[0];
-            e = _u15255[1];
-            yb_ = max_(L_([&](Each _it15256) { Py d_; Py _r15257 = list(); for (Py _x15258 : _it15256) { d_ = _x15258; L_(_r15257)->v.push_back(call((*deck_y__c), {call((*xs__c), {t}) + e + d_})); } return _r15257; }(each(K(tuple({Py(-0.08), Py(0.08)})))))->v, None, MISSING_ARG) + 0.031;
-            [&] { Py _a15259 = list({call((*xs__c), {t}) + e, (yb_ + call((*sheer__c), {t}) + 0.72) / 2, -(call((*half__c), {t}) - 0.055)}); Py _a15260 = list({Py(0.16), call((*sheer__c), {t}) + 0.72 - yb_, Py(0.17)}); Py _a15261 = P[S("wood_dark")]; return addpy::cuboid(_a15259, _a15260, _a15261); }();  // 1 in 4
+        { Py _t15233 = gangway; Vec _u15234 = unpack(_t15233, 2); gx = _u15234[0]; quay = _u15234[1]; }  // the opening, the ramp resting on the
+        for (Py _v15235 : each(tuple({tuple({GAP[0], Py(0.08)}), tuple({GAP[1], Py(-0.08)})}))) {  // waterway and reaching down to the quay
+            Vec _u15236 = unpack(_v15235, 2);
+            t = _u15236[0];
+            e = _u15236[1];
+            yb_ = max_(L_([&](Each _it15237) { Py d_; Py _r15238 = list(); for (Py _x15239 : _it15237) { d_ = _x15239; L_(_r15238)->v.push_back(call((*deck_y__c), {call((*xs__c), {t}) + e + d_})); } return _r15238; }(each(K(tuple({Py(-0.08), Py(0.08)})))))->v, None, MISSING_ARG) + 0.031;
+            [&] { Py _a15240 = list({call((*xs__c), {t}) + e, (yb_ + call((*sheer__c), {t}) + 0.72) / 2, -(call((*half__c), {t}) - 0.055)}); Py _a15241 = list({Py(0.16), call((*sheer__c), {t}) + 0.72 - yb_, Py(0.17)}); Py _a15242 = P[S("wood_dark")]; return addpy::cuboid(_a15240, _a15241, _a15242); }();  // 1 in 4
         }
-        { Py _t15262 = tuple({-call((*half__c), {call((*t_at__c), {gx})}), call((*sheer__c), {call((*t_at__c), {gx})})}); Vec _u15263 = unpack(_t15262, 2); edge = _u15263[0]; deck = _u15263[1]; }
+        { Py _t15243 = tuple({-call((*half__c), {call((*t_at__c), {gx})}), call((*sheer__c), {call((*t_at__c), {gx})})}); Vec _u15244 = unpack(_t15243, 2); edge = _u15244[0]; deck = _u15244[1]; }
         reach_ = (deck - quay) / 0.25;
         z_wo = call((*way_out__c), {gx + 0.9});  // (it rests on the waterway where the
-        deck = max_(L_([&](Each _it15264) { Py dx_; Py _r15265 = list(); for (Py _x15266 : _it15264) { dx_ = _x15266; L_(_r15265)->v.push_back(call((*deck_y__c), {gx + dx_})); } return _r15265; }(each(K(tuple({Py(-0.9), Py(0.0), Py(0.9)})))))->v, None, MISSING_ARG) + 0.037;  // deck is highest, on a chock cut to the
+        deck = max_(L_([&](Each _it15245) { Py dx_; Py _r15246 = list(); for (Py _x15247 : _it15245) { dx_ = _x15247; L_(_r15246)->v.push_back(call((*deck_y__c), {gx + dx_})); } return _r15246; }(each(K(tuple({Py(-0.9), Py(0.0), Py(0.9)})))))->v, None, MISSING_ARG) + 0.037;  // deck is highest, on a chock cut to the
         (*RA__c) = list({gx, deck + 0.04 + 0.25 * (z_wo + edge + 0.35), edge + 0.35});  // sheer where it is lower)
         (*RB__c) = list({gx, quay + 0.04, edge - reach_});
         ramp_under = func(sig("lambda", {"z"}, {MISSING_ARG}, 1), [RA__c](Vec& _A_) -> Py { Py z = _A_[0]; return (*RA__c)[1] - 0.04 - 0.25 * (abs_(z) - abs_((*RA__c)[2])); });
         rings = list({});
-        for (Py _v15267 : range(Py(7))) {
-            q = _v15267;
+        for (Py _v15248 : range(Py(7))) {
+            q = _v15248;
             x = gx - 0.88 + 1.76 * q / 6.0;
-            { Py _t15268 = tuple({call((*gunwale__c), {x}) - (*W_M__c) + 0.003, call((*way_out__c), {x}) - 0.002}); Vec _u15269 = unpack(_t15268, 2); zi_ = _u15269[0]; zo_ = _u15269[1]; }
+            { Py _t15249 = tuple({call((*gunwale__c), {x}) - (*W_M__c) + 0.003, call((*way_out__c), {x}) - 0.002}); Vec _u15250 = unpack(_t15249, 2); zi_ = _u15250[0]; zo_ = _u15250[1]; }
             rings.append(list({list({x, call(ramp_under, {zi_}) - 0.002, -zi_}), list({x, call(ramp_under, {zo_}) - 0.002, -zo_}), list({x, call((*deck_y__c), {x}) + 0.032, -zo_}), list({x, call((*deck_y__c), {x}) + 0.032, -zi_})}));
         }
         addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft(rings, P[S("wood_dark")]); })));
         addpy::beam((*RA__c), (*RB__c), Py(1.8), Py(0.08), shade_of(S("wood_light"), Py(1)));
         span = vlen(vsub((*RB__c), (*RA__c)));
-        for (Py _v15270 : range(Py(1), int_(span / 0.35))) {  // cleats for the hooves
-            c = _v15270;
-            p = [&](Range _it15271) { Py j; Py _r15272 = list(); for (Py _x15273 : _it15271) { j = _x15273; L_(_r15272)->v.push_back((*RA__c)[j] + ((*RB__c)[j] - (*RA__c)[j]) * c * 0.35 / span); } return _r15272; }(range(Py(3)));
+        for (Py _v15251 : range(Py(1), int_(span / 0.35))) {  // cleats for the hooves
+            c = _v15251;
+            p = [&](Range _it15252) { Py j; Py _r15253 = list(); for (Py _x15254 : _it15252) { j = _x15254; L_(_r15253)->v.push_back((*RA__c)[j] + ((*RB__c)[j] - (*RA__c)[j]) * c * 0.35 / span); } return _r15253; }(range(Py(3)));
             addpy::beam(list({gx - 0.8, p[1] + 0.065, p[2]}), list({gx + 0.8, p[1] + 0.065, p[2]}), Py(0.06), Py(0.05), P[S("wood")]);
         }
-        for (Py _v15274 : each(K(tuple({Py(-0.84), Py(0.84)})))) {  // the rails
-            sx = _v15274;
+        for (Py _v15255 : each(K(tuple({Py(-0.84), Py(0.84)})))) {  // the rails
+            sx = _v15255;
             tops = list({});
-            for (Py _v15275 : each(K(tuple({Py(0.12), Py(0.88)})))) {
-                f = _v15275;
-                p = [&](Range _it15276) { Py j; Py _r15277 = list(); for (Py _x15278 : _it15276) { j = _x15278; L_(_r15277)->v.push_back((*RA__c)[j] + ((*RB__c)[j] - (*RA__c)[j]) * f); } return _r15277; }(range(Py(3)));
+            for (Py _v15256 : each(K(tuple({Py(0.12), Py(0.88)})))) {
+                f = _v15256;
+                p = [&](Range _it15257) { Py j; Py _r15258 = list(); for (Py _x15259 : _it15257) { j = _x15259; L_(_r15258)->v.push_back((*RA__c)[j] + ((*RB__c)[j] - (*RA__c)[j]) * f); } return _r15258; }(range(Py(3)));
                 addpy::cylinder(list({gx + sx, p[1] + 0.04, p[2]}), list({gx + sx, p[1] + 0.95, p[2]}), Py(0.04), Py(6), P[S("wood_dark")]);
                 tops.append(list({gx + sx, p[1] + 0.95, p[2]}));
             }
@@ -49444,33 +49398,33 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         }
     }
     ties = list({});  // timberheads on the cap rail to make
-    for (Py _v15279 : each(K(tuple({Py(-9.4), Py(9.4)})))) {  // the mooring lines fast to, on either
-        xl = _v15279;
-        for (Py _v15280 : each(K(tuple({Py(-1), Py(1)})))) {  // side, tall enough for two lines to be
-            sg = _v15280;
+    for (Py _v15260 : each(K(tuple({Py(-9.4), Py(9.4)})))) {  // the mooring lines fast to, on either
+        xl = _v15260;
+        for (Py _v15261 : each(K(tuple({Py(-1), Py(1)})))) {  // side, tall enough for two lines to be
+            sg = _v15261;
             t = call((*t_at__c), {xl});  // belayed round each (see mooring_line);
-            { Py _t15281 = call((*rim__c), {t, sg}); Vec _u15282 = unpack(_t15281, 2); p = _u15282[0]; Vec _u15283 = unpack(_u15282[1], 2); (*nx__c) = _u15283[0]; (*nz__c) = _u15283[1]; }  // fenders, bundles of rope, hung on the
-            [&] { Py _a15284 = call((*by_rim__c), {t, sg, Py(-0.04), Py(0.61)}); Py _a15285 = call((*by_rim__c), {t, sg, Py(-0.04), Py(1.02)}); Py _a15286 = Py(0.16); Py _a15287 = Py(0.16); Py _a15288 = P[S("wood_dark")]; Py _a15289 = tuple({(*nx__c), Py(0), (*nz__c)}); return addpy::beam(_a15284, _a15285, _a15286, _a15287, _a15288, _a15289); }();  // starboard
+            { Py _t15262 = call((*rim__c), {t, sg}); Vec _u15263 = unpack(_t15262, 2); p = _u15263[0]; Vec _u15264 = unpack(_u15263[1], 2); (*nx__c) = _u15264[0]; (*nz__c) = _u15264[1]; }  // fenders, bundles of rope, hung on the
+            [&] { Py _a15265 = call((*by_rim__c), {t, sg, Py(-0.04), Py(0.61)}); Py _a15266 = call((*by_rim__c), {t, sg, Py(-0.04), Py(1.02)}); Py _a15267 = Py(0.16); Py _a15268 = Py(0.16); Py _a15269 = P[S("wood_dark")]; Py _a15270 = tuple({(*nx__c), Py(0), (*nz__c)}); return addpy::beam(_a15265, _a15266, _a15267, _a15268, _a15269, _a15270); }();  // starboard
             if (sg < 0) {  // side
                 ties.append(tuple({xl, call((*by_rim__c), {t, sg, Py(-0.04), Py(0.61)}), tuple({(*nx__c), (*nz__c)})}));
             }
         }
     }
-    for (Py _v15290 : each(K(tuple({Py(-6.0), Py(0.0), Py(6.0)})))) {
-        xl = _v15290;
+    for (Py _v15271 : each(K(tuple({Py(-6.0), Py(0.0), Py(6.0)})))) {
+        xl = _v15271;
         t = call((*t_at__c), {xl});
-        c = list({call((*xs__c), {t}), Py(0.72), -(([&]() -> Py { Py _t15291 = call((*side__c), {t, Py(0.72)}); if (truthy(_t15291)) return _t15291; _t15291 = call((*half__c), {t}); return _t15291; }()) + 0.05 + 0.24)});
+        c = list({call((*xs__c), {t}), Py(0.72), -(([&]() -> Py { Py _t15272 = call((*side__c), {t, Py(0.72)}); if (truthy(_t15272)) return _t15272; _t15272 = call((*half__c), {t}); return _t15272; }()) + 0.05 + 0.24)});
         addpy::mesh(addpy::move(addpy::stretch(addpy::make([&] { addpy::sphere(list({Py(0), Py(0), Py(0)}), Py(0.24), Py(8), P[S("rope")]); }), list({Py(1.0), Py(1.6), Py(1.0)}), K(tuple({Py(0), Py(0), Py(0)}))), c));
         addpy::cylinder(list({c[0], Py(0.72) + 0.38, c[2]}), call((*by_rim__c), {t, Py(-1), Py(0.0), Py(0.6)}), Py(0.02), Py(4), P[S("rope")]);
     }
-    for (Py _v15292 : each(enumerate_(crew, Py(0)))) {  // the crew: the master on the castle's
-        Vec _u15293 = unpack(_v15292, 2);
-        (*k__c) = _u15293[0];
-        Vec _u15294 = unpack(_u15293[1], 4);
-        cx_ = _u15294[0];
-        cz_ = _u15294[1];
-        cf = _u15294[2];
-        task = _u15294[3];
+    for (Py _v15273 : each(enumerate_(crew, Py(0)))) {  // the crew: the master on the castle's
+        Vec _u15274 = unpack(_v15273, 2);
+        (*k__c) = _u15274[0];
+        Vec _u15275 = unpack(_u15274[1], 4);
+        cx_ = _u15275[0];
+        cz_ = _u15275[1];
+        cf = _u15275[2];
+        task = _u15275[3];
         if (task == S("captain")) {  // deck, sailors at work on the main one
             captain(list({cx_, top + 0.12, cz_}), cf);
         } else {
@@ -49491,11 +49445,11 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         Py lo;
         Py mid;
         // How far down the side (``f``) the point ``d`` in from the planking at height ``y`` lies.
-        { Py _t15295 = K(tuple({Py(0.0), Py(0.993)})); Vec _u15296 = unpack(_t15295, 2); lo = _u15296[0]; hi = _u15296[1]; }
-        for (Py _v15297 : range(Py(30))) {
-            _ = _v15297;
+        { Py _t15276 = K(tuple({Py(0.0), Py(0.993)})); Vec _u15277 = unpack(_t15276, 2); lo = _u15277[0]; hi = _u15277[1]; }
+        for (Py _v15278 : range(Py(30))) {
+            _ = _v15278;
             mid = (lo + hi) / 2;
-            { Py _t15298 = (call((*hull_at__c), {t, mid, sg, -d})[1] > y ? tuple({mid, hi}) : tuple({lo, mid})); Vec _u15299 = unpack(_t15298, 2); lo = _u15299[0]; hi = _u15299[1]; }
+            { Py _t15279 = (call((*hull_at__c), {t, mid, sg, -d})[1] > y ? tuple({mid, hi}) : tuple({lo, mid})); Vec _u15280 = unpack(_t15279, 2); lo = _u15280[0]; hi = _u15280[1]; }
         }
         return (lo + hi) / 2;
     });
@@ -49512,10 +49466,10 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         Py tf_;
         // A frame (a rib) at station ``t`` on side ``sg``, square to the planking a hair off its inside, from height
         // ``y0`` (None: from the keel) up to ``y1``.
-        { Py _t15300 = tuple({call((*t_at__c), {call((*xs__c), {t}) - 0.06}), call((*t_at__c), {call((*xs__c), {t}) + 0.06})}); Vec _u15301 = unpack(_t15300, 2); ta_ = _u15301[0]; tf_ = _u15301[1]; }
-        { Py _t15302 = tuple({(is(y0__, None) ? Py(0.993) : call((*frame_f__c), {t, sg, y0__})), call((*frame_f__c), {t, sg, y1__})}); Vec _u15303 = unpack(_t15302, 2); fa = _u15303[0]; fb = _u15303[1]; }
-        fs = list({fb}) + [&](Each _it15304) { Py F; Py _r15305 = list(); for (Py _x15306 : _it15304) { F = _x15306; if (!(([&]() -> bool { Py _t15307 = fb + 0.02; Py _t15308 = F; if (!(_t15307 < _t15308)) return false; Py _t15309 = fa - 0.02; return _t15308 < _t15309; }()) && !contains(K(tuple({Py(0.1), Py(0.3), Py(0.5)})), F))) continue; L_(_r15305)->v.push_back(F); } return _r15305; }(each((*FRAC__c))) + list({fa});  // (the side is straight up top)
-        rings = [&](Each _it15310) { Py f; Py _r15311 = list(); for (Py _x15312 : _it15310) { f = _x15312; L_(_r15311)->v.push_back(list({call((*hull_at__c), {ta_, f, sg, -(*D_F0__c)}), call((*hull_at__c), {tf_, f, sg, -(*D_F0__c)}), call((*hull_at__c), {tf_, f, sg, -(*D_F1__c)}), call((*hull_at__c), {ta_, f, sg, -(*D_F1__c)})})); } return _r15311; }(each(fs));
+        { Py _t15281 = tuple({call((*t_at__c), {call((*xs__c), {t}) - 0.06}), call((*t_at__c), {call((*xs__c), {t}) + 0.06})}); Vec _u15282 = unpack(_t15281, 2); ta_ = _u15282[0]; tf_ = _u15282[1]; }
+        { Py _t15283 = tuple({(is(y0__, None) ? Py(0.993) : call((*frame_f__c), {t, sg, y0__})), call((*frame_f__c), {t, sg, y1__})}); Vec _u15284 = unpack(_t15283, 2); fa = _u15284[0]; fb = _u15284[1]; }
+        fs = list({fb}) + [&](Each _it15285) { Py F; Py _r15286 = list(); for (Py _x15287 : _it15285) { F = _x15287; if (!(([&]() -> bool { Py _t15288 = fb + 0.02; Py _t15289 = F; if (!(_t15288 < _t15289)) return false; Py _t15290 = fa - 0.02; return _t15289 < _t15290; }()) && !contains(K(tuple({Py(0.1), Py(0.3), Py(0.5)})), F))) continue; L_(_r15286)->v.push_back(F); } return _r15286; }(each((*FRAC__c))) + list({fa});  // (the side is straight up top)
+        rings = [&](Each _it15291) { Py f; Py _r15292 = list(); for (Py _x15293 : _it15291) { f = _x15293; L_(_r15292)->v.push_back(list({call((*hull_at__c), {ta_, f, sg, -(*D_F0__c)}), call((*hull_at__c), {tf_, f, sg, -(*D_F0__c)}), call((*hull_at__c), {tf_, f, sg, -(*D_F1__c)}), call((*hull_at__c), {ta_, f, sg, -(*D_F1__c)})})); } return _r15292; }(each(fs));
         addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft(rings, P[S("wood_dark")]); })));
         return None;
     });
@@ -49528,10 +49482,10 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         Py za_;
         Py zf_;
         // A hanging knee under a beam whose underside is at ``yb``: one arm up the frame, one under the beam.
-        za_ = min_(L_([&](Each _it15313) { Py dx; Py _r15314 = list(); for (Py _x15315 : _it15313) { dx = _x15315; L_(_r15314)->v.push_back(call((*at_height__c), {call((*t_at__c), {call((*xs__c), {t}) + dx}), yb, (*D_F1__c) + 0.015})[2]); } return _r15314; }(each(K(tuple({Py(-0.06), Py(0.06)})))))->v, None, MISSING_ARG);
-        zf_ = min_(L_([&](Each _it15316) { Py dx; Py _r15317 = list(); for (Py _x15318 : _it15316) { dx = _x15318; L_(_r15317)->v.push_back(call((*at_height__c), {call((*t_at__c), {call((*xs__c), {t}) + dx}), yb - arm, (*D_F1__c) + 0.015})[2]); } return _r15317; }(each(K(tuple({Py(-0.06), Py(0.06)})))))->v, None, MISSING_ARG);
+        za_ = min_(L_([&](Each _it15294) { Py dx; Py _r15295 = list(); for (Py _x15296 : _it15294) { dx = _x15296; L_(_r15295)->v.push_back(call((*at_height__c), {call((*t_at__c), {call((*xs__c), {t}) + dx}), yb, (*D_F1__c) + 0.015})[2]); } return _r15295; }(each(K(tuple({Py(-0.06), Py(0.06)})))))->v, None, MISSING_ARG);
+        zf_ = min_(L_([&](Each _it15297) { Py dx; Py _r15298 = list(); for (Py _x15299 : _it15297) { dx = _x15299; L_(_r15298)->v.push_back(call((*at_height__c), {call((*t_at__c), {call((*xs__c), {t}) + dx}), yb - arm, (*D_F1__c) + 0.015})[2]); } return _r15298; }(each(K(tuple({Py(-0.06), Py(0.06)})))))->v, None, MISSING_ARG);
         pts = list({tuple({za_, yb}), tuple({za_ - arm, yb}), tuple({za_ - arm, yb - 0.1}), tuple({zf_ - 0.1, yb - arm}), tuple({zf_, yb - arm})});
-        addpy::mesh(extrude([&](Each _it15319) { Py y; Py z; Py _r15320 = list(); for (Py _x15321 : _it15319) { Vec _u15322 = unpack(_x15321, 2); z = _u15322[0]; y = _u15322[1]; L_(_r15320)->v.push_back(list({call((*xs__c), {t}) - 0.06, y, sg * z})); } return _r15320; }(each(pts)), list({Py(0.12), Py(0), Py(0)}), P[S("wood")]));
+        addpy::mesh(extrude([&](Each _it15300) { Py y; Py z; Py _r15301 = list(); for (Py _x15302 : _it15300) { Vec _u15303 = unpack(_x15302, 2); z = _u15303[0]; y = _u15303[1]; L_(_r15301)->v.push_back(list({call((*xs__c), {t}) - 0.06, y, sg * z})); } return _r15301; }(each(pts)), list({Py(0.12), Py(0), Py(0)}), P[S("wood")]));
         return None;
     });
     (*floor_w__c) = func(sig("floor_w", {"t"}, {MISSING_ARG}, 1), [D_C__c, YF__c, at_height__c](Vec& _A_) -> Py {
@@ -49546,26 +49500,26 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         Py lo_;
         Py mid;
         // The station where the floor ends, aft (``sgn`` -1) or forward.
-        { Py _t15323 = tuple({Py(0.0), sgn * 0.95}); Vec _u15324 = unpack(_t15323, 2); lo_ = _u15324[0]; hi_ = _u15324[1]; }
-        for (Py _v15325 : range(Py(30))) {
-            _ = _v15325;
+        { Py _t15304 = tuple({Py(0.0), sgn * 0.95}); Vec _u15305 = unpack(_t15304, 2); lo_ = _u15305[0]; hi_ = _u15305[1]; }
+        for (Py _v15306 : range(Py(30))) {
+            _ = _v15306;
             mid = (lo_ + hi_) / 2;
-            { Py _t15326 = (call((*floor_w__c), {mid}) >= 0.35 ? tuple({mid, hi_}) : tuple({lo_, mid})); Vec _u15327 = unpack(_t15326, 2); lo_ = _u15327[0]; hi_ = _u15327[1]; }
+            { Py _t15307 = (call((*floor_w__c), {mid}) >= 0.35 ? tuple({mid, hi_}) : tuple({lo_, mid})); Vec _u15308 = unpack(_t15307, 2); lo_ = _u15308[0]; hi_ = _u15308[1]; }
         }
         return lo_;
     });
-    { Py _t15328 = tuple({call(floor_end, {Py(-1)}), call(floor_end, {Py(1)})}); Vec _u15329 = unpack(_t15328, 2); TF0 = _u15329[0]; TF1 = _u15329[1]; }
-    ts = list({TF0}) + [&](Range _it15330) { Py i; Py _r15331 = list(); for (Py _x15332 : _it15330) { i = _x15332; if (!([&]() -> bool { Py _t15333 = TF0 + 0.01; Py _t15334 = call((*STATION__c), {i}); if (!(_t15333 < _t15334)) return false; Py _t15335 = TF1 - 0.01; return _t15334 < _t15335; }())) continue; L_(_r15331)->v.push_back(call((*STATION__c), {i})); } return _r15331; }(range((*n__c))) + list({TF1});
-    outline = [&] { Py _t15336 = [&](Each _it15338) { Py t; Py _r15339 = list(); for (Py _x15340 : _it15338) { t = _x15340; L_(_r15339)->v.push_back(tuple({call((*xs__c), {t}), call((*floor_w__c), {t})})); } return _r15339; }(each(ts)); Py _t15337 = [&](Each _it15341) { Py t; Py _r15342 = list(); for (Py _x15343 : _it15341) { t = _x15343; L_(_r15342)->v.push_back(tuple({call((*xs__c), {t}), -call((*floor_w__c), {t})})); } return _r15342; }(each(slice(ts, None, None, Py(-1)))); return _t15336 + _t15337; }();
+    { Py _t15309 = tuple({call(floor_end, {Py(-1)}), call(floor_end, {Py(1)})}); Vec _u15310 = unpack(_t15309, 2); TF0 = _u15310[0]; TF1 = _u15310[1]; }
+    ts = list({TF0}) + [&](Range _it15311) { Py i; Py _r15312 = list(); for (Py _x15313 : _it15311) { i = _x15313; if (!([&]() -> bool { Py _t15314 = TF0 + 0.01; Py _t15315 = call((*STATION__c), {i}); if (!(_t15314 < _t15315)) return false; Py _t15316 = TF1 - 0.01; return _t15315 < _t15316; }())) continue; L_(_r15312)->v.push_back(call((*STATION__c), {i})); } return _r15312; }(range((*n__c))) + list({TF1});
+    outline = [&] { Py _t15317 = [&](Each _it15319) { Py t; Py _r15320 = list(); for (Py _x15321 : _it15319) { t = _x15321; L_(_r15320)->v.push_back(tuple({call((*xs__c), {t}), call((*floor_w__c), {t})})); } return _r15320; }(each(ts)); Py _t15318 = [&](Each _it15322) { Py t; Py _r15323 = list(); for (Py _x15324 : _it15322) { t = _x15324; L_(_r15323)->v.push_back(tuple({call((*xs__c), {t}), -call((*floor_w__c), {t})})); } return _r15323; }(each(slice(ts, None, None, Py(-1)))); return _t15317 + _t15318; }();
     TB_I = set_of(Py(range(Py(6), Py(25), Py(3))));  // (the stations of the through-beams)
-    for (Py _v15344 : range(Py(2), Py(29))) {  // the frames, and under the floor the
-        i = _v15344;
+    for (Py _v15325 : range(Py(2), Py(29))) {  // the frames, and under the floor the
+        i = _v15325;
         t = call((*STATION__c), {i});  // floor timbers joining them
-        floored = Py([&]() -> bool { Py _t15345 = TF0; Py _t15346 = t; if (!(_t15345 < _t15346)) return false; Py _t15347 = TF1; return _t15346 < _t15347; }());
-        y_top = [&] { Py _t15348 = call((*deck_y__c), {call((*xs__c), {t}) - 0.06}); Py _t15349 = call((*deck_y__c), {call((*xs__c), {t}) + 0.06}); return min2(_t15348, _t15349); }() - 0.032;
+        floored = Py([&]() -> bool { Py _t15326 = TF0; Py _t15327 = t; if (!(_t15326 < _t15327)) return false; Py _t15328 = TF1; return _t15327 < _t15328; }());
+        y_top = [&] { Py _t15329 = call((*deck_y__c), {call((*xs__c), {t}) - 0.06}); Py _t15330 = call((*deck_y__c), {call((*xs__c), {t}) + 0.06}); return min2(_t15329, _t15330); }() - 0.032;
         y_lo = (truthy(floored) ? max2((*YF__c) - 0.35, call((*keel__c), {t}) + 0.3) : None);
-        for (Py _v15350 : each(K(tuple({Py(-1), Py(1)})))) {
-            sg = _v15350;
+        for (Py _v15331 : each(K(tuple({Py(-1), Py(1)})))) {
+            sg = _v15331;
             if (contains(TB_I, i)) {
                 yc = 1.1 + 0.45 * t * t;
                 call(frame, {t, sg, y_lo, yc - 0.142});
@@ -49579,51 +49533,51 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
             addpy::cuboid(list({call((*xs__c), {t}), (*YF__c) - 0.151, Py(0)}), list({Py(0.12), Py(0.2), 2 * w}), P[S("wood_dark")]);
         }
     }
-    zmax = max_(L_([&](Each _it15351) { Py _; Py z; Py _r15352 = list(); for (Py _x15353 : _it15351) { Vec _u15354 = unpack(_x15353, 2); _ = _u15354[0]; z = _u15354[1]; L_(_r15352)->v.push_back(z); } return _r15352; }(each(outline)))->v, None, MISSING_ARG);
-    for (Py _v15355 : range(int_(2 * zmax / 0.28) + 1)) {  // the floor: boards fore and aft over them,
-        row = _v15355;
+    zmax = max_(L_([&](Each _it15332) { Py _; Py z; Py _r15333 = list(); for (Py _x15334 : _it15332) { Vec _u15335 = unpack(_x15334, 2); _ = _u15335[0]; z = _u15335[1]; L_(_r15333)->v.push_back(z); } return _r15333; }(each(outline)))->v, None, MISSING_ARG);
+    for (Py _v15336 : range(int_(2 * zmax / 0.28) + 1)) {  // the floor: boards fore and aft over them,
+        row = _v15336;
         za_ = (-zmax) + 0.28 * row + 0.006;  // butted over a floor timber
         strip = band_of(outline, Py(0), Py(1), za_, za_ + 0.268);
         if (len(strip) < 3) {
             continue;
         }
-        cuts = [&](Range _it15356) { Py i; Py _r15357 = list(); for (Py _x15358 : _it15356) { i = _x15358; if (!(((mod(i + 2 * row, Py(5))) == 0) && ([&]() -> bool { Py _t15359 = TF0; Py _t15360 = call((*STATION__c), {i}); if (!(_t15359 < _t15360)) return false; Py _t15361 = TF1; return _t15360 < _t15361; }()))) continue; L_(_r15357)->v.push_back(call((*xs__c), {call((*STATION__c), {i})})); } return _r15357; }(range((*n__c)));
-        edges = list({min_(L_([&](Each _it15362) { Py p; Py _r15363 = list(); for (Py _x15364 : _it15362) { p = _x15364; L_(_r15363)->v.push_back(p[0]); } return _r15363; }(each(strip)))->v, None, MISSING_ARG) - 1}) + cuts + list({max_(L_([&](Each _it15365) { Py p; Py _r15366 = list(); for (Py _x15367 : _it15365) { p = _x15367; L_(_r15366)->v.push_back(p[0]); } return _r15366; }(each(strip)))->v, None, MISSING_ARG) + 1});
-        for (Py _v15368 : range(len(edges) - 1)) {
-            j = _v15368;
+        cuts = [&](Range _it15337) { Py i; Py _r15338 = list(); for (Py _x15339 : _it15337) { i = _x15339; if (!(((mod(i + 2 * row, Py(5))) == 0) && ([&]() -> bool { Py _t15340 = TF0; Py _t15341 = call((*STATION__c), {i}); if (!(_t15340 < _t15341)) return false; Py _t15342 = TF1; return _t15341 < _t15342; }()))) continue; L_(_r15338)->v.push_back(call((*xs__c), {call((*STATION__c), {i})})); } return _r15338; }(range((*n__c)));
+        edges = list({min_(L_([&](Each _it15343) { Py p; Py _r15344 = list(); for (Py _x15345 : _it15343) { p = _x15345; L_(_r15344)->v.push_back(p[0]); } return _r15344; }(each(strip)))->v, None, MISSING_ARG) - 1}) + cuts + list({max_(L_([&](Each _it15346) { Py p; Py _r15347 = list(); for (Py _x15348 : _it15346) { p = _x15348; L_(_r15347)->v.push_back(p[0]); } return _r15347; }(each(strip)))->v, None, MISSING_ARG) + 1});
+        for (Py _v15349 : range(len(edges) - 1)) {
+            j = _v15349;
             piece = band_of(strip, Py(1), Py(0), edges[j] + 0.002, edges[j + 1] - 0.002);
             if ((len(piece) > 2) && truthy(sturdy_piece(piece))) {
                 addpy::mesh(solid(piece, (*YF__c) - 0.05, (*YF__c), shade_of(S("wood_light"), int_(hash2(row, j, (*seed__c) + 5) * 3))));
             }
         }
     }
-    for (Py _v15369 : each(K(tuple({Py(-1), Py(1)})))) {  // the ceiling: planks up the turn of the
-        sg = _v15369;
-        for (Py _v15370 : each(enumerate_(tuple({tuple({(*YF__c) - 0.05, (*YF__c) + 0.2}), tuple({(*YF__c) + 0.21, (*YF__c) + 0.47}), tuple({(*YF__c) + 0.48, YC})}), Py(0)))) {  // bilge on the frames
-            Vec _u15371 = unpack(_v15370, 2);
-            s_ = _u15371[0];
-            Vec _u15372 = unpack(_u15371[1], 2);
-            ya_ = _u15372[0];
-            yb_ = _u15372[1];
-            rings = [&](Each _it15373) { Py t; Py _r15374 = list(); for (Py _x15375 : _it15373) { t = _x15375; L_(_r15374)->v.push_back(list({call((*at_height__c), {t, ya_, D_CO, sg}), call((*at_height__c), {t, yb_, D_CO, sg}), call((*at_height__c), {t, yb_, (*D_C__c), sg}), call((*at_height__c), {t, ya_, (*D_C__c), sg})})); } return _r15374; }(each(ts));
+    for (Py _v15350 : each(K(tuple({Py(-1), Py(1)})))) {  // the ceiling: planks up the turn of the
+        sg = _v15350;
+        for (Py _v15351 : each(enumerate_(tuple({tuple({(*YF__c) - 0.05, (*YF__c) + 0.2}), tuple({(*YF__c) + 0.21, (*YF__c) + 0.47}), tuple({(*YF__c) + 0.48, YC})}), Py(0)))) {  // bilge on the frames
+            Vec _u15352 = unpack(_v15351, 2);
+            s_ = _u15352[0];
+            Vec _u15353 = unpack(_u15352[1], 2);
+            ya_ = _u15353[0];
+            yb_ = _u15353[1];
+            rings = [&](Each _it15354) { Py t; Py _r15355 = list(); for (Py _x15356 : _it15354) { t = _x15356; L_(_r15355)->v.push_back(list({call((*at_height__c), {t, ya_, D_CO, sg}), call((*at_height__c), {t, yb_, D_CO, sg}), call((*at_height__c), {t, yb_, (*D_C__c), sg}), call((*at_height__c), {t, ya_, (*D_C__c), sg})})); } return _r15355; }(each(ts));
             addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft(rings, shade_of(S("wood"), s_ + (*seed__c) + 1)); })));
         }
     }
-    for (Py _v15376 : each(TBEAMS)) {  // the through-beams across the hold,
-        t = _v15376;
+    for (Py _v15357 : each(TBEAMS)) {  // the through-beams across the hold,
+        t = _v15357;
         yc = 1.1 + 0.45 * t * t;  // through the frames, a knee under each end
-        w = min_(L_([&](Each _it15377) { Py dx; Py dy; Py _r15378 = list(); for (Py _x15379 : _it15377) { dx = _x15379; for (Py _x15380 : each(K(tuple({Py(-0.13), Py(0.13)})))) { dy = _x15380; L_(_r15378)->v.push_back(call((*at_height__c), {call((*t_at__c), {call((*xs__c), {t}) + dx}), yc + dy, (*D_F0__c) + 0.006})[2]); } } return _r15378; }(each(K(tuple({Py(-0.13), Py(0.13)})))))->v, None, MISSING_ARG);
+        w = min_(L_([&](Each _it15358) { Py dx; Py dy; Py _r15359 = list(); for (Py _x15360 : _it15358) { dx = _x15360; for (Py _x15361 : each(K(tuple({Py(-0.13), Py(0.13)})))) { dy = _x15361; L_(_r15359)->v.push_back(call((*at_height__c), {call((*t_at__c), {call((*xs__c), {t}) + dx}), yc + dy, (*D_F0__c) + 0.006})[2]); } } return _r15359; }(each(K(tuple({Py(-0.13), Py(0.13)})))))->v, None, MISSING_ARG);
         addpy::cuboid(list({call((*xs__c), {t}), yc, Py(0)}), list({Py(0.26), Py(0.26), 2 * w}), P[S("wood_dark")]);
-        for (Py _v15381 : each(K(tuple({Py(-1), Py(1)})))) {
-            sg = _v15381;
+        for (Py _v15362 : each(K(tuple({Py(-1), Py(1)})))) {
+            sg = _v15362;
             call(knee, {t, yc - 0.132, sg});
         }
     }
-    for (Py _v15382 : each(tuple({BEAMS[0], BEAMS[Py(-1)]}))) {  // and knees under the deck beams at the ends
-        t = _v15382;
+    for (Py _v15363 : each(tuple({BEAMS[0], BEAMS[Py(-1)]}))) {  // and knees under the deck beams at the ends
+        t = _v15363;
         a = addpy::atan(call((*slope__c), {t}));
-        for (Py _v15383 : each(K(tuple({Py(-1), Py(1)})))) {
-            sg = _v15383;
+        for (Py _v15364 : each(K(tuple({Py(-1), Py(1)})))) {
+            sg = _v15364;
             call(knee, {t, call((*sheer__c), {t}) - 0.02 - 0.2 / addpy::cos(a) - 0.06 * abs_(addpy::tan(a)) - 0.004, sg});
         }
     }
@@ -49651,7 +49605,7 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         (*xb__c) = call((*xs__c), {t}) + (*sgn__c) * 0.065;
         tb_ = call((*t_at__c), {(*xb__c) + (*sgn__c) * 0.02});
         (*ytop__c) = 1.1 + 0.45 * t * t - 0.132;
-        (*Z__c) = func(sig("lambda", {"y"}, {MISSING_ARG}, 1), [D_C__c, at_height__c, sgn__c, t_at__c, xb__c](Vec& _A_) -> Py { Py y = _A_[0]; return min_(L_([&](Each _it15384) { Py dx; Py _r15385 = list(); for (Py _x15386 : _it15384) { dx = _x15386; L_(_r15385)->v.push_back(call((*at_height__c), {call((*t_at__c), {(*xb__c) + (*sgn__c) * dx}), y, (*D_C__c) + 0.012})[2]); } return _r15385; }(each(K(tuple({Py(0.0), Py(0.04)})))))->v, None, MISSING_ARG); });
+        (*Z__c) = func(sig("lambda", {"y"}, {MISSING_ARG}, 1), [D_C__c, at_height__c, sgn__c, t_at__c, xb__c](Vec& _A_) -> Py { Py y = _A_[0]; return min_(L_([&](Each _it15365) { Py dx; Py _r15366 = list(); for (Py _x15367 : _it15365) { dx = _x15367; L_(_r15366)->v.push_back(call((*at_height__c), {call((*t_at__c), {(*xb__c) + (*sgn__c) * dx}), y, (*D_C__c) + 0.012})[2]); } return _r15366; }(each(K(tuple({Py(0.0), Py(0.04)})))))->v, None, MISSING_ARG); });
         low = func(sig("low", {"zz"}, {MISSING_ARG}, 1), [YF__c, Z__c, ytop__c](Vec& _A_) -> Py {
             Py zz = _A_[0];
             Py _;
@@ -49662,17 +49616,17 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
             if (call((*Z__c), {(*YF__c) + 0.001}) >= zz) {
                 return (*YF__c) + 0.001;
             }
-            { Py _t15387 = tuple({(*YF__c) + 0.001, (*ytop__c)}); Vec _u15388 = unpack(_t15387, 2); lo_ = _u15388[0]; hi_ = _u15388[1]; }
-            for (Py _v15389 : range(Py(28))) {
-                _ = _v15389;
+            { Py _t15368 = tuple({(*YF__c) + 0.001, (*ytop__c)}); Vec _u15369 = unpack(_t15368, 2); lo_ = _u15369[0]; hi_ = _u15369[1]; }
+            for (Py _v15370 : range(Py(28))) {
+                _ = _v15370;
                 mid = (lo_ + hi_) / 2;
-                { Py _t15390 = (call((*Z__c), {mid}) >= zz ? tuple({lo_, mid}) : tuple({mid, hi_})); Vec _u15391 = unpack(_t15390, 2); lo_ = _u15391[0]; hi_ = _u15391[1]; }
+                { Py _t15371 = (call((*Z__c), {mid}) >= zz ? tuple({lo_, mid}) : tuple({mid, hi_})); Vec _u15372 = unpack(_t15371, 2); lo_ = _u15372[0]; hi_ = _u15372[1]; }
             }
             return hi_;
         });
         YD = (*YF__c) + 1.95;
-        for (Py _v15392 : each(K(tuple({Py(-1), Py(1)})))) {
-            sz = _v15392;
+        for (Py _v15373 : each(K(tuple({Py(-1), Py(1)})))) {
+            sz = _v15373;
             addpy::cuboid(list({(*xb__c) + (*sgn__c) * 0.05, ((*YF__c) + 0.001 + YD) / 2, sz * 0.5}), list({Py(0.1), YD - (*YF__c) - 0.001, Py(0.1)}), P[S("wood_dark")]);  // the door posts
             za_ = Py(0.553);
             while (truthy(True)) {
@@ -49682,16 +49636,16 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
                     break;
                 }
                 if (call((*Z__c), {(*ytop__c)}) <= zb_) {  // the last board, cut to the side
-                    ys_ = [&](Range _it15393) { Py q; Py _r15394 = list(); for (Py _x15395 : _it15393) { q = _x15395; L_(_r15394)->v.push_back(ya0 + ((*ytop__c) - ya0) * q / 6.0); } return _r15394; }(range(Py(7)));
-                    poly = list({tuple({za_, ya0})}) + [&](Each _it15396) { Py y; Py _r15397 = list(); for (Py _x15398 : _it15396) { y = _x15398; L_(_r15397)->v.push_back(tuple({call((*Z__c), {y}), y})); } return _r15397; }(each(slice(ys_, Py(1), None))) + list({tuple({za_, (*ytop__c)})});
+                    ys_ = [&](Range _it15374) { Py q; Py _r15375 = list(); for (Py _x15376 : _it15374) { q = _x15376; L_(_r15375)->v.push_back(ya0 + ((*ytop__c) - ya0) * q / 6.0); } return _r15375; }(range(Py(7)));
+                    poly = list({tuple({za_, ya0})}) + [&](Each _it15377) { Py y; Py _r15378 = list(); for (Py _x15379 : _it15377) { y = _x15379; L_(_r15378)->v.push_back(tuple({call((*Z__c), {y}), y})); } return _r15378; }(each(slice(ys_, Py(1), None))) + list({tuple({za_, (*ytop__c)})});
                 } else if ((ya0 > ((*YF__c) + 0.001)) || (call(low, {zb_}) > ((*YF__c) + 0.001))) {
                     yb0 = call(low, {zb_});
-                    ys_ = [&](Range _it15399) { Py q; Py _r15400 = list(); for (Py _x15401 : _it15399) { q = _x15401; L_(_r15400)->v.push_back(ya0 + (yb0 - ya0) * q / 4.0); } return _r15400; }(range(Py(5)));
-                    poly = list({tuple({za_, ya0})}) + [&](Each _it15402) { Py y; Py _r15403 = list(); for (Py _x15404 : _it15402) { y = _x15404; L_(_r15403)->v.push_back(tuple({min2(zb_, call((*Z__c), {y})), y})); } return _r15403; }(each(slice(ys_, Py(1), None))) + list({tuple({zb_, (*ytop__c)}), tuple({za_, (*ytop__c)})});
+                    ys_ = [&](Range _it15380) { Py q; Py _r15381 = list(); for (Py _x15382 : _it15380) { q = _x15382; L_(_r15381)->v.push_back(ya0 + (yb0 - ya0) * q / 4.0); } return _r15381; }(range(Py(5)));
+                    poly = list({tuple({za_, ya0})}) + [&](Each _it15383) { Py y; Py _r15384 = list(); for (Py _x15385 : _it15383) { y = _x15385; L_(_r15384)->v.push_back(tuple({min2(zb_, call((*Z__c), {y})), y})); } return _r15384; }(each(slice(ys_, Py(1), None))) + list({tuple({zb_, (*ytop__c)}), tuple({za_, (*ytop__c)})});
                 } else {
                     poly = list({tuple({za_, (*YF__c) + 0.001}), tuple({zb_, (*YF__c) + 0.001}), tuple({zb_, (*ytop__c)}), tuple({za_, (*ytop__c)})});
                 }
-                addpy::mesh(extrude([&](Each _it15405) { Py y; Py z; Py _r15406 = list(); for (Py _x15407 : _it15405) { Vec _u15408 = unpack(_x15407, 2); z = _u15408[0]; y = _u15408[1]; L_(_r15406)->v.push_back(list({(*xb__c), y, sz * z})); } return _r15406; }(each(poly)), list({(*sgn__c) * 0.04, Py(0), Py(0)}), shade_of(S("wood"), int_(za_ * 4) + i, Py(3))));
+                addpy::mesh(extrude([&](Each _it15386) { Py y; Py z; Py _r15387 = list(); for (Py _x15388 : _it15386) { Vec _u15389 = unpack(_x15388, 2); z = _u15389[0]; y = _u15389[1]; L_(_r15387)->v.push_back(list({(*xb__c), y, sz * z})); } return _r15387; }(each(poly)), list({(*sgn__c) * 0.04, Py(0), Py(0)}), shade_of(S("wood"), int_(za_ * 4) + i, Py(3))));
                 if (call((*Z__c), {(*ytop__c)}) <= zb_) {
                     break;
                 }
@@ -49699,8 +49653,8 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
             }
         }
         addpy::cuboid(list({(*xb__c) + (*sgn__c) * 0.05, YD + 0.05, Py(0)}), list({Py(0.1), Py(0.1), Py(1.1)}), P[S("wood_dark")]);  // the lintel, boards above it
-        for (Py _v15409 : range(Py(4))) {
-            q = _v15409;
+        for (Py _v15390 : range(Py(4))) {
+            q = _v15390;
             addpy::cuboid(list({(*xb__c) + (*sgn__c) * 0.02, (YD + 0.1 + (*ytop__c)) / 2, Py(-0.55) + 0.275 * q + 0.1375}), list({Py(0.04), (*ytop__c) - YD - 0.1, Py(0.269)}), shade_of(S("wood"), q + i, Py(3)));
         }
         return None;
@@ -49711,20 +49665,20 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     // the ladder down, leaning on the coaming
     C = list({HB - 0.06, call((*deck_y__c), {HB}) + 0.28});
     d = vunit(list({Py(0.35), Py(1.0), Py(0.0)}));
-    for (Py _v15410 : range(Py(4))) {
-        _ = _v15410;
+    for (Py _v15391 : range(Py(4))) {
+        _ = _v15391;
         nf = list({d[1], -d[0], Py(0.0)});
         Q = list({C[0] - nf[0] * 0.047, C[1] - nf[1] * 0.047});
         F = list({Q[0] - (Q[1] - (*YF__c) - 0.018) * d[0] / d[1], (*YF__c) + 0.018});
         d = vunit(list({Q[0] - F[0], Q[1] - F[1], Py(0.0)}));
     }
     Lr = (Q[1] - F[1]) / d[1] + 0.6;
-    for (Py _v15411 : each(K(tuple({Py(-0.55), Py(-0.05)})))) {
-        zz = _v15411;
+    for (Py _v15392 : each(K(tuple({Py(-0.55), Py(-0.05)})))) {
+        zz = _v15392;
         addpy::beam(list({F[0], F[1], zz}), list({F[0] + d[0] * Lr, F[1] + d[1] * Lr, zz}), Py(0.07), Py(0.09), P[S("wood")], list({-d[1], d[0], Py(0)}));
     }
-    for (Py _v15412 : range(Py(1), int_(Lr / 0.3))) {
-        (*k__c) = _v15412;
+    for (Py _v15393 : range(Py(1), int_(Lr / 0.3))) {
+        (*k__c) = _v15393;
         p = list({F[0] + d[0] * 0.3 * (*k__c), F[1] + d[1] * 0.3 * (*k__c)});
         addpy::cylinder(list({p[0], p[1], Py(-0.55)}), list({p[0], p[1], Py(-0.05)}), Py(0.025), Py(6), P[S("wood")]);
     }
@@ -49744,24 +49698,22 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
         Py x0_ = _A_[0];
         Py x1_ = _A_[1];
         // How far out from the middle line a thing may stand on the floor between ``x0_`` and ``x1_``.
-        return min_(L_([&](Range _it15413) { Py q; Py _r15414 = list(); for (Py _x15415 : _it15413) { q = _x15415; L_(_r15414)->v.push_back(call((*floor_w__c), {call((*t_at__c), {x0_ + (x1_ - x0_) * q / 4.0})})); } return _r15414; }(range(Py(5))))->v, None, MISSING_ARG) - 0.06;
+        return min_(L_([&](Range _it15394) { Py q; Py _r15395 = list(); for (Py _x15396 : _it15394) { q = _x15396; L_(_r15395)->v.push_back(call((*floor_w__c), {call((*t_at__c), {x0_ + (x1_ - x0_) * q / 4.0})})); } return _r15395; }(range(Py(5))))->v, None, MISSING_ARG) - 0.06;
     });
-    // the crew's quarters aft: two hammocks between the through-beams, one slept in, sea chests, water casks, a lantern
-    { Py _t15416 = tuple({call((*xs__c), {call((*STATION__c), {Py(6)})}), call((*xs__c), {call((*STATION__c), {Py(9)})})}); Vec _u15417 = unpack(_t15416, 2); xa6 = _u15417[0]; xa9 = _u15417[1]; }
-    { Py _t15418 = tuple({1.1 + 0.45 * pow_(call((*STATION__c), {Py(6)}), Py(2)) - 0.13, 1.1 + 0.45 * pow_(call((*STATION__c), {Py(9)}), Py(2)) - 0.13}); Vec _u15419 = unpack(_t15418, 2); ya6 = _u15419[0]; ya9 = _u15419[1]; }
-    for (Py _v15420 : each(tuple({tuple({Py(1), tuple({P[S("blue")], P[S("red")]})[mod((*seed__c), Py(2))]}), K(tuple({Py(-1), None}))}))) {
-        Vec _u15421 = unpack(_v15420, 2);
-        sz = _u15421[0];
-        sl = _u15421[1];
-        hammock(list({xa6 + 0.08, ya6, sz * 1.2}), list({xa9 - 0.08, ya9, sz * 1.2}), Py(0.5), Py(0.85), P[S("linen")], sl);
+    // the crew's quarters aft: two hammocks between the through-beams (the crew on deck), sea chests, water casks, a lantern
+    { Py _t15397 = tuple({call((*xs__c), {call((*STATION__c), {Py(6)})}), call((*xs__c), {call((*STATION__c), {Py(9)})})}); Vec _u15398 = unpack(_t15397, 2); xa6 = _u15398[0]; xa9 = _u15398[1]; }
+    { Py _t15399 = tuple({1.1 + 0.45 * pow_(call((*STATION__c), {Py(6)}), Py(2)) - 0.13, 1.1 + 0.45 * pow_(call((*STATION__c), {Py(9)}), Py(2)) - 0.13}); Vec _u15400 = unpack(_t15399, 2); ya6 = _u15400[0]; ya9 = _u15400[1]; }
+    for (Py _v15401 : each(K(tuple({Py(1), Py(-1)})))) {
+        sz = _v15401;
+        hammock(list({xa6 + 0.08, ya6, sz * 1.2}), list({xa9 - 0.08, ya9, sz * 1.2}), Py(0.5), Py(0.85), P[S("linen")]);
     }
     zc = call(room, {Py(-6.5), Py(-5.6)}) - 0.3;
     chest(list({Py(-6.05), FL + 0.0065, zc}), addpy::pi, False, Py(0.55));
     chest(list({Py(-6.05), FL + 0.0065, -zc}), Py(0.0), False, Py(0.55));
-    for (Py _v15422 : each(enumerate_(K(tuple({Py(-0.62), Py(0.0), Py(0.62)})), Py(0)))) {
-        Vec _u15423 = unpack(_v15422, 2);
-        (*k__c) = _u15423[0];
-        zc = _u15423[1];
+    for (Py _v15402 : each(enumerate_(K(tuple({Py(-0.62), Py(0.0), Py(0.62)})), Py(0)))) {
+        Vec _u15403 = unpack(_v15402, 2);
+        (*k__c) = _u15403[0];
+        zc = _u15403[1];
         hold_cask(list({Py(-8.15), FL, zc}), Py(0.3), Py(0.8), 0.3 * (*k__c), False, (*seed__c) + (*k__c));
     }
     call(hang, {xa6, ya6, Py(0.6), S("lantern")});
@@ -49772,46 +49724,46 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     crate(list({Py(-3.15), FL, call(room, {Py(-3.6), Py(-2.7)}) - 0.45}), Py(0.8));
     cloth_bolts(list({Py(-1.55), FL, call(room, {Py(-2.2), Py(-0.9)}) - 0.5}), Py(0.0));
     za = call(room, {Py(-0.65), Py(0.6)}) - 0.28;
-    for (Py _v15424 : each(enumerate_(tuple({tuple({Py(-0.35), za}), tuple({Py(0.3), za}), tuple({Py(0.0), za - 0.57})}), Py(0)))) {
-        Vec _u15425 = unpack(_v15424, 2);
-        (*k__c) = _u15425[0];
-        Vec _u15426 = unpack(_u15425[1], 2);
-        gx = _u15426[0];
-        gz = _u15426[1];
+    for (Py _v15404 : each(enumerate_(tuple({tuple({Py(-0.35), za}), tuple({Py(0.3), za}), tuple({Py(0.0), za - 0.57})}), Py(0)))) {
+        Vec _u15405 = unpack(_v15404, 2);
+        (*k__c) = _u15405[0];
+        Vec _u15406 = unpack(_u15405[1], 2);
+        gx = _u15406[0];
+        gz = _u15406[1];
         grain_sack(list({gx, FL, gz}), 1.7 * (*k__c), tuple({P[S("sand")], P[S("linen")], P[S("sand")]})[(*k__c)]);
     }
     treasure(list({Py(3.35), FL, call(room, {Py(2.7), Py(4.0)}) - 0.38}), addpy::pi, Py(0.7), (*seed__c));
     rum_stillage(list({Py(5.7), FL, call(room, {Py(4.55), Py(6.85)}) - 0.46}), addpy::pi, Py(3), Py(0.32), Py(0.9), (*seed__c));
     zo = -(call(room, {Py(-4.5), Py(-3.2)}) - 0.3);
-    for (Py _v15427 : each(enumerate_(tuple({tuple({Py(-4.15), zo}), tuple({Py(-3.5), zo}), tuple({Py(-4.15), zo + 0.63}), tuple({Py(-3.5), zo + 0.63})}), Py(0)))) {
-        Vec _u15428 = unpack(_v15427, 2);
-        (*k__c) = _u15428[0];
-        Vec _u15429 = unpack(_u15428[1], 2);
-        cx_ = _u15429[0];
-        cz_ = _u15429[1];
+    for (Py _v15407 : each(enumerate_(tuple({tuple({Py(-4.15), zo}), tuple({Py(-3.5), zo}), tuple({Py(-4.15), zo + 0.63}), tuple({Py(-3.5), zo + 0.63})}), Py(0)))) {
+        Vec _u15408 = unpack(_v15407, 2);
+        (*k__c) = _u15408[0];
+        Vec _u15409 = unpack(_u15408[1], 2);
+        cx_ = _u15409[0];
+        cz_ = _u15409[1];
         hold_cask(list({cx_, FL, cz_}), Py(0.3), Py(0.8), 0.5 * (*k__c), False, (*seed__c) + 3 + (*k__c));
     }
     crate(list({Py(-2.1), FL, -(call(room, {Py(-2.55), Py(-1.65)}) - 0.45)}), Py(0.8));
     crate(list({Py(-1.1), FL, -(call(room, {Py(-1.6), Py(-0.6)}) - 0.48)}), Py(0.85));
     zo = -(call(room, {Py(-0.6), Py(0.55)}) - 0.23);
-    for (Py _v15430 : each(enumerate_(tuple({tuple({Py(-0.35), zo, S("brick"), Py(1.0)}), tuple({Py(0.3), zo, S("earth"), Py(1.0)}), tuple({Py(-0.05), zo + 0.46, S("stone_dark"), Py(1.15)}), tuple({Py(0.42), zo + 0.5, S("earth_dark"), Py(1.0)})}), Py(0)))) {
-        Vec _u15431 = unpack(_v15430, 2);
-        (*k__c) = _u15431[0];
-        Vec _u15432 = unpack(_u15431[1], 4);
-        jx = _u15432[0];
-        jz = _u15432[1];
-        jc = _u15432[2];
-        js = _u15432[3];
+    for (Py _v15410 : each(enumerate_(tuple({tuple({Py(-0.35), zo, S("brick"), Py(1.0)}), tuple({Py(0.3), zo, S("earth"), Py(1.0)}), tuple({Py(-0.05), zo + 0.46, S("stone_dark"), Py(1.15)}), tuple({Py(0.42), zo + 0.5, S("earth_dark"), Py(1.0)})}), Py(0)))) {
+        Vec _u15411 = unpack(_v15410, 2);
+        (*k__c) = _u15411[0];
+        Vec _u15412 = unpack(_u15411[1], 4);
+        jx = _u15412[0];
+        jz = _u15412[1];
+        jc = _u15412[2];
+        js = _u15412[3];
         stone_jug(list({jx, FL, jz}), P[jc], js);
     }
     zo = -(call(room, {Py(1.4), Py(3.3)}) - 0.29);
-    for (Py _v15433 : each(enumerate_(tuple({tuple({Py(1.7), zo, S("orange")}), tuple({Py(2.35), zo, S("dandelion")}), tuple({Py(2.02), zo + 0.58, S("wood_dark")})}), Py(0)))) {
-        Vec _u15434 = unpack(_v15433, 2);
-        (*k__c) = _u15434[0];
-        Vec _u15435 = unpack(_u15434[1], 3);
-        sx_ = _u15435[0];
-        sz_ = _u15435[1];
-        sp = _u15435[2];
+    for (Py _v15413 : each(enumerate_(tuple({tuple({Py(1.7), zo, S("orange")}), tuple({Py(2.35), zo, S("dandelion")}), tuple({Py(2.02), zo + 0.58, S("wood_dark")})}), Py(0)))) {
+        Vec _u15414 = unpack(_v15413, 2);
+        (*k__c) = _u15414[0];
+        Vec _u15415 = unpack(_u15414[1], 3);
+        sx_ = _u15415[0];
+        sz_ = _u15415[1];
+        sp = _u15415[2];
         spice_sack(list({sx_, FL, sz_}), P[sp], 1.1 * (*k__c));
     }
     grain_sack(list({Py(3.0), FL, zo + 0.02}), Py(0.5));
@@ -49821,13 +49773,13 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     call(hang, {Py(0.0), Py(1.1) - 0.13, Py(0.9), S("lantern")});
     call(hang, {HB, 1.1 + Py(0.45) * 0.16 - 0.13, Py(-1.25), S("lantern")});
     // the boatswain's store forward: the anchor cable coiled down, spare sails rolled up, casks of water
-    for (Py _v15436 : range(Py(3))) {
-        (*k__c) = _v15436;
+    for (Py _v15416 : range(Py(3))) {
+        (*k__c) = _v15416;
         addpy::torus(list({Py(8.2), FL + 0.07 + 0.141 * (*k__c), Py(0.0)}), 0.5 - 0.04 * (*k__c), Py(0.07), Py(14), Py(5), P[S("rope")]);
     }
     zs_ = call(room, {Py(7.55), Py(8.75)}) - 0.18;
-    for (Py _v15437 : each(K(tuple({Py(-1), Py(1)})))) {
-        sz = _v15437;
+    for (Py _v15417 : each(K(tuple({Py(-1), Py(1)})))) {
+        sz = _v15417;
         addpy::cylinder(list({Py(7.6), FL + 0.17, sz * zs_}), list({Py(8.75), FL + 0.17, sz * zs_}), Py(0.17), Py(10), P[S("linen")]);
         addpy::cylinder(list({Py(7.55), FL + 0.17, sz * zs_}), list({Py(7.6), FL + 0.17, sz * zs_}), Py(0.12), Py(8), P[S("linen")]);
     }
@@ -49838,21 +49790,21 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     plank_table(list({Py(0), Py(0), Py(0)}), Py(1.2), Py(0.75), Py(0.78), Py(0.0), (*seed__c));
     addpy::cuboid(list({Py(0.05), Py(0.782), Py(0.0)}), list({Py(0.82), Py(0.004), Py(0.56)}), P[S("linen")]);  // the chart,
     coast = list({list({Py(-0.34), Py(-0.22)}), list({Py(-0.24), Py(-0.12)}), list({Py(-0.12), Py(-0.16)}), list({Py(-0.02), Py(-0.06)}), list({Py(0.1), Py(-0.02)}), list({Py(0.2), Py(0.08)}), list({Py(0.36), Py(0.1)})});
-    addpy::polyline([&](Each _it15438) { Py x_; Py z_; Py _r15439 = list(); for (Py _x15440 : _it15438) { Vec _u15441 = unpack(_x15440, 2); x_ = _u15441[0]; z_ = _u15441[1]; L_(_r15439)->v.push_back(list({x_, Py(0.7885), z_})); } return _r15439; }(each(coast)), Py(0.004), Py(3), P[S("wood_dark")]);  // a coast drawn on it,
-    addpy::polyline([&](Each _it15442) { Py a; Py _r15443 = list(); for (Py _x15444 : _it15442) { a = _x15444; L_(_r15443)->v.push_back(list({0.15 + 0.07 * addpy::cos(a), Py(0.7885), Py(-0.15) + 0.045 * addpy::sin(a)})); } return _r15443; }(each(K(tuple({Py(0.0), Py(1.3), Py(2.4), Py(3.3), Py(4.4), Py(5.4), Py(6.2832)})))), Py(0.004), Py(3), P[S("wood_dark")]);  // an island,
-    for (Py _v15445 : range(Py(4))) {  // a wind rose
-        a = _v15445;
+    addpy::polyline([&](Each _it15418) { Py x_; Py z_; Py _r15419 = list(); for (Py _x15420 : _it15418) { Vec _u15421 = unpack(_x15420, 2); x_ = _u15421[0]; z_ = _u15421[1]; L_(_r15419)->v.push_back(list({x_, Py(0.7885), z_})); } return _r15419; }(each(coast)), Py(0.004), Py(3), P[S("wood_dark")]);  // a coast drawn on it,
+    addpy::polyline([&](Each _it15422) { Py a; Py _r15423 = list(); for (Py _x15424 : _it15422) { a = _x15424; L_(_r15423)->v.push_back(list({0.15 + 0.07 * addpy::cos(a), Py(0.7885), Py(-0.15) + 0.045 * addpy::sin(a)})); } return _r15423; }(each(K(tuple({Py(0.0), Py(1.3), Py(2.4), Py(3.3), Py(4.4), Py(5.4), Py(6.2832)})))), Py(0.004), Py(3), P[S("wood_dark")]);  // an island,
+    for (Py _v15425 : range(Py(4))) {  // a wind rose
+        a = _v15425;
         addpy::mesh(addpy::move(addpy::rotateY(addpy::make([&] { addpy::cuboid(list({Py(0), Py(0), Py(0)}), list({Py(0.16), Py(0.003), Py(0.012)}), P[S("red")]); }), a * addpy::pi / 4), list({Py(-0.22), Py(0.7855), Py(0.12)})));
     }
-    for (Py _v15446 : each(K(tuple({Py(-1), Py(1)})))) {  // the dividers, open, on it
-        s_ = _v15446;
+    for (Py _v15426 : each(K(tuple({Py(-1), Py(1)})))) {  // the dividers, open, on it
+        s_ = _v15426;
         addpy::beam(list({Py(0.2), Py(0.789), Py(0.18)}), list({0.2 + 0.19 * addpy::cos(1.2 + s_ * 0.22), Py(0.789), 0.18 - 0.19 * addpy::sin(1.2 + s_ * 0.22)}), Py(0.012), Py(0.007), P[S("steel")]);
     }
     addpy::cylinder(list({Py(0.2), Py(0.7845), Py(0.18)}), list({Py(0.2), Py(0.795), Py(0.18)}), Py(0.014), Py(8), P[S("gold")]);
     addpy::cylinder(list({Py(-0.42), Py(0.78), Py(0.26)}), list({Py(-0.42), Py(0.84), Py(0.26)}), Py(0.035), Py(8), P[S("black")]);  // the inkwell, the quill in it
     addpy::mesh(addpy::move(addpy::stretch(addpy::make([&] { addpy::sphere(list({Py(0), Py(0), Py(0)}), Py(0.1), Py(2), P[S("white")]); }), list({Py(0.12), Py(1.0), Py(0.25)}), K(tuple({Py(0), Py(0), Py(0)}))), list({Py(-0.42), Py(0.942), Py(0.26)})));
-    for (Py _v15447 : range(Py(2))) {  // charts rolled up
-        (*k__c) = _v15447;
+    for (Py _v15427 : range(Py(2))) {  // charts rolled up
+        (*k__c) = _v15427;
         addpy::cylinder(list({Py(-0.5), 0.811 + 0.062 * (*k__c), Py(-0.3) + 0.03 * (*k__c)}), list({Py(-0.5) + 0.02 * (*k__c), 0.811 + 0.062 * (*k__c), 0.15 + 0.03 * (*k__c)}), Py(0.03), Py(8), P[S("linen")]);
     }
     call(on_deck, {Py(-8.2), Py(0.0), Py(0.038)});
@@ -49860,16 +49812,16 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     chair(list({Py(0), Py(0), Py(0)}), Py(0.0), P[S("wood_dark")]);
     call(on_deck, {Py(-8.2), Py(-0.8), Py(0.046)});
     addpy::push();  // the bunk: a box of boards on four posts,
-    for (Py _v15448 : each(K(tuple({Py(-0.96), Py(0.96)})))) {  // a bottom, a mattress, a pillow, a blanket
-        sx = _v15448;
-        for (Py _v15449 : each(K(tuple({Py(-0.36), Py(0.36)})))) {
-            sz = _v15449;
+    for (Py _v15428 : each(K(tuple({Py(-0.96), Py(0.96)})))) {  // a bottom, a mattress, a pillow, a blanket
+        sx = _v15428;
+        for (Py _v15429 : each(K(tuple({Py(-0.36), Py(0.36)})))) {
+            sz = _v15429;
             addpy::cuboid(list({sx, Py(0.275), sz}), list({Py(0.08), Py(0.55), Py(0.08)}), P[S("wood_dark")]);
         }
         addpy::cuboid(list({sx, Py(0.36), Py(0)}), list({Py(0.03), Py(0.32), Py(0.64)}), P[S("wood")]);
     }
-    for (Py _v15450 : each(K(tuple({Py(-0.36), Py(0.36)})))) {
-        sz = _v15450;
+    for (Py _v15430 : each(K(tuple({Py(-0.36), Py(0.36)})))) {
+        sz = _v15430;
         addpy::cuboid(list({Py(0), Py(0.36), sz}), list({Py(1.84), Py(0.32), Py(0.03)}), P[S("wood")]);
     }
     addpy::cuboid(list({Py(0), Py(0.23), Py(0)}), list({Py(1.84), Py(0.03), Py(0.69)}), P[S("wood")]);
@@ -49886,37 +49838,37 @@ Py ship(Py at, Py forward, Py L__p, Py B, Py seed__p, Py crew, Py band, Py shiel
     hanging_lantern(list({Py(-8.7), top - 0.3, Py(0.0)}));
     addpy::push();  // the shelf on the starboard side:
     addpy::cuboid(list({Py(0), Py(0), Py(0.125)}), list({Py(0.9), Py(0.03), Py(0.25)}), P[S("wood")]);  // a board on two brackets, bottles
-    for (Py _v15451 : each(K(tuple({Py(-0.35), Py(0.35)})))) {  // and books on it
-        sx = _v15451;
+    for (Py _v15431 : each(K(tuple({Py(-0.35), Py(0.35)})))) {  // and books on it
+        sx = _v15431;
         addpy::mesh(extrude(list({list({sx - 0.02, Py(-0.015), Py(0.0)}), list({sx - 0.02, Py(-0.015), Py(0.22)}), list({sx - 0.02, Py(-0.25), Py(0.0)})}), list({Py(0.04), Py(0), Py(0)}), P[S("wood")]));
     }
-    for (Py _v15452 : each(enumerate_(K(tuple({K(tuple({Py(-0.3), S("leaf_dark")})), K(tuple({Py(-0.18), S("wood_dark")})), K(tuple({Py(-0.06), S("leaf_dark")}))})), Py(0)))) {
-        Vec _u15453 = unpack(_v15452, 2);
-        (*k__c) = _u15453[0];
-        Vec _u15454 = unpack(_u15453[1], 2);
-        bx = _u15454[0];
-        bc = _u15454[1];
+    for (Py _v15432 : each(enumerate_(K(tuple({K(tuple({Py(-0.3), S("leaf_dark")})), K(tuple({Py(-0.18), S("wood_dark")})), K(tuple({Py(-0.06), S("leaf_dark")}))})), Py(0)))) {
+        Vec _u15433 = unpack(_v15432, 2);
+        (*k__c) = _u15433[0];
+        Vec _u15434 = unpack(_u15433[1], 2);
+        bx = _u15434[0];
+        bc = _u15434[1];
         lathe(list({list({Py(0.0), Py(0.0)}), list({Py(0.045), Py(0.0)}), list({Py(0.045), Py(0.16)}), list({Py(0.018), Py(0.21)}), list({Py(0.016), Py(0.26)}), list({Py(0.0), Py(0.26)})}), list({bx, Py(0.015), Py(0.12)}), Py(8), P[bc]);
     }
-    for (Py _v15455 : each(enumerate_(K(tuple({S("red"), S("blue"), S("wood_dark")})), Py(0)))) {
-        Vec _u15456 = unpack(_v15455, 2);
-        (*k__c) = _u15456[0];
-        bc = _u15456[1];
+    for (Py _v15435 : each(enumerate_(K(tuple({S("red"), S("blue"), S("wood_dark")})), Py(0)))) {
+        Vec _u15436 = unpack(_v15435, 2);
+        (*k__c) = _u15436[0];
+        bc = _u15436[1];
         addpy::cuboid(list({0.12 + 0.07 * (*k__c), Py(0.015) + 0.12, Py(0.12)}), list({Py(0.06), Py(0.24), Py(0.18)}), P[bc]);
     }
     M___ = addpy::pop();
     xs_ = Py(-7.0);
     zs_ = -call((*zw___c), {xs_});
-    addpy::mesh([&] { Py _a15457 = addpy::rotateY(M___, Py(0.327)); Py _a15458 = list({xs_ + Py(0.033) * 0.321, call((*sill_y__c), {xs_}) + 1.35, zs_ + Py(0.033) * 0.947}); return addpy::move(_a15457, _a15458); }());
+    addpy::mesh([&] { Py _a15437 = addpy::rotateY(M___, Py(0.327)); Py _a15438 = list({xs_ + Py(0.033) * 0.321, call((*sill_y__c), {xs_}) + 1.35, zs_ + Py(0.033) * 0.947}); return addpy::move(_a15437, _a15438); }());
     M = addpy::pop();
-    { Py _t15459 = forward; Vec _u15460 = unpack(_t15459, 2); fx = _u15460[0]; fz = _u15460[1]; }
+    { Py _t15439 = forward; Vec _u15440 = unpack(_t15439, 2); fx = _u15440[0]; fz = _u15440[1]; }
     fl = addpy::sqrt(fx * fx + fz * fz);
     xa = list({fx / fl, Py(0), fz / fl});
     za = list({-xa[2], Py(0), xa[0]});  // x cross y: a right-handed frame
     addpy::mesh(call(placed, {M, at, xa, list({Py(0), Py(1), Py(0)}), za}));
     flag(list({at[0] + (*MX__c) * xa[0], at[1] + (*TOP__c) + 3.25, at[2] + (*MX__c) * xa[2]}), Py(2.2), Py(1.3), addpy::pi * 0.3, (*seed__c) * 0.7);  // in the castle's wind
     flag(list({at[0] + ((*x0__c) + 0.3) * xa[0], at[1] + top + 3.5, at[2] + ((*x0__c) + 0.3) * xa[2]}), Py(1.6), Py(1.0), addpy::pi * 0.3, (*seed__c) * 0.7 + 0.4);
-    return [&](Each _it15461) { Py nx; Py nz; Py x; Py xl; Py y; Py z; Py _r15462 = list(); for (Py _x15463 : _it15461) { Vec _u15464 = unpack(_x15463, 3); xl = _u15464[0]; Vec _u15465 = unpack(_u15464[1], 3); x = _u15465[0]; y = _u15465[1]; z = _u15465[2]; Vec _u15466 = unpack(_u15464[2], 2); nx = _u15466[0]; nz = _u15466[1]; L_(_r15462)->v.push_back(tuple({xl, list({at[0] + x * xa[0] + z * za[0], at[1] + y, at[2] + x * xa[2] + z * za[2]}), list({nx * za[0] - nz * xa[0], Py(0.0), nx * za[2] - nz * xa[2]}), list({nx * xa[0] + nz * za[0], Py(0.0), nx * xa[2] + nz * za[2]})})); } return _r15462; }(each(ties));  // (the starboard timberheads: the middle of each at its foot, the ways
+    return [&](Each _it15441) { Py nx; Py nz; Py x; Py xl; Py y; Py z; Py _r15442 = list(); for (Py _x15443 : _it15441) { Vec _u15444 = unpack(_x15443, 3); xl = _u15444[0]; Vec _u15445 = unpack(_u15444[1], 3); x = _u15445[0]; y = _u15445[1]; z = _u15445[2]; Vec _u15446 = unpack(_u15444[2], 2); nx = _u15446[0]; nz = _u15446[1]; L_(_r15442)->v.push_back(tuple({xl, list({at[0] + x * xa[0] + z * za[0], at[1] + y, at[2] + x * xa[2] + z * za[2]}), list({nx * za[0] - nz * xa[0], Py(0.0), nx * za[2] - nz * xa[2]}), list({nx * xa[0] + nz * za[0], Py(0.0), nx * xa[2] + nz * za[2]})})); } return _r15442; }(each(ties));  // (the starboard timberheads: the middle of each at its foot, the ways
 }
 
 // A rowing boat afloat, ``at`` the middle of it at the waterline,
@@ -49960,24 +49912,24 @@ Py rowboat(Py at, Py heading, Py oars) {
     Py ta;
     Py tb;
     Py x;
-    { Py _t15467 = tuple({ROWBOAT_L, ROWBOAT_B}); Vec _u15468 = unpack(_t15467, 2); (*L__c) = _u15468[0]; B = _u15468[1]; }
-    { Py _t15469 = tuple({F_rb_half, rb_sheer, rb_keel}); Vec _u15470 = unpack(_t15469, 3); (*half__c) = _u15470[0]; (*sheer__c) = _u15470[1]; (*keel__c) = _u15470[2]; }
+    { Py _t15447 = tuple({ROWBOAT_L, ROWBOAT_B}); Vec _u15448 = unpack(_t15447, 2); (*L__c) = _u15448[0]; B = _u15448[1]; }
+    { Py _t15449 = tuple({F_rb_half, rb_sheer, rb_keel}); Vec _u15450 = unpack(_t15449, 3); (*half__c) = _u15450[0]; (*sheer__c) = _u15450[1]; (*keel__c) = _u15450[2]; }
     rings = list({});
-    for (Py _v15471 : range(Py(13))) {
-        i = _v15471;
+    for (Py _v15451 : range(Py(13))) {
+        i = _v15451;
         t = Py(-1) + i / 6.0;
-        { Py _t15472 = tuple({call((*half__c), {t}), call((*sheer__c), {t}), call((*keel__c), {t})}); Vec _u15473 = unpack(_t15472, 3); h = _u15473[0]; sh = _u15473[1]; k = _u15473[2]; }
-        outer = [&](Range _it15474) { Py j; Py _r15475 = list(); for (Py _x15476 : _it15474) { j = _x15476; L_(_r15475)->v.push_back(list({t * (*L__c) / 2, sh - (sh - k) * pow_(max2(Py(0.0), addpy::sin(addpy::pi * j / 9)), Py(0.6)), h * addpy::cos(addpy::pi * j / 9)})); } return _r15475; }(range(Py(10)));
-        { Py _t15477 = tuple({max2(Py(0.0), h - 0.05), k + 0.14}); Vec _u15478 = unpack(_t15477, 2); hi = _u15478[0]; ki = _u15478[1]; }
-        inner = [&](Range _it15479) { Py j; Py _r15480 = list(); for (Py _x15481 : _it15479) { j = _x15481; L_(_r15480)->v.push_back(list({t * (*L__c) / 2, sh - (sh - ki) * pow_(max2(Py(0.0), addpy::sin(addpy::pi * j / 9)), Py(0.6)), hi * addpy::cos(addpy::pi * j / 9)})); } return _r15480; }(range(Py(9), Py(-1), Py(-1)));
+        { Py _t15452 = tuple({call((*half__c), {t}), call((*sheer__c), {t}), call((*keel__c), {t})}); Vec _u15453 = unpack(_t15452, 3); h = _u15453[0]; sh = _u15453[1]; k = _u15453[2]; }
+        outer = [&](Range _it15454) { Py j; Py _r15455 = list(); for (Py _x15456 : _it15454) { j = _x15456; L_(_r15455)->v.push_back(list({t * (*L__c) / 2, sh - (sh - k) * pow_(max2(Py(0.0), addpy::sin(addpy::pi * j / 9)), Py(0.6)), h * addpy::cos(addpy::pi * j / 9)})); } return _r15455; }(range(Py(10)));
+        { Py _t15457 = tuple({max2(Py(0.0), h - 0.05), k + 0.14}); Vec _u15458 = unpack(_t15457, 2); hi = _u15458[0]; ki = _u15458[1]; }
+        inner = [&](Range _it15459) { Py j; Py _r15460 = list(); for (Py _x15461 : _it15459) { j = _x15461; L_(_r15460)->v.push_back(list({t * (*L__c) / 2, sh - (sh - ki) * pow_(max2(Py(0.0), addpy::sin(addpy::pi * j / 9)), Py(0.6)), hi * addpy::cos(addpy::pi * j / 9)})); } return _r15460; }(range(Py(9), Py(-1), Py(-1)));
         rings.append(outer + inner);
     }
     addpy::push();
     addpy::loft(rings, P[S("wood")], MISSING_ARG, False);
-    for (Py _v15482 : each(tuple({tuple({rings[0], Py(-1)}), tuple({rings[Py(-1)], Py(1)})}))) {  // the transom and the stem close the ends
-        Vec _u15483 = unpack(_v15482, 2);
-        ring = _u15483[0];
-        sg = _u15483[1];
+    for (Py _v15462 : each(tuple({tuple({rings[0], Py(-1)}), tuple({rings[Py(-1)], Py(1)})}))) {  // the transom and the stem close the ends
+        Vec _u15463 = unpack(_v15462, 2);
+        ring = _u15463[0];
+        sg = _u15463[1];
         cap = slice(ring, None, Py(10));
         n = vcross(vsub(cap[1], cap[0]), vsub(cap[2], cap[0]));
         addpy::polygon(((n[0] * sg) > 0 ? cap : slice(cap, None, None, Py(-1))), P[S("wood_dark")]);
@@ -49998,54 +49950,54 @@ Py rowboat(Py at, Py heading, Py oars) {
         Py pts;
         Py sh;
         // The point of the outside at station ``t``, angle ``a`` down from the gunwale (``sg``: the side), ``off`` out.
-        { Py _t15484 = tuple({call((*half__c), {t}), call((*sheer__c), {t}), call((*keel__c), {t})}); Vec _u15485 = unpack(_t15484, 3); h = _u15485[0]; sh = _u15485[1]; k = _u15485[2]; }
-        pts = [&](Each _it15486) { Py b; Py _r15487 = list(); for (Py _x15488 : _it15486) { b = _x15488; L_(_r15487)->v.push_back(tuple({sh - (sh - k) * pow_(max2(Py(0.0), addpy::sin(b)), Py(0.6)), sg * h * addpy::cos(b)})); } return _r15487; }(each(tuple({a - 0.01, a, a + 0.01})));
-        { Py _t15489 = tuple({sg * (pts[2][1] - pts[0][1]), (-sg) * (pts[2][0] - pts[0][0])}); Vec _u15490 = unpack(_t15489, 2); ny = _u15490[0]; nz = _u15490[1]; }
-        nl = [&]() -> Py { Py _t15491 = addpy::sqrt(ny * ny + nz * nz); if (truthy(_t15491)) return _t15491; _t15491 = Py(1.0); return _t15491; }();
+        { Py _t15464 = tuple({call((*half__c), {t}), call((*sheer__c), {t}), call((*keel__c), {t})}); Vec _u15465 = unpack(_t15464, 3); h = _u15465[0]; sh = _u15465[1]; k = _u15465[2]; }
+        pts = [&](Each _it15466) { Py b; Py _r15467 = list(); for (Py _x15468 : _it15466) { b = _x15468; L_(_r15467)->v.push_back(tuple({sh - (sh - k) * pow_(max2(Py(0.0), addpy::sin(b)), Py(0.6)), sg * h * addpy::cos(b)})); } return _r15467; }(each(tuple({a - 0.01, a, a + 0.01})));
+        { Py _t15469 = tuple({sg * (pts[2][1] - pts[0][1]), (-sg) * (pts[2][0] - pts[0][0])}); Vec _u15470 = unpack(_t15469, 2); ny = _u15470[0]; nz = _u15470[1]; }
+        nl = [&]() -> Py { Py _t15471 = addpy::sqrt(ny * ny + nz * nz); if (truthy(_t15471)) return _t15471; _t15471 = Py(1.0); return _t15471; }();
         return list({t * (*L__c) / 2, pts[1][0] + off * ny / nl, pts[1][1] + off * nz / nl});
     });
     girth = list({Py(0.0)});  // (round the middle section, to cut
-    for (Py _v15492 : range(Py(1), Py(201))) {  // the strakes of equal width)
-        i = _v15492;
-        { Py _t15493 = tuple({call(boat_at, {Py(0.0), addpy::pi / 2 * (i - 1) / 200, Py(1)}), call(boat_at, {Py(0.0), addpy::pi / 2 * i / 200, Py(1)})}); Vec _u15494 = unpack(_t15493, 2); p0 = _u15494[0]; p1 = _u15494[1]; }
+    for (Py _v15472 : range(Py(1), Py(201))) {  // the strakes of equal width)
+        i = _v15472;
+        { Py _t15473 = tuple({call(boat_at, {Py(0.0), addpy::pi / 2 * (i - 1) / 200, Py(1)}), call(boat_at, {Py(0.0), addpy::pi / 2 * i / 200, Py(1)})}); Vec _u15474 = unpack(_t15473, 2); p0 = _u15474[0]; p1 = _u15474[1]; }
         girth.append(girth[Py(-1)] + addpy::sqrt(pow_(p1[1] - p0[1], Py(2)) + pow_(p1[2] - p0[2], Py(2))));
     }
-    cuts = [&](Each _it15495) { Py f; Py _r15496 = list(); for (Py _x15499 : _it15495) { f = _x15499; L_(_r15496)->v.push_back(addpy::pi / 2 * [&](Range _it15497) -> Py { Py i; for (Py _x15498 : _it15497) { i = _x15498; if (!(girth[i] >= (girth[Py(-1)] * f))) continue; return i; } raise("StopIteration", ""); }(range(Py(201))) / 200); } return _r15496; }(each(K(tuple({Py(0.0), Py(0.2), Py(0.4), Py(0.6), Py(0.8), Py(1.0)}))));
-    for (Py _v15500 : each(K(tuple({Py(-1), Py(1)})))) {  // clinker-built too: five strakes a
-        sg = _v15500;
-        for (Py _v15501 : range(Py(5))) {  // side, each lapped well over the one
-            k = _v15501;
-            { Py _t15502 = tuple({cuts[k] - ((truthy(k) ? Py(0.06) : Py(0.0))), cuts[k + 1]}); Vec _u15503 = unpack(_t15502, 2); a0 = _u15503[0]; a1 = _u15503[1]; }  // below, the lowest down to the keel --
+    cuts = [&](Each _it15475) { Py f; Py _r15476 = list(); for (Py _x15479 : _it15475) { f = _x15479; L_(_r15476)->v.push_back(addpy::pi / 2 * [&](Range _it15477) -> Py { Py i; for (Py _x15478 : _it15477) { i = _x15478; if (!(girth[i] >= (girth[Py(-1)] * f))) continue; return i; } raise("StopIteration", ""); }(range(Py(201))) / 200); } return _r15476; }(each(K(tuple({Py(0.0), Py(0.2), Py(0.4), Py(0.6), Py(0.8), Py(1.0)}))));
+    for (Py _v15480 : each(K(tuple({Py(-1), Py(1)})))) {  // clinker-built too: five strakes a
+        sg = _v15480;
+        for (Py _v15481 : range(Py(5))) {  // side, each lapped well over the one
+            k = _v15481;
+            { Py _t15482 = tuple({cuts[k] - ((truthy(k) ? Py(0.06) : Py(0.0))), cuts[k + 1]}); Vec _u15483 = unpack(_t15482, 2); a0 = _u15483[0]; a1 = _u15483[1]; }  // below, the lowest down to the keel --
             cut = 0.12 * mod(k, Py(3)) - 0.1;  // no gap anywhere between them -- two
-            for (Py _v15504 : each(tuple({tuple({Py(-1.0), cut - 0.0002}), tuple({cut + 0.0002, Py(1.0)})}))) {  // planks to a strake, butted end to end
-                Vec _u15505 = unpack(_v15504, 2);
-                ta = _u15505[0];
-                tb = _u15505[1];
-                rings = [&](Each _it15506) { Py t; Py _r15510 = list(); for (Py _x15511 : _it15506) { t = _x15511; L_(_r15510)->v.push_back(list({call(boat_at, {t, a0, sg, Py(0.006)}), call(boat_at, {t, a1, sg, Py(0.034)}), call(boat_at, {t, a1, sg, Py(-0.004)}), call(boat_at, {t, a0, sg, Py(-0.004)})})); } return _r15510; }(each([&](Range _it15507) { Py i; Py _r15508 = list(); for (Py _x15509 : _it15507) { i = _x15509; L_(_r15508)->v.push_back(min2(Py(1.0), ta + (tb - ta) * i / 12.0)); } return _r15508; }(range(Py(13)))));  // (never past the stem)
+            for (Py _v15484 : each(tuple({tuple({Py(-1.0), cut - 0.0002}), tuple({cut + 0.0002, Py(1.0)})}))) {  // planks to a strake, butted end to end
+                Vec _u15485 = unpack(_v15484, 2);
+                ta = _u15485[0];
+                tb = _u15485[1];
+                rings = [&](Each _it15486) { Py t; Py _r15490 = list(); for (Py _x15491 : _it15486) { t = _x15491; L_(_r15490)->v.push_back(list({call(boat_at, {t, a0, sg, Py(0.006)}), call(boat_at, {t, a1, sg, Py(0.034)}), call(boat_at, {t, a1, sg, Py(-0.004)}), call(boat_at, {t, a0, sg, Py(-0.004)})})); } return _r15490; }(each([&](Range _it15487) { Py i; Py _r15488 = list(); for (Py _x15489 : _it15487) { i = _x15489; L_(_r15488)->v.push_back(min2(Py(1.0), ta + (tb - ta) * i / 12.0)); } return _r15488; }(range(Py(13)))));  // (never past the stem)
                 mid = call(boat_at, {(ta + tb) / 2, (a0 + a1) / 2, sg});
                 addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::loft(rings, (mid[1] < 0.02 ? P[S("wood_dark")] : shade_of(S("wood"), k + Py(ta > 0)))); })));
             }
         }
     }
-    kl = [&](Each _it15512) { Py t; Py _r15516 = list(); for (Py _x15517 : _it15512) { t = _x15517; L_(_r15516)->v.push_back(list({t * (*L__c) / 2, call((*keel__c), {t}) - 0.03, Py(0.0)})); } return _r15516; }(each([&](Range _it15513) { Py i; Py _r15514 = list(); for (Py _x15515 : _it15513) { i = _x15515; L_(_r15514)->v.push_back(Py(-0.98) + 1.96 * i / 24); } return _r15514; }(range(Py(25)))));  // the keel along the bottom, over
-    for (Py _v15518 : each(zip_({kl, slice(kl, Py(1), None)}))) {  // the garboards' meeting
-        Vec _u15519 = unpack(_v15518, 2);
-        p0 = _u15519[0];
-        p1 = _u15519[1];
+    kl = [&](Each _it15492) { Py t; Py _r15496 = list(); for (Py _x15497 : _it15492) { t = _x15497; L_(_r15496)->v.push_back(list({t * (*L__c) / 2, call((*keel__c), {t}) - 0.03, Py(0.0)})); } return _r15496; }(each([&](Range _it15493) { Py i; Py _r15494 = list(); for (Py _x15495 : _it15493) { i = _x15495; L_(_r15494)->v.push_back(Py(-0.98) + 1.96 * i / 24); } return _r15494; }(range(Py(25)))));  // the keel along the bottom, over
+    for (Py _v15498 : each(zip_({kl, slice(kl, Py(1), None)}))) {  // the garboards' meeting
+        Vec _u15499 = unpack(_v15498, 2);
+        p0 = _u15499[0];
+        p1 = _u15499[1];
         addpy::beam(p0, p1, Py(0.07), Py(0.07), P[S("wood_dark")], list({Py(0), Py(1), Py(0)}));
     }
-    [&] { Py _a15520 = list({Py(0), call((*keel__c), {Py(0)}) + 0.155, Py(0)}); Py _a15521 = list({Py(3.2), Py(0.03), Py(0.6)}); Py _a15522 = shade_of(S("wood_light"), Py(0)); return addpy::cuboid(_a15520, _a15521, _a15522); }();  // the floorboards
-    for (Py _v15523 : each(K(tuple({Py(-0.3), Py(0.6)})))) {  // the thwarts
-        x = _v15523;
+    [&] { Py _a15500 = list({Py(0), call((*keel__c), {Py(0)}) + 0.155, Py(0)}); Py _a15501 = list({Py(3.2), Py(0.03), Py(0.6)}); Py _a15502 = shade_of(S("wood_light"), Py(0)); return addpy::cuboid(_a15500, _a15501, _a15502); }();  // the floorboards
+    for (Py _v15503 : each(K(tuple({Py(-0.3), Py(0.6)})))) {  // the thwarts
+        x = _v15503;
         t = x / ((*L__c) / 2);
-        [&] { Py _a15524 = list({x, call((*sheer__c), {t}) - 0.12, Py(0)}); Py _a15525 = list({Py(0.26), Py(0.05), 2 * call((*half__c), {t}) - 0.12}); Py _a15526 = P[S("wood_light")]; return addpy::cuboid(_a15524, _a15525, _a15526); }();
+        [&] { Py _a15504 = list({x, call((*sheer__c), {t}) - 0.12, Py(0)}); Py _a15505 = list({Py(0.26), Py(0.05), 2 * call((*half__c), {t}) - 0.12}); Py _a15506 = P[S("wood_light")]; return addpy::cuboid(_a15504, _a15505, _a15506); }();
     }
     t = Py(-1.75) / ((*L__c) / 2);
-    [&] { Py _a15527 = list({Py(-1.75), call((*sheer__c), {t}) - 0.12, Py(0)}); Py _a15528 = list({Py(0.5), Py(0.05), 2 * call((*half__c), {t}) - 0.12}); Py _a15529 = P[S("wood_light")]; return addpy::cuboid(_a15527, _a15528, _a15529); }();
+    [&] { Py _a15507 = list({Py(-1.75), call((*sheer__c), {t}) - 0.12, Py(0)}); Py _a15508 = list({Py(0.5), Py(0.05), 2 * call((*half__c), {t}) - 0.12}); Py _a15509 = P[S("wood_light")]; return addpy::cuboid(_a15507, _a15508, _a15509); }();
     if (truthy(oars)) {
-        for (Py _v15530 : each(K(tuple({Py(-1), Py(1)})))) {
-            sg = _v15530;
-            [&] { Py _a15531 = list({Py(-1.4), call((*sheer__c), {Py(0)}) - 0.065, sg * 0.36}); Py _a15532 = list({Py(1.5), call((*sheer__c), {Py(0)}) - 0.065, sg * 0.3}); Py _a15533 = Py(0.03); Py _a15534 = Py(6); Py _a15535 = P[S("wood_light")]; return addpy::cylinder(_a15531, _a15532, _a15533, _a15534, _a15535); }();
+        for (Py _v15510 : each(K(tuple({Py(-1), Py(1)})))) {
+            sg = _v15510;
+            [&] { Py _a15511 = list({Py(-1.4), call((*sheer__c), {Py(0)}) - 0.065, sg * 0.36}); Py _a15512 = list({Py(1.5), call((*sheer__c), {Py(0)}) - 0.065, sg * 0.3}); Py _a15513 = Py(0.03); Py _a15514 = Py(6); Py _a15515 = P[S("wood_light")]; return addpy::cylinder(_a15511, _a15512, _a15513, _a15514, _a15515); }();
             addpy::cuboid(list({Py(1.35), call((*sheer__c), {Py(0)}) - 0.065, sg * 0.31}), list({Py(0.55), Py(0.02), Py(0.13)}), P[S("wood_light")]);
         }
     }
@@ -50078,26 +50030,26 @@ Py laid_rope(Py pts, Py r__p, Py whip) {
     auto w1__c = std::make_shared<Py>();
     lay = 7.0 * (*r__c);
     cum = list({Py(0.0)});
-    for (Py _v15536 : each(zip_({pts, slice(pts, Py(1), None)}))) {
-        Vec _u15537 = unpack(_v15536, 2);
-        p = _u15537[0];
-        q = _u15537[1];
+    for (Py _v15516 : each(zip_({pts, slice(pts, Py(1), None)}))) {
+        Vec _u15517 = unpack(_v15516, 2);
+        p = _u15517[0];
+        q = _u15517[1];
         cum.append(cum[Py(-1)] + vlen(vsub(q, p)));
     }
     (*n__c) = max2(Py(2), int_(cum[Py(-1)] / (lay / 12.0) + 0.5));  // (twelve rings to a turn of the strands,
-    { Py _t15538 = tuple({list({}), Py(0)}); Vec _u15539 = unpack(_t15538, 2); (*even__c) = _u15539[0]; j = _u15539[1]; }  // evenly spaced)
-    for (Py _v15540 : range((*n__c) + 1)) {
-        i = _v15540;
+    { Py _t15518 = tuple({list({}), Py(0)}); Vec _u15519 = unpack(_t15518, 2); (*even__c) = _u15519[0]; j = _u15519[1]; }  // evenly spaced)
+    for (Py _v15520 : range((*n__c) + 1)) {
+        i = _v15520;
         s = cum[Py(-1)] * i / (*n__c);
         while ((j < (len(cum) - 2)) && (cum[j + 1] < s)) {
             iadd(j, Py(1));
         }
         f = min2(Py(1.0), (s - cum[j]) / max2(Py(1e-12), cum[j + 1] - cum[j]));
-        (*even__c).append([&](Range _it15541) { Py k; Py _r15542 = list(); for (Py _x15543 : _it15541) { k = _x15543; L_(_r15542)->v.push_back(pts[j][k] + (pts[j + 1][k] - pts[j][k]) * f); } return _r15542; }(range(Py(3))));
+        (*even__c).append([&](Range _it15521) { Py k; Py _r15522 = list(); for (Py _x15523 : _it15521) { k = _x15523; L_(_r15522)->v.push_back(pts[j][k] + (pts[j + 1][k] - pts[j][k]) * f); } return _r15522; }(range(Py(3))));
     }
     lobe = func(sig("lambda", {"a"}, {MISSING_ARG}, 1), [r__c](Vec& _A_) -> Py { Py a = _A_[0]; return (*r__c) * (0.86 + 0.14 * addpy::cos(3 * a)); });
-    prof = [&](Each _it15544) { Py a; Py _r15548 = list(); for (Py _x15549 : _it15544) { a = _x15549; L_(_r15548)->v.push_back(list({call(lobe, {a}) * addpy::cos(a), call(lobe, {a}) * addpy::sin(a)})); } return _r15548; }(each([&](Range _it15545) { Py q; Py _r15546 = list(); for (Py _x15547 : _it15545) { q = _x15547; L_(_r15546)->v.push_back(2 * addpy::pi * q / 12); } return _r15546; }(range(Py(12)))));
-    { Py _t15550 = tuple({whip[0] / cum[Py(-1)], 1 - whip[1] / cum[Py(-1)]}); Vec _u15551 = unpack(_t15550, 2); (*w0__c) = _u15551[0]; (*w1__c) = _u15551[1]; }
+    prof = [&](Each _it15524) { Py a; Py _r15528 = list(); for (Py _x15529 : _it15524) { a = _x15529; L_(_r15528)->v.push_back(list({call(lobe, {a}) * addpy::cos(a), call(lobe, {a}) * addpy::sin(a)})); } return _r15528; }(each([&](Range _it15525) { Py q; Py _r15526 = list(); for (Py _x15527 : _it15525) { q = _x15527; L_(_r15526)->v.push_back(2 * addpy::pi * q / 12); } return _r15526; }(range(Py(12)))));
+    { Py _t15530 = tuple({whip[0] / cum[Py(-1)], 1 - whip[1] / cum[Py(-1)]}); Vec _u15531 = unpack(_t15530, 2); (*w0__c) = _u15531[0]; (*w1__c) = _u15531[1]; }
     tone = func(sig("lambda", {"t", "j"}, {MISSING_ARG, MISSING_ARG}, 2), [w0__c, w1__c](Vec& _A_) -> Py { Py t = _A_[0]; Py j = _A_[1]; return ((t < (*w0__c)) || (t > (*w1__c)) ? P[S("wood_dark")] : P[S("rope")]); });
     addpy::mesh(addpy::fix_normals(addpy::make([&] { addpy::sweep(prof, func(sig("lambda", {"t"}, {MISSING_ARG}, 1), [even__c, n__c](Vec& _A_) -> Py { Py t = _A_[0]; return (*even__c)[min2((*n__c), int_(round_(t * (*n__c))))]; }), Py(0.0), Py(1.0), (*n__c), tone, False, None, 2 * addpy::pi * cum[Py(-1)] / lay); })));
     return None;
@@ -50112,7 +50064,7 @@ Py belay_loop(Py hs__p, Py rho__p) {
     Py at;
     auto bend__c = std::make_shared<Py>();
     auto side__c = std::make_shared<Py>();
-    { Py _t15552 = tuple({2 * (*hs__c), addpy::pi * (*rho__c) / 2}); Vec _u15553 = unpack(_t15552, 2); (*side__c) = _u15553[0]; (*bend__c) = _u15553[1]; }
+    { Py _t15532 = tuple({2 * (*hs__c), addpy::pi * (*rho__c) / 2}); Vec _u15533 = unpack(_t15532, 2); (*side__c) = _u15533[0]; (*bend__c) = _u15533[1]; }
     at = func(sig("at", {"s"}, {MISSING_ARG}, 1), [bend__c, hs__c, rho__c, side__c](Vec& _A_) -> Py {
         Py s = _A_[0];
         Py N;
@@ -50131,7 +50083,7 @@ Py belay_loop(Py hs__p, Py rho__p) {
             return tuple({tuple({((*hs__c) + (*rho__c)) * N[0] + (q - (*hs__c)) * W[0], ((*hs__c) + (*rho__c)) * N[1] + (q - (*hs__c)) * W[1]}), W, N});
         }
         th = addpy::atan2(N[1], N[0]) - (q - (*side__c)) / (*rho__c);  // (round the corner after it)
-        { Py _t15554 = tuple({addpy::cos(th), addpy::sin(th)}); Vec _u15555 = unpack(_t15554, 2); c = _u15555[0]; sn = _u15555[1]; }
+        { Py _t15534 = tuple({addpy::cos(th), addpy::sin(th)}); Vec _u15535 = unpack(_t15534, 2); c = _u15535[0]; sn = _u15535[1]; }
         return tuple({tuple({(*hs__c) * (N[0] + W[0]) + (*rho__c) * c, (*hs__c) * (N[1] + W[1]) + (*rho__c) * sn}), tuple({sn, -c}), tuple({c, sn})});
     });
     return tuple({at, 4 * ((*side__c) + (*bend__c))});
@@ -50223,15 +50175,15 @@ Py mooring_line(Py post, Py low, Py bollard, Py upper, Py hang_to) {
     Py x0;
     auto y_T__c = std::make_shared<Py>();
     auto y_e__c = std::make_shared<Py>();
-    { Py _t15556 = post; Vec _u15557 = unpack(_t15556, 3); (*C__c) = _u15557[0]; (*a__c) = _u15557[1]; (*b__c) = _u15557[2]; }
+    { Py _t15536 = post; Vec _u15537 = unpack(_t15536, 3); (*C__c) = _u15537[0]; (*a__c) = _u15537[1]; (*b__c) = _u15537[2]; }
     r = ROPE_R;
-    { Py _t15558 = tuple({Py(0.08), r + 0.004}); Vec _u15559 = unpack(_t15558, 2); hs = _u15559[0]; rho = _u15559[1]; }  // (4 mm off the timberhead)
-    { Py _t15560 = tuple({2 * r + 0.008, Py(0.04), Py(0.12)}); Vec _u15561 = unpack(_t15560, 3); pitch = _u15561[0]; bend = _u15561[1]; rf = _u15561[2]; }  // (the turns; the end's bend; the curve
-    { Py _t15562 = belay_loop(hs, rho); Vec _u15563 = unpack(_t15562, 2); (*at__c) = _u15563[0]; (*per__c) = _u15563[1]; }  // over the rail)
+    { Py _t15538 = tuple({Py(0.08), r + 0.004}); Vec _u15539 = unpack(_t15538, 2); hs = _u15539[0]; rho = _u15539[1]; }  // (4 mm off the timberhead)
+    { Py _t15540 = tuple({2 * r + 0.008, Py(0.04), Py(0.12)}); Vec _u15541 = unpack(_t15540, 3); pitch = _u15541[0]; bend = _u15541[1]; rf = _u15541[2]; }  // (the turns; the end's bend; the curve
+    { Py _t15542 = belay_loop(hs, rho); Vec _u15543 = unpack(_t15542, 2); (*at__c) = _u15543[0]; (*per__c) = _u15543[1]; }  // over the rail)
     world = func(sig("lambda", {"al", "be", "y"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG}, 3), [C__c, a__c, b__c](Vec& _A_) -> Py { Py al = _A_[0]; Py be = _A_[1]; Py y = _A_[2]; return list({(*C__c)[0] + al * (*a__c)[0] + be * (*b__c)[0], (*C__c)[1] + y, (*C__c)[2] + al * (*a__c)[2] + be * (*b__c)[2]}); });
     (*rel__c) = func(sig("lambda", {"p"}, {MISSING_ARG}, 1), [C__c, a__c, b__c](Vec& _A_) -> Py { Py p = _A_[0]; return tuple({(p[0] - (*C__c)[0]) * (*a__c)[0] + (p[2] - (*C__c)[2]) * (*a__c)[2], (p[0] - (*C__c)[0]) * (*b__c)[0] + (p[2] - (*C__c)[2]) * (*b__c)[2]}); });
     (*y_e__c) = DOCK_Y + 0.55 - r - 0.004;  // (the eye: under the bollard's cap, round
-    { Py _t15564 = tuple({0.2 + r + 0.004, Py(0.6)}); Vec _u15565 = unpack(_t15564, 2); (*R_E__c) = _u15565[0]; (*D_T__c) = _u15565[1]; }  // its post; its throat this far off)
+    { Py _t15544 = tuple({0.2 + r + 0.004, Py(0.6)}); Vec _u15545 = unpack(_t15544, 2); (*R_E__c) = _u15545[0]; (*D_T__c) = _u15545[1]; }  // its post; its throat this far off)
     (*flat__c) = func(sig("lambda", {"p"}, {MISSING_ARG}, 1), [](Vec& _A_) -> Py { Py p = _A_[0]; return list({p[0], Py(0.0), p[2]}); });
     leave = func(sig("leave", {"T"}, {MISSING_ARG}, 1), [at__c, per__c, rel__c](Vec& _A_) -> Py {
         Py T = _A_[0];
@@ -50247,77 +50199,77 @@ Py mooring_line(Py post, Py low, Py bollard, Py upper, Py hang_to) {
         auto tb__c = std::make_shared<Py>();
         Py w;
         // Where on the round the line leaves the timberhead for ``T`` (its outer side), and which way it goes round.
-        { Py _t15566 = call((*rel__c), {T}); Vec _u15567 = unpack(_t15566, 2); (*ta__c) = _u15567[0]; (*tb__c) = _u15567[1]; }
-        g = func(sig("lambda", {"s"}, {MISSING_ARG}, 1), [at__c, ta__c, tb__c](Vec& _A_) -> Py { Py s = _A_[0]; return [&] { Args _args15568; star_into(_args15568.pos, call((*at__c), {s})); return call(func(sig("lambda", {"p", "w", "nrm"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG}, 3), [ta__c, tb__c](Vec& _A_) -> Py { Py p = _A_[0]; Py w = _A_[1]; Py nrm = _A_[2]; return nrm[0] * ((*ta__c) - p[0]) + nrm[1] * ((*tb__c) - p[1]); }), std::move(_args15568)); }(); });
+        { Py _t15546 = call((*rel__c), {T}); Vec _u15547 = unpack(_t15546, 2); (*ta__c) = _u15547[0]; (*tb__c) = _u15547[1]; }
+        g = func(sig("lambda", {"s"}, {MISSING_ARG}, 1), [at__c, ta__c, tb__c](Vec& _A_) -> Py { Py s = _A_[0]; return [&] { Args _args15548; star_into(_args15548.pos, call((*at__c), {s})); return call(func(sig("lambda", {"p", "w", "nrm"}, {MISSING_ARG, MISSING_ARG, MISSING_ARG}, 3), [ta__c, tb__c](Vec& _A_) -> Py { Py p = _A_[0]; Py w = _A_[1]; Py nrm = _A_[2]; return nrm[0] * ((*ta__c) - p[0]) + nrm[1] * ((*tb__c) - p[1]); }), std::move(_args15548)); }(); });
         best = None;
-        for (Py _v15569 : range(Py(400))) {
-            i = _v15569;
-            { Py _t15570 = tuple({(*per__c) * i / 400, (*per__c) * (i + 1) / 400}); Vec _u15571 = unpack(_t15570, 2); s0 = _u15571[0]; s1 = _u15571[1]; }
-            if ([&] { Py _t15572 = (Py(call(g, {s0}) > 0)); Py _t15573 = (Py(call(g, {s1}) > 0)); return _t15572 != _t15573; }()) {
-                for (Py _v15574 : range(Py(40))) {
-                    _ = _v15574;
+        for (Py _v15549 : range(Py(400))) {
+            i = _v15549;
+            { Py _t15550 = tuple({(*per__c) * i / 400, (*per__c) * (i + 1) / 400}); Vec _u15551 = unpack(_t15550, 2); s0 = _u15551[0]; s1 = _u15551[1]; }
+            if ([&] { Py _t15552 = (Py(call(g, {s0}) > 0)); Py _t15553 = (Py(call(g, {s1}) > 0)); return _t15552 != _t15553; }()) {
+                for (Py _v15554 : range(Py(40))) {
+                    _ = _v15554;
                     sm = (s0 + s1) / 2;
-                    { Py _t15577 = ([&] { Py _t15575 = (Py(call(g, {sm}) > 0)); Py _t15576 = (Py(call(g, {s0}) > 0)); return _t15575 == _t15576; }() ? tuple({sm, s1}) : tuple({s0, sm})); Vec _u15578 = unpack(_t15577, 2); s0 = _u15578[0]; s1 = _u15578[1]; }
+                    { Py _t15557 = ([&] { Py _t15555 = (Py(call(g, {sm}) > 0)); Py _t15556 = (Py(call(g, {s0}) > 0)); return _t15555 == _t15556; }() ? tuple({sm, s1}) : tuple({s0, sm})); Vec _u15558 = unpack(_t15557, 2); s0 = _u15558[0]; s1 = _u15558[1]; }
                 }
-                if (is(best, None) || ([&] { Py _t15579 = call((*at__c), {s0})[0][1]; Py _t15580 = call((*at__c), {best})[0][1]; return _t15579 > _t15580; }())) {
+                if (is(best, None) || ([&] { Py _t15559 = call((*at__c), {s0})[0][1]; Py _t15560 = call((*at__c), {best})[0][1]; return _t15559 > _t15560; }())) {
                     best = s0;
                 }
             }
         }
-        { Py _t15581 = call((*at__c), {best}); Vec _u15582 = unpack(_t15581, 3); p = _u15582[0]; w = _u15582[1]; _ = _u15582[2]; }
+        { Py _t15561 = call((*at__c), {best}); Vec _u15562 = unpack(_t15561, 3); p = _u15562[0]; w = _u15562[1]; _ = _u15562[2]; }
         return tuple({best, ((w[0] * ((*ta__c) - p[0]) + w[1] * ((*tb__c) - p[1])) > 0 ? Py(1) : Py(-1))});
     });
-    T = [&](Range _it15583) { Py k; Py _r15584 = list(); for (Py _x15587 : _it15583) { k = _x15587; L_(_r15584)->v.push_back(bollard[k] + (*D_T__c) * vunit([&] { Py _a15585 = call((*flat__c), {(*C__c)}); Py _a15586 = call((*flat__c), {bollard}); return vsub(_a15585, _a15586); }())[k]); } return _r15584; }(range(Py(3)));
-    for (Py _v15588 : range(Py(3))) {  // (the throat: towards where the line
-        _ = _v15588;
-        { Py _t15589 = call(leave, {T}); Vec _u15590 = unpack(_t15589, 2); s_e = _u15590[0]; sgn = _u15590[1]; }  // leaves the timberhead)
+    T = [&](Range _it15563) { Py k; Py _r15564 = list(); for (Py _x15567 : _it15563) { k = _x15567; L_(_r15564)->v.push_back(bollard[k] + (*D_T__c) * vunit([&] { Py _a15565 = call((*flat__c), {(*C__c)}); Py _a15566 = call((*flat__c), {bollard}); return vsub(_a15565, _a15566); }())[k]); } return _r15564; }(range(Py(3)));
+    for (Py _v15568 : range(Py(3))) {  // (the throat: towards where the line
+        _ = _v15568;
+        { Py _t15569 = call(leave, {T}); Vec _u15570 = unpack(_t15569, 2); s_e = _u15570[0]; sgn = _u15570[1]; }  // leaves the timberhead)
         E = call(world, {call((*at__c), {s_e})[0][0], call((*at__c), {s_e})[0][1], Py(0.0)});
-        T = [&](Range _it15591) { Py k; Py _r15592 = list(); for (Py _x15595 : _it15591) { k = _x15595; L_(_r15592)->v.push_back(bollard[k] + (*D_T__c) * vunit([&] { Py _a15593 = call((*flat__c), {E}); Py _a15594 = call((*flat__c), {bollard}); return vsub(_a15593, _a15594); }())[k]); } return _r15592; }(range(Py(3)));
+        T = [&](Range _it15571) { Py k; Py _r15572 = list(); for (Py _x15575 : _it15571) { k = _x15575; L_(_r15572)->v.push_back(bollard[k] + (*D_T__c) * vunit([&] { Py _a15573 = call((*flat__c), {E}); Py _a15574 = call((*flat__c), {bollard}); return vsub(_a15573, _a15574); }())[k]); } return _r15572; }(range(Py(3)));
     }
-    { Py _t15596 = tuple({(truthy(upper) ? Py(0.04) : Py(-0.04)), rho + 2 * r + 0.004}); Vec _u15597 = unpack(_t15596, 2); al_v = _u15597[0]; out_v = _u15597[1]; }  // the end, hanging down on the inner side
+    { Py _t15576 = tuple({(truthy(upper) ? Py(0.04) : Py(-0.04)), rho + 2 * r + 0.004}); Vec _u15577 = unpack(_t15576, 2); al_v = _u15577[0]; out_v = _u15577[1]; }  // the end, hanging down on the inner side
     s_t = 2 * (2 * hs + addpy::pi * rho / 2) + hs - (al_v - sgn * bend);  // outside the turns; from the top turn
     run = mod((s_e - s_t) * sgn, (*per__c)) + (*per__c);  // round and down to where the line
     top = low + run * pitch / (*per__c);  // leaves
     pts = list({call(world, {al_v, -(hs + out_v), hang_to}), call(world, {al_v, -(hs + out_v), top - bend})});
-    for (Py _v15598 : range(Py(1), Py(12))) {
-        i = _v15598;
+    for (Py _v15578 : range(Py(1), Py(12))) {
+        i = _v15578;
         f = addpy::pi / 2 * i / 12;
         pts.append(call(world, {al_v - sgn * bend + sgn * bend * addpy::cos(f), -(hs + out_v - (out_v - rho) * (3 - 2 * i / 12.0) * pow_(i / 12.0, Py(2))), top - bend + bend * addpy::sin(f)}));
     }
     m = int_(run / 0.005);
-    for (Py _v15599 : range(m + 1)) {
-        i = _v15599;
+    for (Py _v15579 : range(m + 1)) {
+        i = _v15579;
         q = run * i / m;
-        { Py _t15600 = call((*at__c), {s_t + sgn * q}); Vec _u15601 = unpack(_t15600, 3); Vec _u15602 = unpack(_u15601[0], 2); al = _u15602[0]; be = _u15602[1]; _ = _u15601[1]; _ = _u15601[2]; }
+        { Py _t15580 = call((*at__c), {s_t + sgn * q}); Vec _u15581 = unpack(_t15580, 3); Vec _u15582 = unpack(_u15581[0], 2); al = _u15582[0]; be = _u15582[1]; _ = _u15581[1]; _ = _u15581[2]; }
         pts.append(call(world, {al, be, top - q * pitch / (*per__c)}));
     }
-    { Py _t15603 = call((*at__c), {s_e}); Vec _u15604 = unpack(_t15603, 3); _ = _u15604[0]; w = _u15604[1]; _ = _u15604[2]; }
+    { Py _t15583 = call((*at__c), {s_e}); Vec _u15584 = unpack(_t15583, 3); _ = _u15584[0]; w = _u15584[1]; _ = _u15584[2]; }
     d = vunit(list({sgn * (w[0] * (*a__c)[0] + w[1] * (*b__c)[0]), Py(0.0), sgn * (w[0] * (*a__c)[2] + w[1] * (*b__c)[2])}));
     x0 = Py(0.0);  // out level till clear of the rail and of
     while (x0 < 1.0) {  // the turns of a line below
-        { Py _t15608 = call((*rel__c), {[&](Range _it15605) { Py k; Py _r15606 = list(); for (Py _x15607 : _it15605) { k = _x15607; L_(_r15606)->v.push_back(pts[Py(-1)][k] + x0 * d[k]); } return _r15606; }(range(Py(3)))}); Vec _u15609 = unpack(_t15608, 2); ta = _u15609[0]; tb = _u15609[1]; }
+        { Py _t15588 = call((*rel__c), {[&](Range _it15585) { Py k; Py _r15586 = list(); for (Py _x15587 : _it15585) { k = _x15587; L_(_r15586)->v.push_back(pts[Py(-1)][k] + x0 * d[k]); } return _r15586; }(range(Py(3)))}); Vec _u15589 = unpack(_t15588, 2); ta = _u15589[0]; tb = _u15589[1]; }
         if ((tb >= (hs + 0.02 + r + 0.006)) && (addpy::hypot(max2(Py(0.0), abs_(ta) - hs), max2(Py(0.0), abs_(tb) - hs)) >= (rho + 2 * r + 0.006))) {
             break;
         }
         iadd(x0, Py(0.005));
     }
-    E = [&](Range _it15610) { Py k; Py _r15611 = list(); for (Py _x15612 : _it15610) { k = _x15612; L_(_r15611)->v.push_back(pts[Py(-1)][k] + x0 * d[k]); } return _r15611; }(range(Py(3)));
-    iadd(pts, ([&](Range _it15613) { Py i; Py _r15614 = list(); for (Py _x15618 : _it15613) { i = _x15618; L_(_r15614)->v.push_back([&](Range _it15615) { Py k; Py _r15616 = list(); for (Py _x15617 : _it15615) { k = _x15617; L_(_r15616)->v.push_back(pts[Py(-1)][k] + x0 * d[k] * i / 8.0); } return _r15616; }(range(Py(3)))); } return _r15614; }(range(Py(1), Py(9)))));
+    E = [&](Range _it15590) { Py k; Py _r15591 = list(); for (Py _x15592 : _it15590) { k = _x15592; L_(_r15591)->v.push_back(pts[Py(-1)][k] + x0 * d[k]); } return _r15591; }(range(Py(3)));
+    iadd(pts, ([&](Range _it15593) { Py i; Py _r15594 = list(); for (Py _x15598 : _it15593) { i = _x15598; L_(_r15594)->v.push_back([&](Range _it15595) { Py k; Py _r15596 = list(); for (Py _x15597 : _it15595) { k = _x15597; L_(_r15596)->v.push_back(pts[Py(-1)][k] + x0 * d[k] * i / 8.0); } return _r15596; }(range(Py(3)))); } return _r15594; }(range(Py(1), Py(9)))));
     th0 = Py(0.0);
-    { Py _t15619 = tuple({(*y_e__c), Py(-0.6)}); Vec _u15620 = unpack(_t15619, 2); (*y_T__c) = _u15620[0]; th1 = _u15620[1]; }
-    for (Py _v15621 : range(Py(8))) {  // out over the rail, bending down, and
-        _ = _v15621;
-        (*F__c) = [&](Range _it15622) { Py k; Py _r15623 = list(); for (Py _x15624 : _it15622) { k = _x15624; L_(_r15623)->v.push_back(E[k] + rf * ((addpy::sin(th0) - addpy::sin(th1)) * d[k] - (addpy::cos(th0) - addpy::cos(th1)) * Py(k == 1))); } return _r15623; }(range(Py(3)));
-        (*dT__c) = vunit([&] { Py _a15625 = call((*flat__c), {T}); Py _a15626 = call((*flat__c), {(*F__c)}); return vsub(_a15625, _a15626); }());  // hanging in a curve to the throat,
-        (*Lh__c) = vlen([&] { Py _a15627 = call((*flat__c), {T}); Py _a15628 = call((*flat__c), {(*F__c)}); return vsub(_a15627, _a15628); }());  // sagging 4 % of its length
+    { Py _t15599 = tuple({(*y_e__c), Py(-0.6)}); Vec _u15600 = unpack(_t15599, 2); (*y_T__c) = _u15600[0]; th1 = _u15600[1]; }
+    for (Py _v15601 : range(Py(8))) {  // out over the rail, bending down, and
+        _ = _v15601;
+        (*F__c) = [&](Range _it15602) { Py k; Py _r15603 = list(); for (Py _x15604 : _it15602) { k = _x15604; L_(_r15603)->v.push_back(E[k] + rf * ((addpy::sin(th0) - addpy::sin(th1)) * d[k] - (addpy::cos(th0) - addpy::cos(th1)) * Py(k == 1))); } return _r15603; }(range(Py(3)));
+        (*dT__c) = vunit([&] { Py _a15605 = call((*flat__c), {T}); Py _a15606 = call((*flat__c), {(*F__c)}); return vsub(_a15605, _a15606); }());  // hanging in a curve to the throat,
+        (*Lh__c) = vlen([&] { Py _a15607 = call((*flat__c), {T}); Py _a15608 = call((*flat__c), {(*F__c)}); return vsub(_a15607, _a15608); }());  // sagging 4 % of its length
         (*sag__c) = 0.04 * addpy::sqrt((*Lh__c) * (*Lh__c) + pow_((*F__c)[1] - (*y_T__c), Py(2)));
-        { Py _t15629 = tuple({((*y_T__c) - (*F__c)[1] - 4 * (*sag__c)) / (*Lh__c), ((*y_T__c) - (*F__c)[1] + 4 * (*sag__c)) / (*Lh__c)}); Vec _u15630 = unpack(_t15629, 2); s_F = _u15630[0]; s_T = _u15630[1]; }
-        { Py _t15631 = tuple({addpy::atan(s_F), (*y_e__c) + 0.15 * max2(Py(0.0), -s_T)}); Vec _u15632 = unpack(_t15631, 2); th1 = _u15632[0]; (*y_T__c) = _u15632[1]; }
+        { Py _t15609 = tuple({((*y_T__c) - (*F__c)[1] - 4 * (*sag__c)) / (*Lh__c), ((*y_T__c) - (*F__c)[1] + 4 * (*sag__c)) / (*Lh__c)}); Vec _u15610 = unpack(_t15609, 2); s_F = _u15610[0]; s_T = _u15610[1]; }
+        { Py _t15611 = tuple({addpy::atan(s_F), (*y_e__c) + 0.15 * max2(Py(0.0), -s_T)}); Vec _u15612 = unpack(_t15611, 2); th1 = _u15612[0]; (*y_T__c) = _u15612[1]; }
     }
-    for (Py _v15633 : range(Py(1), Py(13))) {
-        i = _v15633;
+    for (Py _v15613 : range(Py(1), Py(13))) {
+        i = _v15613;
         th = th0 + (th1 - th0) * i / 12;
-        pts.append([&](Range _it15634) { Py k; Py _r15635 = list(); for (Py _x15636 : _it15634) { k = _x15636; L_(_r15635)->v.push_back(E[k] + rf * ((addpy::sin(th0) - addpy::sin(th)) * d[k] - (addpy::cos(th0) - addpy::cos(th)) * Py(k == 1))); } return _r15635; }(range(Py(3))));
+        pts.append([&](Range _it15614) { Py k; Py _r15615 = list(); for (Py _x15616 : _it15614) { k = _x15616; L_(_r15615)->v.push_back(E[k] + rf * ((addpy::sin(th0) - addpy::sin(th)) * d[k] - (addpy::cos(th0) - addpy::cos(th)) * Py(k == 1))); } return _r15615; }(range(Py(3))));
     }
     (*lat__c) = list({-(*dT__c)[2], Py(0.0), (*dT__c)[0]});
     dl = r + 0.003;  // (the line and its end side by side)
@@ -50325,7 +50277,7 @@ Py mooring_line(Py post, Py low, Py bollard, Py upper, Py hang_to) {
     ease = func(sig("lambda", {"q"}, {MISSING_ARG}, 1), [](Vec& _A_) -> Py { Py q = _A_[0]; return (q <= 0 ? Py(0.0) : (q >= 1 ? Py(1.0) : q * q * (3 - 2 * q))); });
     line = func(sig("lambda", {"x", "o"}, {MISSING_ARG, MISSING_ARG}, 2), [F__c, dT__c, hang__c, lat__c](Vec& _A_) -> Py { Py x = _A_[0]; Py o = _A_[1]; return list({(*F__c)[0] + x * (*dT__c)[0] + o * (*lat__c)[0], call((*hang__c), {x}), (*F__c)[2] + x * (*dT__c)[2] + o * (*lat__c)[2]}); });
     m = int_((*Lh__c) / 0.01);
-    iadd(pts, ([&](Range _it15637) { Py i; Py _r15638 = list(); for (Py _x15639 : _it15637) { i = _x15639; L_(_r15638)->v.push_back(call(line, {(*Lh__c) * i / m, dl * call(ease, {((*Lh__c) * i / m - (*Lh__c) + 1.2) / 0.7})})); } return _r15638; }(range(Py(1), m + 1))));
+    iadd(pts, ([&](Range _it15617) { Py i; Py _r15618 = list(); for (Py _x15619 : _it15617) { i = _x15619; L_(_r15618)->v.push_back(call(line, {(*Lh__c) * i / m, dl * call(ease, {((*Lh__c) * i / m - (*Lh__c) + 1.2) / 0.7})})); } return _r15618; }(range(Py(1), m + 1))));
     (*B__c) = call((*flat__c), {bollard});  // the eye: its two legs from the throat
     ca = (*R_E__c) / (*D_T__c);  // round the bollard
     sa = addpy::sqrt(1 - ca * ca);
@@ -50344,14 +50296,14 @@ Py mooring_line(Py post, Py low, Py bollard, Py upper, Py hang_to) {
         Py u;
         // A leg of the eye: from ``p0`` going ``d0`` to ``p3`` going ``d3``, level with the eye's round near the
         // bollard, rising towards the throat.
-        p1 = [&](Range _it15640) { Py k; Py _r15641 = list(); for (Py _x15642 : _it15640) { k = _x15642; L_(_r15641)->v.push_back(p0[k] + 0.15 * d0[k]); } return _r15641; }(range(Py(3)));
-        p2 = [&](Range _it15643) { Py k; Py _r15644 = list(); for (Py _x15645 : _it15643) { k = _x15645; L_(_r15644)->v.push_back(p3[k] - 0.12 * d3[k]); } return _r15644; }(range(Py(3)));
+        p1 = [&](Range _it15620) { Py k; Py _r15621 = list(); for (Py _x15622 : _it15620) { k = _x15622; L_(_r15621)->v.push_back(p0[k] + 0.15 * d0[k]); } return _r15621; }(range(Py(3)));
+        p2 = [&](Range _it15623) { Py k; Py _r15624 = list(); for (Py _x15625 : _it15623) { k = _x15625; L_(_r15624)->v.push_back(p3[k] - 0.12 * d3[k]); } return _r15624; }(range(Py(3)));
         out = list({});
-        for (Py _v15646 : range(Py(1), Py(40))) {
-            i = _v15646;
+        for (Py _v15626 : range(Py(1), Py(40))) {
+            i = _v15626;
             u = i / 40.0;
-            q = [&](Range _it15647) { Py k; Py _r15648 = list(); for (Py _x15649 : _it15647) { k = _x15649; L_(_r15648)->v.push_back(pow_(1 - u, Py(3)) * p0[k] + 3 * pow_(1 - u, Py(2)) * u * p1[k] + 3 * (1 - u) * u * u * p2[k] + pow_(u, Py(3)) * p3[k]); } return _r15648; }(range(Py(3)));
-            { Py _t15650 = call((*rise__c), {q}); setitem(q, Py(1), _t15650); }
+            q = [&](Range _it15627) { Py k; Py _r15628 = list(); for (Py _x15629 : _it15627) { k = _x15629; L_(_r15628)->v.push_back(pow_(1 - u, Py(3)) * p0[k] + 3 * pow_(1 - u, Py(2)) * u * p1[k] + 3 * (1 - u) * u * u * p2[k] + pow_(u, Py(3)) * p3[k]); } return _r15628; }(range(Py(3)));
+            { Py _t15630 = call((*rise__c), {q}); setitem(q, Py(1), _t15630); }
             out.append(q);
         }
         return out;
@@ -50359,25 +50311,25 @@ Py mooring_line(Py post, Py low, Py bollard, Py upper, Py hang_to) {
     tan__ = func(sig("lambda", {"f"}, {MISSING_ARG}, 1), [dT__c, lat__c](Vec& _A_) -> Py { Py f = _A_[0]; return list({addpy::sin(f) * (*dT__c)[0] + addpy::cos(f) * (*lat__c)[0], Py(0.0), addpy::sin(f) * (*dT__c)[2] + addpy::cos(f) * (*lat__c)[2]}); });
     f0 = addpy::atan2(sa, ca);
     iadd(pts, call(leg, {call(line, {(*Lh__c), dl}), (*dT__c), call(ring, {f0}), call(tan__, {f0})}));
-    iadd(pts, ([&](Range _it15651) { Py i; Py _r15652 = list(); for (Py _x15653 : _it15651) { i = _x15653; L_(_r15652)->v.push_back(call(ring, {f0 + (2 * addpy::pi - 2 * f0) * i / 60.0})); } return _r15652; }(range(Py(61)))));
+    iadd(pts, ([&](Range _it15631) { Py i; Py _r15632 = list(); for (Py _x15633 : _it15631) { i = _x15633; L_(_r15632)->v.push_back(call(ring, {f0 + (2 * addpy::pi - 2 * f0) * i / 60.0})); } return _r15632; }(range(Py(61)))));
     iadd(pts, call(leg, {call(ring, {2 * addpy::pi - f0}), call(tan__, {2 * addpy::pi - f0}), call(line, {(*Lh__c), -dl}), list({-(*dT__c)[0], Py(0.0), -(*dT__c)[2]})}));
-    iadd(pts, ([&](Range _it15654) { Py i; Py _r15655 = list(); for (Py _x15656 : _it15654) { i = _x15656; L_(_r15655)->v.push_back(call(line, {(*Lh__c) - 0.35 * i / 35.0, -dl})); } return _r15655; }(range(Py(36)))));  // the end back along the line, seized
+    iadd(pts, ([&](Range _it15634) { Py i; Py _r15635 = list(); for (Py _x15636 : _it15634) { i = _x15636; L_(_r15635)->v.push_back(call(line, {(*Lh__c) - 0.35 * i / 35.0, -dl})); } return _r15635; }(range(Py(36)))));  // the end back along the line, seized
     laid_rope(pts, r, K(tuple({Py(0.035), Py(0.035)})));
-    for (Py _v15657 : each(tuple({(*Lh__c) - 0.08, (*Lh__c) - 0.27}))) {  // (the seizings: three turns of twine
-        x = _v15657;
+    for (Py _v15637 : each(tuple({(*Lh__c) - 0.08, (*Lh__c) - 0.27}))) {  // (the seizings: three turns of twine
+        x = _v15637;
         c = call(line, {x, Py(0.0)});  // round both)
-        tau = vunit(list({(*dT__c)[0], ([&] { Py _t15658 = call((*hang__c), {x + 0.01}); Py _t15659 = call((*hang__c), {x - 0.01}); return _t15658 - _t15659; }()) / 0.02, (*dT__c)[2]}));
+        tau = vunit(list({(*dT__c)[0], ([&] { Py _t15638 = call((*hang__c), {x + 0.01}); Py _t15639 = call((*hang__c), {x - 0.01}); return _t15638 - _t15639; }()) / 0.02, (*dT__c)[2]}));
         nrm = vunit(vcross(tau, (*lat__c)));
         rs = r + 0.004 + 0.004;
-        for (Py _v15660 : each(K(tuple({Py(-1), Py(0), Py(1)})))) {
-            j = _v15660;
-            cc = [&](Range _it15661) { Py k; Py _r15662 = list(); for (Py _x15663 : _it15661) { k = _x15663; L_(_r15662)->v.push_back(c[k] + tau[k] * 0.009 * j); } return _r15662; }(range(Py(3)));
+        for (Py _v15640 : each(K(tuple({Py(-1), Py(0), Py(1)})))) {
+            j = _v15640;
+            cc = [&](Range _it15641) { Py k; Py _r15642 = list(); for (Py _x15643 : _it15641) { k = _x15643; L_(_r15642)->v.push_back(c[k] + tau[k] * 0.009 * j); } return _r15642; }(range(Py(3)));
             loop = list({});
-            for (Py _v15664 : range(Py(20))) {
-                i = _v15664;
+            for (Py _v15644 : range(Py(20))) {
+                i = _v15644;
                 f = addpy::pi * mod(i, Py(10)) / 9.0 - addpy::pi / 2 + ((i >= 10 ? addpy::pi : Py(0.0)));
                 o = (i < 10 ? dl : -dl);
-                loop.append([&](Range _it15665) { Py k; Py _r15666 = list(); for (Py _x15667 : _it15665) { k = _x15667; L_(_r15666)->v.push_back(cc[k] + (o + rs * addpy::cos(f)) * (*lat__c)[k] + rs * addpy::sin(f) * nrm[k]); } return _r15666; }(range(Py(3))));
+                loop.append([&](Range _it15645) { Py k; Py _r15646 = list(); for (Py _x15647 : _it15645) { k = _x15647; L_(_r15646)->v.push_back(cc[k] + (o + rs * addpy::cos(f)) * (*lat__c)[k] + rs * addpy::sin(f) * nrm[k]); } return _r15646; }(range(Py(3))));
             }
             addpy::polyline(loop, Py(0.004), Py(5), P[S("wood_dark")], True);
         }
@@ -50393,7 +50345,7 @@ Py mooring_line(Py post, Py low, Py bollard, Py upper, Py hang_to) {
 Py coping_stone(Py u0, Py u1, Py v0, Py v1, Py k) {
     Py h;
     h = Py(0.015);
-    { Py _t15685 = tuple({(u1 > (ABUE - 1e-06) ? u1 : u1 - h), (v0 < ((-ABE) + 1e-06) ? v0 : v0 + h), (v1 > (ABE - 1e-06) ? v1 : v1 - h)}); Vec _u15686 = unpack(_t15685, 3); u1 = _u15686[0]; v0 = _u15686[1]; v1 = _u15686[2]; }
+    { Py _t15665 = tuple({(u1 > (ABUE - 1e-06) ? u1 : u1 - h), (v0 < ((-ABE) + 1e-06) ? v0 : v0 + h), (v1 > (ABE - 1e-06) ? v1 : v1 - h)}); Vec _u15666 = unpack(_t15665, 3); u1 = _u15666[0]; v0 = _u15666[1]; v1 = _u15666[2]; }
     addpy::cuboid(list({(u0 + h + u1) / 2, (ABC + AY1) / 2, (v0 + v1) / 2}), list({u1 - u0 - h, AY1 - ABC, v1 - v0}), pick(S("stone"), u0 + 3 * k, v0 + k));
     return None;
 }
@@ -50401,7 +50353,7 @@ Py coping_stone(Py u0, Py u1, Py v0, Py v1, Py k) {
 Py bundle_reach(Py ph, Py y) {  // (how far out the bundle reaches
     Py u_;
     u_ = list({addpy::cos(ph), addpy::sin(ph)});  // the way ph, y up)
-    return max_(L_([&](Each _it15756) { Py c_; Py _r15757 = list(); for (Py _x15758 : _it15756) { c_ = _x15758; L_(_r15757)->v.push_back((c_[0] - BC[0]) * u_[0] + (c_[1] - BC[1]) * u_[1] + call(out_r, {y})); } return _r15757; }(each(cs_)))->v, None, MISSING_ARG);
+    return max_(L_([&](Each _it15736) { Py c_; Py _r15737 = list(); for (Py _x15738 : _it15736) { c_ = _x15738; L_(_r15737)->v.push_back((c_[0] - BC[0]) * u_[0] + (c_[1] - BC[1]) * u_[1] + call(out_r, {y})); } return _r15737; }(each(cs_)))->v, None, MISSING_ARG);
 }
 
 // The two bollards on side ``sg`` of the wharf that a timberhead ``u_t``
@@ -50414,10 +50366,10 @@ Py mooring_bollards(Py u_t__p, Py u_ship, Py sg) {
     Py k;
     Py on;
     auto row__c = std::make_shared<Py>();
-    (*row__c) = sorted([&](Each _it15784) { Py side; Py u; Py _r15785 = list(); for (Py _x15786 : _it15784) { Vec _u15787 = unpack(_x15786, 2); u = _u15787[0]; side = _u15787[1]; if (!(side == sg)) continue; L_(_r15785)->v.push_back(u); } return _r15785; }(each(POSTS)), None, False);
+    (*row__c) = sorted([&](Each _it15764) { Py side; Py u; Py _r15765 = list(); for (Py _x15766 : _it15764) { Vec _u15767 = unpack(_x15766, 2); u = _u15767[0]; side = _u15767[1]; if (!(side == sg)) continue; L_(_r15765)->v.push_back(u); } return _r15765; }(each(POSTS)), None, False);
     k = min_(items_of(Py(range(len((*row__c))))), func(sig("lambda", {"i"}, {MISSING_ARG}, 1), [row__c, u_t__c](Vec& _A_) -> Py { Py i = _A_[0]; return abs_((*row__c)[i] - (*u_t__c)); }), MISSING_ARG);
     on = ((*u_t__c) > u_ship ? Py(1) : Py(-1));
-    return tuple({([&]() -> bool { Py _t15788 = Py(0); Py _t15789 = k + on; if (!(_t15788 <= _t15789)) return false; Py _t15790 = len((*row__c)); return _t15789 < _t15790; }() ? (*row__c)[k + on] : (*row__c)[k - on]), (*row__c)[k]});
+    return tuple({([&]() -> bool { Py _t15768 = Py(0); Py _t15769 = k + on; if (!(_t15768 <= _t15769)) return false; Py _t15770 = len((*row__c)); return _t15769 < _t15770; }() ? (*row__c)[k + on] : (*row__c)[k - on]), (*row__c)[k]});
 }
 
 // A boat's painter, made fast at both ends: through the ring on her stem
@@ -50444,7 +50396,7 @@ Py painter(Py ring, Py head, Py post, Py r_post, Py y_tie) {
     Py t;
     Py tie;
     RR = Py(0.012);
-    { Py _t15801 = tuple({addpy::cos(head), addpy::sin(head)}); Vec _u15802 = unpack(_t15801, 2); c = _u15802[0]; s = _u15802[1]; }
+    { Py _t15781 = tuple({addpy::cos(head), addpy::sin(head)}); Vec _u15782 = unpack(_t15781, 2); c = _u15782[0]; s = _u15782[1]; }
     bar = list({ring[0] + 0.05 * c, ring[1], ring[2] + 0.05 * s});  // (the ring's bar out in front)
     addpy::torus(bar, Py(0.036), RR, Py(10), Py(5), P[S("rope")]);  // the loop round it,
     knot = list({bar[0] + 0.07 * c, bar[1] - 0.01, bar[2] + 0.07 * s});
@@ -50455,19 +50407,19 @@ Py painter(Py ring, Py head, Py post, Py r_post, Py y_tie) {
     start = list({knot[0] + 0.02 * c, knot[1], knot[2] + 0.02 * s});
     L = vlen(vsub(tie, start));
     pts = list({});
-    for (Py _v15803 : range(Py(13))) {  // (the curve it hangs in, on what is under it)
-        i = _v15803;
+    for (Py _v15783 : range(Py(13))) {  // (the curve it hangs in, on what is under it)
+        i = _v15783;
         t = i / 12.0;
-        q = [&](Range _it15804) { Py k; Py _r15805 = list(); for (Py _x15806 : _it15804) { k = _x15806; L_(_r15805)->v.push_back(start[k] + (tie[k] - start[k]) * t); } return _r15805; }(range(Py(3)));
-        { Py _o15807 = q; Py _k15808 = Py(1); Py _c15809 = getitem(_o15807, _k15808); _c15809 = _c15809 - (0.12 * L * 4 * t * (1 - t)); setitem(_o15807, _k15808, _c15809); }
-        { Py _t15813 = ([&]() -> bool { Py _t15810 = Py(0); Py _t15811 = i; if (!(_t15810 < _t15811)) return false; Py _t15812 = Py(12); return _t15811 < _t15812; }() ? max2(q[1], max2(ground(q[0], q[2]), WATER_Y - 0.01) + RR + 0.004) : q[1]); setitem(q, Py(1), _t15813); }
+        q = [&](Range _it15784) { Py k; Py _r15785 = list(); for (Py _x15786 : _it15784) { k = _x15786; L_(_r15785)->v.push_back(start[k] + (tie[k] - start[k]) * t); } return _r15785; }(range(Py(3)));
+        { Py _o15787 = q; Py _k15788 = Py(1); Py _c15789 = getitem(_o15787, _k15788); _c15789 = _c15789 - (0.12 * L * 4 * t * (1 - t)); setitem(_o15787, _k15788, _c15789); }
+        { Py _t15793 = ([&]() -> bool { Py _t15790 = Py(0); Py _t15791 = i; if (!(_t15790 < _t15791)) return false; Py _t15792 = Py(12); return _t15791 < _t15792; }() ? max2(q[1], max2(ground(q[0], q[2]), WATER_Y - 0.01) + RR + 0.004) : q[1]); setitem(q, Py(1), _t15793); }
         pts.append(q);
     }
     addpy::polyline(pts, RR, Py(6), P[S("rope")], MISSING_ARG, Py(1));
-    for (Py _v15814 : each(enumerate_(K(tuple({Py(0.0), Py(-0.028)})), Py(0)))) {  // the round turns,
-        Vec _u15815 = unpack(_v15814, 2);
-        k = _u15815[0];
-        dy = _u15815[1];
+    for (Py _v15794 : each(enumerate_(K(tuple({Py(0.0), Py(-0.028)})), Py(0)))) {  // the round turns,
+        Vec _u15795 = unpack(_v15794, 2);
+        k = _u15795[0];
+        dy = _u15795[1];
         addpy::torus(list({post[0], y_tie + dy, post[1]}), r_post + RR, RR, Py(12), Py(5), P[S("rope")]);
     }
     far__ = list({post[0] + d[0] * (r_post + RR), y_tie + 0.022, post[1] + d[2] * (r_post + RR)});
@@ -50483,13 +50435,13 @@ Py creel(Py at, Py fish_n) {
     Py i;
     Py y;
     lathe(list({list({Py(0.0), Py(0.0)}), list({Py(0.2), Py(0.0)}), list({Py(0.26), Py(0.12)}), list({Py(0.27), Py(0.3)}), list({Py(0.24), Py(0.3)}), list({Py(0.23), Py(0.14)}), list({Py(0.0), Py(0.05)})}), at, k_(Py(10)), P[S("straw")]);
-    for (Py _v15820 : each(K(tuple({Py(0.1), Py(0.2)})))) {
-        y = _v15820;
+    for (Py _v15800 : each(K(tuple({Py(0.1), Py(0.2)})))) {
+        y = _v15800;
         addpy::torus(list({at[0], at[1] + y, at[2]}), Py(0.255), Py(0.012), k_(Py(10)), Py(4), P[S("wood_light")]);
     }
     addpy::arch(list({at[0] - 0.24, at[1] + 0.3, at[2]}), list({at[0] + 0.24, at[1] + 0.3, at[2]}), Py(0.2), Py(0.015), P[S("rope")], Py(8), Py(5));
-    for (Py _v15821 : range(fish_n)) {
-        i = _v15821;
+    for (Py _v15801 : range(fish_n)) {
+        i = _v15801;
         f = addpy::rotateX(addpy::make([&] { fish(list({Py(0), Py(0), Py(0)}), Py(0.0), tuple({P[S("steel")], P[S("gold")], P[S("slate")]})[mod(i, Py(3))], Py(0.22), True); }), addpy::pi / 2);
         addpy::mesh(addpy::move(addpy::rotateY(f, 1.3 * i), list({at[0] + 0.05 * (i - 1), at[1] + 0.12 + 0.05 * i, at[2]})));
     }
@@ -50572,14 +50524,14 @@ Py fisherman(Py at__p, Py facing, Py pose, Py tunic, Py hat, Py seat, Py rod) {
     Py v;
     Py world;
     sit = Py(pose == S("sit"));
-    { Py _t15822 = tuple({(truthy(sit) ? list({Py(0.0), Py(0.37), Py(0.38)}) : list({Py(0.0), Py(1.2), Py(0.31)})), Py(-0.076), Py(-0.648)}); Vec _u15823 = unpack(_t15822, 3); (*C__c) = _u15823[0]; WR = _u15823[1]; WL = _u15823[2]; }  // the right fist's middle,
+    { Py _t15802 = tuple({(truthy(sit) ? list({Py(0.0), Py(0.37), Py(0.38)}) : list({Py(0.0), Py(1.2), Py(0.31)})), Py(-0.076), Py(-0.648)}); Vec _u15803 = unpack(_t15802, 3); (*C__c) = _u15803[0]; WR = _u15803[1]; WL = _u15803[2]; }  // the right fist's middle,
     (*d__c) = list({(-addpy::sin(Py(0.5))) * addpy::cos(Py(0.6)), addpy::sin(Py(0.6)), addpy::cos(Py(0.5)) * addpy::cos(Py(0.6))});  // on the rod's axis before him; the rod: 34
-    { Py _t15824 = frame_of((*d__c), list({Py(0), Py(1), Py(0)})); Vec _u15825 = unpack(_t15824, 3); (*side__c) = _u15825[0]; (*up__c) = _u15825[1]; _ = _u15825[2]; }  // degrees up, 29 to his right (square to it: to his
+    { Py _t15804 = frame_of((*d__c), list({Py(0), Py(1), Py(0)})); Vec _u15805 = unpack(_t15804, 3); (*side__c) = _u15805[0]; (*up__c) = _u15805[1]; _ = _u15805[2]; }  // degrees up, 29 to his right (square to it: to his
     on = func(sig("lambda", {"s", "dn", "x"}, {MISSING_ARG, Py(0.0), Py(0.0)}, 1), [C__c, d__c, side__c, up__c](Vec& _A_) -> Py { Py s = _A_[0]; Py dn = _A_[1]; Py x = _A_[2]; return _plus(tuple({(*C__c), _times((*d__c), s), _times((*up__c), -dn), _times((*side__c), x)})); });  // left, and its top; on(): s along
-    { Py _t15826 = tuple({Py(0.016), Py(0.2), Py(0.1), rod / LIFE}); Vec _u15827 = unpack(_t15826, 4); HR = _u15827[0]; BUTT = _u15827[1]; (*FORE__c) = _u15827[2]; (*TIP__c) = _u15827[3]; }  // it from the fist, dn under its axis, x to his
+    { Py _t15806 = tuple({Py(0.016), Py(0.2), Py(0.1), rod / LIFE}); Vec _u15807 = unpack(_t15806, 4); HR = _u15807[0]; BUTT = _u15807[1]; (*FORE__c) = _u15807[2]; (*TIP__c) = _u15807[3]; }  // it from the fist, dn under its axis, x to his
     rb = func(sig("lambda", {"s"}, {MISSING_ARG}, 1), [FORE__c, TIP__c](Vec& _A_) -> Py { Py s = _A_[0]; return 0.0105 - 0.0077 * (s - (*FORE__c)) / ((*TIP__c) - (*FORE__c)); });  // left); the handle's radius and ends; the blank's
-    { Py _t15828 = K(tuple({Py(0.052), Py(0.042), Py(0.078), Py(0.028), Py(0.018)})); Vec _u15829 = unpack(_t15828, 5); TS = _u15829[0]; D0 = _u15829[1]; DA = _u15829[2]; FR = _u15829[3]; LR = _u15829[4]; }  // radius at s.  The reel's stem ahead of his
-    { Py _t15830 = K(tuple({Py(0.04), Py(0.0), Py(0.084), Py(0.0085)})); Vec _u15831 = unpack(_t15830, 4); CR = _u15831[0]; PHI = _u15831[1]; KL = _u15831[2]; KR = _u15831[3]; }  // forefinger, the fork's bridge, the axle, the
+    { Py _t15808 = K(tuple({Py(0.052), Py(0.042), Py(0.078), Py(0.028), Py(0.018)})); Vec _u15809 = unpack(_t15808, 5); TS = _u15809[0]; D0 = _u15809[1]; DA = _u15809[2]; FR = _u15809[3]; LR = _u15809[4]; }  // radius at s.  The reel's stem ahead of his
+    { Py _t15810 = K(tuple({Py(0.04), Py(0.0), Py(0.084), Py(0.0085)})); Vec _u15811 = unpack(_t15810, 4); CR = _u15811[0]; PHI = _u15811[1]; KL = _u15811[2]; KR = _u15811[3]; }  // forefinger, the fork's bridge, the axle, the
     knob = call(on, {TS - CR * addpy::cos(PHI), DA + CR * addpy::sin(PHI)});  // flanges, the line on the spool (under the rod's
     CL = _plus(tuple({knob, _times((*side__c), Py(0.0787))}));  // axis); the crank, its knob behind the axle, the
     a_r = _plus(tuple({_times((*side__c), addpy::cos(WR)), _times((*up__c), addpy::sin(WR))}));  // left fist round it from above, the back of the
@@ -50589,63 +50541,63 @@ Py fisherman(Py at__p, Py facing, Py pose, Py tunic, Py hat, Py seat, Py rod) {
     M = person(pose, tunic, hat, MISSING_ARG, seat, tuple({right, left}));  // that each elbow comes down by his side, the
     // wrists straight
     addpy::push();
-    [&] { Py _a15832 = call(on, {-BUTT}); Py _a15833 = call(on, {(*FORE__c)}); Py _a15834 = Py(10); Py _a15835 = P[S("wood_light")]; return addpy::cylinder(_a15832, _a15833, HR, _a15834, _a15835); }();  // the handle, its butt knob,
+    [&] { Py _a15812 = call(on, {-BUTT}); Py _a15813 = call(on, {(*FORE__c)}); Py _a15814 = Py(10); Py _a15815 = P[S("wood_light")]; return addpy::cylinder(_a15812, _a15813, HR, _a15814, _a15815); }();  // the handle, its butt knob,
     addpy::sphere(call(on, {-BUTT}), HR + 0.004, Py(4), P[S("wood_dark")]);  // the ferrule on its end, the
-    [&] { Py _a15836 = call(on, {(*FORE__c) - 0.006}); Py _a15837 = call(on, {(*FORE__c) + 0.014}); Py _a15838 = HR + 0.001; Py _a15839 = call(rb, {(*FORE__c)}) + 0.0015; Py _a15840 = Py(10); Py _a15841 = P[S("iron")]; return addpy::frustum(_a15836, _a15837, _a15838, _a15839, _a15840, _a15841); }();  // blank in two joints with a
+    [&] { Py _a15816 = call(on, {(*FORE__c) - 0.006}); Py _a15817 = call(on, {(*FORE__c) + 0.014}); Py _a15818 = HR + 0.001; Py _a15819 = call(rb, {(*FORE__c)}) + 0.0015; Py _a15820 = Py(10); Py _a15821 = P[S("iron")]; return addpy::frustum(_a15816, _a15817, _a15818, _a15819, _a15820, _a15821); }();  // blank in two joints with a
     MID = ((*FORE__c) + (*TIP__c)) / 2;  // ferrule between them, and
-    [&] { Py _a15842 = call(on, {(*FORE__c)}); Py _a15843 = call(on, {MID}); Py _a15844 = call(rb, {(*FORE__c)}); Py _a15845 = call(rb, {MID}); Py _a15846 = Py(8); Py _a15847 = P[S("wood")]; return addpy::frustum(_a15842, _a15843, _a15844, _a15845, _a15846, _a15847); }();  // a socket on the tip for its
-    [&] { Py _a15848 = call(on, {MID - 0.025}); Py _a15849 = call(on, {MID + 0.025}); Py _a15850 = call(rb, {MID}) + 0.0015; Py _a15851 = Py(8); Py _a15852 = P[S("iron")]; return addpy::cylinder(_a15848, _a15849, _a15850, _a15851, _a15852); }();  // ring
-    [&] { Py _a15853 = call(on, {MID}); Py _a15854 = call(on, {(*TIP__c)}); Py _a15855 = call(rb, {MID}); Py _a15856 = call(rb, {(*TIP__c)}); Py _a15857 = Py(6); Py _a15858 = P[S("wood")]; return addpy::frustum(_a15853, _a15854, _a15855, _a15856, _a15857, _a15858); }();
-    [&] { Py _a15859 = call(on, {(*TIP__c) - 0.018}); Py _a15860 = call(on, {(*TIP__c)}); Py _a15861 = call(rb, {(*TIP__c)}) + 0.0012; Py _a15862 = Py(6); Py _a15863 = P[S("iron")]; return addpy::cylinder(_a15859, _a15860, _a15861, _a15862, _a15863); }();
+    [&] { Py _a15822 = call(on, {(*FORE__c)}); Py _a15823 = call(on, {MID}); Py _a15824 = call(rb, {(*FORE__c)}); Py _a15825 = call(rb, {MID}); Py _a15826 = Py(8); Py _a15827 = P[S("wood")]; return addpy::frustum(_a15822, _a15823, _a15824, _a15825, _a15826, _a15827); }();  // a socket on the tip for its
+    [&] { Py _a15828 = call(on, {MID - 0.025}); Py _a15829 = call(on, {MID + 0.025}); Py _a15830 = call(rb, {MID}) + 0.0015; Py _a15831 = Py(8); Py _a15832 = P[S("iron")]; return addpy::cylinder(_a15828, _a15829, _a15830, _a15831, _a15832); }();  // ring
+    [&] { Py _a15833 = call(on, {MID}); Py _a15834 = call(on, {(*TIP__c)}); Py _a15835 = call(rb, {MID}); Py _a15836 = call(rb, {(*TIP__c)}); Py _a15837 = Py(6); Py _a15838 = P[S("wood")]; return addpy::frustum(_a15833, _a15834, _a15835, _a15836, _a15837, _a15838); }();
+    [&] { Py _a15839 = call(on, {(*TIP__c) - 0.018}); Py _a15840 = call(on, {(*TIP__c)}); Py _a15841 = call(rb, {(*TIP__c)}) + 0.0012; Py _a15842 = Py(6); Py _a15843 = P[S("iron")]; return addpy::cylinder(_a15839, _a15840, _a15841, _a15842, _a15843); }();
     rings = list({});
-    for (Py _v15864 : each(K(tuple({K(tuple({Py(0.13), Py(0.01)})), K(tuple({Py(0.3), Py(0.0085)})), K(tuple({Py(0.47), Py(0.0071)})), K(tuple({Py(0.64), Py(0.0059)})), K(tuple({Py(0.81), Py(0.0049)})), K(tuple({Py(1.0), Py(0.0042)}))})))) {
-        Vec _u15865 = unpack(_v15864, 2);
-        f = _u15865[0];
-        rho = _u15865[1];
+    for (Py _v15844 : each(K(tuple({K(tuple({Py(0.13), Py(0.01)})), K(tuple({Py(0.3), Py(0.0085)})), K(tuple({Py(0.47), Py(0.0071)})), K(tuple({Py(0.64), Py(0.0059)})), K(tuple({Py(0.81), Py(0.0049)})), K(tuple({Py(1.0), Py(0.0042)}))})))) {
+        Vec _u15845 = unpack(_v15844, 2);
+        f = _u15845[0];
+        rho = _u15845[1];
         s = (*FORE__c) + ((*TIP__c) - (*FORE__c)) * f - ((f == 1.0 ? Py(0.009) : Py(0.0)));  // the rings on their legs
-        [&] { Py _a15866 = call(on, {s, call(rb, {s}) - 0.001}); Py _a15867 = call(on, {s, call(rb, {s}) + 0.005}); Py _a15868 = Py(0.0012); Py _a15869 = Py(4); Py _a15870 = P[S("iron")]; return addpy::cylinder(_a15866, _a15867, _a15868, _a15869, _a15870); }();  // under the rod, square to
+        [&] { Py _a15846 = call(on, {s, call(rb, {s}) - 0.001}); Py _a15847 = call(on, {s, call(rb, {s}) + 0.005}); Py _a15848 = Py(0.0012); Py _a15849 = Py(4); Py _a15850 = P[S("iron")]; return addpy::cylinder(_a15846, _a15847, _a15848, _a15849, _a15850); }();  // under the rod, square to
         rings.append(call(on, {s, call(rb, {s}) + 0.005 + rho}));  // it, a hair under it
         addpy::torus(rings[Py(-1)], rho, Py(0.0012), Py(8), Py(3), P[S("iron")], (*d__c));
     }
-    [&] { Py _a15871 = call(on, {TS - 0.006, HR + 0.0005}); Py _a15872 = call(on, {TS + 0.03, HR + 0.0005}); Py _a15873 = Py(0.008); Py _a15874 = Py(0.003); Py _a15875 = P[S("iron")]; Py _a15876 = (*up__c); return addpy::beam(_a15871, _a15872, _a15873, _a15874, _a15875, _a15876); }();  // the reel's foot along
-    for (Py _v15877 : each(tuple({TS - 0.006, TS + 0.03}))) {  // the handle's underside
-        s = _v15877;
-        [&] { Py _a15878 = call(on, {s - 0.002}); Py _a15879 = call(on, {s + 0.002}); Py _a15880 = HR + 0.003; Py _a15881 = Py(10); Py _a15882 = P[S("iron")]; return addpy::cylinder(_a15878, _a15879, _a15880, _a15881, _a15882); }();  // (just ahead of his fist), a
+    [&] { Py _a15851 = call(on, {TS - 0.006, HR + 0.0005}); Py _a15852 = call(on, {TS + 0.03, HR + 0.0005}); Py _a15853 = Py(0.008); Py _a15854 = Py(0.003); Py _a15855 = P[S("iron")]; Py _a15856 = (*up__c); return addpy::beam(_a15851, _a15852, _a15853, _a15854, _a15855, _a15856); }();  // the reel's foot along
+    for (Py _v15857 : each(tuple({TS - 0.006, TS + 0.03}))) {  // the handle's underside
+        s = _v15857;
+        [&] { Py _a15858 = call(on, {s - 0.002}); Py _a15859 = call(on, {s + 0.002}); Py _a15860 = HR + 0.003; Py _a15861 = Py(10); Py _a15862 = P[S("iron")]; return addpy::cylinder(_a15858, _a15859, _a15860, _a15861, _a15862); }();  // (just ahead of his fist), a
     }
-    [&] { Py _a15883 = call(on, {TS, HR - 0.002}); Py _a15884 = call(on, {TS, D0 + 0.001}); Py _a15885 = Py(0.007); Py _a15886 = Py(0.005); Py _a15887 = P[S("iron")]; Py _a15888 = (*d__c); return addpy::beam(_a15883, _a15884, _a15885, _a15886, _a15887, _a15888); }();  // band round each
-    [&] { Py _a15889 = call(on, {TS, D0 + 0.0025, Py(-0.0235)}); Py _a15890 = call(on, {TS, D0 + 0.0025, Py(0.0235)}); Py _a15891 = Py(0.006); Py _a15892 = Py(0.005); Py _a15893 = P[S("iron")]; Py _a15894 = (*up__c); return addpy::beam(_a15889, _a15890, _a15891, _a15892, _a15893, _a15894); }();  // end; the stem down
-    for (Py _v15895 : each(K(tuple({Py(-1), Py(1)})))) {  // from it to the fork's bridge,
-        sx = _v15895;
-        [&] { Py _a15896 = call(on, {TS, D0, sx * 0.0205}); Py _a15897 = call(on, {TS, DA, sx * 0.0205}); Py _a15898 = Py(0.004); Py _a15899 = Py(0.008); Py _a15900 = P[S("iron")]; Py _a15901 = (*d__c); return addpy::beam(_a15896, _a15897, _a15898, _a15899, _a15900, _a15901); }();  // its cheeks down to the axle,
-        [&] { Py _a15902 = call(on, {TS, DA, sx * 0.0185}); Py _a15903 = call(on, {TS, DA, sx * 0.0225}); Py _a15904 = Py(0.0055); Py _a15905 = Py(8); Py _a15906 = P[S("iron")]; return addpy::cylinder(_a15902, _a15903, _a15904, _a15905, _a15906); }();  // the flanges on it between
-        [&] { Py _a15907 = call(on, {TS, DA, sx * 0.0135}); Py _a15908 = call(on, {TS, DA, sx * 0.0165}); Py _a15909 = Py(14); Py _a15910 = P[S("wood")]; return addpy::cylinder(_a15907, _a15908, FR, _a15909, _a15910); }();  // them and the line wound on
+    [&] { Py _a15863 = call(on, {TS, HR - 0.002}); Py _a15864 = call(on, {TS, D0 + 0.001}); Py _a15865 = Py(0.007); Py _a15866 = Py(0.005); Py _a15867 = P[S("iron")]; Py _a15868 = (*d__c); return addpy::beam(_a15863, _a15864, _a15865, _a15866, _a15867, _a15868); }();  // band round each
+    [&] { Py _a15869 = call(on, {TS, D0 + 0.0025, Py(-0.0235)}); Py _a15870 = call(on, {TS, D0 + 0.0025, Py(0.0235)}); Py _a15871 = Py(0.006); Py _a15872 = Py(0.005); Py _a15873 = P[S("iron")]; Py _a15874 = (*up__c); return addpy::beam(_a15869, _a15870, _a15871, _a15872, _a15873, _a15874); }();  // end; the stem down
+    for (Py _v15875 : each(K(tuple({Py(-1), Py(1)})))) {  // from it to the fork's bridge,
+        sx = _v15875;
+        [&] { Py _a15876 = call(on, {TS, D0, sx * 0.0205}); Py _a15877 = call(on, {TS, DA, sx * 0.0205}); Py _a15878 = Py(0.004); Py _a15879 = Py(0.008); Py _a15880 = P[S("iron")]; Py _a15881 = (*d__c); return addpy::beam(_a15876, _a15877, _a15878, _a15879, _a15880, _a15881); }();  // its cheeks down to the axle,
+        [&] { Py _a15882 = call(on, {TS, DA, sx * 0.0185}); Py _a15883 = call(on, {TS, DA, sx * 0.0225}); Py _a15884 = Py(0.0055); Py _a15885 = Py(8); Py _a15886 = P[S("iron")]; return addpy::cylinder(_a15882, _a15883, _a15884, _a15885, _a15886); }();  // the flanges on it between
+        [&] { Py _a15887 = call(on, {TS, DA, sx * 0.0135}); Py _a15888 = call(on, {TS, DA, sx * 0.0165}); Py _a15889 = Py(14); Py _a15890 = P[S("wood")]; return addpy::cylinder(_a15887, _a15888, FR, _a15889, _a15890); }();  // them and the line wound on
     }
-    [&] { Py _a15911 = call(on, {TS, DA, Py(-0.0235)}); Py _a15912 = call(on, {TS, DA, Py(0.0355)}); Py _a15913 = Py(0.0022); Py _a15914 = Py(6); Py _a15915 = P[S("iron")]; return addpy::cylinder(_a15911, _a15912, _a15913, _a15914, _a15915); }();  // the spool between those;
-    [&] { Py _a15916 = call(on, {TS, DA, Py(-0.014)}); Py _a15917 = call(on, {TS, DA, Py(0.014)}); Py _a15918 = Py(14); Py _a15919 = P[S("white")]; return addpy::cylinder(_a15916, _a15917, LR, _a15918, _a15919); }();  // the crank's arm on the
-    [&] { Py _a15920 = call(on, {TS, DA, Py(0.0225)}); Py _a15921 = call(on, {TS, DA, Py(0.0335)}); Py _a15922 = Py(0.0035); Py _a15923 = Py(6); Py _a15924 = P[S("iron")]; return addpy::cylinder(_a15920, _a15921, _a15922, _a15923, _a15924); }();  // axle's end, a collar
-    [&] { Py _a15925 = call(on, {TS, DA, Py(0.0335)}); Py _a15926 = call(on, {TS, DA, Py(0.0375)}); Py _a15927 = Py(0.0045); Py _a15928 = Py(8); Py _a15929 = P[S("iron")]; return addpy::cylinder(_a15925, _a15926, _a15927, _a15928, _a15929); }();  // holding it out from the
+    [&] { Py _a15891 = call(on, {TS, DA, Py(-0.0235)}); Py _a15892 = call(on, {TS, DA, Py(0.0355)}); Py _a15893 = Py(0.0022); Py _a15894 = Py(6); Py _a15895 = P[S("iron")]; return addpy::cylinder(_a15891, _a15892, _a15893, _a15894, _a15895); }();  // the spool between those;
+    [&] { Py _a15896 = call(on, {TS, DA, Py(-0.014)}); Py _a15897 = call(on, {TS, DA, Py(0.014)}); Py _a15898 = Py(14); Py _a15899 = P[S("white")]; return addpy::cylinder(_a15896, _a15897, LR, _a15898, _a15899); }();  // the crank's arm on the
+    [&] { Py _a15900 = call(on, {TS, DA, Py(0.0225)}); Py _a15901 = call(on, {TS, DA, Py(0.0335)}); Py _a15902 = Py(0.0035); Py _a15903 = Py(6); Py _a15904 = P[S("iron")]; return addpy::cylinder(_a15900, _a15901, _a15902, _a15903, _a15904); }();  // axle's end, a collar
+    [&] { Py _a15905 = call(on, {TS, DA, Py(0.0335)}); Py _a15906 = call(on, {TS, DA, Py(0.0375)}); Py _a15907 = Py(0.0045); Py _a15908 = Py(8); Py _a15909 = P[S("iron")]; return addpy::cylinder(_a15905, _a15906, _a15907, _a15908, _a15909); }();  // holding it out from the
     addpy::beam(call(on, {TS, DA, Py(0.0355)}), _plus(tuple({knob, _times((*side__c), Py(0.0355))})), Py(0.007), Py(0.004), P[S("iron")], (*side__c));  // cheek, and its knob, a
     addpy::cylinder(_plus(tuple({knob, _times((*side__c), Py(0.0375))})), _plus(tuple({knob, _times((*side__c), 0.0375 + KL)})), KR, Py(8), P[S("wood_dark")]);  // hand's breadth
     M.extend(addpy::pop());
-    { Py _t15930 = tuple({addpy::cos(facing), addpy::sin(facing)}); Vec _u15931 = unpack(_t15930, 2); (*c__c) = _u15931[0]; (*s___c) = _u15931[1]; }
+    { Py _t15910 = tuple({addpy::cos(facing), addpy::sin(facing)}); Vec _u15911 = unpack(_t15910, 2); (*c__c) = _u15911[0]; (*s___c) = _u15911[1]; }
     world = func(sig("world", {"p"}, {MISSING_ARG}, 1), [at__c, c__c, s___c](Vec& _A_) -> Py {
         Py p = _A_[0];
         Py x;
         Py y;
         Py z;
-        { Py _t15932 = tuple({p[0] * LIFE, p[1] * LIFE, p[2] * LIFE}); Vec _u15933 = unpack(_t15932, 3); x = _u15933[0]; y = _u15933[1]; z = _u15933[2]; }
+        { Py _t15912 = tuple({p[0] * LIFE, p[1] * LIFE, p[2] * LIFE}); Vec _u15913 = unpack(_t15912, 3); x = _u15913[0]; y = _u15913[1]; z = _u15913[2]; }
         return list({(*at__c)[0] + x * (*c__c) + z * (*s___c), (*at__c)[1] + y, (*at__c)[2] + z * (*c__c) - x * (*s___c)});
     });
     addpy::mesh(addpy::move(addpy::rotateY(addpy::stretch(M, list({LIFE}) * 3, K(tuple({Py(0), Py(0), Py(0)}))), facing), (*at__c)));
     v = vsub(rings[0], call(on, {TS, DA}));  // the line: off the top of the spool, where the
     ang = addpy::atan2(_dot(v, (*up__c)), _dot(v, (*d__c))) + addpy::acos(LR / vlen(v));  // way to the first ring is its tangent (a hair
-    line = [&] { Py _t15934 = list({call(world, {call(on, {TS + (LR - 0.001) * addpy::cos(ang), DA - (LR - 0.001) * addpy::sin(ang)})})}); Py _t15935 = [&](Each _it15936) { Py q; Py _r15937 = list(); for (Py _x15938 : _it15936) { q = _x15938; L_(_r15937)->v.push_back(call(world, {q})); } return _r15937; }(each(rings)); return _t15934 + _t15935; }();  // in),
+    line = [&] { Py _t15914 = list({call(world, {call(on, {TS + (LR - 0.001) * addpy::cos(ang), DA - (LR - 0.001) * addpy::sin(ang)})})}); Py _t15915 = [&](Each _it15916) { Py q; Py _r15917 = list(); for (Py _x15918 : _it15916) { q = _x15918; L_(_r15917)->v.push_back(call(world, {q})); } return _r15917; }(each(rings)); return _t15914 + _t15915; }();  // in),
     t = call(world, {_at(rings[Py(-1)], (*d__c), Py(0.012))});  // through the rings, a finger's breadth on out of
     out = list({(*s___c), Py(0.0), (*c__c)});  // the tip and down to the float (half a metre on
     bob = list({t[0] + out[0] * 0.5, ripple(t[0], t[2]) + 0.02, t[2] + out[2] * 0.5});  // his way, level), into its white top,
     ch = vsub(list({bob[0], bob[1] + 0.055, bob[2]}), t);  // bowed a little down off the straight
     sag = vunit(_plus(tuple({list({Py(0.0), Py(-1.0), Py(0.0)}), _times(vunit(ch), vunit(ch)[1])})));
-    iadd(line, ([&](Each _it15939) { Py u; Py _r15940 = list(); for (Py _x15941 : _it15939) { u = _x15941; L_(_r15940)->v.push_back(_plus(tuple({t, _times(ch, u), _times(sag, 0.1 * vlen(ch) * u * (1.0 - u))}))); } return _r15940; }(each(K(tuple({Py(0.0), Py(0.04), Py(0.15), Py(0.3), Py(0.5), Py(0.7), Py(0.85), Py(1.0)}))))));
+    iadd(line, ([&](Each _it15919) { Py u; Py _r15920 = list(); for (Py _x15921 : _it15919) { u = _x15921; L_(_r15920)->v.push_back(_plus(tuple({t, _times(ch, u), _times(sag, 0.1 * vlen(ch) * u * (1.0 - u))}))); } return _r15920; }(each(K(tuple({Py(0.0), Py(0.04), Py(0.15), Py(0.3), Py(0.5), Py(0.7), Py(0.85), Py(1.0)}))))));
     addpy::polyline(line, Py(0.002), Py(4), P[S("white")]);
     addpy::sphere(bob, Py(0.05), Py(3), P[S("red")]);
     addpy::sphere(list({bob[0], bob[1] + 0.035, bob[2]}), Py(0.03), Py(2), P[S("white")]);
@@ -50711,14 +50663,14 @@ Py berry_heap(Py foot, Py fill, Py colour, Py seed) {
     (*y0____c) = fill * 0.3;
     (*R__c) = call(BUCKET_IN, {(*y0____c)});
     dome = func(sig("lambda", {"d"}, {MISSING_ARG}, 1), [R__c, y0____c](Vec& _A_) -> Py { Py d = _A_[0]; return (*y0____c) + 0.022 * (1.0 - pow_(d / (*R__c), Py(2))); });
-    prof = list({list({Py(0.0), (*y0____c) - 0.02}), list({(*R__c), (*y0____c) - 0.02})}) + [&](Range _it15945) { Py i; Py _r15946 = list(); for (Py _x15947 : _it15945) { i = _x15947; L_(_r15946)->v.push_back(list({(*R__c) * (1 - i / 6.0), call(dome, {(*R__c) * (1 - i / 6.0)})})); } return _r15946; }(range(Py(7)));
+    prof = list({list({Py(0.0), (*y0____c) - 0.02}), list({(*R__c), (*y0____c) - 0.02})}) + [&](Range _it15925) { Py i; Py _r15926 = list(); for (Py _x15927 : _it15925) { i = _x15927; L_(_r15926)->v.push_back(list({(*R__c) * (1 - i / 6.0), call(dome, {(*R__c) * (1 - i / 6.0)})})); } return _r15926; }(range(Py(7)));
     lathe(prof, foot, Py(24), colour);
     got = list({});
-    for (Py _v15948 : range(Py(400))) {  // (as they fall, clear of each other)
-        n = _v15948;
-        { Py _t15949 = tuple({2 * addpy::pi * hash2(n, seed, Py(88)), ((*R__c) - 0.013) * addpy::sqrt(hash2(n, seed, Py(89)))}); Vec _u15950 = unpack(_t15949, 2); a = _u15950[0]; d = _u15950[1]; }
-        { Py _t15951 = tuple({d * addpy::cos(a), d * addpy::sin(a), 0.0115 + 0.002 * hash2(n, seed, Py(90))}); Vec _u15952 = unpack(_t15951, 3); x = _u15952[0]; z = _u15952[1]; r = _u15952[2]; }
-        if ([&](Each _it15953) -> bool { Py q; for (Py _x15954 : _it15953) { q = _x15954; if (!((pow_(x - q[0], Py(2)) + pow_(z - q[1], Py(2))) > (pow_(r + q[2] + 0.0015, Py(2))))) return false; } return true; }(each(got))) {
+    for (Py _v15928 : range(Py(400))) {  // (as they fall, clear of each other)
+        n = _v15928;
+        { Py _t15929 = tuple({2 * addpy::pi * hash2(n, seed, Py(88)), ((*R__c) - 0.013) * addpy::sqrt(hash2(n, seed, Py(89)))}); Vec _u15930 = unpack(_t15929, 2); a = _u15930[0]; d = _u15930[1]; }
+        { Py _t15931 = tuple({d * addpy::cos(a), d * addpy::sin(a), 0.0115 + 0.002 * hash2(n, seed, Py(90))}); Vec _u15932 = unpack(_t15931, 3); x = _u15932[0]; z = _u15932[1]; r = _u15932[2]; }
+        if ([&](Each _it15933) -> bool { Py q; for (Py _x15934 : _it15933) { q = _x15934; if (!((pow_(x - q[0], Py(2)) + pow_(z - q[1], Py(2))) > (pow_(r + q[2] + 0.0015, Py(2))))) return false; } return true; }(each(got))) {
             got.append(tuple({x, z, r}));
             addpy::sphere(list({foot[0] + x, foot[1] + call(dome, {d}), foot[2] + z}), r, Py(2), colour);
         }
@@ -50732,11 +50684,11 @@ Py berry_heap(Py foot, Py fill, Py colour, Py seed) {
 Py _mushroom_balls(Py kind, Py s) {
     Py B;
     if (kind == S("cep")) {
-        B = [&](Each _it15955) { Py r; Py y; Py _r15956 = list(); for (Py _x15957 : _it15955) { Vec _u15958 = unpack(_x15957, 2); y = _u15958[0]; r = _u15958[1]; L_(_r15956)->v.push_back(tuple({list({Py(0.0), y * s, Py(0.0)}), r * s})); } return _r15956; }(each(K(tuple({K(tuple({Py(-0.005), Py(0.047)})), K(tuple({Py(0.035), Py(0.054)})), K(tuple({Py(0.075), Py(0.054)})), K(tuple({Py(0.115), Py(0.046)})), K(tuple({Py(0.165), Py(0.057)}))}))));
-        iadd(B, ([&](Range _it15959) { Py i; Py _r15960 = list(); for (Py _x15961 : _it15959) { i = _x15961; L_(_r15960)->v.push_back(tuple({list({0.07 * s * addpy::cos(addpy::pi * i / 4), 0.155 * s, 0.07 * s * addpy::sin(addpy::pi * i / 4)}), 0.05 * s})); } return _r15960; }(range(Py(8)))));
+        B = [&](Each _it15935) { Py r; Py y; Py _r15936 = list(); for (Py _x15937 : _it15935) { Vec _u15938 = unpack(_x15937, 2); y = _u15938[0]; r = _u15938[1]; L_(_r15936)->v.push_back(tuple({list({Py(0.0), y * s, Py(0.0)}), r * s})); } return _r15936; }(each(K(tuple({K(tuple({Py(-0.005), Py(0.047)})), K(tuple({Py(0.035), Py(0.054)})), K(tuple({Py(0.075), Py(0.054)})), K(tuple({Py(0.115), Py(0.046)})), K(tuple({Py(0.165), Py(0.057)}))}))));
+        iadd(B, ([&](Range _it15939) { Py i; Py _r15940 = list(); for (Py _x15941 : _it15939) { i = _x15941; L_(_r15940)->v.push_back(tuple({list({0.07 * s * addpy::cos(addpy::pi * i / 4), 0.155 * s, 0.07 * s * addpy::sin(addpy::pi * i / 4)}), 0.05 * s})); } return _r15940; }(range(Py(8)))));
     } else {
-        B = [&](Each _it15962) { Py r; Py y; Py _r15963 = list(); for (Py _x15964 : _it15962) { Vec _u15965 = unpack(_x15964, 2); y = _u15965[0]; r = _u15965[1]; L_(_r15963)->v.push_back(tuple({list({Py(0.0), y * s, Py(0.0)}), r * s})); } return _r15963; }(each(K(tuple({K(tuple({Py(-0.005), Py(0.026)})), K(tuple({Py(0.025), Py(0.026)})), K(tuple({Py(0.052), Py(0.03)})), K(tuple({Py(0.078), Py(0.045)}))}))));
-        iadd(B, ([&](Range _it15966) { Py i; Py _r15967 = list(); for (Py _x15968 : _it15966) { i = _x15968; L_(_r15967)->v.push_back(tuple({list({0.045 * s * addpy::cos(addpy::pi * i / 4), 0.1 * s, 0.045 * s * addpy::sin(addpy::pi * i / 4)}), 0.028 * s})); } return _r15967; }(range(Py(8)))));
+        B = [&](Each _it15942) { Py r; Py y; Py _r15943 = list(); for (Py _x15944 : _it15942) { Vec _u15945 = unpack(_x15944, 2); y = _u15945[0]; r = _u15945[1]; L_(_r15943)->v.push_back(tuple({list({Py(0.0), y * s, Py(0.0)}), r * s})); } return _r15943; }(each(K(tuple({K(tuple({Py(-0.005), Py(0.026)})), K(tuple({Py(0.025), Py(0.026)})), K(tuple({Py(0.052), Py(0.03)})), K(tuple({Py(0.078), Py(0.045)}))}))));
+        iadd(B, ([&](Range _it15946) { Py i; Py _r15947 = list(); for (Py _x15948 : _it15946) { i = _x15948; L_(_r15947)->v.push_back(tuple({list({0.045 * s * addpy::cos(addpy::pi * i / 4), 0.1 * s, 0.045 * s * addpy::sin(addpy::pi * i / 4)}), 0.028 * s})); } return _r15947; }(range(Py(8)))));
     }
     return B;
 }
@@ -50792,7 +50744,7 @@ Py mushroom_heap(Py foot, Py fill, Py seed) {
     Py y;
     Py y_;
     Py yaw;
-    { Py _t15969 = tuple({fill * 0.3, Py(0.045), Py(0.003), Py(0.0015)}); Vec _u15970 = unpack(_t15969, 4); top = _u15970[0]; (*FLOOR__c) = _u15970[1]; (*CELL__c) = _u15970[2]; (*GAP__c) = _u15970[3]; }
+    { Py _t15949 = tuple({fill * 0.3, Py(0.045), Py(0.003), Py(0.0015)}); Vec _u15950 = unpack(_t15949, 4); top = _u15950[0]; (*FLOOR__c) = _u15950[1]; (*CELL__c) = _u15950[2]; (*GAP__c) = _u15950[3]; }
     (*fl__c) = ADDF_floor;
     (*HF__c) = dict({});  // (the pile's top, square by square)
     (*clouds__c) = dict({});
@@ -50818,17 +50770,17 @@ Py mushroom_heap(Py foot, Py fill, Py seed) {
             mushroom(list({Py(0.0), Py(0.0), Py(0.0)}), kind, sc);
             M = addpy::pop();
             pts = list({});
-            for (Py _v15971 : each(mesh_F(M))) {
-                f = _v15971;
-                q = [&](Each _it15972) { Py i; Py _r15973 = list(); for (Py _x15974 : _it15972) { i = _x15974; L_(_r15973)->v.push_back(mesh_V(M)[i]); } return _r15973; }(each(f));
-                for (Py _v15975 : range(Py(1), len(q) - 1)) {
-                    t = _v15975;
-                    { Py _t15976 = tuple({q[0], q[t], q[t + 1]}); Vec _u15977 = unpack(_t15976, 3); a = _u15977[0]; b = _u15977[1]; c = _u15977[2]; }
+            for (Py _v15951 : each(mesh_F(M))) {
+                f = _v15951;
+                q = [&](Each _it15952) { Py i; Py _r15953 = list(); for (Py _x15954 : _it15952) { i = _x15954; L_(_r15953)->v.push_back(mesh_V(M)[i]); } return _r15953; }(each(f));
+                for (Py _v15955 : range(Py(1), len(q) - 1)) {
+                    t = _v15955;
+                    { Py _t15956 = tuple({q[0], q[t], q[t + 1]}); Vec _u15957 = unpack(_t15956, 3); a = _u15957[0]; b = _u15957[1]; c = _u15957[2]; }
                     m = max2(Py(1), int_(max_(Vec{vlen(vsub(a, b)), vlen(vsub(b, c)), vlen(vsub(c, a))}, None, MISSING_ARG) / 0.0025) + 1);
-                    for (Py _v15978 : range(m + 1)) {
-                        u = _v15978;
-                        for (Py _v15979 : range(m + 1 - u)) {
-                            v = _v15979;
+                    for (Py _v15958 : range(m + 1)) {
+                        u = _v15958;
+                        for (Py _v15959 : range(m + 1 - u)) {
+                            v = _v15959;
                             w = m - u - v;
                             pts.append((a[0] * u + b[0] * v + c[0] * w) / m);
                             pts.append((a[1] * u + b[1] * v + c[1] * w) / m);
@@ -50837,7 +50789,7 @@ Py mushroom_heap(Py foot, Py fill, Py seed) {
                     }
                 }
             }
-            { Py _t15980 = tuple({M, pts}); setitem((*clouds__c), key, _t15980); }
+            { Py _t15960 = tuple({M, pts}); setitem((*clouds__c), key, _t15960); }
         }
         return (*clouds__c)[key];
     });
@@ -50865,57 +50817,57 @@ Py mushroom_heap(Py foot, Py fill, Py seed) {
         Py touch;
         Py y_;
         Py z_;
-        { Py _t15981 = tuple({addpy::cos(tilt), addpy::sin(tilt), addpy::cos(yaw), addpy::sin(yaw)}); Vec _u15982 = unpack(_t15981, 4); ct = _u15982[0]; st = _u15982[1]; cy = _u15982[2]; sy = _u15982[3]; }  // comes to rest, or None (the staves)
-        { Py _t15983 = tuple({list({}), dict({})}); Vec _u15984 = unpack(_t15983, 2); P = _u15984[0]; lo = _u15984[1]; }
-        for (Py _v15985 : range(Py(0), len(pts), Py(3))) {
-            j = _v15985;
-            { Py _t15986 = tuple({pts[j], pts[j + 1], pts[j + 2]}); Vec _u15987 = unpack(_t15986, 3); q0 = _u15987[0]; q1 = _u15987[1]; q2 = _u15987[2]; }
-            { Py _t15988 = tuple({q1 * ct - q2 * st, q1 * st + q2 * ct}); Vec _u15989 = unpack(_t15988, 2); y_ = _u15989[0]; z_ = _u15989[1]; }
-            { Py _t15990 = tuple({q0 * cy + z_ * sy + x, z_ * cy - q0 * sy + z}); Vec _u15991 = unpack(_t15990, 2); px = _u15991[0]; pz = _u15991[1]; }
+        { Py _t15961 = tuple({addpy::cos(tilt), addpy::sin(tilt), addpy::cos(yaw), addpy::sin(yaw)}); Vec _u15962 = unpack(_t15961, 4); ct = _u15962[0]; st = _u15962[1]; cy = _u15962[2]; sy = _u15962[3]; }  // comes to rest, or None (the staves)
+        { Py _t15963 = tuple({list({}), dict({})}); Vec _u15964 = unpack(_t15963, 2); P = _u15964[0]; lo = _u15964[1]; }
+        for (Py _v15965 : range(Py(0), len(pts), Py(3))) {
+            j = _v15965;
+            { Py _t15966 = tuple({pts[j], pts[j + 1], pts[j + 2]}); Vec _u15967 = unpack(_t15966, 3); q0 = _u15967[0]; q1 = _u15967[1]; q2 = _u15967[2]; }
+            { Py _t15968 = tuple({q1 * ct - q2 * st, q1 * st + q2 * ct}); Vec _u15969 = unpack(_t15968, 2); y_ = _u15969[0]; z_ = _u15969[1]; }
+            { Py _t15970 = tuple({q0 * cy + z_ * sy + x, z_ * cy - q0 * sy + z}); Vec _u15971 = unpack(_t15970, 2); px = _u15971[0]; pz = _u15971[1]; }
             P.append(tuple({px, y_, pz}));
             k = tuple({int_(call((*fl__c), {px / (*CELL__c)})), int_(call((*fl__c), {pz / (*CELL__c)}))});
             if (y_ < lo.get(k, Py(9.0))) {
-                { Py _t15992 = y_; setitem(lo, k, _t15992); }
+                { Py _t15972 = y_; setitem(lo, k, _t15972); }
             }
         }
-        lift = max_(L_([&](Each _it15993) { Py k; Py v; Py _r15994 = list(); for (Py _x15995 : _it15993) { Vec _u15996 = unpack(_x15995, 2); k = _u15996[0]; v = _u15996[1]; L_(_r15994)->v.push_back((*HF__c).get(k, (*FLOOR__c)) - v); } return _r15994; }(each(lo.items())))->v, None, MISSING_ARG) + (*GAP__c);
-        for (Py _v15997 : each(P)) {
-            Vec _u15998 = unpack(_v15997, 3);
-            px = _u15998[0];
-            y_ = _u15998[1];
-            pz = _u15998[2];
+        lift = max_(L_([&](Each _it15973) { Py k; Py v; Py _r15974 = list(); for (Py _x15975 : _it15973) { Vec _u15976 = unpack(_x15975, 2); k = _u15976[0]; v = _u15976[1]; L_(_r15974)->v.push_back((*HF__c).get(k, (*FLOOR__c)) - v); } return _r15974; }(each(lo.items())))->v, None, MISSING_ARG) + (*GAP__c);
+        for (Py _v15977 : each(P)) {
+            Vec _u15978 = unpack(_v15977, 3);
+            px = _u15978[0];
+            y_ = _u15978[1];
+            pz = _u15978[2];
             if ((px * px + pz * pz) > (pow_(call(BUCKET_IN, {y_ + lift}), Py(2)))) {
                 return None;
             }
         }
-        touch = [&](Each _it15999) { Py k; Py v; Py _r16000 = list(); for (Py _x16001 : _it15999) { Vec _u16002 = unpack(_x16001, 2); k = _u16002[0]; v = _u16002[1]; if (!((v + lift - (*HF__c).get(k, (*FLOOR__c))) < ((*GAP__c) + 0.004))) continue; L_(_r16000)->v.push_back(k); } return _r16000; }(each(lo.items()));
-        spread = (len(touch) > 1 ? max_(L_([&](Each _it16003) { Py a; Py b; Py _r16004 = list(); for (Py _x16005 : _it16003) { a = _x16005; for (Py _x16006 : each(touch)) { b = _x16006; L_(_r16004)->v.push_back(abs_(a[0] - b[0]) + abs_(a[1] - b[1])); } } return _r16004; }(each(touch)))->v, None, MISSING_ARG) * (*CELL__c) : Py(0.0));
+        touch = [&](Each _it15979) { Py k; Py v; Py _r15980 = list(); for (Py _x15981 : _it15979) { Vec _u15982 = unpack(_x15981, 2); k = _u15982[0]; v = _u15982[1]; if (!((v + lift - (*HF__c).get(k, (*FLOOR__c))) < ((*GAP__c) + 0.004))) continue; L_(_r15980)->v.push_back(k); } return _r15980; }(each(lo.items()));
+        spread = (len(touch) > 1 ? max_(L_([&](Each _it15983) { Py a; Py b; Py _r15984 = list(); for (Py _x15985 : _it15983) { a = _x15985; for (Py _x15986 : each(touch)) { b = _x15986; L_(_r15984)->v.push_back(abs_(a[0] - b[0]) + abs_(a[1] - b[1])); } } return _r15984; }(each(touch)))->v, None, MISSING_ARG) * (*CELL__c) : Py(0.0));
         return tuple({lift, P, spread});
     });
-    { Py _t16007 = K(tuple({Py(0), Py(0)})); Vec _u16008 = unpack(_t16007, 2); placed = _u16008[0]; misses = _u16008[1]; }
-    for (Py _v16009 : range(Py(80))) {
-        n = _v16009;
+    { Py _t15987 = K(tuple({Py(0), Py(0)})); Vec _u15988 = unpack(_t15987, 2); placed = _u15988[0]; misses = _u15988[1]; }
+    for (Py _v15989 : range(Py(80))) {
+        n = _v15989;
         kind = (hash2(seed, n, Py(91)) < 0.55 ? S("cep") : S("chanterelle"));
         sc = ((kind == S("cep") ? Py(0.34) : Py(0.45))) + 0.12 * hash2(seed, n, Py(92));
-        { Py _t16010 = call(cloud, {kind, sc}); Vec _u16011 = unpack(_t16010, 2); M = _u16011[0]; pts = _u16011[1]; }
+        { Py _t15990 = call(cloud, {kind, sc}); Vec _u15991 = unpack(_t15990, 2); M = _u15991[0]; pts = _u15991[1]; }
         reach = (kind == S("cep") ? 0.1 * sc : 0.06 * sc);  // (how far it stands out from its foot)
         best = None;
-        for (Py _v16012 : range(Py(12))) {
-            m = _v16012;
+        for (Py _v15992 : range(Py(12))) {
+            m = _v15992;
             h = hash2(seed, n * 12 + m, Py(93));
             tilt = (h < 0.15 ? addpy::pi - 0.5 * h / 0.15 : addpy::pi / 2 + 0.8 * (h - 0.575));  // (on its side, or on its cap)
             yaw = 2 * addpy::pi * hash2(seed, n * 12 + m, Py(94));
-            { Py _t16013 = tuple({2 * addpy::pi * hash2(seed, n * 12 + m, Py(95)), (call(BUCKET_IN, {(*FLOOR__c)}) - reach) * addpy::sqrt(hash2(seed, n * 12 + m, Py(96)))}); Vec _u16014 = unpack(_t16013, 2); a = _u16014[0]; d = _u16014[1]; }
+            { Py _t15993 = tuple({2 * addpy::pi * hash2(seed, n * 12 + m, Py(95)), (call(BUCKET_IN, {(*FLOOR__c)}) - reach) * addpy::sqrt(hash2(seed, n * 12 + m, Py(96)))}); Vec _u15994 = unpack(_t15993, 2); a = _u15994[0]; d = _u15994[1]; }
             got = call(land, {pts, tilt, yaw, d * addpy::cos(a), d * addpy::sin(a)});
             if (is(got, None)) {
                 continue;
             }
-            { Py _t16015 = got; Vec _u16016 = unpack(_t16015, 3); lift = _u16016[0]; P = _u16016[1]; spread = _u16016[2]; }
-            high = max_(L_([&](Each _it16017) { Py q; Py _r16018 = list(); for (Py _x16019 : _it16017) { q = _x16019; L_(_r16018)->v.push_back(q[1]); } return _r16018; }(each(P)))->v, None, MISSING_ARG) + lift;
-            if ((high > (top + 0.035)) || ((min_(L_([&](Each _it16020) { Py q; Py _r16021 = list(); for (Py _x16022 : _it16020) { q = _x16022; L_(_r16021)->v.push_back(q[1]); } return _r16021; }(each(P)))->v, None, MISSING_ARG) + lift) > top)) {  // (heaped only a little over the line)
+            { Py _t15995 = got; Vec _u15996 = unpack(_t15995, 3); lift = _u15996[0]; P = _u15996[1]; spread = _u15996[2]; }
+            high = max_(L_([&](Each _it15997) { Py q; Py _r15998 = list(); for (Py _x15999 : _it15997) { q = _x15999; L_(_r15998)->v.push_back(q[1]); } return _r15998; }(each(P)))->v, None, MISSING_ARG) + lift;
+            if ((high > (top + 0.035)) || ((min_(L_([&](Each _it16000) { Py q; Py _r16001 = list(); for (Py _x16002 : _it16000) { q = _x16002; L_(_r16001)->v.push_back(q[1]); } return _r16001; }(each(P)))->v, None, MISSING_ARG) + lift) > top)) {  // (heaped only a little over the line)
                 continue;
             }
-            score = sum([&](Each _it16023) { Py q; Py _r16024 = list(); for (Py _x16025 : _it16023) { q = _x16025; L_(_r16024)->v.push_back(q[1]); } return _r16024; }(each(P))) / len(P) + lift + ((spread > 0.02 ? Py(0.0) : Py(0.05)));
+            score = sum([&](Each _it16003) { Py q; Py _r16004 = list(); for (Py _x16005 : _it16003) { q = _x16005; L_(_r16004)->v.push_back(q[1]); } return _r16004; }(each(P))) / len(P) + lift + ((spread > 0.02 ? Py(0.0) : Py(0.05)));
             if (is(best, None) || (score < best[0])) {
                 best = tuple({score, lift, P, tilt, yaw, a, d});
             }
@@ -50927,19 +50879,19 @@ Py mushroom_heap(Py foot, Py fill, Py seed) {
             }
             continue;
         }
-        { Py _t16026 = best; Vec _u16027 = unpack(_t16026, 7); score = _u16027[0]; lift = _u16027[1]; P = _u16027[2]; tilt = _u16027[3]; yaw = _u16027[4]; a = _u16027[5]; d = _u16027[6]; }
-        for (Py _v16028 : each(P)) {  // (its top onto the pile's, a square round)
-            Vec _u16029 = unpack(_v16028, 3);
-            px = _u16029[0];
-            y_ = _u16029[1];
-            pz = _u16029[2];
-            { Py _t16030 = tuple({int_(call((*fl__c), {px / (*CELL__c)})), int_(call((*fl__c), {pz / (*CELL__c)})), y_ + lift}); Vec _u16031 = unpack(_t16030, 3); i = _u16031[0]; j = _u16031[1]; y = _u16031[2]; }
-            for (Py _v16032 : each(K(tuple({Py(-1), Py(0), Py(1)})))) {
-                di = _v16032;
-                for (Py _v16033 : each(K(tuple({Py(-1), Py(0), Py(1)})))) {
-                    dj = _v16033;
+        { Py _t16006 = best; Vec _u16007 = unpack(_t16006, 7); score = _u16007[0]; lift = _u16007[1]; P = _u16007[2]; tilt = _u16007[3]; yaw = _u16007[4]; a = _u16007[5]; d = _u16007[6]; }
+        for (Py _v16008 : each(P)) {  // (its top onto the pile's, a square round)
+            Vec _u16009 = unpack(_v16008, 3);
+            px = _u16009[0];
+            y_ = _u16009[1];
+            pz = _u16009[2];
+            { Py _t16010 = tuple({int_(call((*fl__c), {px / (*CELL__c)})), int_(call((*fl__c), {pz / (*CELL__c)})), y_ + lift}); Vec _u16011 = unpack(_t16010, 3); i = _u16011[0]; j = _u16011[1]; y = _u16011[2]; }
+            for (Py _v16012 : each(K(tuple({Py(-1), Py(0), Py(1)})))) {
+                di = _v16012;
+                for (Py _v16013 : each(K(tuple({Py(-1), Py(0), Py(1)})))) {
+                    dj = _v16013;
                     if (y > (*HF__c).get(tuple({i + di, j + dj}), (*FLOOR__c))) {
-                        { Py _t16034 = y; setitem((*HF__c), tuple({i + di, j + dj}), _t16034); }
+                        { Py _t16014 = y; setitem((*HF__c), tuple({i + di, j + dj}), _t16014); }
                     }
                 }
             }
@@ -51003,26 +50955,26 @@ Py berry_picker() {
     Py x;
     Py yy;
     Py z;
-    { Py _t16035 = FOLK_AT[S("berries")]; Vec _u16036 = unpack(_t16035, 5); x = _u16036[0]; z = _u16036[1]; (*px__c) = _u16036[2]; (*pz__c) = _u16036[3]; (*seed__c) = _u16036[4]; }
+    { Py _t16015 = FOLK_AT[S("berries")]; Vec _u16016 = unpack(_t16015, 5); x = _u16016[0]; z = _u16016[1]; (*px__c) = _u16016[2]; (*pz__c) = _u16016[3]; (*seed__c) = _u16016[4]; }
     at = list({(*px__c), land_top((*px__c), (*pz__c)), (*pz__c)});
     (*f__c) = addpy::atan2(x - (*px__c), z - (*pz__c));
     away = vunit(list({x, Py(0.0), z}));
     (*toward__c) = addpy::atan2((*pz__c) - z, (*px__c) - x);  // (from the bush to her, as its canes' angles)
     hands = list({});  // the clusters nearest her, on two canes
     canes = sorted(Py(range(Py(8))), func(sig("lambda", {"i"}, {MISSING_ARG}, 1), [seed__c, toward__c](Vec& _A_) -> Py { Py i = _A_[0]; return abs_(mod(2 * addpy::pi * (i + 0.4 * hash2((*seed__c), i, Py(71))) / 8 - (*toward__c) + addpy::pi, 2 * addpy::pi) - addpy::pi); }), False);
-    for (Py _v16037 : each(slice(canes, None, Py(2)))) {  // (as berry_bush makes them: the cluster
-        i = _v16037;
+    for (Py _v16017 : each(slice(canes, None, Py(2)))) {  // (as berry_bush makes them: the cluster
+        i = _v16017;
         a = 2 * addpy::pi * (i + 0.4 * hash2((*seed__c), i, Py(71))) / 8;  // under the leaves of the fifth ring)
-        { Py _t16038 = tuple({0.08 + 0.06 * hash2((*seed__c), i, Py(72)), 0.85 + 0.35 * hash2((*seed__c), i, Py(73)), 0.45 + 0.2 * hash2((*seed__c), i, Py(74))}); Vec _u16039 = unpack(_t16038, 3); d0 = _u16039[0]; H = _u16039[1]; out = _u16039[2]; }
+        { Py _t16018 = tuple({0.08 + 0.06 * hash2((*seed__c), i, Py(72)), 0.85 + 0.35 * hash2((*seed__c), i, Py(73)), 0.45 + 0.2 * hash2((*seed__c), i, Py(74))}); Vec _u16019 = unpack(_t16018, 3); d0 = _u16019[0]; H = _u16019[1]; out = _u16019[2]; }
         t = Py(5) / 6.0;
         rr = d0 + out * pow_(t, Py(1.4));
         yy = H * addpy::sin(addpy::pi * 0.5 * min2(Py(1.0), t * 1.25)) - 0.18 * max2(Py(0.0), t - 0.75) / 0.25;
         hands.append(list({x + rr * addpy::cos(a), ground(x, z) + yy - 0.09, z + rr * addpy::sin(a)}));
     }
     hands.sort(func(sig("lambda", {"q"}, {MISSING_ARG}, 1), [f__c, px__c, pz__c](Vec& _A_) -> Py { Py q = _A_[0]; return (q[0] - (*px__c)) * addpy::cos((*f__c)) - (q[2] - (*pz__c)) * addpy::sin((*f__c)); }), False);  // (her right hand the one on her right: -x)
-    arms = tuple_([&](Each _it16040) { Py q; Py s_; Py _r16041 = list(); for (Py _x16042 : _it16040) { Vec _u16043 = unpack(_x16042, 2); q = _u16043[0]; s_ = _u16043[1]; L_(_r16041)->v.push_back(tuple({S("grip"), tuple({to_frame(q, at, (*f__c)), list({Py(0.0), Py(1.0), Py(0.0)}), list({Py(0.0), Py(-0.3), Py(1.0)}), 0.012 / LIFE}), list({s_ * 1.0, Py(-0.6), Py(-0.2)})})); } return _r16041; }(each(zip_({hands, K(tuple({Py(-1), Py(1)}))}))));
+    arms = tuple_([&](Each _it16020) { Py q; Py s_; Py _r16021 = list(); for (Py _x16022 : _it16020) { Vec _u16023 = unpack(_x16022, 2); q = _u16023[0]; s_ = _u16023[1]; L_(_r16021)->v.push_back(tuple({S("grip"), tuple({to_frame(q, at, (*f__c)), list({Py(0.0), Py(1.0), Py(0.0)}), list({Py(0.0), Py(-0.3), Py(1.0)}), 0.012 / LIFE}), list({s_ * 1.0, Py(-0.6), Py(-0.2)})})); } return _r16021; }(each(zip_({hands, K(tuple({Py(-1), Py(1)}))}))));
     figure_on_land(at, (*f__c), person(S("stand"), MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, arms, MISSING_ARG, P[S("wood_dark")], MISSING_ARG, Py(0.45), P[S("red")], MISSING_ARG, True, MISSING_ARG, S("veil")));
-    { Py _t16044 = tuple({(*px__c) - away[2] * 0.72 + away[0] * 0.1, (*pz__c) + away[0] * 0.72 + away[2] * 0.1}); Vec _u16045 = unpack(_t16044, 2); bx_ = _u16045[0]; bz_ = _u16045[1]; }  // (see where FOLK_AT is filled)
+    { Py _t16024 = tuple({(*px__c) - away[2] * 0.72 + away[0] * 0.1, (*pz__c) + away[0] * 0.72 + away[2] * 0.1}); Vec _u16025 = unpack(_t16024, 2); bx_ = _u16025[0]; bz_ = _u16025[1]; }  // (see where FOLK_AT is filled)
     bucket_on_land(list({bx_, Py(0.0), bz_}), (*f__c) + 0.4, Py(0.5), S("berries"), P[S("apple")]);
     return None;
 }
@@ -51062,12 +51014,12 @@ Py mushroom_pickers() {
     Py wx;
     Py wz;
     Py y0__;
-    { Py _t16046 = FOLK_AT[S("mushrooms")]; Vec _u16047 = unpack(_t16046, 7); i = _u16047[0]; mx = _u16047[1]; mz = _u16047[2]; wx = _u16047[3]; wz = _u16047[4]; cx_ = _u16047[5]; cz_ = _u16047[6]; }
-    { Py _t16048 = MUSHROOM_KINDS[i]; Vec _u16049 = unpack(_t16048, 2); kind = _u16049[0]; sc = _u16049[1]; }
-    { Py _t16050 = tuple({Py(0.26), land_top(wx, wz)}); Vec _u16051 = unpack(_t16050, 2); SEAT = _u16051[0]; y0__ = _u16051[1]; }
+    { Py _t16026 = FOLK_AT[S("mushrooms")]; Vec _u16027 = unpack(_t16026, 7); i = _u16027[0]; mx = _u16027[1]; mz = _u16027[2]; wx = _u16027[3]; wz = _u16027[4]; cx_ = _u16027[5]; cz_ = _u16027[6]; }
+    { Py _t16028 = MUSHROOM_KINDS[i]; Vec _u16029 = unpack(_t16028, 2); kind = _u16029[0]; sc = _u16029[1]; }
+    { Py _t16030 = tuple({Py(0.26), land_top(wx, wz)}); Vec _u16031 = unpack(_t16030, 2); SEAT = _u16031[0]; y0__ = _u16031[1]; }
     (*at__c) = list({wx, y0__ + SEAT, wz});
     f = addpy::atan2(mx - wx, mz - wz) + PICK_TURN;  // (the cep by her right knee)
-    { Py _t16052 = tuple({addpy::cos(f), addpy::sin(f)}); Vec _u16053 = unpack(_t16052, 2); (*ca__c) = _u16053[0]; (*sa__c) = _u16053[1]; }
+    { Py _t16032 = tuple({addpy::cos(f), addpy::sin(f)}); Vec _u16033 = unpack(_t16032, 2); (*ca__c) = _u16033[0]; (*sa__c) = _u16033[1]; }
     w = func(sig("lambda", {"q"}, {MISSING_ARG}, 1), [at__c, ca__c, sa__c](Vec& _A_) -> Py { Py q = _A_[0]; return list({(*at__c)[0] + (q[0] * (*ca__c) + q[2] * (*sa__c)) * LIFE, (*at__c)[1] + q[1] * LIFE, (*at__c)[2] + ((-q[0]) * (*sa__c) + q[2] * (*ca__c)) * LIFE}); });
     stem = list({mx, ground(mx, mz) + 0.06 * sc, mz});  // (low on the stem, round its thickest)
     B = call(w, {list({Py(0.6), Py(0.0), Py(0.12)})});  // her bucket, by her left
@@ -51080,7 +51032,7 @@ Py mushroom_pickers() {
     atm = list({cx_, land_top(cx_, cz_), cz_});
     G = list({Py(-0.5), Py(0.78), Py(0.1)});  // (the bucket held out, clear of his coat)
     gw = list({atm[0] + (G[0] * addpy::cos(fm) + G[2] * addpy::sin(fm)) * LIFE, atm[1] + G[1] * LIFE, atm[2] + ((-G[0]) * addpy::sin(fm) + G[2] * addpy::cos(fm)) * LIFE});
-    { Py _t16054 = tuple({list({Py(0.36), Py(0.0), Py(0.3)}), list({Py(0.34), Py(1.22), Py(0.3)})}); Vec _u16055 = unpack(_t16054, 2); S0 = _u16055[0]; S1 = _u16055[1]; }  // (his stick, in his left hand, its foot
+    { Py _t16034 = tuple({list({Py(0.36), Py(0.0), Py(0.3)}), list({Py(0.34), Py(1.22), Py(0.3)})}); Vec _u16035 = unpack(_t16034, 2); S0 = _u16035[0]; S1 = _u16035[1]; }  // (his stick, in his left hand, its foot
     C = _mix(S0, S1, Py(0.85));  // on the ground a step ahead, upright; his
     arms = tuple({tuple({S("grip"), tuple({G, list({Py(0.0), Py(0.0), Py(1.0)}), list({Py(0.0), Py(-1.0), Py(0.0)}), 0.008 / LIFE}), list({Py(-1.0), Py(-0.2), Py(-0.3)})}), tuple({S("grip"), tuple({C, vunit(vsub(S1, S0)), list({Py(-1.0), Py(0.0), Py(0.3)}), 0.017 / LIFE}), K(tuple({S("hand"), K(tuple({Py(1.0), Py(0.0), Py(0.0)}))}))})});  // fist round it near the top, the knuckles
     // forward, the forearm
@@ -51105,7 +51057,7 @@ Py snap(Py angles, Py a__p, Py ok, Py taken) {
     auto a__c = std::make_shared<Py>(a__p);
     if (ok.missing()) ok = D_snap__ok;
     if (taken.missing()) taken = tuple({});
-    return min_(L_([&](Each _it16075) { Py e; Py _r16076 = list(); for (Py _x16077 : _it16075) { e = _x16077; if (!(truthy(call(ok, {e})) && ([&](Each _it16078) -> bool { Py t; for (Py _x16079 : _it16078) { t = _x16079; if (!(turn_off(e, t) > 0.05)) return false; } return true; }(each(taken))))) continue; L_(_r16076)->v.push_back(e); } return _r16076; }(each(angles)))->v, func(sig("lambda", {"e"}, {MISSING_ARG}, 1), [a__c](Vec& _A_) -> Py { Py e = _A_[0]; return turn_off(e, (*a__c)); }), MISSING_ARG);
+    return min_(L_([&](Each _it16055) { Py e; Py _r16056 = list(); for (Py _x16057 : _it16055) { e = _x16057; if (!(truthy(call(ok, {e})) && ([&](Each _it16058) -> bool { Py t; for (Py _x16059 : _it16058) { t = _x16059; if (!(turn_off(e, t) > 0.05)) return false; } return true; }(each(taken))))) continue; L_(_r16056)->v.push_back(e); } return _r16056; }(each(angles)))->v, func(sig("lambda", {"e"}, {MISSING_ARG}, 1), [a__c](Vec& _A_) -> Py { Py e = _A_[0]; return turn_off(e, (*a__c)); }), MISSING_ARG);
 }
 
 // The lookout of the donjon: a man in a steel cap on a chair (its seat
@@ -51116,7 +51068,7 @@ Py watchman(Py at, Py facing) {
     Py M;
     Py arms;
     Py glass;
-    { Py _t16094 = spyglass(Py(-0.83)); Vec _u16095 = unpack(_t16094, 2); glass = _u16095[0]; arms = _u16095[1]; }
+    { Py _t16074 = spyglass(Py(-0.83)); Vec _u16075 = unpack(_t16074, 2); glass = _u16075[0]; arms = _u16075[1]; }
     M = person(S("sit"), P[S("blue")], S("steel"), MISSING_ARG, Py(0.48), arms, MISSING_ARG, MISSING_ARG, MISSING_ARG, Py(0.0));  // (upright, the glass at his eye)
     M.extend(glass);
     addpy::mesh(addpy::move(addpy::rotateY(addpy::stretch(M, list({LIFE}) * 3, K(tuple({Py(0), Py(0), Py(0)}))), facing), at));
@@ -56455,7 +56407,7 @@ void part_79() {
     F_hanging_lantern = func(sig("hanging_lantern", {"ring", "name"}, {}, 1), [](Vec& _A_) -> Py { return hanging_lantern(_A_[0], _A_[1]); });
     F_parrot = func(sig("parrot", {"at", "facing", "kind", "s"}, {}, 1), [](Vec& _A_) -> Py { return parrot(_A_[0], _A_[1], _A_[2], _A_[3]); });
     F_bird_cage = func(sig("bird_cage", {"hook", "kind", "facing"}, {}, 1), [](Vec& _A_) -> Py { return bird_cage(_A_[0], _A_[1], _A_[2]); });
-    F_hammock = func(sig("hammock", {"a", "b", "sag", "width", "colour", "sleeper"}, {}, 2), [](Vec& _A_) -> Py { return hammock(_A_[0], _A_[1], _A_[2], _A_[3], _A_[4], _A_[5]); });
+    F_hammock = func(sig("hammock", {"a", "b", "sag", "width", "colour"}, {}, 2), [](Vec& _A_) -> Py { return hammock(_A_[0], _A_[1], _A_[2], _A_[3], _A_[4]); });
     F_treasure = func(sig("treasure", {"at", "facing", "s", "seed"}, {}, 1), [](Vec& _A_) -> Py { return treasure(_A_[0], _A_[1], _A_[2], _A_[3]); });
     F_rum_stillage = func(sig("rum_stillage", {"at", "facing", "n", "r", "h", "seed"}, {}, 1), [](Vec& _A_) -> Py { return rum_stillage(_A_[0], _A_[1], _A_[2], _A_[3], _A_[4], _A_[5]); });
     F_spyglass = func(sig("spyglass", {"dy"}, {}, 0), [](Vec& _A_) -> Py { return spyglass(_A_[0]); });
@@ -56473,18 +56425,18 @@ void part_79() {
     // great ships moored along it, the king's and a merchant's, a crane, the cargo; rowing boats pulled up all round the
     // island, tied to stakes on the shore -- the guests came in them.  The wharf is built along +x (u, out from the
     // centre of the island) with v across, then turned to DOCK_A
-    U_SHORE = [&](Range _it15668) -> Py { Py u; for (Py _x15669 : _it15668) { u = _x15669; if (!([&] { Args _args15670; star_into(_args15670.pos, [&](Each _it15671) { Py k; Py _r15672 = list(); for (Py _x15673 : _it15671) { k = _x15673; L_(_r15672)->v.push_back(dock_pt(u * 0.25, Py(0), Py(0))[k]); } return _r15672; }(each(K(tuple({Py(0), Py(2)}))))); return call(F_ground, std::move(_args15670)); }() < (WATER_Y - 0.1))) continue; return u * 0.25; } raise("StopIteration", ""); }(range(int_(DOCK_U0 * 4), Py(600)));
-    POSTS = [&](Each _it15674) { Py sg; Py u; Py _r15675 = list(); for (Py _x15676 : _it15674) { sg = _x15676; for (Py _x15677 : range(int_(DOCK_U1) - 1, int_(U_SHORE) - 2, Py(-6))) { u = _x15677; if (!(!((sg > 0) && (abs_(u - KING_U - GANG_X) < 1.6)))) continue; L_(_r15675)->v.push_back(tuple({u, sg})); } } return _r15675; }(each(K(tuple({Py(-1), Py(1)}))));  // bollards on the edges, every 6 m from the end of the wharf back to
+    U_SHORE = [&](Range _it15648) -> Py { Py u; for (Py _x15649 : _it15648) { u = _x15649; if (!([&] { Args _args15650; star_into(_args15650.pos, [&](Each _it15651) { Py k; Py _r15652 = list(); for (Py _x15653 : _it15651) { k = _x15653; L_(_r15652)->v.push_back(dock_pt(u * 0.25, Py(0), Py(0))[k]); } return _r15652; }(each(K(tuple({Py(0), Py(2)}))))); return call(F_ground, std::move(_args15650)); }() < (WATER_Y - 0.1))) continue; return u * 0.25; } raise("StopIteration", ""); }(range(int_(DOCK_U0 * 4), Py(600)));
+    POSTS = [&](Each _it15654) { Py sg; Py u; Py _r15655 = list(); for (Py _x15656 : _it15654) { sg = _x15656; for (Py _x15657 : range(int_(DOCK_U1) - 1, int_(U_SHORE) - 2, Py(-6))) { u = _x15657; if (!(!((sg > 0) && (abs_(u - KING_U - GANG_X) < 1.6)))) continue; L_(_r15655)->v.push_back(tuple({u, sg})); } } return _r15655; }(each(K(tuple({Py(-1), Py(1)}))));  // bollards on the edges, every 6 m from the end of the wharf back to
     // the shore, but not where the ramp
     // comes down
     addpy::push();
-    { Py _t15678 = tuple({DOCK_U0 - 1.0, U_SHORE + 1.5, DOCK_W + 0.3, Py(-1.5), DOCK_Y - 0.23}); Vec _u15679 = unpack(_t15678, 5); AB0 = _u15679[0]; AB1 = _u15679[1]; AW = _u15679[2]; AY0 = _u15679[3]; AY1 = _u15679[4]; }  // the abutment on the shore: a core
-    { Py _t15680 = tuple({(2 * AW + 0.24) / 11, (AY1 - AY0) / 9}); Vec _u15681 = unpack(_t15680, 2); ABL = _u15681[0]; ABH = _u15681[1]; }  // of rubble faced with courses of
-    { Py _t15682 = tuple({AW + 0.12, AB1 + 0.12, AY1 - ABH + 0.015}); Vec _u15683 = unpack(_t15682, 3); ABE = _u15683[0]; ABUE = _u15683[1]; ABC = _u15683[2]; }  // dressed stones, on its sides and on
+    { Py _t15658 = tuple({DOCK_U0 - 1.0, U_SHORE + 1.5, DOCK_W + 0.3, Py(-1.5), DOCK_Y - 0.23}); Vec _u15659 = unpack(_t15658, 5); AB0 = _u15659[0]; AB1 = _u15659[1]; AW = _u15659[2]; AY0 = _u15659[3]; AY1 = _u15659[4]; }  // the abutment on the shore: a core
+    { Py _t15660 = tuple({(2 * AW + 0.24) / 11, (AY1 - AY0) / 9}); Vec _u15661 = unpack(_t15660, 2); ABL = _u15661[0]; ABH = _u15661[1]; }  // of rubble faced with courses of
+    { Py _t15662 = tuple({AW + 0.12, AB1 + 0.12, AY1 - ABH + 0.015}); Vec _u15663 = unpack(_t15662, 3); ABE = _u15663[0]; ABUE = _u15663[1]; ABC = _u15663[2]; }  // dressed stones, on its sides and on
     ABCORNERS = K(tuple({K(tuple({None, K(tuple({Py(0.12), Py(1)}))})), K(tuple({K(tuple({Py(0.12), Py(0)})), K(tuple({Py(0.12), Py(0)}))}))}));  // its end towards the water, bonded
     addpy::cuboid(list({(AB0 + AB1) / 2, (AY0 + ABC) / 2, Py(0)}), list({AB1 - AB0, ABC - AY0, 2 * AW}), P[S("mortar")]);  // round its two corners -- a corner
-    for (Py _v15684 : each(K(tuple({Py(-1), Py(1)})))) {  // stone in every course, on the sides
-        sv = _v15684;
+    for (Py _v15664 : each(K(tuple({Py(-1), Py(1)})))) {  // stone in every course, on the sides
+        sv = _v15664;
         addpy::push();  // and on the end by turns, the courses
         stone_face(AB1 - AB0, AY0, AY1 - ABH, Py(0), Py(0.12), S("stone"), tuple({ABL, ABH}), Py(0.03), 41 + sv, MISSING_ARG, MISSING_ARG, MISSING_ARG, MISSING_ARG, ABCORNERS[0]);  // the
         M = addpy::pop();  // same (eleven stones across the end,
@@ -56495,77 +56447,77 @@ void part_79() {
     addpy::mesh(addpy::move(addpy::rotateY(addpy::move(addpy::pop(), list({-AW, Py(0), Py(0)})), addpy::pi / 2), list({AB1, Py(0), Py(0)})));  // top, a coping (the core's top under it)
     F_coping_stone = func(sig("coping_stone", {"u0", "u1", "v0", "v1", "k"}, {}, 5), [](Vec& _A_) -> Py { return coping_stone(_A_[0], _A_[1], _A_[2], _A_[3], _A_[4]); });
     ABUC = ABUE - ABL / 2;  // the coping: an edge course along the
-    js = [&](Each _it15687) { Py x; Py _r15688 = list(); for (Py _x15689 : _it15687) { x = _x15689; L_(_r15688)->v.push_back(AB0 + x); } return _r15688; }(each(corner_courses(AB1 - AB0, Py(0.12), ABL, Py(8), ABCORNERS[0])[0]));  // sides and the end, half a stone wide,
-    for (Py _v15690 : each(zip_({js, slice(js, Py(1), None)}))) {  // the ninth course of their faces (its
-        Vec _u15691 = unpack(_v15690, 2);
-        a = _u15691[0];
-        b = _u15691[1];
-        for (Py _v15692 : each(K(tuple({Py(-1), Py(1)})))) {  // joints over the eighth's stones'
-            sv = _v15692;
+    js = [&](Each _it15667) { Py x; Py _r15668 = list(); for (Py _x15669 : _it15667) { x = _x15669; L_(_r15668)->v.push_back(AB0 + x); } return _r15668; }(each(corner_courses(AB1 - AB0, Py(0.12), ABL, Py(8), ABCORNERS[0])[0]));  // sides and the end, half a stone wide,
+    for (Py _v15670 : each(zip_({js, slice(js, Py(1), None)}))) {  // the ninth course of their faces (its
+        Vec _u15671 = unpack(_v15670, 2);
+        a = _u15671[0];
+        b = _u15671[1];
+        for (Py _v15672 : each(K(tuple({Py(-1), Py(1)})))) {  // joints over the eighth's stones'
+            sv = _v15672;
             coping_stone(a, b, (sv > 0 ? ABE - ABL / 2 : -ABE), (sv > 0 ? ABE : (-ABE) + ABL / 2), sv + 1);  // middles, the end's
         }
     }
 }
 
 void part_80() {
-    js = [&](Each _it15693) { Py x; Py _r15694 = list(); for (Py _x15695 : _it15693) { x = _x15695; L_(_r15694)->v.push_back(AW - x); } return _r15694; }(each(corner_courses(2 * AW, Py(0.12), ABL, Py(8), ABCORNERS[1])[0]));  // stones at the corners, over the
-    for (Py _v15696 : each(zip_({js, slice(js, Py(1), None)}))) {  // sides' there) -- and inside it,
-        Vec _u15697 = unpack(_v15696, 2);
-        a = _u15697[0];
-        b = _u15697[1];
+    js = [&](Each _it15673) { Py x; Py _r15674 = list(); for (Py _x15675 : _it15673) { x = _x15675; L_(_r15674)->v.push_back(AW - x); } return _r15674; }(each(corner_courses(2 * AW, Py(0.12), ABL, Py(8), ABCORNERS[1])[0]));  // stones at the corners, over the
+    for (Py _v15676 : each(zip_({js, slice(js, Py(1), None)}))) {  // sides' there) -- and inside it,
+        Vec _u15677 = unpack(_v15676, 2);
+        a = _u15677[0];
+        b = _u15677[1];
         coping_stone(ABUC, ABUE, b, a, Py(5));  // flags two stones long in rows along
     }
-    for (Py _v15698 : range(Py(10))) {  // the wharf a stone wide, each row's
-        i = _v15698;
-        { Py _t15699 = tuple({ABE - ABL / 2 - ABL * i, list({ABUC, ABUC - (1.5 - mod(i, Py(2))) * ABL})}); Vec _u15700 = unpack(_t15699, 2); v1 = _u15700[0]; js = _u15700[1]; }  // joints halfway along its neighbours'
+    for (Py _v15678 : range(Py(10))) {  // the wharf a stone wide, each row's
+        i = _v15678;
+        { Py _t15679 = tuple({ABE - ABL / 2 - ABL * i, list({ABUC, ABUC - (1.5 - mod(i, Py(2))) * ABL})}); Vec _u15680 = unpack(_t15679, 2); v1 = _u15680[0]; js = _u15680[1]; }  // joints halfway along its neighbours'
         while ((js[Py(-1)] - 2 * ABL) > (AB0 + 0.3)) {  // stones (and half a stone along the
             js.append(js[Py(-1)] - 2 * ABL);  // edge course's), from the end back to
         }
-        for (Py _v15701 : each(zip_({slice(js, Py(1), None) + list({AB0}), js}))) {  // the land
-            Vec _u15702 = unpack(_v15701, 2);
-            a = _u15702[0];
-            b = _u15702[1];
+        for (Py _v15681 : each(zip_({slice(js, Py(1), None) + list({AB0}), js}))) {  // the land
+            Vec _u15682 = unpack(_v15681, 2);
+            a = _u15682[0];
+            b = _u15682[1];
             coping_stone(a, b, v1 - ABL, v1, 7 + i);
         }
     }
-    rows = [&](Range _it15703) { Py k; Py _r15704 = list(); for (Py _x15705 : _it15703) { k = _x15705; L_(_r15704)->v.push_back(U_SHORE + 1.2 + 3.0 * k); } return _r15704; }(range(int_((DOCK_U1 - U_SHORE - 1.2) / 3.0) + 1));
-    for (Py _v15706 : each(enumerate_(rows, Py(0)))) {  // piles in rows, a cap beam on each
-        Vec _u15707 = unpack(_v15706, 2);
-        k = _u15707[0];
-        u = _u15707[1];
+    rows = [&](Range _it15683) { Py k; Py _r15684 = list(); for (Py _x15685 : _it15683) { k = _x15685; L_(_r15684)->v.push_back(U_SHORE + 1.2 + 3.0 * k); } return _r15684; }(range(int_((DOCK_U1 - U_SHORE - 1.2) / 3.0) + 1));
+    for (Py _v15686 : each(enumerate_(rows, Py(0)))) {  // piles in rows, a cap beam on each
+        Vec _u15687 = unpack(_v15686, 2);
+        k = _u15687[0];
+        u = _u15687[1];
         if ((u + 0.17) < (AB1 + 0.12)) {  // (but none in the abutment: its top
             continue;  // carries the stringers there)
         }
-        for (Py _v15708 : each(tuple({(-DOCK_W) + 0.3, Py(-1.3), Py(1.3), DOCK_W - 0.3}))) {
-            v = _v15708;
-            { Py _t15709 = dock_pt(u, v, Py(0)); Vec _u15710 = unpack(_t15709, 3); x = _u15710[0]; _ = _u15710[1]; z = _u15710[2]; }
+        for (Py _v15688 : each(tuple({(-DOCK_W) + 0.3, Py(-1.3), Py(1.3), DOCK_W - 0.3}))) {
+            v = _v15688;
+            { Py _t15689 = dock_pt(u, v, Py(0)); Vec _u15690 = unpack(_t15689, 3); x = _u15690[0]; _ = _u15690[1]; z = _u15690[2]; }
             addpy::cylinder(list({u, ground(x, z) - 0.4, v}), list({u, DOCK_Y - 0.47, v}), Py(0.18), Py(10), pick(S("wood_dark"), k, v));
         }
         addpy::cuboid(list({u, DOCK_Y - 0.35, Py(0)}), list({Py(0.34), Py(0.24), 2 * DOCK_W + 0.3}), P[S("wood_dark")]);
         if (truthy(mod(k, Py(2))) && (u < (DOCK_U1 - 8))) {  // braces under the deep part
-            for (Py _v15711 : each(tuple({(-DOCK_W) + 0.3, Py(1.3)}))) {
-                v0 = _v15711;
+            for (Py _v15691 : each(tuple({(-DOCK_W) + 0.3, Py(1.3)}))) {
+                v0 = _v15691;
                 addpy::beam(list({u, DOCK_Y - 0.5, v0}), list({u, WATER_Y - 1.2, v0 + 2.6}), Py(0.12), Py(0.14), P[S("wood_dark")]);
             }
         }
     }
     STRINGERS = K(tuple({Py(-3.6), Py(-1.8), Py(0.0), Py(1.8), Py(3.6)}));
-    for (Py _v15712 : each(STRINGERS)) {  // stringers along, on the caps
-        v = _v15712;
+    for (Py _v15692 : each(STRINGERS)) {  // stringers along, on the caps
+        v = _v15692;
         addpy::cuboid(list({(DOCK_U0 + DOCK_U1) / 2, DOCK_Y - 0.145, v}), list({DOCK_U1 - DOCK_U0, Py(0.17), Py(0.18)}), P[S("wood")]);
     }
-    ON_WHARF = [&](Each _it15713) { Py sg; Py u; Py _r15714 = list(); for (Py _x15715 : _it15713) { Vec _u15716 = unpack(_x15715, 2); u = _u15716[0]; sg = _u15716[1]; L_(_r15714)->v.push_back(tuple({u, sg * (DOCK_W - 0.35), Py(0.25), Py(0.25)})); } return _r15714; }(each(POSTS)) + list({tuple({DOCK_U1 - 9.0, Py(-2.4), Py(0.65), Py(0.65)}), tuple({KING_U + GANG_X, Py(2.9), Py(1.0), Py(1.4)})}) + [&](Each _it15717) { Py u; Py v; Py _r15718 = list(); for (Py _x15719 : _it15717) { Vec _u15720 = unpack(_x15719, 2); u = _u15720[0]; v = _u15720[1]; L_(_r15718)->v.push_back(tuple({u, v, Py(0.45), Py(0.45)})); } return _r15718; }(each(tuple({tuple({DOCK_U1 - 14.0, Py(-2.6)}), tuple({DOCK_U1 - 13.1, Py(-2.8)}), tuple({DOCK_U1 - 13.6, Py(-1.9)}), tuple({DOCK_U1 - 20.0, Py(2.4)}), tuple({DOCK_U1 - 19.1, Py(2.2)}), tuple({DOCK_U1 - 30.0, Py(-2.8)}), tuple({DOCK_U1 - 30.7, Py(-2.5)}), tuple({DOCK_U1 - 30.3, Py(-1.9)})}))) + [&](Each _it15721) { Py u; Py v; Py _r15722 = list(); for (Py _x15723 : _it15721) { Vec _u15724 = unpack(_x15723, 2); u = _u15724[0]; v = _u15724[1]; L_(_r15722)->v.push_back(tuple({u, v, Py(0.5), Py(0.5)})); } return _r15722; }(each(tuple({tuple({DOCK_U1 - 23.5, Py(-2.5)}), tuple({DOCK_U1 - 23.5, Py(-1.6)}), tuple({DOCK_U1 - 26.0, Py(2.6)})}))) + [&](Each _it15725) { Py u; Py _r15726 = list(); for (Py _x15727 : _it15725) { u = _x15727; L_(_r15726)->v.push_back(tuple({u, (-DOCK_W) + 0.4, Py(0.12), Py(0.12)})); } return _r15726; }(each(tuple({U_SHORE + 3.0, DOCK_U1 - 0.45}))) + list({tuple({DOCK_U1 - 0.3, Py(0.6), Py(0.4), Py(0.7)}), tuple({DOCK_U1 - 0.3, Py(-1.9), Py(0.35), Py(0.35)}), tuple({DOCK_U1 - 0.9, Py(-2.6), Py(0.35), Py(0.35)})});  // (what stands on the deck: the bollards, the crane, the ramp, the cargo, the lanterns' posts, the fishermen)
+    ON_WHARF = [&](Each _it15693) { Py sg; Py u; Py _r15694 = list(); for (Py _x15695 : _it15693) { Vec _u15696 = unpack(_x15695, 2); u = _u15696[0]; sg = _u15696[1]; L_(_r15694)->v.push_back(tuple({u, sg * (DOCK_W - 0.35), Py(0.25), Py(0.25)})); } return _r15694; }(each(POSTS)) + list({tuple({DOCK_U1 - 9.0, Py(-2.4), Py(0.65), Py(0.65)}), tuple({KING_U + GANG_X, Py(2.9), Py(1.0), Py(1.4)})}) + [&](Each _it15697) { Py u; Py v; Py _r15698 = list(); for (Py _x15699 : _it15697) { Vec _u15700 = unpack(_x15699, 2); u = _u15700[0]; v = _u15700[1]; L_(_r15698)->v.push_back(tuple({u, v, Py(0.45), Py(0.45)})); } return _r15698; }(each(tuple({tuple({DOCK_U1 - 14.0, Py(-2.6)}), tuple({DOCK_U1 - 13.1, Py(-2.8)}), tuple({DOCK_U1 - 13.6, Py(-1.9)}), tuple({DOCK_U1 - 20.0, Py(2.4)}), tuple({DOCK_U1 - 19.1, Py(2.2)}), tuple({DOCK_U1 - 30.0, Py(-2.8)}), tuple({DOCK_U1 - 30.7, Py(-2.5)}), tuple({DOCK_U1 - 30.3, Py(-1.9)})}))) + [&](Each _it15701) { Py u; Py v; Py _r15702 = list(); for (Py _x15703 : _it15701) { Vec _u15704 = unpack(_x15703, 2); u = _u15704[0]; v = _u15704[1]; L_(_r15702)->v.push_back(tuple({u, v, Py(0.5), Py(0.5)})); } return _r15702; }(each(tuple({tuple({DOCK_U1 - 23.5, Py(-2.5)}), tuple({DOCK_U1 - 23.5, Py(-1.6)}), tuple({DOCK_U1 - 26.0, Py(2.6)})}))) + [&](Each _it15705) { Py u; Py _r15706 = list(); for (Py _x15707 : _it15705) { u = _x15707; L_(_r15706)->v.push_back(tuple({u, (-DOCK_W) + 0.4, Py(0.12), Py(0.12)})); } return _r15706; }(each(tuple({U_SHORE + 3.0, DOCK_U1 - 0.45}))) + list({tuple({DOCK_U1 - 0.3, Py(0.6), Py(0.4), Py(0.7)}), tuple({DOCK_U1 - 0.3, Py(-1.9), Py(0.35), Py(0.35)}), tuple({DOCK_U1 - 0.9, Py(-2.6), Py(0.35), Py(0.35)})});  // (what stands on the deck: the bollards, the crane, the ramp, the cargo, the lanterns' posts, the fishermen)
     n = int_((DOCK_U1 - DOCK_U0) / 0.3);
-    for (Py _v15728 : range(n)) {  // the deck: planks across, with gaps,
-        i = _v15728;
+    for (Py _v15708 : range(n)) {  // the deck: planks across, with gaps,
+        i = _v15708;
         pitch = (DOCK_U1 - DOCK_U0) / n;  // from the end of the road, each
         u = DOCK_U0 + (i + 0.5) * pitch;  // nailed to every stringer
         addpy::cuboid(list({u, DOCK_Y - 0.03, (hash2(i, Py(3), Py(17)) - 0.5) * 0.06}), list({pitch - 0.02, Py(0.06), 2 * DOCK_W - 0.02 * hash2(i, Py(4), Py(17))}), pick(S("wood"), i, Py(13)));
-        for (Py _v15729 : each(STRINGERS)) {
-            v = _v15729;
-            for (Py _v15730 : each(K(tuple({Py(-0.07), Py(0.07)})))) {
-                du = _v15730;
-                if (!([&](Each _it15731) -> bool { Py hu; Py hv; Py qu; Py qv; for (Py _x15732 : _it15731) { Vec _u15733 = unpack(_x15732, 4); qu = _u15733[0]; qv = _u15733[1]; hu = _u15733[2]; hv = _u15733[3]; if (((abs_(u + du - qu) < hu) && (abs_(v - qv) < hv))) return true; } return false; }(each(ON_WHARF)))) {
+        for (Py _v15709 : each(STRINGERS)) {
+            v = _v15709;
+            for (Py _v15710 : each(K(tuple({Py(-0.07), Py(0.07)})))) {
+                du = _v15710;
+                if (!([&](Each _it15711) -> bool { Py hu; Py hv; Py qu; Py qv; for (Py _x15712 : _it15711) { Vec _u15713 = unpack(_x15712, 4); qu = _u15713[0]; qv = _u15713[1]; hu = _u15713[2]; hv = _u15713[3]; if (((abs_(u + du - qu) < hu) && (abs_(v - qv) < hv))) return true; } return false; }(each(ON_WHARF)))) {
                     floor_nail(u + du, DOCK_Y, v, Py(4));
                 }
             }
@@ -56574,34 +56526,34 @@ void part_80() {
 }
 
 void part_81() {
-    for (Py _v15734 : each(K(tuple({Py(-1), Py(1)})))) {  // fender logs along the sides, from
-        sg = _v15734;
+    for (Py _v15714 : each(K(tuple({Py(-1), Py(1)})))) {  // fender logs along the sides, from
+        sg = _v15714;
         addpy::cylinder(list({AB1 + 0.12, DOCK_Y - 0.28, sg * (DOCK_W + 0.12)}), list({DOCK_U1 + 0.1, DOCK_Y - 0.28, sg * (DOCK_W + 0.12)}), Py(0.15), Py(10), P[S("wood_dark")]);  // the abutment's face out to the end;
-        for (Py _v15735 : each([&](Each _it15736) { Py side; Py u; Py _r15737 = list(); for (Py _x15738 : _it15736) { Vec _u15739 = unpack(_x15738, 2); u = _u15739[0]; side = _u15739[1]; if (!(side == sg)) continue; L_(_r15737)->v.push_back(u); } return _r15737; }(each(POSTS)))) {  // the bollards
-            u = _v15735;
+        for (Py _v15715 : each([&](Each _it15716) { Py side; Py u; Py _r15717 = list(); for (Py _x15718 : _it15716) { Vec _u15719 = unpack(_x15718, 2); u = _u15719[0]; side = _u15719[1]; if (!(side == sg)) continue; L_(_r15717)->v.push_back(u); } return _r15717; }(each(POSTS)))) {  // the bollards
+            u = _v15715;
             addpy::cylinder(list({u, DOCK_Y, sg * (DOCK_W - 0.35)}), list({u, DOCK_Y + 0.55, sg * (DOCK_W - 0.35)}), Py(0.2), Py(12), P[S("wood_dark")]);
             addpy::cylinder(list({u, DOCK_Y + 0.55, sg * (DOCK_W - 0.35)}), list({u, DOCK_Y + 0.62, sg * (DOCK_W - 0.35)}), Py(0.26), Py(12), P[S("wood_dark")]);
         }
     }
     addpy::cuboid(list({DOCK_U1 + 0.06, DOCK_Y - 0.21, Py(0)}), list({Py(0.12), Py(0.3), 2 * DOCK_W - 0.06}), P[S("wood_dark")]);  // a beam across the end,
-    { Py _t15740 = tuple({Py(8), DOCK_U1 + 0.17}); Vec _u15741 = unpack(_t15740, 2); RUNGS = _u15741[0]; LU = _u15741[1]; }  // and a ladder down from it: its
-    LADDER_FOOT = [&] { Args _args15742; star_into(_args15742.pos, [&](Each _it15743) { Py k; Py _r15744 = list(); for (Py _x15745 : _it15743) { k = _x15745; L_(_r15744)->v.push_back(dock_pt(LU, Py(2.2), Py(0))[k]); } return _r15744; }(each(K(tuple({Py(0), Py(2)}))))); return call(F_ground, std::move(_args15742)); }();  // rungs let into its two stiles,
-    for (Py _v15746 : range(RUNGS)) {  // which stand on the bottom and
-        i = _v15746;
+    { Py _t15720 = tuple({Py(8), DOCK_U1 + 0.17}); Vec _u15721 = unpack(_t15720, 2); RUNGS = _u15721[0]; LU = _u15721[1]; }  // and a ladder down from it: its
+    LADDER_FOOT = [&] { Args _args15722; star_into(_args15722.pos, [&](Each _it15723) { Py k; Py _r15724 = list(); for (Py _x15725 : _it15723) { k = _x15725; L_(_r15724)->v.push_back(dock_pt(LU, Py(2.2), Py(0))[k]); } return _r15724; }(each(K(tuple({Py(0), Py(2)}))))); return call(F_ground, std::move(_args15722)); }();  // rungs let into its two stiles,
+    for (Py _v15726 : range(RUNGS)) {  // which stand on the bottom and
+        i = _v15726;
         y = DOCK_Y - 0.3 - i * 0.36;  // run on up over the deck, to
         if (y > (LADDER_FOOT + 0.15)) {  // hold on to stepping off, strapped
             addpy::cylinder(list({LU, y, Py(1.9)}), list({LU, y, Py(2.5)}), Py(0.03), Py(6), P[S("wood_dark")]);
         }
     }
-    for (Py _v15747 : each(K(tuple({Py(1.9), Py(2.5)})))) {  // to the beam with iron
-        v = _v15747;
+    for (Py _v15727 : each(K(tuple({Py(1.9), Py(2.5)})))) {  // to the beam with iron
+        v = _v15727;
         addpy::cylinder(list({LU, DOCK_Y + 0.9, v}), list({LU, LADDER_FOOT - 0.25, v}), Py(0.05), Py(8), P[S("wood_dark")]);
         addpy::sphere(list({LU, DOCK_Y + 0.9, v}), Py(0.05), Py(4), P[S("wood_dark")]);
-        for (Py _v15748 : each(tuple({DOCK_Y - 0.12, DOCK_Y - 0.3}))) {
-            y = _v15748;
+        for (Py _v15728 : each(tuple({DOCK_Y - 0.12, DOCK_Y - 0.3}))) {
+            y = _v15728;
             addpy::cuboid(list({LU + 0.052, y, v}), list({Py(0.008), Py(0.04), Py(0.12)}), P[S("iron")]);  // (the strap round the stile,
-            for (Py _v15749 : each(K(tuple({Py(-1), Py(1)})))) {  // its ends nailed to the beam)
-                sv = _v15749;
+            for (Py _v15729 : each(K(tuple({Py(-1), Py(1)})))) {  // its ends nailed to the beam)
+                sv = _v15729;
                 addpy::cuboid(list({LU - 0.01, y, v + sv * 0.056}), list({Py(0.13), Py(0.04), Py(0.008)}), P[S("iron")]);
             }
         }
@@ -56620,14 +56572,14 @@ void part_81() {
     BY = hang[1] - 0.07 - 0.16;  // sheave in it
     addpy::cuboid(list({CU, BY, hang[2]}), list({Py(0.14), Py(0.32), Py(0.24)}), P[S("wood_dark")]);
     addpy::cylinder(list({CU - 0.071, BY, hang[2]}), list({CU + 0.071, BY, hang[2]}), Py(0.035), Py(8), P[S("iron")]);  // (its pin)
-    { Py _t15750 = K(tuple({Py(0.35), Py(0.9), Py(0.012)})); Vec _u15751 = unpack(_t15750, 3); BR = _u15751[0]; BH = _u15751[1]; NR = _u15751[2]; }  // the barrels, their net's ropes
+    { Py _t15730 = K(tuple({Py(0.35), Py(0.9), Py(0.012)})); Vec _u15731 = unpack(_t15730, 3); BR = _u15731[0]; BH = _u15731[1]; NR = _u15731[2]; }  // the barrels, their net's ropes
     BC = list({CU, hang[2] + 0.0});  // (the bundle's middle, under the fall)
     YB_ = DOCK_Y + 3.4;
     kk_ = max2(Py(12), int_(2 * addpy::pi * BR / 0.085));
     out_r = func(sig("lambda", {"y"}, {MISSING_ARG}, 1), [](Vec& _A_) -> Py { Py y = _A_[0]; return barrel_r(BR, BH, min2(BH, max2(Py(0.0), y - YB_))) / addpy::cos(addpy::pi / kk_) + 0.009; });  // (a barrel's girth, over its hoops)
-    cs_ = [&](Range _it15752) { Py i; Py _r15753 = list(); for (Py _x15754 : _it15752) { i = _x15754; L_(_r15753)->v.push_back(list({BC[0] + 0.4215 * addpy::cos(addpy::pi / 2 + 2 * addpy::pi * i / 3 + 0.3), BC[1] + 0.4215 * addpy::sin(addpy::pi / 2 + 2 * addpy::pi * i / 3 + 0.3)})); } return _r15753; }(range(Py(3)));  // (0.73 apart: none touching another)
-    for (Py _v15755 : each(cs_)) {
-        c_ = _v15755;
+    cs_ = [&](Range _it15732) { Py i; Py _r15733 = list(); for (Py _x15734 : _it15732) { i = _x15734; L_(_r15733)->v.push_back(list({BC[0] + 0.4215 * addpy::cos(addpy::pi / 2 + 2 * addpy::pi * i / 3 + 0.3), BC[1] + 0.4215 * addpy::sin(addpy::pi / 2 + 2 * addpy::pi * i / 3 + 0.3)})); } return _r15733; }(range(Py(3)));  // (0.73 apart: none touching another)
+    for (Py _v15735 : each(cs_)) {
+        c_ = _v15735;
         barrel(list({c_[0], YB_, c_[1]}), BR, BH);
     }
     F_bundle_reach = func(sig("bundle_reach", {"ph", "y"}, {}, 2), [](Vec& _A_) -> Py { return bundle_reach(_A_[0], _A_[1]); });
@@ -56637,20 +56589,20 @@ void part_81() {
 }
 
 void part_82() {
-    for (Py _v15759 : range(Py(8))) {  // knotted to them
-        j = _v15759;
+    for (Py _v15739 : range(Py(8))) {  // knotted to them
+        j = _v15739;
         ph = 2 * addpy::pi * (j + 0.5) / 8;
         u_ = list({addpy::cos(ph), addpy::sin(ph)});
         at_ = func(sig("lambda", {"r_", "y"}, {MISSING_ARG, MISSING_ARG}, 2), [](Vec& _A_) -> Py { Py r_ = _A_[0]; Py y = _A_[1]; return list({BC[0] + r_ * u_[0], y, BC[1] + r_ * u_[1]}); });
         pts = list({call(at_, {RING + 0.012, YR - 0.012})});
-        iadd(pts, ([&](Each _it15760) { Py y; Py _r15764 = list(); for (Py _x15765 : _it15760) { y = _x15765; L_(_r15764)->v.push_back(call(at_, {bundle_reach(ph, y) + NR, y})); } return _r15764; }(each([&](Each _it15761) { Py f; Py _r15762 = list(); for (Py _x15763 : _it15761) { f = _x15763; L_(_r15762)->v.push_back(YB_ + BH * f); } return _r15762; }(each(K(tuple({Py(1.0), Py(0.93), Py(0.8), Py(0.65), Py(0.5), Py(0.35), Py(0.2), Py(0.07), Py(0.0)}))))))));
+        iadd(pts, ([&](Each _it15740) { Py y; Py _r15744 = list(); for (Py _x15745 : _it15740) { y = _x15745; L_(_r15744)->v.push_back(call(at_, {bundle_reach(ph, y) + NR, y})); } return _r15744; }(each([&](Each _it15741) { Py f; Py _r15742 = list(); for (Py _x15743 : _it15741) { f = _x15743; L_(_r15742)->v.push_back(YB_ + BH * f); } return _r15742; }(each(K(tuple({Py(1.0), Py(0.93), Py(0.8), Py(0.65), Py(0.5), Py(0.35), Py(0.2), Py(0.07), Py(0.0)}))))))));
         iadd(pts, list({call(at_, {bundle_reach(ph, YB_) + NR, YB_ - NR}), call(at_, {bundle_reach(ph, YB_) * 0.6, YB_ - NR}), call(at_, {Py(0.02), YB_ - NR})}));
         addpy::polyline(pts, NR, Py(5), P[S("rope")]);
     }
-    for (Py _v15766 : each(K(tuple({Py(0.2), Py(0.5), Py(0.8)})))) {
-        f = _v15766;
+    for (Py _v15746 : each(K(tuple({Py(0.2), Py(0.5), Py(0.8)})))) {
+        f = _v15746;
         y = YB_ + BH * f;
-        addpy::polyline([&](Each _it15767) { Py ph; Py _r15771 = list(); for (Py _x15772 : _it15767) { ph = _x15772; L_(_r15771)->v.push_back(list({BC[0] + (bundle_reach(ph, y) + NR) * addpy::cos(ph), y, BC[1] + (bundle_reach(ph, y) + NR) * addpy::sin(ph)})); } return _r15771; }(each([&](Range _it15768) { Py i; Py _r15769 = list(); for (Py _x15770 : _it15768) { i = _x15770; L_(_r15769)->v.push_back(2 * addpy::pi * i / 48); } return _r15769; }(range(Py(48))))), NR, Py(5), P[S("rope")], True);
+        addpy::polyline([&](Each _it15747) { Py ph; Py _r15751 = list(); for (Py _x15752 : _it15747) { ph = _x15752; L_(_r15751)->v.push_back(list({BC[0] + (bundle_reach(ph, y) + NR) * addpy::cos(ph), y, BC[1] + (bundle_reach(ph, y) + NR) * addpy::sin(ph)})); } return _r15751; }(each([&](Range _it15748) { Py i; Py _r15749 = list(); for (Py _x15750 : _it15748) { i = _x15750; L_(_r15749)->v.push_back(2 * addpy::pi * i / 48); } return _r15749; }(range(Py(48))))), NR, Py(5), P[S("rope")], True);
     }
     EYE = list({BC[0], YR, BC[1] + RING});  // the eye in the fall's end, through
     addpy::torus(list({EYE[0], EYE[1] + RING * 0.0, EYE[2]}), RING, Py(0.014), Py(12), Py(4), P[S("rope")], K(tuple({Py(1), Py(0), Py(0)})));  // the ring
@@ -56659,39 +56611,39 @@ void part_82() {
     cz_ = Py(-2.4) - 0.25 - 0.03;  // a cleat on the post's side
     addpy::cuboid(list({CU, CLEAT_Y, cz_ + 0.015}), list({Py(0.06), Py(0.08), Py(0.03)}), P[S("wood_dark")]);
     addpy::cuboid(list({CU, CLEAT_Y, cz_ - 0.02}), list({Py(0.06), Py(0.34), Py(0.04)}), P[S("wood_dark")]);
-    for (Py _v15773 : range(Py(2))) {  // two round turns on it, the end
-        k = _v15773;
+    for (Py _v15753 : range(Py(2))) {  // two round turns on it, the end
+        k = _v15753;
         addpy::torus(list({CU, CLEAT_Y + (k - 0.5) * 0.05, cz_ - 0.02}), Py(0.06), Py(0.018), Py(10), Py(4), P[S("rope")], K(tuple({Py(0), Py(1), Py(0)})));
     }
     addpy::cylinder(list({CU, BY - 0.16, hang[2] + 0.1}), list({CU, CLEAT_Y + 0.025, cz_ - 0.02 - 0.078}), Py(0.02), Py(6), P[S("rope")]);
     addpy::polyline(list({list({CU + 0.078, CLEAT_Y - 0.025, cz_ - 0.02}), list({CU + 0.09, CLEAT_Y - 0.25, cz_ - 0.03}), list({CU + 0.08, CLEAT_Y - 0.55, cz_ - 0.05})}), Py(0.018), Py(6), P[S("rope")]);  // hanging
-    for (Py _v15774 : each(enumerate_(tuple({tuple({DOCK_U1 - 14.0, Py(-2.6)}), tuple({DOCK_U1 - 13.1, Py(-2.8)}), tuple({DOCK_U1 - 13.55, Py(-1.85)}), tuple({DOCK_U1 - 20.0, Py(2.4)}), tuple({DOCK_U1 - 19.1, Py(2.2)})}), Py(0)))) {  // cargo waiting on the wharf
-        Vec _u15775 = unpack(_v15774, 2);
-        k = _u15775[0];
-        Vec _u15776 = unpack(_u15775[1], 2);
-        u = _u15776[0];
-        v = _u15776[1];
+    for (Py _v15754 : each(enumerate_(tuple({tuple({DOCK_U1 - 14.0, Py(-2.6)}), tuple({DOCK_U1 - 13.1, Py(-2.8)}), tuple({DOCK_U1 - 13.55, Py(-1.85)}), tuple({DOCK_U1 - 20.0, Py(2.4)}), tuple({DOCK_U1 - 19.1, Py(2.2)})}), Py(0)))) {  // cargo waiting on the wharf
+        Vec _u15755 = unpack(_v15754, 2);
+        k = _u15755[0];
+        Vec _u15756 = unpack(_u15755[1], 2);
+        u = _u15756[0];
+        v = _u15756[1];
         barrel(list({u, DOCK_Y, v}), Py(0.4), Py(1.0));
     }
-    for (Py _v15777 : each(enumerate_(tuple({tuple({DOCK_U1 - 23.5, Py(-2.5)}), tuple({DOCK_U1 - 23.5, Py(-1.6)}), tuple({DOCK_U1 - 26.0, Py(2.6)})}), Py(0)))) {
-        Vec _u15778 = unpack(_v15777, 2);
-        k = _u15778[0];
-        Vec _u15779 = unpack(_u15778[1], 2);
-        u = _u15779[0];
-        v = _u15779[1];
+    for (Py _v15757 : each(enumerate_(tuple({tuple({DOCK_U1 - 23.5, Py(-2.5)}), tuple({DOCK_U1 - 23.5, Py(-1.6)}), tuple({DOCK_U1 - 26.0, Py(2.6)})}), Py(0)))) {
+        Vec _u15758 = unpack(_v15757, 2);
+        k = _u15758[0];
+        Vec _u15759 = unpack(_u15758[1], 2);
+        u = _u15759[0];
+        v = _u15759[1];
         crate(list({u, DOCK_Y, v}), Py(0.85));
     }
     crate(list({DOCK_U1 - 23.5, DOCK_Y + 0.85, Py(-2.05)}), Py(0.75));
-    for (Py _v15780 : each(enumerate_(tuple({tuple({DOCK_U1 - 30.0, Py(-2.8)}), tuple({DOCK_U1 - 30.7, Py(-2.5)}), tuple({DOCK_U1 - 30.3, Py(-1.9)})}), Py(0)))) {
-        Vec _u15781 = unpack(_v15780, 2);
-        k = _u15781[0];
-        Vec _u15782 = unpack(_u15781[1], 2);
-        u = _u15782[0];
-        v = _u15782[1];
+    for (Py _v15760 : each(enumerate_(tuple({tuple({DOCK_U1 - 30.0, Py(-2.8)}), tuple({DOCK_U1 - 30.7, Py(-2.5)}), tuple({DOCK_U1 - 30.3, Py(-1.9)})}), Py(0)))) {
+        Vec _u15761 = unpack(_v15760, 2);
+        k = _u15761[0];
+        Vec _u15762 = unpack(_u15761[1], 2);
+        u = _u15762[0];
+        v = _u15762[1];
         sack(list({u, DOCK_Y, v}), Py(0.36));
     }
-    for (Py _v15783 : each(tuple({U_SHORE + 3.0, DOCK_U1 - 0.45}))) {  // lanterns on posts
-        u = _v15783;
+    for (Py _v15763 : each(tuple({U_SHORE + 3.0, DOCK_U1 - 0.45}))) {  // lanterns on posts
+        u = _v15763;
         addpy::cylinder(list({u, DOCK_Y, (-DOCK_W) + 0.4}), list({u, DOCK_Y + 2.8, (-DOCK_W) + 0.4}), Py(0.08), Py(8), P[S("wood_dark")]);
         lantern(list({u, DOCK_Y + 2.8, (-DOCK_W) + 0.4}));
     }
@@ -56703,44 +56655,44 @@ void part_83() {
     // the ships, moored along the wharf, fenders between: each with four lines to the bollards -- from the timberhead in
     // the bow a bow line leading on ahead and a breast line straight across, from the one in the stern a stern line
     // leading astern and a breast line; the king's ship with its gangway open and a ramp down onto the wharf
-    for (Py _v15791 : each(SHIPS)) {  // (see HULLS)
-        Vec _u15792 = unpack(_v15791, 2);
-        Vec _u15793 = unpack(_u15792[0], 3);
-        u = _u15793[0];
-        v = _u15793[1];
-        way = _u15793[2];
-        seed = _u15792[1];
+    for (Py _v15771 : each(SHIPS)) {  // (see HULLS)
+        Vec _u15772 = unpack(_v15771, 2);
+        Vec _u15773 = unpack(_u15772[0], 3);
+        u = _u15773[0];
+        v = _u15773[1];
+        way = _u15773[2];
+        seed = _u15772[1];
         ties = ship(dock_pt(u, v, WATER_Y), tuple({way * DOCK_C, way * DOCK_S}), MISSING_ARG, MISSING_ARG, seed, (seed == 1 ? tuple({K(tuple({Py(3.0), Py(1.2), Py(0.6), S("coil")})), K(tuple({Py(-4.2), Py(-1.0), Py(2.5), S("mop")})), tuple({Py(-8.4), Py(0.4), addpy::pi / 2, S("captain")})}) : tuple({K(tuple({Py(5.5), Py(-0.9), Py(1.0), S("coil")})), K(tuple({Py(-3.8), Py(0.6), Py(4.0), S("mop")})), tuple({Py(-8.4), Py(-0.4), addpy::pi / 2, S("captain")})})), (seed == 1 ? P[S("red")] : P[S("blue")]), Py(seed == 1), (seed == 1 ? tuple({GANG_X, DOCK_Y - WATER_Y}) : None));
         sg = (v > 0 ? Py(1) : Py(-1));
-        for (Py _v15794 : each(ties)) {  // (how far out along the wharf
-            Vec _u15795 = unpack(_v15794, 4);
-            xl = _u15795[0];
-            th_foot = _u15795[1];
-            th_along = _u15795[2];
-            th_out = _u15795[3];
+        for (Py _v15774 : each(ties)) {  // (how far out along the wharf
+            Vec _u15775 = unpack(_v15774, 4);
+            xl = _u15775[0];
+            th_foot = _u15775[1];
+            th_along = _u15775[2];
+            th_out = _u15775[3];
             u_t = th_foot[0] * DOCK_C + th_foot[2] * DOCK_S;  // the timberhead stands)
-            { Py _t15799 = [&](Each _it15796) { Py p; Py _r15797 = list(); for (Py _x15798 : _it15796) { p = _x15798; L_(_r15797)->v.push_back(dock_pt(p, sg * (DOCK_W - 0.35), DOCK_Y)); } return _r15797; }(each(mooring_bollards(u_t, u, sg))); Vec _u15800 = unpack(_t15799, 2); bol_lo = _u15800[0]; bol_hi = _u15800[1]; }
+            { Py _t15779 = [&](Each _it15776) { Py p; Py _r15777 = list(); for (Py _x15778 : _it15776) { p = _x15778; L_(_r15777)->v.push_back(dock_pt(p, sg * (DOCK_W - 0.35), DOCK_Y)); } return _r15777; }(each(mooring_bollards(u_t, u, sg))); Vec _u15780 = unpack(_t15779, 2); bol_lo = _u15780[0]; bol_hi = _u15780[1]; }
             th_top = mooring_line(tuple({th_foot, th_along, th_out}), Py(0.05), bol_lo);  // (the upper's ends hanging down beside the
             mooring_line(tuple({th_foot, th_along, th_out}), th_top + 2 * ROPE_R + 0.006, bol_hi, True, Py(-0.12));  // lower's)
         }
     }
     // the rowing boats: one at the wharf's ladder, the rest all round the island by the shore, each tied to a stake
     F_painter = func(sig("painter", {"ring", "head", "post", "r_post", "y_tie"}, {}, 5), [](Vec& _A_) -> Py { return painter(_A_[0], _A_[1], _A_[2], _A_[3], _A_[4]); });
-    for (Py _v15816 : each(BOATS)) {  // (see BOATS)
-        Vec _u15817 = unpack(_v15816, 3);
-        Vec _u15818 = unpack(_u15817[0], 3);
-        bx = _u15818[0];
-        _ = _u15818[1];
-        bz = _u15818[2];
-        head = _u15817[1];
-        stake = _u15817[2];
+    for (Py _v15796 : each(BOATS)) {  // (see BOATS)
+        Vec _u15797 = unpack(_v15796, 3);
+        Vec _u15798 = unpack(_u15797[0], 3);
+        bx = _u15798[0];
+        _ = _u15798[1];
+        bz = _u15798[2];
+        head = _u15797[1];
+        stake = _u15797[2];
         rowboat(list({bx, WATER_Y, bz}), addpy::atan2(-addpy::sin(head), addpy::cos(head)), True);
         ring = list({bx + 2.28 * addpy::cos(head), WATER_Y + 0.63, bz + 2.28 * addpy::sin(head)});  // (the ring on its stem)
         if (is(stake, None)) {  // tied to the ladder's stile, her
             st = dock_pt(LU, Py(2.5), Py(0));  // bow towards it
             painter(ring, head, tuple({st[0], st[2]}), Py(0.05), DOCK_Y - 0.55);
         } else {
-            sy = [&] { Args _args15819; star_into(_args15819.pos, stake); return call(F_ground, std::move(_args15819)); }();  // from a trunk, its head pointed
+            sy = [&] { Args _args15799; star_into(_args15799.pos, stake); return call(F_ground, std::move(_args15799)); }();  // from a trunk, its head pointed
             addpy::cylinder(list({stake[0], sy - 0.3, stake[1]}), list({stake[0], sy + 0.7, stake[1]}), Py(0.06), Py(8), P[S("wood_dark")]);
             addpy::cone(list({stake[0], sy + 0.7, stake[1]}), list({stake[0], sy + 0.78, stake[1]}), Py(0.06), Py(8), P[S("wood_dark")]);
             painter(ring, head, stake, Py(0.06), sy + 0.5);
@@ -56756,14 +56708,14 @@ void part_83() {
     fisherman(dock_pt(DOCK_U1 - 0.3, Py(-1.9), DOCK_Y), OUT, S("stand"), P[S("leaf")]);  // and beside him, standing
     creel(dock_pt(DOCK_U1 - 0.9, Py(-2.6), DOCK_Y), Py(2));
     FA = addpy::pi / 3;  // and on a rock on the gentle shore to the south-east
-    { Py _t15942 = tuple({87.4 * addpy::cos(FA), 87.4 * addpy::sin(FA)}); Vec _u15943 = unpack(_t15942, 2); fx = _u15943[0]; fz = _u15943[1]; }
+    { Py _t15922 = tuple({87.4 * addpy::cos(FA), 87.4 * addpy::sin(FA)}); Vec _u15923 = unpack(_t15922, 2); fx = _u15923[0]; fz = _u15923[1]; }
     rock_y = ground(fx, fz);
     addpy::mesh(addpy::move(addpy::stretch(addpy::make([&] { addpy::sphere(list({Py(0), Py(0), Py(0)}), Py(0.5), Py(6), P[S("rock")]); }), list({Py(1.2), Py(0.9), Py(1.0)}), K(tuple({Py(0), Py(0), Py(0)}))), list({fx, rock_y + 0.05, fz})));
     feet = list({fx + 0.55 * addpy::cos(FA), fz + 0.55 * addpy::sin(FA)});
 }
 
 void part_84() {
-    fisherman(list({fx, rock_y + 0.5, fz}), addpy::atan2(addpy::cos(FA), addpy::sin(FA)), S("sit"), P[S("red")], MISSING_ARG, rock_y + 0.5 - [&] { Args _args15944; star_into(_args15944.pos, feet); return call(F_ground, std::move(_args15944)); }());
+    fisherman(list({fx, rock_y + 0.5, fz}), addpy::atan2(addpy::cos(FA), addpy::sin(FA)), S("sit"), P[S("red")], MISSING_ARG, rock_y + 0.5 - [&] { Args _args15924; star_into(_args15924.pos, feet); return call(F_ground, std::move(_args15924)); }());
     creel(list({fx + 0.8 * addpy::sin(FA), ground(fx + 0.8 * addpy::sin(FA), fz - 0.8 * addpy::cos(FA)), fz - 0.8 * addpy::cos(FA)}));
     flush(S("fishermen"));
     F_carried_bucket = func(sig("carried_bucket", {"grip_world", "facing", "fill", "contents", "colour", "seed"}, {}, 5), [](Vec& _A_) -> Py { return carried_bucket(_A_[0], _A_[1], _A_[2], _A_[3], _A_[4], _A_[5]); });
@@ -56785,12 +56737,12 @@ void part_84() {
     flush(mod(S("folk at work in the fields and the wood (the berry picker at (%.1f, %.1f), the mushroom pickers at (%.1f, %.1f))"), tuple({FOLK_AT[S("berries")][2], FOLK_AT[S("berries")][3], FOLK_AT[S("mushrooms")][3], FOLK_AT[S("mushrooms")][4]})));
     // torches along the inside of the wall, flags on the towers, guards on duty:
     // knights in plate, archers and crossbowmen in mail
-    for (Py _v16056 : range(Py(8))) {
-        k = _v16056;
-        { Py _t16057 = tuple({CORNERS[k], CORNERS[mod(k + 1, Py(8))]}); Vec _u16058 = unpack(_t16057, 2); a = _u16058[0]; b = _u16058[1]; }
-        { Py _t16059 = outward(a, b); Vec _u16060 = unpack(_t16059, 3); L = _u16060[0]; d = _u16060[1]; n = _u16060[2]; }
-        for (Py _v16061 : each(K(tuple({Py(0.25), Py(0.5), Py(0.75)})))) {
-            t = _v16061;
+    for (Py _v16036 : range(Py(8))) {
+        k = _v16036;
+        { Py _t16037 = tuple({CORNERS[k], CORNERS[mod(k + 1, Py(8))]}); Vec _u16038 = unpack(_t16037, 2); a = _u16038[0]; b = _u16038[1]; }
+        { Py _t16039 = outward(a, b); Vec _u16040 = unpack(_t16039, 3); L = _u16040[0]; d = _u16040[1]; n = _u16040[2]; }
+        for (Py _v16041 : each(K(tuple({Py(0.25), Py(0.5), Py(0.75)})))) {
+            t = _v16041;
             if (((k == 1) && (abs_(t - 0.5) < 0.3)) || ((k == 5) && (t == 0.75))) {  // (the gate; the stable's roof)
                 continue;
             }
@@ -56801,67 +56753,67 @@ void part_84() {
             torch(p, addpy::atan2(-n[0], -n[2]));
         }
     }
-    for (Py _v16062 : each(tuple({PORT_Z + 1.0, PORT_Z - 1.0}))) {  // four in the gate passage, one on either side of it before the
-        z = _v16062;
-        for (Py _v16063 : each(K(tuple({Py(-1), Py(1)})))) {  // portcullis and one behind it, and one on each gate tower
-            s = _v16063;
+    for (Py _v16042 : each(tuple({PORT_Z + 1.0, PORT_Z - 1.0}))) {  // four in the gate passage, one on either side of it before the
+        z = _v16042;
+        for (Py _v16043 : each(K(tuple({Py(-1), Py(1)})))) {  // portcullis and one behind it, and one on each gate tower
+            s = _v16043;
             torch(list({s * 2.5, G + 2.3, z}), (-s) * addpy::pi / 2);  // beside the gate
         }
     }
-    for (Py _v16064 : each(K(tuple({Py(-1), Py(1)})))) {
-        s = _v16064;
+    for (Py _v16044 : each(K(tuple({Py(-1), Py(1)})))) {
+        s = _v16044;
         torch(list({s * 4.3, G + 3.3, GATE_FRONT}), Py(0.0));
     }
-    for (Py _v16065 : each(enumerate_(CORNERS, Py(0)))) {
-        Vec _u16066 = unpack(_v16065, 2);
-        k = _u16066[0];
-        c = _u16066[1];
+    for (Py _v16045 : each(enumerate_(CORNERS, Py(0)))) {
+        Vec _u16046 = unpack(_v16045, 2);
+        k = _u16046[0];
+        c = _u16046[1];
         top = TOWER_TOP + 0.35 + 3.0 + 8.0;
         addpy::cylinder(list({c[0], top, c[2]}), list({c[0], top + 3.5, c[2]}), Py(0.06), Py(8), P[S("iron")]);
         addpy::sphere(list({c[0], top + 3.55, c[2]}), Py(0.09), Py(6), P[S("gold")]);
         flag(list({c[0], top + 3.4, c[2]}), Py(1.4), Py(1.0), addpy::pi * 0.3 + k * 0.05, k * 0.8);  // all flying the same wind
     }
-    { Py _t16067 = tuple({CORNERS[0], CORNERS[1]}); Vec _u16068 = unpack(_t16067, 2); a = _u16068[0]; b = _u16068[1]; }
-    { Py _t16069 = outward(a, b); Vec _u16070 = unpack(_t16069, 3); L = _u16070[0]; d = _u16070[1]; n = _u16070[2]; }
+    { Py _t16047 = tuple({CORNERS[0], CORNERS[1]}); Vec _u16048 = unpack(_t16047, 2); a = _u16048[0]; b = _u16048[1]; }
+    { Py _t16049 = outward(a, b); Vec _u16050 = unpack(_t16049, 3); L = _u16050[0]; d = _u16050[1]; n = _u16050[2]; }
 }
 
 void part_85() {
     armour(list({a[0] + d[0] * L * 0.35, WALK, a[2] + d[2] * L * 0.35}), addpy::atan2(d[0], d[2]));  // patrolling the walk
-    { Py _t16071 = tuple({CORNERS[4], CORNERS[5]}); Vec _u16072 = unpack(_t16071, 2); a = _u16072[0]; b = _u16072[1]; }
-    { Py _t16073 = outward(a, b); Vec _u16074 = unpack(_t16073, 3); L = _u16074[0]; d = _u16074[1]; n = _u16074[2]; }
+    { Py _t16051 = tuple({CORNERS[4], CORNERS[5]}); Vec _u16052 = unpack(_t16051, 2); a = _u16052[0]; b = _u16052[1]; }
+    { Py _t16053 = outward(a, b); Vec _u16054 = unpack(_t16053, 3); L = _u16054[0]; d = _u16054[1]; n = _u16054[2]; }
     armour(list({a[0] + d[0] * L * 0.6, WALK, a[2] + d[2] * L * 0.6}), addpy::atan2(-d[0], -d[2]), S("sword"), MISSING_ARG, MISSING_ARG, S("shoulder"), Py(5));
     F_turn_off = func(sig("turn_off", {"a", "b"}, {}, 2), [](Vec& _A_) -> Py { return turn_off(_A_[0], _A_[1]); });
     F_snap = func(sig("snap", {"angles", "a", "ok", "taken"}, {}, 2), [](Vec& _A_) -> Py { return snap(_A_[0], _A_[1], _A_[2], _A_[3]); });
     D_snap__ok = func(sig("lambda", {"e"}, {MISSING_ARG}, 1), [](Vec& _A_) -> Py { Py e = _A_[0]; return True; });
     TOP_MEN = dict({});  // (where the men stand on each)
     XBOW_A = list({});  // every tower top has a gun (see
-    for (Py _v16080 : each(enumerate_(CORNERS, Py(0)))) {  // "the guns on the walls"), and
-        Vec _u16081 = unpack(_v16080, 2);
-        k = _u16081[0];
-        c = _u16081[1];
+    for (Py _v16060 : each(enumerate_(CORNERS, Py(0)))) {  // "the guns on the walls"), and
+        Vec _u16061 = unpack(_v16060, 2);
+        k = _u16061[0];
+        c = _u16061[1];
         aa = snap(EMBRASURES[tuple({c[0], c[2]})], PHI[k] + ((truthy(mod(k, Py(2))) ? Py(-0.7) : Py(0.7))), func(sig("lambda", {"e"}, {MISSING_ARG}, 1), [](Vec& _A_) -> Py { Py e = _A_[0]; return Py((mod(e - (ARRIVE[k] - HEADROOM - 0.35), 2 * addpy::pi)) >= (HEADROOM + 0.95)); }), tuple({GUN_A[k]}));  // a crossbowman at an embrasure, on the other
         XBOW_A.append(aa);  // side of it, clear of the stairwell
         TOP_MEN.setdefault(k, list({})).append(tuple({c[0] + 2.3 * addpy::cos(aa), c[2] + 2.3 * addpy::sin(aa)}));
         bowman(list({c[0] + 2.3 * addpy::cos(aa), TOWER_TOP, c[2] + 2.3 * addpy::sin(aa)}), addpy::atan2(addpy::cos(aa), addpy::sin(aa)), S("crossbow"), K(tuple({S("aim"), S("load"), S("shoulder"), S("aim"), S("span"), S("load"), S("aim"), S("shoulder")}))[k], k, Py(-0.15));
     }
-    for (Py _v16082 : each(K(tuple({Py(2), Py(3), Py(4), Py(5), Py(6)})))) {  // archers on the wall walk, each at an
-        k = _v16082;
-        { Py _t16083 = tuple({CORNERS[k], CORNERS[mod(k + 1, Py(8))]}); Vec _u16084 = unpack(_t16083, 2); a = _u16084[0]; b = _u16084[1]; }  // embrasure between two merlons
-        { Py _t16085 = outward(a, b); Vec _u16086 = unpack(_t16085, 3); L = _u16086[0]; d = _u16086[1]; n = _u16086[2]; }
-        for (Py _v16087 : each(K(tuple({Py(0.3), Py(0.7)})))) {
-            t = _v16087;
+    for (Py _v16062 : each(K(tuple({Py(2), Py(3), Py(4), Py(5), Py(6)})))) {  // archers on the wall walk, each at an
+        k = _v16062;
+        { Py _t16063 = tuple({CORNERS[k], CORNERS[mod(k + 1, Py(8))]}); Vec _u16064 = unpack(_t16063, 2); a = _u16064[0]; b = _u16064[1]; }  // embrasure between two merlons
+        { Py _t16065 = outward(a, b); Vec _u16066 = unpack(_t16065, 3); L = _u16066[0]; d = _u16066[1]; n = _u16066[2]; }
+        for (Py _v16067 : each(K(tuple({Py(0.3), Py(0.7)})))) {
+            t = _v16067;
             x = TOWER_R - 0.5 + min_(items_of(WALL_GAPS[k]), func(sig("lambda", {"g"}, {MISSING_ARG}, 1), [](Vec& _A_) -> Py { Py g = _A_[0]; return abs_(g - t * (L - 2 * (TOWER_R - 0.5))); }), MISSING_ARG);
             bow = mod(k + int_(t * 10), Py(2));  // (each in a pose of his own)
             bowman(list({a[0] + d[0] * x + n[0] * 0.25, WALK, a[2] + d[2] * x + n[2] * 0.25}), addpy::atan2(n[0], n[2]), (truthy(bow) ? S("bow") : S("crossbow")), (truthy(bow) ? K(tuple({S("draw"), S("nock"), S("quiver"), S("rest")}))[mod(k, Py(4))] : K(tuple({S("aim"), S("load"), S("shoulder")}))[mod(k, Py(3))]), 10 + 2 * k + int_(t * 2), Py(-0.1));
         }
     }
     SHOT_ROW = Py(10);  // the guns' balls on the walk: a row
-    for (Py _v16088 : each(K(tuple({K(tuple({Py(0), Py(1)})), K(tuple({Py(2), Py(0)})), K(tuple({Py(3), Py(1)})), K(tuple({Py(5), Py(0)})), K(tuple({Py(6), Py(1)})), K(tuple({Py(7), Py(1)}))})))) {  // of ten on a board against its low
-        Vec _u16089 = unpack(_v16088, 2);
-        k = _u16089[0];
-        end = _u16089[1];
-        { Py _t16090 = tuple({CORNERS[k], CORNERS[mod(k + 1, Py(8))]}); Vec _u16091 = unpack(_t16090, 2); a = _u16091[0]; b = _u16091[1]; }  // parapet, near the tower at one end
-        { Py _t16092 = outward(a, b); Vec _u16093 = unpack(_t16092, 3); L = _u16093[0]; d = _u16093[1]; n = _u16093[2]; }  // of the wall (the door onto the walk
+    for (Py _v16068 : each(K(tuple({K(tuple({Py(0), Py(1)})), K(tuple({Py(2), Py(0)})), K(tuple({Py(3), Py(1)})), K(tuple({Py(5), Py(0)})), K(tuple({Py(6), Py(1)})), K(tuple({Py(7), Py(1)}))})))) {  // of ten on a board against its low
+        Vec _u16069 = unpack(_v16068, 2);
+        k = _u16069[0];
+        end = _u16069[1];
+        { Py _t16070 = tuple({CORNERS[k], CORNERS[mod(k + 1, Py(8))]}); Vec _u16071 = unpack(_t16070, 2); a = _u16071[0]; b = _u16071[1]; }  // parapet, near the tower at one end
+        { Py _t16072 = outward(a, b); Vec _u16073 = unpack(_t16072, 3); L = _u16073[0]; d = _u16073[1]; n = _u16073[2]; }  // of the wall (the door onto the walk
         half = SHOT_ROW * (2 * CANNONBALL + 0.004) / 2 + 0.05;  // left clear), the one away from the
         x = TOWER_R + 1.3 + half;  // ladders
         x = (truthy(end) ? L - x : x);
@@ -56870,7 +56822,7 @@ void part_85() {
     }
     flush(S("wall walk"));
     F_watchman = func(sig("watchman", {"at", "facing"}, {}, 1), [](Vec& _A_) -> Py { return watchman(_A_[0], _A_[1]); });
-    { Py _t16096 = tuple({DON[0] + 4.5 * addpy::cos(LOOK_A), DON[1] + 4.5 * addpy::sin(LOOK_A)}); Vec _u16097 = unpack(_t16096, 2); lx = _u16097[0]; lz = _u16097[1]; }  // the donjon's lookout: a chair
+    { Py _t16076 = tuple({DON[0] + 4.5 * addpy::cos(LOOK_A), DON[1] + 4.5 * addpy::sin(LOOK_A)}); Vec _u16077 = unpack(_t16076, 2); lx = _u16077[0]; lz = _u16077[1]; }  // the donjon's lookout: a chair
     // facing an embrasure to the south,
     chair(list({lx, DON_TOP, lz}), addpy::pi / 2 - LOOK_A, P[S("wood_dark")]);  // towards the gate, the road and
     watchman(list({lx, DON_TOP + 0.48, lz}), addpy::pi / 2 - LOOK_A);  // the lake, and the watchman in it
@@ -56878,10 +56830,10 @@ void part_85() {
     // tower, the princess, looking out to the gate
     F_clear_of_stair = func(sig("clear_of_stair", {"arrive", "ang", "head"}, {}, 3), [](Vec& _A_) -> Py { return clear_of_stair(_A_[0], _A_[1], _A_[2]); });
     F_along_clear = func(sig("along_clear", {"arrive", "head", "t"}, {}, 3), [](Vec& _A_) -> Py { return along_clear(_A_[0], _A_[1], _A_[2]); });
-    for (Py _v16098 : each(enumerate_(CORNERS, Py(0)))) {  // a second man on every tower of the wall: an archer,
-        Vec _u16099 = unpack(_v16098, 2);
-        k = _u16099[0];
-        c = _u16099[1];
+    for (Py _v16078 : each(enumerate_(CORNERS, Py(0)))) {  // a second man on every tower of the wall: an archer,
+        Vec _u16079 = unpack(_v16078, 2);
+        k = _u16079[0];
+        c = _u16079[1];
         ang = snap(EMBRASURES[tuple({c[0], c[2]})], along_clear(ARRIVE[k], HEADROOM, (truthy(mod(k, Py(2))) ? Py(0.96) : Py(0.12))), func(sig("lambda", {"e"}, {MISSING_ARG}, 1), [](Vec& _A_) -> Py { Py e = _A_[0]; return clear_of_stair(ARRIVE[k], e, HEADROOM); }), tuple({GUN_A[k], XBOW_A[k]}));  // at an embrasure at the end of the free
         TOP_MEN.setdefault(k, list({})).append(tuple({c[0] + 2.6 * addpy::cos(ang), c[2] + 2.6 * addpy::sin(ang)}));
         bowman(list({c[0] + 2.6 * addpy::cos(ang), TOWER_TOP, c[2] + 2.6 * addpy::sin(ang)}), addpy::atan2(addpy::cos(ang), addpy::sin(ang)), S("bow"), K(tuple({S("draw"), S("rest"), S("nock"), S("draw"), S("quiver"), S("rest"), S("draw"), S("nock")}))[k], 20 + k, Py(-0.15));
@@ -56889,32 +56841,32 @@ void part_85() {
 }
 
 void part_86() {
-    SQUARE_EMB = [&](Range _it16100) { Py dd; Py k; Py _r16101 = list(); for (Py _x16102 : _it16100) { k = _x16102; for (Py _x16103 : each(K(tuple({Py(-0.507), Py(0.0), Py(0.507)})))) { dd = _x16103; L_(_r16101)->v.push_back(k * addpy::pi / 2 + dd); } } return _r16101; }(range(Py(4)));  // (a gate tower's: three a side)
-    tops = [&](Each _it16104) { Py i; Py s; Py _r16105 = list(); for (Py _x16106 : _it16104) { Vec _u16107 = unpack(_x16106, 2); i = _u16107[0]; s = _u16107[1]; L_(_r16105)->v.push_back(tuple({tuple({s * 7, Py(50)}), G + 20, GATE_ARRIVE[i], Py(1.65), SQUARE_EMB})); } return _r16105; }(each(enumerate_(K(tuple({Py(-1), Py(1)})), Py(0))));  // two on each gate tower
-    iadd(tops, ([&](Range _it16108) { Py i; Py _r16109 = list(); for (Py _x16110 : _it16108) { i = _x16110; L_(_r16109)->v.push_back(tuple({PALACE_TOWERS[i], EAVE + 4, PT_ARRIVE[i], Py(2.3), EMBRASURES[PALACE_TOWERS[i]]})); } return _r16109; }(range(len(PALACE_TOWERS)))));
-    for (Py _v16111 : each(enumerate_(tops, Py(0)))) {  // and each palace tower, at embrasures
-        Vec _u16112 = unpack(_v16111, 2);
-        i = _u16112[0];
-        Vec _u16113 = unpack(_u16112[1], 5);
-        Vec _u16114 = unpack(_u16113[0], 2);
-        cx = _u16114[0];
-        cz = _u16114[1];
-        y = _u16113[1];
-        arrive = _u16113[2];
-        radius = _u16113[3];
-        emb = _u16113[4];
+    SQUARE_EMB = [&](Range _it16080) { Py dd; Py k; Py _r16081 = list(); for (Py _x16082 : _it16080) { k = _x16082; for (Py _x16083 : each(K(tuple({Py(-0.507), Py(0.0), Py(0.507)})))) { dd = _x16083; L_(_r16081)->v.push_back(k * addpy::pi / 2 + dd); } } return _r16081; }(range(Py(4)));  // (a gate tower's: three a side)
+    tops = [&](Each _it16084) { Py i; Py s; Py _r16085 = list(); for (Py _x16086 : _it16084) { Vec _u16087 = unpack(_x16086, 2); i = _u16087[0]; s = _u16087[1]; L_(_r16085)->v.push_back(tuple({tuple({s * 7, Py(50)}), G + 20, GATE_ARRIVE[i], Py(1.65), SQUARE_EMB})); } return _r16085; }(each(enumerate_(K(tuple({Py(-1), Py(1)})), Py(0))));  // two on each gate tower
+    iadd(tops, ([&](Range _it16088) { Py i; Py _r16089 = list(); for (Py _x16090 : _it16088) { i = _x16090; L_(_r16089)->v.push_back(tuple({PALACE_TOWERS[i], EAVE + 4, PT_ARRIVE[i], Py(2.3), EMBRASURES[PALACE_TOWERS[i]]})); } return _r16089; }(range(len(PALACE_TOWERS)))));
+    for (Py _v16091 : each(enumerate_(tops, Py(0)))) {  // and each palace tower, at embrasures
+        Vec _u16092 = unpack(_v16091, 2);
+        i = _u16092[0];
+        Vec _u16093 = unpack(_u16092[1], 5);
+        Vec _u16094 = unpack(_u16093[0], 2);
+        cx = _u16094[0];
+        cz = _u16094[1];
+        y = _u16093[1];
+        arrive = _u16093[2];
+        radius = _u16093[3];
+        emb = _u16093[4];
         taken = list({});
-        for (Py _v16115 : each(enumerate_(K(tuple({Py(0.25), Py(0.75)})), Py(0)))) {
-            Vec _u16116 = unpack(_v16115, 2);
-            j = _u16116[0];
-            t = _u16116[1];
+        for (Py _v16095 : each(enumerate_(K(tuple({Py(0.25), Py(0.75)})), Py(0)))) {
+            Vec _u16096 = unpack(_v16095, 2);
+            j = _u16096[0];
+            t = _u16096[1];
             ang = snap(emb, along_clear(arrive, HEADROOM, t), func(sig("lambda", {"e"}, {MISSING_ARG}, 1), [](Vec& _A_) -> Py { Py e = _A_[0]; return clear_of_stair(arrive, e, HEADROOM); }), taken);
             taken.append(ang);
             bowman(list({cx + radius * addpy::cos(ang), y, cz + radius * addpy::sin(ang)}), addpy::atan2(addpy::cos(ang), addpy::sin(ang)), (truthy(mod(i + j, Py(2))) ? S("bow") : S("crossbow")), (truthy(mod(i + j, Py(2))) ? K(tuple({S("draw"), S("nock"), S("rest")}))[mod(i + j, Py(3))] : K(tuple({S("aim"), S("shoulder"), S("load")}))[mod(i + 2 * j, Py(3))]), 30 + 2 * i + j, Py(-0.15));
         }
     }
-    for (Py _v16117 : each(K(tuple({Py(1.3), Py(-1.3), Py(2.2), Py(-2.2)})))) {  // and a crossbowman by the watchman on the donjon
-        da = _v16117;
+    for (Py _v16097 : each(K(tuple({Py(1.3), Py(-1.3), Py(2.2), Py(-2.2)})))) {  // and a crossbowman by the watchman on the donjon
+        da = _v16097;
         ang = snap(DON_EMB, LOOK_A + da);
         if (truthy(clear_of_stair(DON_ARRIVE, ang, WALL_HEAD))) {
             bowman(list({DON[0] + 4.3 * addpy::cos(ang), DON_TOP, DON[1] + 4.3 * addpy::sin(ang)}), addpy::atan2(addpy::cos(ang), addpy::sin(ang)), S("crossbow"), S("shoulder"), Py(40));
@@ -56927,8 +56879,8 @@ void part_86() {
     // pile of balls and a keg of powder behind them; on every tower of the wall a lighter gun points out between two
     // posts of its lantern.  By each gun its gunner, the linstock in his hand and its match alight.
     GUN_Z = GATE_Z1 + 0.15 - 1.95;  // the gate's guns: their muzzles in the two embrasures, one either
-    for (Py _v16118 : each(GATE_GAPS)) {  // side of the gate's middle line, the one gun the other's mirror
-        x = _v16118;
+    for (Py _v16098 : each(GATE_GAPS)) {  // side of the gate's middle line, the one gun the other's mirror
+        x = _v16098;
         cannon(list({x, GATE_ROOF, GUN_Z}), (-addpy::pi) / 2, False, MISSING_ARG, Py(x > 0));
     }
     gun_crew(list({GATE_GAPS[0], GATE_ROOF, GUN_Z}), (-addpy::pi) / 2, S("fire"), MISSING_ARG, MISSING_ARG, Py(3));  // the gunners: one at the left gun, his linstock at
@@ -56940,24 +56892,24 @@ void part_86() {
     // the trunnions and 0.43 aside comes 3 cm short of the parapet: the
     // muzzles in the embrasures, over their sills, as the gate's guns
     // are, the wheels stopping 0.28 short of the parapet
-    for (Py _v16119 : each(enumerate_(CORNERS, Py(0)))) {  // the towers' guns, the gunner beside the breech on the side of
-        Vec _u16120 = unpack(_v16119, 2);
-        k = _u16120[0];
-        c = _u16120[1];
-        { Py _t16121 = tuple({GUN_A[k], (truthy(mod(k, Py(2))) ? Py(-1) : Py(1))}); Vec _u16122 = unpack(_t16121, 2); a = _u16122[0]; side = _u16122[1]; }  // the crossbowman
+    for (Py _v16099 : each(enumerate_(CORNERS, Py(0)))) {  // the towers' guns, the gunner beside the breech on the side of
+        Vec _u16100 = unpack(_v16099, 2);
+        k = _u16100[0];
+        c = _u16100[1];
+        { Py _t16101 = tuple({GUN_A[k], (truthy(mod(k, Py(2))) ? Py(-1) : Py(1))}); Vec _u16102 = unpack(_t16101, 2); a = _u16102[0]; side = _u16102[1]; }  // the crossbowman
         cannon(list({c[0] + GUN_R * addpy::cos(a), TOWER_TOP, c[2] + GUN_R * addpy::sin(a)}), -a, False, GUN_S, MISSING_ARG, S("stowed"));
         pose = K(tuple({S("ready"), S("watch"), S("sit"), S("blow"), S("carry"), S("ready"), S("sit"), S("watch")}))[k];
         gr = GUN_R - ((pose == S("sit") ? Py(1.25) : Py(0.71)));  // (one sitting, his feet clear of the post)
-        { Py _t16123 = tuple({c[0] + gr * addpy::cos(a) - side * 1.05 * addpy::sin(a), c[2] + gr * addpy::sin(a) + side * 1.05 * addpy::cos(a)}); Vec _u16124 = unpack(_t16123, 2); gx = _u16124[0]; gz = _u16124[1]; }
+        { Py _t16103 = tuple({c[0] + gr * addpy::cos(a) - side * 1.05 * addpy::sin(a), c[2] + gr * addpy::sin(a) + side * 1.05 * addpy::cos(a)}); Vec _u16104 = unpack(_t16103, 2); gx = _u16104[0]; gz = _u16104[1]; }
         gunner(list({gx, TOWER_TOP, gz}), addpy::pi / 2 - a, pose, k);
         men = TOP_MEN.get(k, list({})) + list({tuple({gx, gz})});  // and three balls ready on a board by
-        for (Py _v16125 : each(tuple({tuple({Py(-0.6), (-side) * 0.95}), tuple({Py(-1.3), (-side) * 0.9}), tuple({Py(0.1), (-side) * 1.0}), tuple({Py(-0.6), side * 2.0}), tuple({Py(-1.3), side * 2.0})}))) {  // the
-            Vec _u16126 = unpack(_v16125, 2);
-            lx = _u16126[0];
-            lz = _u16126[1];
-            { Py _t16127 = tuple({c[0] + (GUN_R + lx) * addpy::cos(a) - lz * addpy::sin(a), c[2] + (GUN_R + lx) * addpy::sin(a) + lz * addpy::cos(a)}); Vec _u16128 = unpack(_t16127, 2); bx_ = _u16128[0]; bz_ = _u16128[1]; }  // gun,
+        for (Py _v16105 : each(tuple({tuple({Py(-0.6), (-side) * 0.95}), tuple({Py(-1.3), (-side) * 0.9}), tuple({Py(0.1), (-side) * 1.0}), tuple({Py(-0.6), side * 2.0}), tuple({Py(-1.3), side * 2.0})}))) {  // the
+            Vec _u16106 = unpack(_v16105, 2);
+            lx = _u16106[0];
+            lz = _u16106[1];
+            { Py _t16107 = tuple({c[0] + (GUN_R + lx) * addpy::cos(a) - lz * addpy::sin(a), c[2] + (GUN_R + lx) * addpy::sin(a) + lz * addpy::cos(a)}); Vec _u16108 = unpack(_t16107, 2); bx_ = _u16108[0]; bz_ = _u16108[1]; }  // gun,
             rad = addpy::sqrt(pow_(bx_ - c[0], Py(2)) + pow_(bz_ - c[2], Py(2)));  // clear of the men, of the posts'
-            if (((rad + 0.42) < (TOWER_R - 0.7)) && (rad > 0.9) && ([&](Each _it16129) -> bool { Py mx; Py mz; for (Py _x16130 : _it16129) { Vec _u16131 = unpack(_x16130, 2); mx = _u16131[0]; mz = _u16131[1]; if (!((pow_(bx_ - mx, Py(2)) + pow_(bz_ - mz, Py(2))) > (pow_(Py(0.85), Py(2))))) return false; } return true; }(each(men))) && truthy(clear_of_stair(ARRIVE[k], addpy::atan2(bz_ - c[2], bx_ - c[0]), HEADROOM))) {  // footings and of the stairwell
+            if (((rad + 0.42) < (TOWER_R - 0.7)) && (rad > 0.9) && ([&](Each _it16109) -> bool { Py mx; Py mz; for (Py _x16110 : _it16109) { Vec _u16111 = unpack(_x16110, 2); mx = _u16111[0]; mz = _u16111[1]; if (!((pow_(bx_ - mx, Py(2)) + pow_(bz_ - mz, Py(2))) > (pow_(Py(0.85), Py(2))))) return false; } return true; }(each(men))) && truthy(clear_of_stair(ARRIVE[k], addpy::atan2(bz_ - c[2], bx_ - c[0]), HEADROOM))) {  // footings and of the stairwell
                 break;
             }
         }
