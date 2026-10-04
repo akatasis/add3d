@@ -289,7 +289,7 @@ def sketchfab_table():
         ok = (mb <= MAX_MB or model in COMPRESSED) and s["colors"] <= colors
         verdict = "ok" if ok else ("TOO MANY COLOURS" if s["colors"] > colors else "TOO BIG")
         if model in COMPRESSED:
-            verdict += " (7-Zip it: under 100 MB compressed)"
+            verdict += " (7-Zip it: about 100 MB compressed)"
         print("%-28s %9d %7d %9.1f  %s" % (model, s["faces"], s["colors"], mb, verdict))
         if not ok:
             problems.append(model)

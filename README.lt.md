@@ -282,8 +282,8 @@ grindinio akmuo, vitražo stiklelis ir herbas -- daugiakampiai.
 `python3 46_castle.py` rašo modelį srautu iš karto į `castle.off`
 (apie 1 GB) ir `castle.obj`, pakeliui sutvarkydamas (jokių
 pasikartojančių viršūnių, pasikartojančių, palaidotų ar persidengiančių
-sienų), mažiau nei 100 spalvų; `.obj`, suglaudintas 7-Zip, telpa į 100 MB,
-kuriuos priima Sketchfab -- **[pilis Sketchfab'e](https://skfb.ly/pOnRS)**.
+sienų), mažiau nei 100 spalvų; `.obj`, suglaudintas 7-Zip, užima apie
+100 MB (Sketchfab'ui) -- **[pilis Sketchfab'e](https://skfb.ly/pOnRS)**.
 `python3 tools/coverage.py` parodo, kuris pavyzdys kurią funkciją naudoja;
 kiekviena vieša funkcija panaudota bent viename, o kiekvienas modelis
 telpa į Sketchfab ribas (tikrina `examples/build_all.py`).
@@ -371,5 +371,4 @@ MIT. Žr. [LICENSE](LICENSE).
 
 ---
 
-Martynas Sabaliauskas, Vilniaus universitetas, Matematikos ir informatikos
-fakultetas, Duomenų mokslo ir skaitmeninių technologijų institutas.
+Martynas Sabaliauskas &middot; akatasis@gmail.com

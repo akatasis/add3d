@@ -2,7 +2,7 @@
 add.py -- build 3D models with nothing but Python code.
 ==============================================================================
 
-Version 2.0  |  Martynas Sabaliauskas (VU MIF DMSTI)  |  MIT licence
+Version 2.0  |  Martynas Sabaliauskas (akatasis@gmail.com)  |  MIT licence
 
 A tiny, dependency-free 3D modelling kernel for teaching.  The whole library
 uses only ``math`` and ``random`` from the standard library: no NumPy, no

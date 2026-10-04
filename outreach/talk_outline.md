@@ -130,7 +130,7 @@ Name the audiences explicitly: pupils, teachers who want a lesson that ends in s
 
 ### 18. Start with a triangle [Pradėkite nuo trikampio]
 **Must land:** It is free, it is one file, and the first model takes about ten minutes.
-**On screen:** The project address, large. Underneath, small: *Martynas Sabaliauskas, VU MIF. MIT licence.* In the corner, the six-line triangle file from slide 5.
+**On screen:** The project address, large. Underneath, small: *Martynas Sabaliauskas, akatasis@gmail.com. MIT licence.* In the corner, the six-line triangle file from slide 5.
 **Timing:** 18:45–20:00
 End on the triangle, not on the chess set. The last thing they should see is the smallest thing, because that is the thing they can do tonight.
 

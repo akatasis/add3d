@@ -126,7 +126,7 @@ Jei abejojate, pirmiausia išbandykite `test.pypi.org`
   `add.save("modelis.obj", colors=50)` sumažina spalvingą modelį). Į
   atmintį netelpantis modelis rašomas dalimis su `add.stream("modelis.obj")`
   (taip rašoma 46 pavyzdžio pilis: apie 1 GB `.off` ir `.obj`,
-  kuris suglaudintas 7-Zip telpa į 100 MB -- [pilis
+  kuris suglaudintas 7-Zip užima apie 100 MB -- [pilis
   Sketchfab'e](https://skfb.ly/pOnRS)). `save` ir `stream` modelį pakeliui sutvarko, todėl
   peržiūroje niekas nemirga.
 * **Straipsnis**: `paper/paper.md` (+ `references.bib`) parašytas

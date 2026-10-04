@@ -43,11 +43,9 @@ UI = {
     "copied": {"en": "copied", "lt": "nukopijuota"},
     "footer": {
         "en": "add.py %s &middot; MIT licence &middot; "
-              "Martynas Sabaliauskas, Vilnius University, "
-              "Faculty of Mathematics and Informatics" % VERSION,
+              "Martynas Sabaliauskas &middot; akatasis@gmail.com" % VERSION,
         "lt": "add.py %s &middot; MIT licencija &middot; "
-              "Martynas Sabaliauskas, Vilniaus universitetas, "
-              "Matematikos ir informatikos fakultetas" % VERSION,
+              "Martynas Sabaliauskas &middot; akatasis@gmail.com" % VERSION,
     },
 }
 
@@ -868,7 +866,7 @@ out.close()
 print(out.faces, "faces,", out.bytes / 1e6, "MB,", len(out.materials), "colours")
 ```
 
-!castle.png|The castle of example 46, written streaming to castle.off (about 1 GB) and castle.obj: no textures, every stone a polygon; the .obj is under 100 MB once 7-Zip has compressed it.
+!castle.png|The castle of example 46, written streaming to castle.off (about 1 GB) and castle.obj: no textures, every stone a polygon; the .obj is about 100 MB once 7-Zip has compressed it.
 
 The finished castle is on Sketchfab, where anyone can turn it round in a
 browser: [skfb.ly/pOnRS](https://skfb.ly/pOnRS).
@@ -1226,7 +1224,7 @@ out.close()
 print(out.faces, "sienų,", out.bytes / 1e6, "MB,", len(out.materials), "spalvų")
 ```
 
-!castle.png|46 pavyzdžio pilis, rašyta srautu į castle.off (apie 1 GB) ir castle.obj: be tekstūrų, kiekvienas akmuo -- daugiakampis; .obj, suglaudintas 7-Zip, telpa į 100 MB.
+!castle.png|46 pavyzdžio pilis, rašyta srautu į castle.off (apie 1 GB) ir castle.obj: be tekstūrų, kiekvienas akmuo -- daugiakampis; .obj, suglaudintas 7-Zip, užima apie 100 MB.
 
 Baigta pilis įkelta į Sketchfab, kur ją naršyklėje gali pasukioti bet kas:
 [skfb.ly/pOnRS](https://skfb.ly/pOnRS).
@@ -1678,7 +1676,7 @@ GALLERY = [
      "houses, a pigsty, a dovecote, carts and animals -- and, inside, the king in "
      "his throne hall with a feast, beds for everyone, an attic and a dragon "
      "on its treasure. No textures: every stone, tile and coat of arms is "
-     "geometry. Written streaming: an .off of about 1 GB, an .obj under "
+     "geometry. Written streaming: an .off of about 1 GB, an .obj of about "
      "100 MB compressed.",
      "Pilis: sala permatomame ežere, akmens blokų siena su aštuoniais "
      "tuščiaviduriais bokštais (viduje sraigtiniai laiptai), vartai su "
@@ -1690,7 +1688,7 @@ GALLERY = [
      "rąstinių namelių, kiaulių aptvaro, karvelidės, vežimų ir gyvūnų -- o viduje karalius sosto menėje "
      "su puota, lovos visiems, palėpė ir drakonas ant lobio. Be tekstūrų: "
      "kiekvienas akmuo, čerpė ir herbas -- daugiakampiai. Rašyta srautu: "
-     "apie 1 GB .off, .obj suglaudintas mažiau nei 100 MB.",
+     "apie 1 GB .off, .obj suglaudintas apie 100 MB.",
      "https://skfb.ly/pOnRS"),
     ("castle_hall.png", "46_castle.py",
      "Inside the castle: the great hall with the king's throne, the feast "
