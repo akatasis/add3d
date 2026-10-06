@@ -52,7 +52,7 @@ PHOTOS = [
     ("22_karalius", (1.5, 12.8, -21), (0, 12.1, -27.5), 28),              # the king on his throne
     ("23_puota", (-3, 13, -7), (-6.5, 11.4, -16), 40),                  # the feast, the fire and the throne
     ("24_zidinys", (-8, 14, -16), (-20.8, 13.5, -16), 40),                # the fireplace
-    ("25_sachmatu_etiudas", (17, 12.4, -9.5), (15.3, 11.1, -12.2), 30),   # the chess study: White to play and win
+    ("25_sachmatu_etiudas", (17, 12.4, -9.5), (15.3, 11.1, -12.2), 30),   # the chess study: Kasparov-Topalov 1999, 25.Re7+!!
     ("26_koplycios_vidus", (28, 12.7, -9.6), (28, 12, -21), 45),        # inside the chapel
     ("27_kareiviu_miegamasis", (12, 21.9, -5.5), (-2, 20.7, -19), 45),    # the soldiers' dormitory, its bays and groups
     ("28_pastoge", (-14, 27.5, -10), (4, 25.5, -20), 46),               # the attic: the lords' beds, beds under the eaves

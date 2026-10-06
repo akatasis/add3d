@@ -757,6 +757,11 @@ inline Py union_(const Py& meshes) {
     flatten_into(o, meshes);
     return mesh_py(add::union_(o));
 }
+inline Py merge(const Py& meshes) {
+    std::vector<add::Mesh> o;
+    flatten_into(o, meshes);
+    return mesh_py(add::merge(o));
+}
 inline Py intersect(const Py& meshes) {
     std::vector<add::Mesh> o;
     flatten_into(o, meshes);

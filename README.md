@@ -271,8 +271,8 @@ pines, birches, oaks, elms and limes on the slopes with hares, foxes and
 wolves running among them, gulls over the lake -- and, inside, the easter
 eggs: the great hall, its stone columns and gilded chandeliers, with the
 king on his throne, his counsellor, his fool and musicians, a feast for
-thirty-two guests, a chess study ("White to
-play and win") and a stair down to the vaulted wine cellar, the soldiers'
+thirty-two guests, a chess study (Kasparov--Topalov, Wijk aan Zee 1999,
+White to play 25.Re7+!!) and a stair down to the vaulted wine cellar, the soldiers'
 dormitory upstairs, laid out in bays like a real one, an attic where the
 guests sleep among old things (the lords in four-posters), the
 chapel's attic with the vestments and the chalice, and in the big tower

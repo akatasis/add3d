@@ -271,7 +271,7 @@ liepomis šlaituose, tarp kurių bėgioja kiškiai, lapės ir vilkai, kirais
 virš ežero -- o viduje siurprizai: didžioji menė su akmeninėmis
 kolonomis ir paauksuotais sietynais, karaliumi soste, jo patarėju,
 juokdariu ir muzikantais, puota trisdešimt dviem svečiams,
-šachmatų etiudas („Baltieji pradeda ir laimi") ir laiptai žemyn į
+šachmatų etiudas (Kasparovas--Topalovas, Wijk aan Zee, 1999: baltieji eina 25.Re7+!!) ir laiptai žemyn į
 skliautuotą vyno rūsį, kareivių miegamasis antrame aukšte, įrengtas kaip
 tikras -- nišomis tarp lentinių pertvarų, palėpė, kur tarp senų daiktų
 miega svečiai (didikai -- lovose su baldakimais), koplyčios pastogė su kunigo rūbais ir
